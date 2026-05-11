@@ -817,7 +817,7 @@ impl Vm {
                     // Paused — skip this cycle but keep window responsive
                     continue;
                 }
-                v.refresh_all(self);
+                v.diff_draw(self);
             }
 
             if self.cycles == self.dump_param {
@@ -840,7 +840,7 @@ impl Vm {
         if let Some(ref mut v) = vis {
             if !quit {
                 v.show_winner(self);
-                v.refresh_all(self);
+                v.diff_draw(self);
                 // Wait for user to press a key before exiting
                 v.wait_for_key();
             }
