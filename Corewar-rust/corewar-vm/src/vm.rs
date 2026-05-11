@@ -345,7 +345,7 @@ impl Vm {
                 self.store_at(
                     process_idx,
                     reg_val as u32,
-                    pc + (move_val % IDX_MOD),
+                    pc + (move_val % IDX_MOD) + 3,
                 );
             }
         }
@@ -455,7 +455,7 @@ impl Vm {
                     self.store_at(
                         process_idx,
                         reg_val as u32,
-                        pc + ((nb[0].wrapping_add(nb[1])) % IDX_MOD),
+                        pc + ((nb[0].wrapping_add(nb[1])) % IDX_MOD) + 3,
                     );
                 }
             }
