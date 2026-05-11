@@ -12,4 +12,3 @@ corewar-common = { path = "../corewar-common" }
 clap = { version = "4", features = ["derive"] }
 thiserror = "1"
 ncurses = "5.101"
-libc = "0.2"

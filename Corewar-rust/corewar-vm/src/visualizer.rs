@@ -67,7 +67,7 @@ impl Visualizer {
         let s_win = newwin(height - p_height + 2, s_width + 2, 0, width + 2);
         let p_win = newwin(p_height, s_width + 2, proc_y, width + 2);
 
-        let mut vis = Visualizer {
+        let vis = Visualizer {
             speed: 3000,
             paused: false,
             height,
@@ -80,7 +80,8 @@ impl Visualizer {
             p_win,
         };
 
-        vis.refresh_all(vm);
+        // Initial full draw
+        vis.full_redraw(vm);
         vis
     }
 
@@ -96,31 +97,39 @@ impl Visualizer {
             nodelay(stdscr(), self.paused);
             self.paused = !self.paused;
         }
-        if input == KEY_RESIZE || input == ' ' as i32 {
-            self.resize_window(vm);
+        if input == KEY_RESIZE {
+            // Only recreate windows on actual terminal resize
+            self.recreate_windows();
         }
         if self.paused {
+            // Even when paused, we need to redraw after space/resize
+            if input == ' ' as i32 || input == KEY_RESIZE {
+                self.full_redraw(vm);
+            }
             return 2;
-        } else {
-            self.resize_window(vm);
         }
+
+        // Speed controls
         if input == KEY_UP && self.speed > MAX_SPEED {
             self.speed -= 500;
         }
         if input == KEY_DOWN && self.speed < MIN_SPEED {
             self.speed += 500;
         }
+
+        // Full redraw every frame (like the C version)
+        self.full_redraw(vm);
+
+        // Sleep for frame timing
         if input != KEY_RESIZE {
-            unsafe {
-                libc::usleep(self.speed as u32);
-            }
+            std::thread::sleep(std::time::Duration::from_micros(self.speed as u64));
         }
 
         0
     }
 
-    /// Resize/recreate windows and redraw — mirrors C's resize_window()
-    fn resize_window(&mut self, vm: &Vm) {
+    /// Recreate windows (only called on terminal resize)
+    fn recreate_windows(&mut self) {
         refresh();
         delwin(self.m_win);
         delwin(self.s_win);
@@ -128,20 +137,31 @@ impl Visualizer {
         self.m_win = newwin(self.height + 2, self.width + 2, 0, 0);
         self.s_win = newwin(self.height - self.p_height + 2, self.s_width + 2, 0, self.width + 2);
         self.p_win = newwin(self.p_height, self.s_width + 2, self.proc_y, self.width + 2);
+    }
 
+    /// Full redraw — erase, draw content, then atomic doupdate()
+    fn full_redraw(&self, vm: &Vm) {
+        // Erase all windows
+        werase(self.m_win);
+        werase(self.s_win);
+        werase(self.p_win);
+
+        // Draw content into each window
         self.fill_arena(vm);
         self.print_panel(vm);
+
+        // Draw boxes
         box_(self.m_win, 0, 0);
         box_(self.s_win, 0, 0);
         box_(self.p_win, 0, 0);
-        wrefresh(self.m_win);
-        wrefresh(self.s_win);
-        wrefresh(self.p_win);
-    }
 
-    /// Redraw all windows
-    pub fn refresh_all(&mut self, vm: &Vm) {
-        self.resize_window(vm);
+        // Stage all window updates without flushing
+        wnoutrefresh(self.m_win);
+        wnoutrefresh(self.s_win);
+        wnoutrefresh(self.p_win);
+
+        // Single atomic screen update — this is the key to flicker-free rendering
+        doupdate();
     }
 
     /// Fill the arena window with colored memory cells — mirrors C's fill_arena()
@@ -169,7 +189,7 @@ impl Visualizer {
 
             // Standout if process with active IR at this position
             if owner != 0 && ow != 0 {
-                wattron(self.m_win, A_STANDOUT() | COLOR_PAIR(ow + 1));
+                wattron(self.m_win, A_STANDOUT() | COLOR_PAIR((ow + 1) as i16));
             }
 
             wattron(self.m_win, COLOR_PAIR(color));
@@ -180,7 +200,7 @@ impl Visualizer {
                 wattroff(self.m_win, A_BOLD());
             }
             if owner != 0 && ow != 0 {
-                wattroff(self.m_win, A_STANDOUT() | COLOR_PAIR(ow + 1));
+                wattroff(self.m_win, A_STANDOUT() | COLOR_PAIR((ow + 1) as i16));
             }
 
             col += 3;
@@ -301,9 +321,11 @@ impl Visualizer {
 
     /// Display the winner screen — mirrors C's champion_won()
     pub fn show_winner(&mut self, vm: &Vm) {
-        refresh();
+        // Recreate the process window for the winner display
         delwin(self.p_win);
         self.p_win = newwin(self.p_height, self.s_width + 2, self.proc_y, self.width + 2);
+
+        werase(self.p_win);
 
         wattron(self.p_win, A_BOLD());
         mvwprintw(
@@ -330,7 +352,8 @@ impl Visualizer {
         }
 
         box_(self.p_win, 0, 0);
-        wrefresh(self.p_win);
+        wnoutrefresh(self.p_win);
+        doupdate();
     }
 
     /// Clean up ncurses — mirrors C's endwin()
