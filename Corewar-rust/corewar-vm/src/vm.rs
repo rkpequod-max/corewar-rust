@@ -343,7 +343,7 @@ impl Vm {
                 self.store_at(
                     process_idx,
                     reg_val as u32,
-                    pc + (move_val % IDX_MOD) + 3,
+                    pc + (move_val % IDX_MOD),
                 );
             }
         }
@@ -453,7 +453,7 @@ impl Vm {
                     self.store_at(
                         process_idx,
                         reg_val as u32,
-                        pc + ((nb[0].wrapping_add(nb[1])) % IDX_MOD) + 3,
+                        pc + ((nb[0].wrapping_add(nb[1])) % IDX_MOD),
                     );
                 }
             }
@@ -732,16 +732,16 @@ impl Vm {
 
     fn kill_zombies(&mut self, check: bool) {
         if self.cycles > 0 && check {
-            let mut i = 0;
-            while i < self.processes.len() {
-                if self.processes[i].live_count == 0 || self.cycle_to_die < 0 {
-                    self.processes.remove(i);
-                    self.process_alive -= 1;
+            let cycle_to_die = self.cycle_to_die;
+            self.processes.retain_mut(|p| {
+                if p.live_count == 0 || cycle_to_die < 0 {
+                    false // Process killed and removed from vector
                 } else {
-                    self.processes[i].live_count = 0;
-                    i += 1;
+                    p.live_count = 0; // Process survives, reset its counter
+                    true  // Keep it
                 }
-            }
+            });
+            self.process_alive = self.processes.len() as i32;
         }
     }
 
