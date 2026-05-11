@@ -720,7 +720,9 @@ impl Vm {
                 self.find_ir(i);
             }
 
-            let ir = self.processes[i].ir;
+            // Use the ORIGINAL ir (before find_ir) — matching C behavior
+            // If ir was invalid, find_ir was called but we must NOT execute
+            // the newly found instruction this cycle (it needs to wait for duration)
             let duration = self.processes[i].duration;
 
             if duration == 0 && ir >= 0 && ir <= 15 {
