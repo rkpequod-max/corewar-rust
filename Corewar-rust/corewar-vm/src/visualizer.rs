@@ -69,8 +69,8 @@ impl Visualizer {
         init_pair(CP_RED, COLOR_RED, COLOR_BLACK);
         init_pair(CP_GREEN, COLOR_GREEN, COLOR_BLACK);
         init_pair(CP_BLACK_ON_GRAY, COLOR_BLACK, COLOR_YELLOW);
-        // Status bar: white on blue background
-        init_pair(CP_STATUS, COLOR_WHITE, COLOR_BLUE);
+        // Status bar: white on black background
+        init_pair(CP_STATUS, COLOR_WHITE, COLOR_BLACK);
 
         let sqrt = (MEM_SIZE as f64).sqrt() as i32; // 64
         let height = sqrt;
