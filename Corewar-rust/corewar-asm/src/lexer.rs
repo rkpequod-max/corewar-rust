@@ -45,6 +45,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                     });
                 }
             } else {
+                name_buffer.push('\n');
                 name_buffer.push_str(line);
                 continue;
             }
@@ -72,6 +73,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                     });
                 }
             } else {
+                comment_buffer.push('\n');
                 comment_buffer.push_str(line);
                 continue;
             }
