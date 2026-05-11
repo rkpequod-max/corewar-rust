@@ -198,9 +198,9 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
 
         // Check for instruction
         if pos < chars.len() {
-            // Read the opcode name
+            // Read the opcode name (stop at whitespace, comma, or '%' for cases like "fork%:label")
             let op_start = pos;
-            while pos < chars.len() && !chars[pos].is_whitespace() && chars[pos] != ',' {
+            while pos < chars.len() && !chars[pos].is_whitespace() && chars[pos] != ',' && chars[pos] != DIRECT_CHAR {
                 pos += 1;
             }
             let op_name: String = chars[op_start..pos].iter().collect();
