@@ -238,10 +238,12 @@ impl Vm {
     fn player_alive(&mut self, live: i32) {
         for i in 0..self.players.len() {
             if self.players[i].nplayer == live {
-                println!(
-                    "A process shows that player {} ({}) is alive",
-                    self.players[i].nplayer, self.players[i].name
-                );
+                if !self.ncurses {
+                    println!(
+                        "A process shows that player {} ({}) is alive",
+                        self.players[i].nplayer, self.players[i].name
+                    );
+                }
                 self.players[i].nblive += 1;
                 self.players[i].last_live_cycle = self.cycles;
                 self.last_alive = live;
