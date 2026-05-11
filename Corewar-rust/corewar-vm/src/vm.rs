@@ -36,6 +36,10 @@ pub struct Vm {
     pub owner: [u8; MEM_SIZE],
     pub scrb: [u8; MEM_SIZE],
     pub processes: Vec<Process>,
+    /// Buffer for new processes created during a cycle (fork/lfork).
+    /// They are inserted at the HEAD of the process list after the cycle,
+    /// matching C's ft_lstadd behavior.
+    pub new_processes: Vec<Process>,
     pub players: Vec<Player>,
     pub dump_param: i32,
     pub verbose: bool,
@@ -58,6 +62,7 @@ impl Vm {
             owner: [0u8; MEM_SIZE],
             scrb: [0u8; MEM_SIZE],
             processes: Vec::new(),
+            new_processes: Vec::new(),
             players: Vec::new(),
             dump_param: -1,
             verbose: false,
@@ -158,7 +163,7 @@ impl Vm {
                 optab: 0,
             };
 
-            self.processes.push(process);
+            self.processes.insert(0, process);
 
             if self.verbose {
                 println!(
@@ -270,7 +275,9 @@ impl Vm {
             optab: 0,
             owner: parent.owner,
         };
-        self.processes.push(new_process);
+        // Buffer new processes — they'll be inserted at HEAD after the cycle,
+        // matching C's ft_lstadd behavior (new processes not visited this cycle)
+        self.new_processes.push(new_process);
     }
 
     // Operation implementations
@@ -523,12 +530,14 @@ impl Vm {
         let pc = self.processes[process_idx].pc as i32;
 
         if p1 == ACB_REG && is_reg_arena(&self.arena, pc + 2) {
-            let reg_num = self.arena[mem_mod(pc + 2)] as usize - 1;
-            let value = self.processes[process_idx].reg[reg_num] as u8;
-            if self.verbose {
-                println!("0x{:02x} : {:03}({:03}) :\t{}", value, value, self.processes[process_idx].reg[reg_num], value as char);
-            } else {
-                println!("{}", value as char);
+            if !self.ncurses {
+                let reg_num = self.arena[mem_mod(pc + 2)] as usize - 1;
+                let value = self.processes[process_idx].reg[reg_num] as u8;
+                if self.verbose {
+                    println!("0x{:02x} : {:03}({:03}) :\t{}", value, value, self.processes[process_idx].reg[reg_num], value as char);
+                } else {
+                    println!("{}", value as char);
+                }
             }
         }
 
@@ -733,6 +742,12 @@ impl Vm {
             }
 
             self.processes[i].live_since += 1;
+        }
+
+        // Insert new processes (from fork/lfork) at HEAD, matching C's ft_lstadd.
+        // New processes are NOT visited this cycle — they'll be processed next cycle.
+        while let Some(p) = self.new_processes.pop() {
+            self.processes.insert(0, p);
         }
     }
 
