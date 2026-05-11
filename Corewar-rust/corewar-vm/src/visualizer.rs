@@ -1,9 +1,9 @@
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEventKind},
-    execute, queue, style,
+    execute, queue,
     terminal::{self, ClearType},
-    style::{Color, SetBackgroundColor, SetForegroundColor, SetAttribute, Attribute, Print, ContentStyle},
+    style::{Color, SetBackgroundColor, SetForegroundColor, SetAttribute, Attribute, Print},
 };
 use std::io::{self, Write, BufWriter};
 use corewar_common::constants::*;
@@ -15,25 +15,23 @@ pub const MAX_SPEED: i32 = 0;
 pub const MIN_SPEED: i32 = 30000;
 
 // Color mapping matching C version color pairs
-// CP 1 = gray/yellow on black, CP 2 = cyan, CP 3 = blue, CP 4 = red, CP 5 = green
-// CP 6 = black on gray (for PC on empty cell)
 fn owner_color(owner: u8) -> (Color, Color) {
     match owner {
-        0 => (Color::Rgb { r: 180, g: 180, b: 180 }, Color::Black), // gray on black
-        1 => (Color::Rgb { r: 0, g: 217, b: 217 }, Color::Black),   // cyan on black
-        2 => (Color::Rgb { r: 102, g: 102, b: 255 }, Color::Black), // blue on black
-        3 => (Color::Rgb { r: 230, g: 0, b: 0 }, Color::Black),     // red on black
-        4 => (Color::Rgb { r: 0, g: 204, b: 0 }, Color::Black),     // green on black
+        0 => (Color::Rgb { r: 180, g: 180, b: 180 }, Color::Black),
+        1 => (Color::Rgb { r: 0, g: 217, b: 217 }, Color::Black),
+        2 => (Color::Rgb { r: 102, g: 102, b: 255 }, Color::Black),
+        3 => (Color::Rgb { r: 230, g: 0, b: 0 }, Color::Black),
+        4 => (Color::Rgb { r: 0, g: 204, b: 0 }, Color::Black),
         _ => (Color::White, Color::Black),
     }
 }
 
 fn player_panel_color(idx: usize) -> Color {
     match idx {
-        0 => Color::Rgb { r: 0, g: 217, b: 217 },   // cyan
-        1 => Color::Rgb { r: 102, g: 102, b: 255 },  // blue
-        2 => Color::Rgb { r: 230, g: 0, b: 0 },      // red
-        3 => Color::Rgb { r: 0, g: 204, b: 0 },       // green
+        0 => Color::Rgb { r: 0, g: 217, b: 217 },
+        1 => Color::Rgb { r: 102, g: 102, b: 255 },
+        2 => Color::Rgb { r: 230, g: 0, b: 0 },
+        3 => Color::Rgb { r: 0, g: 204, b: 0 },
         _ => Color::White,
     }
 }
@@ -63,7 +61,7 @@ impl Visualizer {
         // Hide cursor
         execute!(buf, cursor::Hide).unwrap();
 
-        // Clear screen
+        // Clear screen ONCE at init
         execute!(buf, terminal::Clear(ClearType::All)).unwrap();
 
         let sqrt = (MEM_SIZE as f64).sqrt() as i32; // 64
@@ -132,72 +130,108 @@ impl Visualizer {
         0
     }
 
-    /// Redraw all windows
+    /// Redraw all windows — NO screen clear, just overwrite in place
+    /// This avoids the flicker that Clear(All) causes
     pub fn refresh_all(&mut self, vm: &Vm) {
-        // Clear entire screen
-        let _ = queue!(self.stdout, terminal::Clear(ClearType::All));
-
-        // Draw the three "windows" as bordered regions
+        // Do NOT clear the screen — just redraw over existing content.
+        // This matches how ncurses works (double-buffered, only writes diffs).
         self.fill_arena(vm);
         self.print_panel(vm);
-        self.draw_box(0, 0, self.width + 2, self.height + 2); // m_win
-        self.draw_box(self.width + 2, 0, self.s_width + 2, self.height - self.p_height + 2); // s_win
-        self.draw_box(self.width + 2, self.proc_y, self.s_width + 2, self.p_height); // p_win
+        self.draw_boxes();
 
+        // Single flush at the end — atomic update
         let _ = self.stdout.flush();
+    }
+
+    /// Draw the three window borders (called once per frame, after content)
+    fn draw_boxes(&mut self) {
+        let white = SetForegroundColor(Color::White);
+        let reset = SetAttribute(Attribute::Reset);
+
+        // m_win box
+        self.draw_box(0, 0, self.width + 2, self.height + 2);
+        // s_win box
+        self.draw_box(self.width + 2, 0, self.s_width + 2, self.height - self.p_height + 2);
+        // p_win box
+        self.draw_box(self.width + 2, self.proc_y, self.s_width + 2, self.p_height);
+
+        let _ = queue!(self.stdout, white, reset);
     }
 
     /// Draw a simple box border around a region (matching C's box())
     fn draw_box(&mut self, x: i32, y: i32, w: i32, h: i32) {
-        let _style = ContentStyle::new();
-        let _fg = SetForegroundColor(Color::White);
-        let attr = SetAttribute(Attribute::Reset);
+        let white = SetForegroundColor(Color::White);
+        let reset = SetAttribute(Attribute::Reset);
 
-        // Top and bottom horizontal lines
-        for col in (x + 1)..(x + w - 1) {
-            let _ = queue!(self.stdout, cursor::MoveTo(col as u16, y as u16), style::Print("─"), attr);
-            let _ = queue!(self.stdout, cursor::MoveTo(col as u16, (y + h - 1) as u16), style::Print("─"), attr);
-        }
+        // Top horizontal line
+        let _ = queue!(
+            self.stdout,
+            cursor::MoveTo((x + 1) as u16, y as u16),
+            white,
+            Print("─".repeat((w - 2) as usize)),
+            reset
+        );
+
+        // Bottom horizontal line
+        let _ = queue!(
+            self.stdout,
+            cursor::MoveTo((x + 1) as u16, (y + h - 1) as u16),
+            white,
+            Print("─".repeat((w - 2) as usize)),
+            reset
+        );
 
         // Left and right vertical lines
         for row in (y + 1)..(y + h - 1) {
-            let _ = queue!(self.stdout, cursor::MoveTo(x as u16, row as u16), style::Print("│"), attr);
-            let _ = queue!(self.stdout, cursor::MoveTo((x + w - 1) as u16, row as u16), style::Print("│"), attr);
+            let _ = queue!(
+                self.stdout,
+                cursor::MoveTo(x as u16, row as u16),
+                white, Print("│"), reset
+            );
+            let _ = queue!(
+                self.stdout,
+                cursor::MoveTo((x + w - 1) as u16, row as u16),
+                white, Print("│"), reset
+            );
         }
 
         // Corners
-        let _ = queue!(self.stdout, cursor::MoveTo(x as u16, y as u16), style::Print("┌"), attr);
-        let _ = queue!(self.stdout, cursor::MoveTo((x + w - 1) as u16, y as u16), style::Print("┐"), attr);
-        let _ = queue!(self.stdout, cursor::MoveTo(x as u16, (y + h - 1) as u16), style::Print("└"), attr);
-        let _ = queue!(self.stdout, cursor::MoveTo((x + w - 1) as u16, (y + h - 1) as u16), style::Print("┘"), attr);
+        let _ = queue!(self.stdout, cursor::MoveTo(x as u16, y as u16), white, Print("┌"), reset);
+        let _ = queue!(self.stdout, cursor::MoveTo((x + w - 1) as u16, y as u16), white, Print("┐"), reset);
+        let _ = queue!(self.stdout, cursor::MoveTo(x as u16, (y + h - 1) as u16), white, Print("└"), reset);
+        let _ = queue!(self.stdout, cursor::MoveTo((x + w - 1) as u16, (y + h - 1) as u16), white, Print("┘"), reset);
     }
 
     /// Fill the arena window with colored memory cells (mirrors C's fill_arena)
     fn fill_arena(&mut self, vm: &Vm) {
-        let mut row: i32 = 1;
-        let mut col: i32 = 1;
-        let per_line = self.height as usize; // bytes per line = sqrt(MEM_SIZE) = 64
+        let per_line = self.height as usize; // 64 bytes per line
 
-        // Pre-compute PC positions for quick lookup
+        // Pre-compute PC positions and IR owners for quick lookup
         let pc_set: std::collections::HashSet<usize> = vm.processes.iter().map(|p| p.pc).collect();
 
+        // Build a map of arena index -> owner of process with active IR
+        let mut ir_map: std::collections::HashMap<usize, u8> = std::collections::HashMap::new();
+        for proc in &vm.processes {
+            if proc.ir >= 0 && proc.ir <= 15 && vm.owner[proc.pc] != 0 {
+                ir_map.insert(proc.pc, proc.owner as u8);
+            }
+        }
+
+        let mut row: u16 = 1;
+        let mut col: u16 = 1;
+
+        // Pre-build the entire arena string with color codes, then queue it all at once
         for i in 0..MEM_SIZE {
             let owner = vm.owner[i];
             let is_pc = pc_set.contains(&i);
 
-            // Find if a process at this position has an active IR
-            let ir_owner: Option<u8> = vm.processes.iter()
-                .find(|p| p.pc == i && p.ir >= 0 && p.ir <= 15 && owner != 0)
-                .map(|p| p.owner as u8);
-
             // Determine colors
             let (fg, bg) = if owner == 0 && is_pc {
-                // C's color pair 6: black on yellow/gray
                 (Color::Black, Color::Rgb { r: 180, g: 180, b: 180 })
-            } else if let Some(ow) = ir_owner {
-                // A_STANDOUT | COLOR_PAIR(ow + 1) — reverse video with owner color
+            } else if let Some(ow) = ir_map.get(&i) {
+                // Standout effect: owner color as both fg and bg (inverted)
                 let (ofg, _obg) = owner_color(ow + 1);
-                (ofg, ofg) // standout effect: fg and bg same color (inverted by terminal)
+                (ofg, ofg)
             } else {
                 owner_color(owner)
             };
@@ -207,12 +241,13 @@ impl Visualizer {
 
             let _ = queue!(
                 self.stdout,
-                cursor::MoveTo(col as u16, row as u16),
+                cursor::MoveTo(col, row),
                 SetForegroundColor(fg),
                 SetBackgroundColor(bg),
                 if is_bold { SetAttribute(Attribute::Bold) } else { SetAttribute(Attribute::Reset) },
                 Print(&text),
                 SetAttribute(Attribute::Reset),
+                SetBackgroundColor(Color::Black),
             );
 
             col += 3;
@@ -223,7 +258,7 @@ impl Visualizer {
         }
     }
 
-    /// Print the side panel (info + players + processes) — mirrors C's print_panel
+    /// Print the side panel (info + players + processes)
     fn print_panel(&mut self, vm: &Vm) {
         self.print_header(vm);
         self.print_players(vm);
@@ -232,10 +267,20 @@ impl Visualizer {
 
     /// Print header info (cycles, speed, etc.) — mirrors C's print_header
     fn print_header(&mut self, vm: &Vm) {
-        let sx = (self.width + 3) as u16; // start column (inside box border)
+        let sx = (self.width + 3) as u16;
         let bold = SetAttribute(Attribute::Bold);
         let reset = SetAttribute(Attribute::Reset);
         let white = SetForegroundColor(Color::White);
+        let black_bg = SetBackgroundColor(Color::Black);
+
+        // Clear header area (6 lines)
+        for r in 1u16..=6 {
+            let _ = queue!(
+                self.stdout,
+                cursor::MoveTo(sx, r),
+                terminal::Clear(ClearType::CurrentLine),
+            );
+        }
 
         let lines = [
             format!("CYCLES\t\t{}", vm.cycles),
@@ -250,24 +295,24 @@ impl Visualizer {
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx, (1 + idx) as u16),
-                bold, white, Print(line), reset,
+                black_bg, bold, white, Print(line), reset,
             );
         }
 
-        // Status (PAUSED / RUNNING) — line 1, column 35
+        // Status (PAUSED / RUNNING)
         let status = if self.paused { "** PAUSED **" } else { "** RUNNING **" };
         let _ = queue!(
             self.stdout,
             cursor::MoveTo(sx + 34, 1),
-            bold, white, Print(status), reset,
+            black_bg, bold, white, Print(status), reset,
         );
 
-        // Speed — line 2, column 35
+        // Speed
         let speed_text = format!("Speed: {}", 50000 - self.speed);
         let _ = queue!(
             self.stdout,
             cursor::MoveTo(sx + 34, 2),
-            bold, white, Print(&speed_text), reset,
+            black_bg, bold, white, Print(&speed_text), reset,
         );
     }
 
@@ -277,6 +322,16 @@ impl Visualizer {
         let bold = SetAttribute(Attribute::Bold);
         let reset = SetAttribute(Attribute::Reset);
         let white = SetForegroundColor(Color::White);
+        let black_bg = SetBackgroundColor(Color::Black);
+
+        // Clear player area
+        for r in 8u16..(8 + (5 * vm.nplayers as u16)) {
+            let _ = queue!(
+                self.stdout,
+                cursor::MoveTo(sx, r),
+                terminal::Clear(ClearType::CurrentLine),
+            );
+        }
 
         let mut i: u16 = 8;
         for (idx, player) in vm.players.iter().enumerate() {
@@ -286,25 +341,25 @@ impl Visualizer {
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx, i),
-                bold, white, Print(format!("PLAYER {}", player.nplayer)), reset,
+                black_bg, bold, white, Print(format!("PLAYER {}", player.nplayer)), reset,
             );
 
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx, i + 1),
-                fg, Print(format!("\t\t({})", player.name)), reset,
+                black_bg, fg, Print(format!("\t\t({})", player.name)), reset,
             );
 
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx, i + 2),
-                white, Print(format!("Last live: \t\t\t{}", player.last_live_cycle)), reset,
+                black_bg, white, Print(format!("Last live: \t\t\t{}", player.last_live_cycle)), reset,
             );
 
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx, i + 3),
-                white, Print(format!("Lives in current period: \t{}", player.nblive)), reset,
+                black_bg, white, Print(format!("Lives in current period: \t{}", player.nblive)), reset,
             );
 
             i += 5;
@@ -314,9 +369,19 @@ impl Visualizer {
     /// Print processes in the bottom-right window — mirrors C's print_processes
     fn print_processes(&mut self, vm: &Vm) {
         let sx = (self.width + 3) as u16;
-        let sy = (self.proc_y + 1) as u16; // inside box border
+        let sy = (self.proc_y + 1) as u16;
         let bold = SetAttribute(Attribute::Bold);
         let reset = SetAttribute(Attribute::Reset);
+        let black_bg = SetBackgroundColor(Color::Black);
+
+        // Clear process area
+        for r in 0..(self.p_height - 1) {
+            let _ = queue!(
+                self.stdout,
+                cursor::MoveTo(sx, sy + r as u16),
+                terminal::Clear(ClearType::CurrentLine),
+            );
+        }
 
         // Header line
         let header = format!(
@@ -326,7 +391,7 @@ impl Visualizer {
         let _ = queue!(
             self.stdout,
             cursor::MoveTo(sx, sy),
-            bold, SetForegroundColor(Color::White), Print(&header), reset,
+            black_bg, bold, SetForegroundColor(Color::White), Print(&header), reset,
         );
 
         let mut n = vm.process_alive;
@@ -337,17 +402,16 @@ impl Visualizer {
                 break;
             }
             let carry_marker = if proc.carry != 0 { "*" } else { " " };
-            let owner_color = player_panel_color((proc.owner - 1).max(0) as usize);
-            let fg = SetForegroundColor(owner_color);
+            let o_color = player_panel_color((proc.owner - 1).max(0) as usize);
+            let fg = SetForegroundColor(o_color);
             let green_fg = SetForegroundColor(Color::Rgb { r: 0, g: 204, b: 0 });
-            let _red_fg = SetForegroundColor(Color::Rgb { r: 230, g: 0, b: 0 });
 
-            // Process line: "*Process XXXX  PC:" or "Process XXXX  PC:"
+            // Process line
             let proc_text = format!("{}Process {:04}  PC:", carry_marker, n);
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx + 1, sy + i),
-                fg, Print(&proc_text), reset,
+                black_bg, fg, Print(&proc_text), reset,
             );
 
             // PC value
@@ -355,14 +419,14 @@ impl Visualizer {
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx + 18, sy + i),
-                SetForegroundColor(Color::White), Print(&pc_text), reset,
+                black_bg, SetForegroundColor(Color::White), Print(&pc_text), reset,
             );
 
             // "OP: " label
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx + 23, sy + i),
-                fg, Print("OP: "), reset,
+                black_bg, fg, Print("OP: "), reset,
             );
 
             // Opcode name
@@ -374,21 +438,21 @@ impl Visualizer {
             let _ = queue!(
                 self.stdout,
                 cursor::MoveTo(sx + 27, sy + i),
-                bold, green_fg, Print(op_name), reset,
+                black_bg, bold, green_fg, Print(op_name), reset,
             );
 
             // Registers
             for x in 0..REG_NUMBER {
                 let ch = if proc.reg[x] != 0 { "x" } else { "." };
                 let color = if proc.reg[x] != 0 {
-                    Color::Rgb { r: 0, g: 204, b: 0 } // green
+                    Color::Rgb { r: 0, g: 204, b: 0 }
                 } else {
-                    Color::Rgb { r: 230, g: 0, b: 0 } // red
+                    Color::Rgb { r: 230, g: 0, b: 0 }
                 };
                 let _ = queue!(
                     self.stdout,
                     cursor::MoveTo(sx + 33 + x as u16, sy + i),
-                    bold, SetForegroundColor(color), Print(ch), reset,
+                    black_bg, bold, SetForegroundColor(color), Print(ch), reset,
                 );
             }
 
@@ -403,12 +467,13 @@ impl Visualizer {
         let sy = (self.proc_y + 1) as u16;
         let bold = SetAttribute(Attribute::Bold);
         let reset = SetAttribute(Attribute::Reset);
+        let black_bg = SetBackgroundColor(Color::Black);
 
         // Clear the process area
         for r in 0..self.p_height {
             let _ = queue!(
                 self.stdout,
-                cursor::MoveTo((self.width + 2) as u16, (self.proc_y + r) as u16),
+                cursor::MoveTo((self.width + 3) as u16, (self.proc_y + r) as u16),
                 terminal::Clear(ClearType::CurrentLine),
             );
         }
@@ -421,7 +486,7 @@ impl Visualizer {
         let _ = queue!(
             self.stdout,
             cursor::MoveTo(sx, sy),
-            bold, SetForegroundColor(Color::White), Print(&header), reset,
+            black_bg, bold, SetForegroundColor(Color::White), Print(&header), reset,
         );
 
         // Find the winning player and display
@@ -434,19 +499,19 @@ impl Visualizer {
                 let _ = queue!(
                     self.stdout,
                     cursor::MoveTo(sx + 2, sy + mid - 3),
-                    fg, Print("WINNER!"), reset,
+                    black_bg, fg, Print("WINNER!"), reset,
                 );
 
                 let _ = queue!(
                     self.stdout,
                     cursor::MoveTo(sx + 5, sy + mid - 1),
-                    fg, Print(format!("PLAYER: {}", vm.last_alive)), reset,
+                    black_bg, fg, Print(format!("PLAYER: {}", vm.last_alive)), reset,
                 );
 
                 let _ = queue!(
                     self.stdout,
                     cursor::MoveTo(sx + 5, sy + mid),
-                    fg, Print(&player.name), reset,
+                    black_bg, fg, Print(&player.name), reset,
                 );
                 break;
             }
@@ -466,7 +531,6 @@ impl Visualizer {
 
     /// Wait for a key press (blocking) — for "press any key" after winner
     pub fn wait_for_key(&self) {
-        // Need to use blocking read since we're in raw mode
         let _ = event::read();
     }
 }
