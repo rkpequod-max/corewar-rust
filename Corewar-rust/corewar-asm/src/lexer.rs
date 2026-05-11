@@ -20,15 +20,17 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
         let line_num = line_num + 1;
         let line = raw_line.trim();
 
-        if line.is_empty() || line.starts_with(COMMENT_CHAR) {
-            continue;
-        }
-
-        // Handle multi-line name quotes
+        // Handle multi-line name quotes BEFORE skipping empty/comment lines
+        // so that whitespace and empty lines inside quotes are preserved
         if in_name_quote {
-            if let Some(end_pos) = line.find('"') {
+            // Skip truly empty lines inside name quotes (like C assembler does)
+            if line.is_empty() {
+                continue;
+            }
+            // Use raw_line (not trimmed) to preserve leading whitespace inside quotes
+            if let Some(end_pos) = raw_line.find('"') {
                 name_buffer.push('\n');
-                name_buffer.push_str(&line[..end_pos]);
+                name_buffer.push_str(&raw_line[..end_pos]);
                 in_name_quote = false;
                 if !has_name {
                     program_name = name_buffer.clone();
@@ -38,7 +40,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                         "Duplicate .name at line {}", line_num
                     )));
                 }
-                let after = line[end_pos + 1..].trim();
+                let after = raw_line[end_pos + 1..].trim();
                 if !after.is_empty() && !after.starts_with(COMMENT_CHAR) {
                     return Err(AsmError::Lexicon {
                         line: line_num,
@@ -47,17 +49,23 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                 }
             } else {
                 name_buffer.push('\n');
-                name_buffer.push_str(line);
+                name_buffer.push_str(raw_line);
                 continue;
             }
             continue;
         }
 
-        // Handle multi-line comment quotes
+        // Handle multi-line comment quotes BEFORE skipping empty/comment lines
+        // so that whitespace and empty lines inside quotes are preserved
         if in_comment_quote {
-            if let Some(end_pos) = line.find('"') {
+            // Skip truly empty lines inside comment quotes (like C assembler does)
+            if line.is_empty() {
+                continue;
+            }
+            // Use raw_line (not trimmed) to preserve leading whitespace inside quotes
+            if let Some(end_pos) = raw_line.find('"') {
                 comment_buffer.push('\n');
-                comment_buffer.push_str(&line[..end_pos]);
+                comment_buffer.push_str(&raw_line[..end_pos]);
                 in_comment_quote = false;
                 if !has_comment {
                     comment = comment_buffer.clone();
@@ -67,7 +75,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                         "Duplicate .comment at line {}", line_num
                     )));
                 }
-                let after = line[end_pos + 1..].trim();
+                let after = raw_line[end_pos + 1..].trim();
                 if !after.is_empty() && !after.starts_with(COMMENT_CHAR) {
                     return Err(AsmError::Lexicon {
                         line: line_num,
@@ -76,9 +84,13 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                 }
             } else {
                 comment_buffer.push('\n');
-                comment_buffer.push_str(line);
+                comment_buffer.push_str(raw_line);
                 continue;
             }
+            continue;
+        }
+
+        if line.is_empty() || line.starts_with(COMMENT_CHAR) {
             continue;
         }
 
