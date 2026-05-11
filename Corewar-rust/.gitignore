@@ -16,3 +16,7 @@ Thumbs.db
 *.o
 *.cor
 *.s.bak
+
+# Generated champion files
+champs/*.cor
+champs/*-dis.s
