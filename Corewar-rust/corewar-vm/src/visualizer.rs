@@ -1,11 +1,4 @@
-use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode, KeyEventKind},
-    execute,
-    terminal::{self, ClearType},
-    style::{Color, SetBackgroundColor, SetForegroundColor, SetAttribute, Attribute, Print},
-};
-use std::io::{self, Write};
+use ncurses::*;
 use corewar_common::constants::*;
 use corewar_common::op_table::OP_TABLE;
 use super::vm::Vm;
@@ -14,43 +7,15 @@ use super::vm::Vm;
 pub const MAX_SPEED: i32 = 0;
 pub const MIN_SPEED: i32 = 30000;
 
-fn owner_color(owner: u8) -> (Color, Color) {
-    match owner {
-        0 => (Color::Rgb { r: 180, g: 180, b: 180 }, Color::Black),
-        1 => (Color::Rgb { r: 0, g: 217, b: 217 }, Color::Black),
-        2 => (Color::Rgb { r: 102, g: 102, b: 255 }, Color::Black),
-        3 => (Color::Rgb { r: 230, g: 0, b: 0 }, Color::Black),
-        4 => (Color::Rgb { r: 0, g: 204, b: 0 }, Color::Black),
-        _ => (Color::White, Color::Black),
-    }
-}
+// Color pair indices (matching C version)
+const CP_GRAY: i16 = 1;
+const CP_CYAN: i16 = 2;
+const CP_BLUE: i16 = 3;
+const CP_RED: i16 = 4;
+const CP_GREEN: i16 = 5;
+const CP_BLACK_ON_GRAY: i16 = 6;
 
-fn player_panel_color(idx: usize) -> Color {
-    match idx {
-        0 => Color::Rgb { r: 0, g: 217, b: 217 },
-        1 => Color::Rgb { r: 102, g: 102, b: 255 },
-        2 => Color::Rgb { r: 230, g: 0, b: 0 },
-        3 => Color::Rgb { r: 0, g: 204, b: 0 },
-        _ => Color::White,
-    }
-}
-
-/// A cell in our virtual screen buffer
-#[derive(Clone, Copy, PartialEq)]
-struct Cell {
-    ch: char,
-    fg: Color,
-    bg: Color,
-    bold: bool,
-}
-
-impl Default for Cell {
-    fn default() -> Self {
-        Cell { ch: ' ', fg: Color::White, bg: Color::Black, bold: false }
-    }
-}
-
-/// State for the ncurses-like visualizer (using crossterm)
+/// State for the ncurses visualizer — mirrors the C version exactly
 pub struct Visualizer {
     pub speed: i32,
     pub paused: bool,
@@ -59,24 +24,36 @@ pub struct Visualizer {
     s_width: i32,
     p_height: i32,
     proc_y: i32,
-    /// Virtual screen buffer — holds what's currently on screen
-    screen: Vec<Vec<Cell>>,
-    /// Dimensions of the virtual screen
-    screen_cols: usize,
-    screen_rows: usize,
+    m_win: WINDOW,
+    s_win: WINDOW,
+    p_win: WINDOW,
 }
 
 impl Visualizer {
-    /// Initialize terminal and visualizer state
+    /// Initialize ncurses and create windows — mirrors C's print_arena()
     pub fn init(vm: &Vm) -> Self {
-        let mut stdout = io::stdout();
+        // Initialize ncurses
+        initscr();
+        noecho();
+        keypad(stdscr(), true);
+        nodelay(stdscr(), true);
+        curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
-        // Enter alternate screen, raw mode, disable line wrap
-        execute!(stdout, terminal::EnterAlternateScreen).unwrap();
-        terminal::enable_raw_mode().unwrap();
-        execute!(stdout, terminal::DisableLineWrap).unwrap();
-        execute!(stdout, cursor::Hide).unwrap();
-        execute!(stdout, terminal::Clear(ClearType::All)).unwrap();
+        // Initialize colors (exactly matching C version)
+        start_color();
+        init_color(COLOR_YELLOW, 180, 180, 180);
+        init_color(COLOR_CYAN, 0, 850, 850);
+        init_color(COLOR_BLUE, 400, 400, 1000);
+        init_color(COLOR_GREEN, 0, 800, 0);
+        init_color(COLOR_RED, 900, 0, 0);
+        init_color(COLOR_BLACK, 0, 0, 0);
+
+        init_pair(CP_GRAY, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(CP_CYAN, COLOR_CYAN, COLOR_BLACK);
+        init_pair(CP_BLUE, COLOR_BLUE, COLOR_BLACK);
+        init_pair(CP_RED, COLOR_RED, COLOR_BLACK);
+        init_pair(CP_GREEN, COLOR_GREEN, COLOR_BLACK);
+        init_pair(CP_BLACK_ON_GRAY, COLOR_BLACK, COLOR_YELLOW);
 
         let sqrt = (MEM_SIZE as f64).sqrt() as i32; // 64
         let height = sqrt;
@@ -85,12 +62,10 @@ impl Visualizer {
         let proc_y = (5 * vm.nplayers as i32) + 10;
         let p_height = height + 2 - proc_y;
 
-        // Calculate total screen dimensions
-        let screen_cols = (width + 2 + s_width + 2) as usize; // arena + panel
-        let screen_rows = (height + 2) as usize; // max height
-
-        // Initialize screen buffer with empty cells
-        let screen = vec![vec![Cell::default(); screen_cols]; screen_rows];
+        // Create windows (exactly like C's resize_window)
+        let m_win = newwin(height + 2, width + 2, 0, 0);
+        let s_win = newwin(height - p_height + 2, s_width + 2, 0, width + 2);
+        let p_win = newwin(p_height, s_width + 2, proc_y, width + 2);
 
         let mut vis = Visualizer {
             speed: 3000,
@@ -100,412 +75,286 @@ impl Visualizer {
             s_width,
             p_height,
             proc_y,
-            screen,
-            screen_cols,
-            screen_rows,
+            m_win,
+            s_win,
+            p_win,
         };
 
-        // Render first frame to buffer
-        vis.render_to_buffer(vm);
-        // Paint entire buffer to terminal
-        vis.paint_full();
-
+        vis.refresh_all(vm);
         vis
     }
 
-    /// Handle user input
+    /// Handle user input — mirrors C's ncupdate()
+    /// Returns: 0=continue, 1=quit, 2=paused
     pub fn ncupdate(&mut self, vm: &Vm) -> i32 {
-        while event::poll(std::time::Duration::from_secs(0)).unwrap_or(false) {
-            if let Ok(Event::Key(key)) = event::read() {
-                if key.kind != KeyEventKind::Press {
-                    continue;
-                }
-                match key.code {
-                    KeyCode::Char('q') => return 1,
-                    KeyCode::Char(' ') => {
-                        self.paused = !self.paused;
-                    }
-                    KeyCode::Up => {
-                        if self.speed > MAX_SPEED {
-                            self.speed -= 500;
-                        }
-                    }
-                    KeyCode::Down => {
-                        if self.speed < MIN_SPEED {
-                            self.speed += 500;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
+        let input = getch();
 
+        if input == 'q' as i32 {
+            return 1;
+        }
+        if input == ' ' as i32 {
+            nodelay(stdscr(), self.paused);
+            self.paused = !self.paused;
+        }
+        if input == KEY_RESIZE || input == ' ' as i32 {
+            self.resize_window(vm);
+        }
         if self.paused {
-            self.diff_draw(vm);
             return 2;
+        } else {
+            self.resize_window(vm);
         }
-
-        if self.speed > 0 {
-            std::thread::sleep(std::time::Duration::from_micros(self.speed as u64));
+        if input == KEY_UP && self.speed > MAX_SPEED {
+            self.speed -= 500;
+        }
+        if input == KEY_DOWN && self.speed < MIN_SPEED {
+            self.speed += 500;
+        }
+        if input != KEY_RESIZE {
+            unsafe {
+                libc::usleep(self.speed as u32);
+            }
         }
 
         0
     }
 
-    /// Render VM state into the virtual screen buffer (no terminal I/O)
-    fn render_to_buffer(&mut self, vm: &Vm) {
-        // Clear buffer
-        for row in &mut self.screen {
-            for cell in row.iter_mut() {
-                cell.ch = ' ';
-                cell.fg = Color::White;
-                cell.bg = Color::Black;
-                cell.bold = false;
-            }
-        }
+    /// Resize/recreate windows and redraw — mirrors C's resize_window()
+    fn resize_window(&mut self, vm: &Vm) {
+        refresh();
+        delwin(self.m_win);
+        delwin(self.s_win);
+        delwin(self.p_win);
+        self.m_win = newwin(self.height + 2, self.width + 2, 0, 0);
+        self.s_win = newwin(self.height - self.p_height + 2, self.s_width + 2, 0, self.width + 2);
+        self.p_win = newwin(self.p_height, self.s_width + 2, self.proc_y, self.width + 2);
 
-        // Draw arena
-        self.buffer_arena(vm);
-        // Draw panel
-        self.buffer_panel(vm);
-        // Draw boxes
-        self.buffer_boxes();
+        self.fill_arena(vm);
+        self.print_panel(vm);
+        box_(self.m_win, 0, 0);
+        box_(self.s_win, 0, 0);
+        box_(self.p_win, 0, 0);
+        wrefresh(self.m_win);
+        wrefresh(self.s_win);
+        wrefresh(self.p_win);
     }
 
-    /// Write arena cells to virtual screen buffer
-    fn buffer_arena(&mut self, vm: &Vm) {
-        let per_line = self.height as usize;
-        let pc_set: std::collections::HashSet<usize> = vm.processes.iter().map(|p| p.pc).collect();
-        let mut ir_map: [u8; MEM_SIZE] = [0u8; MEM_SIZE];
-        for proc in &vm.processes {
-            if proc.ir >= 0 && proc.ir <= 15 && vm.owner[proc.pc] != 0 {
-                ir_map[proc.pc] = proc.owner as u8;
-            }
-        }
+    /// Redraw all windows
+    pub fn refresh_all(&mut self, vm: &Vm) {
+        self.resize_window(vm);
+    }
 
-        let mut row: usize = 1;
-        let mut col: usize = 1;
+    /// Fill the arena window with colored memory cells — mirrors C's fill_arena()
+    fn fill_arena(&self, vm: &Vm) {
+        let mut row: i32 = 1;
+        let mut col: i32 = 1;
+        let per_line = self.height;
 
         for i in 0..MEM_SIZE {
             let owner = vm.owner[i];
-            let is_pc = pc_set.contains(&i);
-            let ir_owner = ir_map[i];
-            let is_bold = vm.scrb[i] != 0;
+            let is_pc = vm.processes.iter().any(|p| p.pc == i);
+            let ow = if owner != 0 { is_ir(&vm.processes, i) } else { 0 };
 
-            let (fg, bg) = if owner == 0 && is_pc {
-                (Color::Black, Color::Rgb { r: 180, g: 180, b: 180 })
-            } else if ir_owner > 0 {
-                let (ofg, _obg) = owner_color(ir_owner);
-                (ofg, ofg)
+            // Color pair — exactly matching C logic
+            let color: i16 = if owner == 0 && is_pc {
+                CP_BLACK_ON_GRAY
             } else {
-                owner_color(owner)
+                owner as i16 + 1
             };
 
-            // Write "XX " (3 chars) for this byte
-            let text = format!("{:02x}", vm.arena[i]);
-            if row < self.screen_rows && col + 2 < self.screen_cols {
-                self.screen[row][col] = Cell { ch: text.chars().next().unwrap(), fg, bg, bold: is_bold };
-                self.screen[row][col + 1] = Cell { ch: text.chars().nth(1).unwrap(), fg, bg, bold: is_bold };
-                self.screen[row][col + 2] = Cell { ch: ' ', fg, bg: Color::Black, bold: false };
+            // Bold if recently written (scrb)
+            if vm.scrb[i] != 0 {
+                wattron(self.m_win, A_BOLD());
+            }
+
+            // Standout if process with active IR at this position
+            if owner != 0 && ow != 0 {
+                wattron(self.m_win, A_STANDOUT() | COLOR_PAIR(ow + 1));
+            }
+
+            wattron(self.m_win, COLOR_PAIR(color));
+            mvwprintw(self.m_win, row, col, &format!("{:02x} ", vm.arena[i]));
+            wattroff(self.m_win, COLOR_PAIR(color));
+
+            if vm.scrb[i] != 0 {
+                wattroff(self.m_win, A_BOLD());
+            }
+            if owner != 0 && ow != 0 {
+                wattroff(self.m_win, A_STANDOUT() | COLOR_PAIR(ow + 1));
             }
 
             col += 3;
-            if i != 1 && (i + 1) % per_line == 0 {
+            if i != 1 && (i + 1) as i32 % per_line == 0 {
                 row += 1;
                 col = 1;
             }
         }
     }
 
-    /// Write panel content to virtual screen buffer
-    fn buffer_panel(&mut self, vm: &Vm) {
-        self.buffer_header(vm);
-        self.buffer_players(vm);
-        self.buffer_processes(vm);
+    /// Print the side panel — mirrors C's print_panel()
+    fn print_panel(&self, vm: &Vm) {
+        self.print_header(vm);
+        self.print_players(vm);
+        self.print_processes(vm);
     }
 
-    /// Write header to buffer
-    fn buffer_header(&mut self, vm: &Vm) {
-        let sx = (self.width + 3) as usize;
-
-        let lines = [
-            format!("CYCLES\t\t{}", vm.cycles),
-            format!("CYCLE_TO_DIE\t{}", vm.cycle_to_die),
-            format!("CYCLE_DELTA\t{}", CYCLE_DELTA),
-            format!("MAX CHECKS\t{}", MAX_CHECKS),
-            format!("CHECK\t\t{}", vm.nchecks),
-            "__________________________________________________".to_string(),
-        ];
-
-        for (idx, line) in lines.iter().enumerate() {
-            self.write_str_at(sx, 1 + idx, line, Color::White, Color::Black, true);
-        }
-
-        // Status
-        let status = if self.paused { "** PAUSED **" } else { "** RUNNING **" };
-        self.write_str_at(sx + 34, 1, status, Color::White, Color::Black, true);
-
-        // Speed
-        let speed_text = format!("Speed: {}", 50000 - self.speed);
-        self.write_str_at(sx + 34, 2, &speed_text, Color::White, Color::Black, true);
+    /// Print header info — mirrors C's print_header()
+    fn print_header(&self, vm: &Vm) {
+        wattron(self.s_win, A_BOLD());
+        mvwprintw(self.s_win, 1, 1, &format!("CYCLES\t\t{}", vm.cycles));
+        mvwprintw(self.s_win, 1, 35, if self.paused { "** PAUSED **" } else { "** RUNNING **" });
+        mvwprintw(self.s_win, 2, 1, &format!("CYCLE_TO_DIE\t{}", vm.cycle_to_die));
+        mvwprintw(self.s_win, 2, 35, &format!("Speed: {}", 50000 - self.speed));
+        mvwprintw(self.s_win, 3, 1, &format!("CYCLE_DELTA\t{}", CYCLE_DELTA));
+        mvwprintw(self.s_win, 4, 1, &format!("MAX CHECKS\t{}", MAX_CHECKS));
+        mvwprintw(self.s_win, 5, 1, &format!("CHECK\t\t{}", vm.nchecks));
+        mvwprintw(self.s_win, 6, 1, "__________________________________________________");
+        wattroff(self.s_win, A_BOLD());
     }
 
-    /// Write player info to buffer
-    fn buffer_players(&mut self, vm: &Vm) {
-        let sx = (self.width + 3) as usize;
-
-        let mut i: usize = 8;
+    /// Print player info — mirrors C's print_panel() player section
+    fn print_players(&self, vm: &Vm) {
+        let mut i: i32 = 8;
         for (idx, player) in vm.players.iter().enumerate() {
-            let color = player_panel_color(idx);
+            let player_color: i16 = (idx as i16) + 2;
 
-            self.write_str_at(sx, i, &format!("PLAYER {}", player.nplayer), Color::White, Color::Black, true);
-            self.write_str_at(sx, i + 1, &format!("\t\t({})", player.name), color, Color::Black, false);
-            self.write_str_at(sx, i + 2, &format!("Last live: \t\t\t{}", player.last_live_cycle), Color::White, Color::Black, false);
-            self.write_str_at(sx, i + 3, &format!("Lives in current period: \t{}", player.nblive), Color::White, Color::Black, false);
+            wattron(self.s_win, A_BOLD());
+            mvwprintw(self.s_win, i, 1, &format!("PLAYER {}", player.nplayer));
+            wattroff(self.s_win, A_BOLD());
+
+            wattron(self.s_win, COLOR_PAIR(player_color));
+            mvwprintw(self.s_win, i + 1, 1, &format!("\t\t({})", player.name));
+            wattroff(self.s_win, COLOR_PAIR(player_color));
+
+            mvwprintw(self.s_win, i + 2, 1, &format!("Last live: \t\t\t{}", player.last_live_cycle));
+            mvwprintw(self.s_win, i + 3, 1, &format!("Lives in current period: \t{}", player.nblive));
             i += 5;
         }
     }
 
-    /// Write process info to buffer
-    fn buffer_processes(&mut self, vm: &Vm) {
-        let sx = (self.width + 3) as usize;
-        let sy = (self.proc_y + 1) as usize;
-
-        let header = format!(
-            " _____________PROCESSES_({:04} / {:04})_____________",
-            vm.process_alive, vm.nprocess
-        );
-        self.write_str_at(sx, sy, &header, Color::White, Color::Black, true);
-
+    /// Print processes — mirrors C's print_processes()
+    fn print_processes(&self, vm: &Vm) {
         let mut n = vm.process_alive;
-        let mut i: usize = 1;
 
+        wattron(self.p_win, A_BOLD());
+        mvwprintw(
+            self.p_win, 1, 0,
+            &format!(
+                " _____________PROCESSES_({:04} / {:04})_____________",
+                vm.process_alive, vm.nprocess
+            ),
+        );
+        wattroff(self.p_win, A_BOLD());
+
+        let mut i: i32 = 2;
         for proc in &vm.processes {
-            if i >= self.p_height as usize - 1 {
+            if i >= self.p_height - 1 {
                 break;
             }
             let carry_marker = if proc.carry != 0 { "*" } else { " " };
-            let o_color = player_panel_color((proc.owner - 1).max(0) as usize);
-            let green = Color::Rgb { r: 0, g: 204, b: 0 };
-            let red = Color::Rgb { r: 230, g: 0, b: 0 };
+            let owner_color: i16 = proc.owner as i16 + 1;
 
-            // Process line with carry marker
-            let proc_text = format!("{}Process {:04}  PC:", carry_marker, n);
-            self.write_str_at(sx + 1, sy + i, &proc_text, o_color, Color::Black, false);
+            wattron(self.p_win, COLOR_PAIR(owner_color));
+            mvwprintw(
+                self.p_win, i, 1,
+                &format!("{}Process {:04}  PC:", carry_marker, n),
+            );
+            wattroff(self.p_win, COLOR_PAIR(owner_color));
 
-            // PC value
-            let pc_text = format!("{:04}", proc.pc);
-            self.write_str_at(sx + 18, sy + i, &pc_text, Color::White, Color::Black, false);
+            mvwprintw(self.p_win, i, 19, &format!("{:04}", proc.pc));
 
-            // OP: label
-            self.write_str_at(sx + 23, sy + i, "OP: ", o_color, Color::Black, false);
+            wattron(self.p_win, COLOR_PAIR(owner_color));
+            mvwprintw(self.p_win, i, 24, "OP: ");
+            wattroff(self.p_win, COLOR_PAIR(owner_color));
 
-            // Opcode name
+            wattron(self.p_win, COLOR_PAIR(CP_GREEN) | A_BOLD());
             let op_name = if proc.last_ir > 0 && proc.last_ir <= 16 {
                 OP_TABLE[proc.last_ir as usize - 1].name
             } else {
                 "____"
             };
-            self.write_str_at(sx + 27, sy + i, op_name, green, Color::Black, true);
+            mvwprintw(self.p_win, i, 28, op_name);
+            wattroff(self.p_win, COLOR_PAIR(CP_GREEN) | A_BOLD());
 
-            // Registers
-            for x in 0..REG_NUMBER {
-                let (ch, color) = if proc.reg[x] != 0 { ('x', green) } else { ('.', red) };
-                let col = sx + 33 + x;
-                if col < self.screen_cols && sy + i < self.screen_rows {
-                    self.screen[sy + i][col] = Cell { ch, fg: color, bg: Color::Black, bold: true };
-                }
-            }
+            // Print registers
+            self.print_registers(i, &proc.reg);
 
             i += 1;
             n -= 1;
         }
     }
 
-    /// Write box borders to buffer
-    fn buffer_boxes(&mut self) {
-        self.buffer_box(0, 0, self.width + 2, self.height + 2);
-        self.buffer_box(self.width + 2, 0, self.s_width + 2, self.height - self.p_height + 2);
-        self.buffer_box(self.width + 2, self.proc_y, self.s_width + 2, self.p_height);
-    }
-
-    fn buffer_box(&mut self, x: i32, y: i32, w: i32, h: i32) {
-        let border = Cell { ch: ' ', fg: Color::White, bg: Color::Black, bold: false };
-        let xu = x as usize;
-        let yu = y as usize;
-        let wu = w as usize;
-        let hu = h as usize;
-
-        // Top line
-        if yu < self.screen_rows {
-            for c in (xu + 1)..(xu + wu - 1) {
-                if c < self.screen_cols {
-                    self.screen[yu][c] = Cell { ch: '─', ..border };
-                }
-            }
-        }
-        // Bottom line
-        let by = yu + hu - 1;
-        if by < self.screen_rows {
-            for c in (xu + 1)..(xu + wu - 1) {
-                if c < self.screen_cols {
-                    self.screen[by][c] = Cell { ch: '─', ..border };
-                }
-            }
-        }
-        // Vertical lines
-        for r in (yu + 1)..by {
-            if r < self.screen_rows {
-                if xu < self.screen_cols {
-                    self.screen[r][xu] = Cell { ch: '│', ..border };
-                }
-                let rx = xu + wu - 1;
-                if rx < self.screen_cols {
-                    self.screen[r][rx] = Cell { ch: '│', ..border };
-                }
-            }
-        }
-        // Corners
-        let corners = [
-            (xu, yu, '┌'),
-            (xu + wu - 1, yu, '┐'),
-            (xu, by, '└'),
-            (xu + wu - 1, by, '┘'),
-        ];
-        for (cx, cy, ch) in corners {
-            if cy < self.screen_rows && cx < self.screen_cols {
-                self.screen[cy][cx] = Cell { ch, ..border };
+    /// Print register state — mirrors C's print_registers()
+    fn print_registers(&self, i: i32, reg: &[i32; REG_NUMBER]) {
+        for x in 0..REG_NUMBER {
+            if reg[x] != 0 {
+                wattron(self.p_win, COLOR_PAIR(CP_GREEN) | A_BOLD());
+                mvwprintw(self.p_win, i + 1, (34 + x) as i32, "x");
+                wattroff(self.p_win, COLOR_PAIR(CP_GREEN) | A_BOLD());
+            } else {
+                wattron(self.p_win, COLOR_PAIR(CP_RED) | A_BOLD());
+                mvwprintw(self.p_win, i + 1, (34 + x) as i32, ".");
+                wattroff(self.p_win, COLOR_PAIR(CP_RED) | A_BOLD());
             }
         }
     }
 
-    /// Helper: write a string to the virtual buffer at (col, row)
-    fn write_str_at(&mut self, col: usize, row: usize, s: &str, fg: Color, bg: Color, bold: bool) {
-        if row >= self.screen_rows {
-            return;
-        }
-        for (i, ch) in s.chars().enumerate() {
-            let c = col + i;
-            if c >= self.screen_cols {
-                break;
-            }
-            self.screen[row][c] = Cell { ch, fg, bg, bold };
-        }
-    }
-
-    /// Paint the entire virtual buffer to the terminal in one shot
-    fn paint_full(&self) {
-        let mut buf = Vec::with_capacity(self.screen_rows * self.screen_cols * 8);
-        let mut stdout = io::stdout();
-
-        for (row_idx, row) in self.screen.iter().enumerate() {
-            for (col_idx, cell) in row.iter().enumerate() {
-                if cell.ch == ' ' && cell.bg == Color::Black {
-                    continue; // Skip empty cells on black background
-                }
-                // Move cursor, set colors, write char
-                let _ = crossterm::queue!(
-                    buf,
-                    cursor::MoveTo(col_idx as u16, row_idx as u16),
-                    SetBackgroundColor(cell.bg),
-                    SetForegroundColor(cell.fg),
-                    if cell.bold { SetAttribute(Attribute::Bold) } else { SetAttribute(Attribute::Reset) },
-                    Print(cell.ch),
-                );
-            }
-        }
-
-        // Reset attributes and write ALL at once
-        let _ = crossterm::queue!(buf, SetAttribute(Attribute::Reset), SetBackgroundColor(Color::Black));
-        let _ = stdout.write_all(&buf);
-        let _ = stdout.flush();
-    }
-
-    /// Differential draw — compare buffer with previous, only output changes
-    pub fn diff_draw(&mut self, vm: &Vm) {
-        // Save old buffer
-        let old_screen = self.screen.clone();
-
-        // Render new state into buffer
-        self.render_to_buffer(vm);
-
-        // Build output with only differences
-        let mut buf = Vec::with_capacity(4096 * 6); // pre-allocate reasonable size
-        let mut stdout = io::stdout();
-
-        for (row_idx, (new_row, old_row)) in self.screen.iter().zip(old_screen.iter()).enumerate() {
-            for (col_idx, (new_cell, old_cell)) in new_row.iter().zip(old_row.iter()).enumerate() {
-                if new_cell != old_cell {
-                    let _ = crossterm::queue!(
-                        buf,
-                        cursor::MoveTo(col_idx as u16, row_idx as u16),
-                        SetBackgroundColor(new_cell.bg),
-                        SetForegroundColor(new_cell.fg),
-                        if new_cell.bold { SetAttribute(Attribute::Bold) } else { SetAttribute(Attribute::Reset) },
-                        Print(new_cell.ch),
-                    );
-                }
-            }
-        }
-
-        // Reset and write ALL at once
-        let _ = crossterm::queue!(buf, SetAttribute(Attribute::Reset), SetBackgroundColor(Color::Black));
-        if !buf.is_empty() {
-            let _ = stdout.write_all(&buf);
-            let _ = stdout.flush();
-        }
-    }
-
-    /// Display the winner screen
+    /// Display the winner screen — mirrors C's champion_won()
     pub fn show_winner(&mut self, vm: &Vm) {
-        let sx = (self.width + 3) as usize;
-        let sy = (self.proc_y + 1) as usize;
+        refresh();
+        delwin(self.p_win);
+        self.p_win = newwin(self.p_height, self.s_width + 2, self.proc_y, self.width + 2);
 
-        // Clear process area in buffer
-        for r in sy..self.screen_rows {
-            for cell in self.screen[r].iter_mut() {
-                cell.ch = ' ';
-                cell.fg = Color::White;
-                cell.bg = Color::Black;
-                cell.bold = false;
-            }
-        }
-
-        // Header
-        let header = format!(
-            " _____________PROCESSES_(0000 / {:04})_____________",
-            vm.nprocess
+        wattron(self.p_win, A_BOLD());
+        mvwprintw(
+            self.p_win, 1, 0,
+            &format!(
+                " _____________PROCESSES_(0000 / {:04})_____________",
+                vm.nprocess
+            ),
         );
-        self.write_str_at(sx, sy, &header, Color::White, Color::Black, true);
+        wattroff(self.p_win, A_BOLD());
 
-        // Winner info
         for (idx, player) in vm.players.iter().enumerate() {
             if player.nplayer == vm.last_alive {
-                let color = player_panel_color(idx);
-                let mid = (self.p_height / 2) as usize;
+                let color: i16 = (idx as i16) + 2;
+                let mid = self.p_height / 2;
 
-                self.write_str_at(sx + 2, sy + mid - 3, "WINNER!", color, Color::Black, false);
-                self.write_str_at(sx + 5, sy + mid - 1, &format!("PLAYER: {}", vm.last_alive), color, Color::Black, false);
-                self.write_str_at(sx + 5, sy + mid, &player.name, color, Color::Black, false);
+                wattron(self.p_win, COLOR_PAIR(color));
+                mvwprintw(self.p_win, mid - 3, 2, "WINNER!");
+                mvwprintw(self.p_win, mid - 1, 5, &format!("PLAYER: {}", vm.last_alive));
+                mvwprintw(self.p_win, mid, 5, &player.name);
+                wattroff(self.p_win, COLOR_PAIR(color));
                 break;
             }
         }
 
-        self.buffer_box(self.width + 2, self.proc_y, self.s_width + 2, self.p_height);
-        self.paint_full();
+        box_(self.p_win, 0, 0);
+        wrefresh(self.p_win);
     }
 
-    /// Clean up terminal
-    pub fn end(&mut self) {
-        let mut stdout = io::stdout();
-        let _ = execute!(stdout, terminal::EnableLineWrap);
-        let _ = execute!(stdout, cursor::Show);
-        let _ = execute!(stdout, terminal::LeaveAlternateScreen);
-        let _ = terminal::disable_raw_mode();
+    /// Clean up ncurses — mirrors C's endwin()
+    pub fn end(&self) {
+        endwin();
     }
 
-    /// Wait for a key press (blocking)
+    /// Switch stdscr to blocking input (for "press any key" after winner)
+    pub fn set_blocking_input(&self) {
+        nodelay(stdscr(), false);
+    }
+
+    /// Wait for a key press
     pub fn wait_for_key(&self) {
-        let _ = event::read();
+        getch();
     }
+}
+
+/// Check if a process at position i has an active IR — mirrors C's is_ir()
+fn is_ir(processes: &[super::vm::Process], i: usize) -> i32 {
+    for proc in processes {
+        if proc.pc == i && proc.ir >= 0 && proc.ir <= 15 {
+            return proc.owner;
+        }
+    }
+    0
 }

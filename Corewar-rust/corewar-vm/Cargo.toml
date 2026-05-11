@@ -11,4 +11,5 @@ path = "src/main.rs"
 corewar-common = { path = "../corewar-common" }
 clap = { version = "4", features = ["derive"] }
 thiserror = "1"
-crossterm = "0.28"
+ncurses = "5.101"
+libc = "0.2"
