@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "corewar-common",
+    "corewar-asm",
+    "corewar-vm",
+    "corewar-disasm",
+]
+resolver = "2"

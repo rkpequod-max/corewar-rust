@@ -1,0 +1,13 @@
+[package]
+name = "corewar-vm"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "corewar"
+path = "src/main.rs"
+
+[dependencies]
+corewar-common = { path = "../corewar-common" }
+clap = { version = "4", features = ["derive"] }
+thiserror = "1"
