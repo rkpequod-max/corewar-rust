@@ -214,7 +214,7 @@ pub fn write_cor_file(
     file.write_all(&magic).map_err(|e| AsmError::IoError(e.to_string()))?;
 
     // Write program name (PROG_NAME_LENGTH bytes, null-padded)
-    let mut name_bytes = [0u8; PROG_NAME_LENGTH + 1];
+    let mut name_bytes = [0u8; PROG_NAME_LENGTH];
     let name_bytes_src = program_name.as_bytes();
     let copy_len = name_bytes_src.len().min(PROG_NAME_LENGTH);
     name_bytes[..copy_len].copy_from_slice(&name_bytes_src[..copy_len]);
@@ -227,7 +227,7 @@ pub fn write_cor_file(
     file.write_all(&size_bytes).map_err(|e| AsmError::IoError(e.to_string()))?;
 
     // Write comment (COMMENT_LENGTH bytes, null-padded)
-    let mut comment_bytes = [0u8; COMMENT_LENGTH + 1];
+    let mut comment_bytes = [0u8; COMMENT_LENGTH];
     let comment_bytes_src = comment.as_bytes();
     let copy_len = comment_bytes_src.len().min(COMMENT_LENGTH);
     comment_bytes[..copy_len].copy_from_slice(&comment_bytes_src[..copy_len]);

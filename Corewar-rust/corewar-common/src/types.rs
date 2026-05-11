@@ -37,18 +37,18 @@ pub enum ArgType {
 #[derive(Debug, Clone)]
 pub struct Header {
     pub magic: u32,
-    pub prog_name: [u8; PROG_NAME_LENGTH + 1],
+    pub prog_name: [u8; PROG_NAME_LENGTH],
     pub prog_size: u32,
-    pub comment: [u8; COMMENT_LENGTH + 1],
+    pub comment: [u8; COMMENT_LENGTH],
 }
 
 impl Default for Header {
     fn default() -> Self {
         Header {
             magic: COREWAR_EXEC_MAGIC,
-            prog_name: [0u8; PROG_NAME_LENGTH + 1],
+            prog_name: [0u8; PROG_NAME_LENGTH],
             prog_size: 0,
-            comment: [0u8; COMMENT_LENGTH + 1],
+            comment: [0u8; COMMENT_LENGTH],
         }
     }
 }
@@ -64,9 +64,15 @@ impl Header {
         String::from_utf8_lossy(&self.comment[..end]).to_string()
     }
 
+    /// Get the size of the full header in bytes on disk
+    /// Format: magic(4) + name(128) + padding(4) + prog_size(4) + comment(2048) + trailing(4)
+    pub fn header_size() -> usize {
+        4 + PROG_NAME_LENGTH + 4 + 4 + COMMENT_LENGTH + 4
+    }
+
     /// Read a header from raw bytes
     pub fn from_bytes(data: &[u8]) -> Result<Self, CorewarError> {
-        if data.len() < 4 + PROG_NAME_LENGTH + 1 + 8 + COMMENT_LENGTH + 1 + 4 {
+        if data.len() < Self::header_size() {
             return Err(CorewarError::InvalidFile("File too small for header".to_string()));
         }
 
@@ -76,26 +82,12 @@ impl Header {
         let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
         offset += 4;
 
-        // Read program name
-        let mut prog_name = [0u8; PROG_NAME_LENGTH + 1];
-        prog_name.copy_from_slice(&data[offset..offset + PROG_NAME_LENGTH + 1]);
-        offset += PROG_NAME_LENGTH + 1;
+        // Read program name (PROG_NAME_LENGTH = 128 bytes)
+        let mut prog_name = [0u8; PROG_NAME_LENGTH];
+        prog_name.copy_from_slice(&data[offset..offset + PROG_NAME_LENGTH]);
+        offset += PROG_NAME_LENGTH;
 
-        // Skip 8 bytes (padding + prog_size in header format)
-        // Actually read prog_size as big-endian u32 from the 8-byte slot
-        // The format is: 4 bytes padding (zeros) then 4 bytes prog_size
-        // Wait - actually looking at the C code, it reads 8 bytes for size,
-        // and the write code writes 8 bytes for size.
-        // Let me re-examine: the C header is:
-        //   unsigned int magic;         // 4 bytes
-        //   char prog_name[129];        // 129 bytes
-        //   unsigned int prog_size;      // 4 bytes  BUT written as 8 bytes in itob
-        //   char comment[2049];          // 2049 bytes
-        //   + 4 bytes padding at the end
-        // Actually looking at write_binary.c: itob(size, file->prog_size, 8) writes 8 bytes
-        // So there are 8 bytes for the size field, then COMMENT_LENGTH, then 4 trailing zero bytes
-
-        // Skip the first 4 zero-padding bytes, then read 4-byte prog_size
+        // Skip 4 bytes padding, then read 4-byte prog_size (big-endian)
         offset += 4; // skip padding
         let prog_size = u32::from_be_bytes([
             data[offset],
@@ -105,10 +97,14 @@ impl Header {
         ]);
         offset += 4;
 
-        // Read comment
-        let mut comment = [0u8; COMMENT_LENGTH + 1];
-        comment.copy_from_slice(&data[offset..offset + COMMENT_LENGTH + 1]);
-        let _ = offset; // consumed all header bytes
+        // Read comment (COMMENT_LENGTH = 2048 bytes)
+        let mut comment = [0u8; COMMENT_LENGTH];
+        comment.copy_from_slice(&data[offset..offset + COMMENT_LENGTH]);
+        offset += COMMENT_LENGTH;
+        // Skip 4 trailing zero bytes
+        offset += 4;
+
+        let _ = offset; // should equal header_size()
 
         Ok(Header {
             magic,
@@ -116,11 +112,6 @@ impl Header {
             prog_size,
             comment,
         })
-    }
-
-    /// Get the size of the full header in bytes
-    pub fn header_size() -> usize {
-        4 + (PROG_NAME_LENGTH + 1) + 8 + (COMMENT_LENGTH + 1) + 4
     }
 }
 
