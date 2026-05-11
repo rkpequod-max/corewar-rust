@@ -2,6 +2,14 @@
 
 Traduction du projet Corewar (C) en Rust, avec visualiseur ncurses interactif. Workspace Cargo avec 4 crates :
 
+<p align="center">
+  <img src="assets/corewar.png" alt="Corewar Visualizer" width="600">
+</p>
+
+<p align="center">
+  <img src="assets/demo.gif" alt="Corewar Demo" width="600">
+</p>
+
 | Crate | Rôle |
 |-------|------|
 | `corewar-common` | Constantes, types, op_table, utilitaires partagés |
