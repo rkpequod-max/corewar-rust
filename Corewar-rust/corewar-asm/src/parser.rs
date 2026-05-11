@@ -32,7 +32,6 @@ impl Instruction {
 pub struct Label {
     pub label: String,
     pub instructions: Vec<Instruction>,
-    pub mem_pos: usize, // used for label address resolution
 }
 
 /// Check if all label references exist

@@ -187,7 +187,6 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
             current_label = Some(Label {
                 label: label_name,
                 instructions: Vec::new(),
-                mem_pos: 0,
             });
 
             pos = label_end + 1; // skip the colon
@@ -264,7 +263,6 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
                         current_label = Some(Label {
                             label: "MAIN_LABEL".to_string(),
                             instructions: Vec::new(),
-                            mem_pos: 0,
                         });
                     }
 
