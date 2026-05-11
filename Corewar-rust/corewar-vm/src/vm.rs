@@ -828,14 +828,17 @@ impl Vm {
             // Handle ncurses input and display
             if let Some(ref mut v) = vis {
                 let control = v.ncupdate(self);
-                if control == 1 {
+                if control == crate::visualizer::CTRL_QUIT {
                     quit = true;
                     break;
                 }
-                if control == 2 {
+                if control == crate::visualizer::CTRL_PAUSED {
                     // Paused — skip this cycle but keep window responsive
                     continue;
                 }
+                // CTRL_STEP (3) and CTRL_CONTINUE (0) both proceed to execute the cycle
+                // CTRL_STEP will have already set paused=true in the visualizer,
+                // so after this one cycle, the next ncupdate() will return CTRL_PAUSED
             }
 
             if self.cycles == self.dump_param {

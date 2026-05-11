@@ -6,6 +6,8 @@ use super::vm::Vm;
 // Speed constants (matching C version)
 pub const MAX_SPEED: i32 = 0;
 pub const MIN_SPEED: i32 = 30000;
+pub const FINE_SPEED_STEP: i32 = 100;
+pub const COARSE_SPEED_STEP: i32 = 500;
 
 // Color pair indices (matching C version)
 const CP_GRAY: i16 = 1;
@@ -14,8 +16,16 @@ const CP_BLUE: i16 = 3;
 const CP_RED: i16 = 4;
 const CP_GREEN: i16 = 5;
 const CP_BLACK_ON_GRAY: i16 = 6;
+// Extra color for status bar
+const CP_STATUS: i16 = 7;
 
-/// State for the ncurses visualizer — mirrors the C version exactly
+/// Return codes from ncupdate()
+pub const CTRL_CONTINUE: i32 = 0;
+pub const CTRL_QUIT: i32 = 1;
+pub const CTRL_PAUSED: i32 = 2;
+pub const CTRL_STEP: i32 = 3; // Execute exactly one cycle then pause
+
+/// State for the ncurses visualizer
 pub struct Visualizer {
     pub speed: i32,
     pub paused: bool,
@@ -27,10 +37,15 @@ pub struct Visualizer {
     m_win: WINDOW,
     s_win: WINDOW,
     p_win: WINDOW,
+    b_win: WINDOW, // Bottom status bar window
+    // Process scrolling
+    proc_scroll: usize,
+    // Step mode
+    stepping: bool,
 }
 
 impl Visualizer {
-    /// Initialize ncurses and create windows — mirrors C's print_arena()
+    /// Initialize ncurses and create windows
     pub fn init(vm: &Vm) -> Self {
         // Initialize ncurses
         initscr();
@@ -54,6 +69,8 @@ impl Visualizer {
         init_pair(CP_RED, COLOR_RED, COLOR_BLACK);
         init_pair(CP_GREEN, COLOR_GREEN, COLOR_BLACK);
         init_pair(CP_BLACK_ON_GRAY, COLOR_BLACK, COLOR_YELLOW);
+        // Status bar: white on blue background
+        init_pair(CP_STATUS, COLOR_WHITE, COLOR_BLUE);
 
         let sqrt = (MEM_SIZE as f64).sqrt() as i32; // 64
         let height = sqrt;
@@ -62,10 +79,13 @@ impl Visualizer {
         let proc_y = (5 * vm.nplayers as i32) + 10;
         let p_height = height + 2 - proc_y;
 
-        // Create windows (exactly like C's resize_window)
+        // Create windows
         let m_win = newwin(height + 2, width + 2, 0, 0);
         let s_win = newwin(height - p_height + 2, s_width + 2, 0, width + 2);
         let p_win = newwin(p_height, s_width + 2, proc_y, width + 2);
+        // Status bar: 1 row at the bottom spanning the full width
+        let total_width = width + 2 + s_width + 2;
+        let b_win = newwin(1, total_width, height + 2, 0);
 
         let vis = Visualizer {
             speed: 3000,
@@ -78,6 +98,9 @@ impl Visualizer {
             m_win,
             s_win,
             p_win,
+            b_win,
+            proc_scroll: 0,
+            stepping: false,
         };
 
         // Initial full draw
@@ -85,39 +108,77 @@ impl Visualizer {
         vis
     }
 
-    /// Handle user input — mirrors C's ncupdate()
-    /// Returns: 0=continue, 1=quit, 2=paused
+    /// Handle user input
+    /// Returns: CTRL_CONTINUE, CTRL_QUIT, CTRL_PAUSED, CTRL_STEP
     pub fn ncupdate(&mut self, vm: &Vm) -> i32 {
         let input = getch();
 
         if input == 'q' as i32 {
-            return 1;
+            return CTRL_QUIT;
         }
+
+        // Toggle pause with space
         if input == ' ' as i32 {
             nodelay(stdscr(), self.paused);
             self.paused = !self.paused;
+            self.stepping = false; // Cancel stepping when toggling pause
         }
+
+        // Step mode: press 's' to advance exactly one cycle
+        if input == 's' as i32 {
+            if !self.stepping {
+                self.stepping = true;
+                self.paused = false;
+                nodelay(stdscr(), true);
+            }
+        }
+
         if input == KEY_RESIZE {
-            // Only recreate windows on actual terminal resize
             self.recreate_windows();
         }
-        if self.paused {
-            // Even when paused, we need to redraw after space/resize
+
+        // Process scrolling (works even when paused)
+        if input == KEY_PPAGE {
+            // Page Up — scroll processes up
+            if self.proc_scroll > 0 {
+                self.proc_scroll = self.proc_scroll.saturating_sub(5);
+                self.full_redraw(vm);
+            }
+        }
+        if input == KEY_NPAGE {
+            // Page Down — scroll processes down
+            let max_scroll = vm.processes.len().saturating_sub(self.visible_proc_lines() as usize);
+            if self.proc_scroll < max_scroll {
+                self.proc_scroll = (self.proc_scroll + 5).min(max_scroll);
+                self.full_redraw(vm);
+            }
+        }
+
+        if self.paused && !self.stepping {
+            // Redraw after space/resize when paused
             if input == ' ' as i32 || input == KEY_RESIZE {
                 self.full_redraw(vm);
             }
-            return 2;
+            return CTRL_PAUSED;
         }
 
-        // Speed controls
+        // Coarse speed controls (arrow keys: step of 500)
         if input == KEY_UP && self.speed > MAX_SPEED {
-            self.speed -= 500;
+            self.speed = (self.speed - COARSE_SPEED_STEP).max(MAX_SPEED);
         }
         if input == KEY_DOWN && self.speed < MIN_SPEED {
-            self.speed += 500;
+            self.speed = (self.speed + COARSE_SPEED_STEP).min(MIN_SPEED);
         }
 
-        // Full redraw every frame (like the C version)
+        // Fine speed controls (+/- keys: step of 100)
+        if (input == '+' as i32 || input == '=' as i32) && self.speed > MAX_SPEED {
+            self.speed = (self.speed - FINE_SPEED_STEP).max(MAX_SPEED);
+        }
+        if (input == '-' as i32) && self.speed < MIN_SPEED {
+            self.speed = (self.speed + FINE_SPEED_STEP).min(MIN_SPEED);
+        }
+
+        // Full redraw every frame
         self.full_redraw(vm);
 
         // Sleep for frame timing
@@ -125,18 +186,35 @@ impl Visualizer {
             std::thread::sleep(std::time::Duration::from_micros(self.speed as u64));
         }
 
-        0
+        // If stepping, return STEP so the caller executes one cycle then we'll pause
+        if self.stepping {
+            self.stepping = false;
+            self.paused = true;
+            nodelay(stdscr(), self.paused);
+            return CTRL_STEP;
+        }
+
+        CTRL_CONTINUE
     }
 
-    /// Recreate windows (only called on terminal resize)
+    /// Recalculate and recreate all windows (only called on terminal resize)
     fn recreate_windows(&mut self) {
         refresh();
         delwin(self.m_win);
         delwin(self.s_win);
         delwin(self.p_win);
+        delwin(self.b_win);
         self.m_win = newwin(self.height + 2, self.width + 2, 0, 0);
         self.s_win = newwin(self.height - self.p_height + 2, self.s_width + 2, 0, self.width + 2);
         self.p_win = newwin(self.p_height, self.s_width + 2, self.proc_y, self.width + 2);
+        let total_width = self.width + 2 + self.s_width + 2;
+        self.b_win = newwin(1, total_width, self.height + 2, 0);
+    }
+
+    /// How many lines are available for displaying processes
+    fn visible_proc_lines(&self) -> i32 {
+        // p_height - 2 = total interior lines, minus 1 for the header line
+        (self.p_height - 2).max(1)
     }
 
     /// Full redraw — erase, draw content, then atomic doupdate()
@@ -145,10 +223,12 @@ impl Visualizer {
         werase(self.m_win);
         werase(self.s_win);
         werase(self.p_win);
+        werase(self.b_win);
 
         // Draw content into each window
         self.fill_arena(vm);
         self.print_panel(vm);
+        self.print_status_bar(vm);
 
         // Draw boxes
         box_(self.m_win, 0, 0);
@@ -159,6 +239,7 @@ impl Visualizer {
         wnoutrefresh(self.m_win);
         wnoutrefresh(self.s_win);
         wnoutrefresh(self.p_win);
+        wnoutrefresh(self.b_win);
 
         // Single atomic screen update — this is the key to flicker-free rendering
         doupdate();
@@ -211,18 +292,24 @@ impl Visualizer {
         }
     }
 
-    /// Print the side panel — mirrors C's print_panel()
+    /// Print the side panel
     fn print_panel(&self, vm: &Vm) {
         self.print_header(vm);
         self.print_players(vm);
         self.print_processes(vm);
     }
 
-    /// Print header info — mirrors C's print_header()
+    /// Print header info
     fn print_header(&self, vm: &Vm) {
         wattron(self.s_win, A_BOLD());
         mvwprintw(self.s_win, 1, 1, &format!("CYCLES\t\t{}", vm.cycles));
-        mvwprintw(self.s_win, 1, 35, if self.paused { "** PAUSED **" } else { "** RUNNING **" });
+        if self.stepping {
+            mvwprintw(self.s_win, 1, 35, "** STEPPING **");
+        } else if self.paused {
+            mvwprintw(self.s_win, 1, 35, "** PAUSED **");
+        } else {
+            mvwprintw(self.s_win, 1, 35, "** RUNNING **");
+        }
         mvwprintw(self.s_win, 2, 1, &format!("CYCLE_TO_DIE\t{}", vm.cycle_to_die));
         mvwprintw(self.s_win, 2, 35, &format!("Speed: {}", 50000 - self.speed));
         mvwprintw(self.s_win, 3, 1, &format!("CYCLE_DELTA\t{}", CYCLE_DELTA));
@@ -232,7 +319,7 @@ impl Visualizer {
         wattroff(self.s_win, A_BOLD());
     }
 
-    /// Print player info — mirrors C's print_panel() player section
+    /// Print player info
     fn print_players(&self, vm: &Vm) {
         let mut i: i32 = 8;
         for (idx, player) in vm.players.iter().enumerate() {
@@ -252,22 +339,37 @@ impl Visualizer {
         }
     }
 
-    /// Print processes — mirrors C's print_processes()
+    /// Print processes with scroll support
     fn print_processes(&self, vm: &Vm) {
-        let mut n = vm.process_alive;
+        let total_procs = vm.processes.len();
+        let visible_lines = self.visible_proc_lines();
 
+        // Clamp scroll offset
+        let max_scroll = total_procs.saturating_sub(visible_lines as usize);
+        let scroll = self.proc_scroll.min(max_scroll);
+
+        let mut n = vm.process_alive - scroll as i32;
+
+        // Header with scroll indicator
         wattron(self.p_win, A_BOLD());
+        let scroll_info = if total_procs > visible_lines as usize {
+            let page = scroll / (visible_lines as usize).max(1) + 1;
+            let total_pages = (total_procs + (visible_lines as usize).max(1) - 1) / (visible_lines as usize).max(1);
+            format!(" Pg{}/{}", page, total_pages)
+        } else {
+            String::new()
+        };
         mvwprintw(
             self.p_win, 1, 0,
             &format!(
-                " _____________PROCESSES_({:04} / {:04})_____________",
-                vm.process_alive, vm.nprocess
+                " _____________PROCESSES_({:04} / {:04}){}_____________",
+                vm.process_alive, vm.nprocess, scroll_info
             ),
         );
         wattroff(self.p_win, A_BOLD());
 
         let mut i: i32 = 2;
-        for proc in &vm.processes {
+        for proc in vm.processes.iter().skip(scroll) {
             if i >= self.p_height - 1 {
                 break;
             }
@@ -302,9 +404,22 @@ impl Visualizer {
             i += 1;
             n -= 1;
         }
+
+        // Show scroll hint at bottom if there are more processes
+        if total_procs > visible_lines as usize {
+            wattron(self.p_win, COLOR_PAIR(CP_GRAY) | A_BOLD());
+            let remaining = total_procs.saturating_sub(scroll + visible_lines as usize);
+            mvwprintw(
+                self.p_win,
+                self.p_height - 1,
+                2,
+                &format!("... {} more (PgUp/PgDn)", remaining),
+            );
+            wattroff(self.p_win, COLOR_PAIR(CP_GRAY) | A_BOLD());
+        }
     }
 
-    /// Print register state — mirrors C's print_registers()
+    /// Print register state
     fn print_registers(&self, i: i32, reg: &[i32; REG_NUMBER]) {
         for x in 0..REG_NUMBER {
             if reg[x] != 0 {
@@ -319,7 +434,39 @@ impl Visualizer {
         }
     }
 
-    /// Display the winner screen — mirrors C's champion_won()
+    /// Print the status bar at the bottom of the screen
+    fn print_status_bar(&self, vm: &Vm) {
+        // Left section: controls
+        wattron(self.b_win, COLOR_PAIR(CP_STATUS) | A_BOLD());
+        let controls = " q:Quit  Space:Pause  s:Step  Up/Dn:Speed  +/-:FineSpeed  PgUp/PgDn:Scroll ";
+        mvwprintw(self.b_win, 0, 0, controls);
+        wattroff(self.b_win, COLOR_PAIR(CP_STATUS) | A_BOLD());
+
+        // Right section: color legend for each player
+        let mut col = controls.len() as i32 + 2;
+        let total_width = self.width + 2 + self.s_width + 2;
+        for (idx, player) in vm.players.iter().enumerate() {
+            if col + 12 > total_width {
+                break;
+            }
+            let player_color: i16 = (idx as i16) + 2;
+            wattron(self.b_win, COLOR_PAIR(player_color) | A_BOLD());
+            // Show a colored block with player number
+            mvwprintw(self.b_win, 0, col, &format!(" P{}", (-player.nplayer)));
+            wattroff(self.b_win, COLOR_PAIR(player_color) | A_BOLD());
+            col += 12;
+        }
+
+        // Fill the rest of the bar with the status color
+        wattron(self.b_win, COLOR_PAIR(CP_STATUS));
+        while col < total_width {
+            mvwprintw(self.b_win, 0, col, " ");
+            col += 1;
+        }
+        wattroff(self.b_win, COLOR_PAIR(CP_STATUS));
+    }
+
+    /// Display the winner screen
     pub fn show_winner(&mut self, vm: &Vm) {
         // Recreate the process window for the winner display
         delwin(self.p_win);
@@ -356,8 +503,9 @@ impl Visualizer {
         doupdate();
     }
 
-    /// Clean up ncurses — mirrors C's endwin()
+    /// Clean up ncurses
     pub fn end(&self) {
+        delwin(self.b_win);
         endwin();
     }
 
