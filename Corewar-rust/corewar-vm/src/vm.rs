@@ -39,6 +39,7 @@ pub struct Vm {
     pub players: Vec<Player>,
     pub dump_param: i32,
     pub verbose: bool,
+    pub ncurses: bool,
     pub nplayers: usize,
     pub last_alive: i32,
     pub nprocess: i32,
@@ -60,6 +61,7 @@ impl Vm {
             players: Vec::new(),
             dump_param: -1,
             verbose: false,
+            ncurses: false,
             nplayers: 0,
             last_alive: 0,
             nprocess: 0,
@@ -795,9 +797,34 @@ impl Vm {
         self.load_champions();
         self.load_processes();
 
-        while !self.processes.is_empty() && self.cycle_to_die > 0 {
+        // Initialize visualizer if -n flag is set
+        let mut vis: Option<crate::visualizer::Visualizer> = if self.ncurses {
+            Some(crate::visualizer::Visualizer::init(self))
+        } else {
+            None
+        };
+
+        let mut quit = false;
+        while !self.processes.is_empty() && self.cycle_to_die > 0 && !quit {
+            // Handle ncurses input and display
+            if let Some(ref mut v) = vis {
+                let control = v.ncupdate(self);
+                if control == 1 {
+                    quit = true;
+                    break;
+                }
+                if control == 2 {
+                    // Paused — skip this cycle but keep window responsive
+                    continue;
+                }
+                v.refresh_all(self);
+            }
+
             if self.cycles == self.dump_param {
                 self.print_ram();
+                if let Some(ref mut v) = vis {
+                    v.end();
+                }
                 return;
             }
 
@@ -809,17 +836,30 @@ impl Vm {
             self.kill_zombies(check);
         }
 
+        // Cleanup and show winner
+        if let Some(ref mut v) = vis {
+            if !quit {
+                v.show_winner(self);
+                v.refresh_all(self);
+                // Wait for user to press a key before exiting
+                v.wait_for_key();
+            }
+            v.end();
+        }
+
         if self.dump_param > 0 && self.dump_param > self.cycles {
             self.print_ram();
-        } else if self.verbose {
+        } else if self.verbose && vis.is_none() {
             self.print_ram();
         }
 
-        // Announce winner
-        for player in &self.players {
-            if self.last_alive == player.nplayer {
-                println!("Player {} ({}) won", player.nplayer, player.name);
-                return;
+        // Announce winner (text mode)
+        if vis.is_none() {
+            for player in &self.players {
+                if self.last_alive == player.nplayer {
+                    println!("Player {} ({}) won", player.nplayer, player.name);
+                    return;
+                }
             }
         }
     }

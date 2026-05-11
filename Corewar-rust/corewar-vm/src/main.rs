@@ -1,4 +1,5 @@
 mod vm;
+mod visualizer;
 
 use clap::Parser;
 use corewar_common::constants::*;
@@ -9,6 +10,10 @@ struct Args {
     /// Dump memory after N cycles and exit
     #[arg(long)]
     dump: Option<i32>,
+
+    /// Ncurses visualizer display
+    #[arg(short = 'n')]
+    ncurses: bool,
 
     /// Verbose output
     #[arg(short = 'v')]
@@ -52,6 +57,7 @@ fn main() {
         machine.dump_param = dump;
     }
     machine.verbose = args.verbose;
+    machine.ncurses = args.ncurses;
 
     // Load champions
     for (nplayer, file) in &players {

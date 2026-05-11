@@ -13,7 +13,7 @@ pub const MAX_PLAYERS: usize = 4;
 
 pub const MEM_SIZE: usize = 4096;
 pub const IDX_MOD: i32 = 512;
-pub const CHAMP_MAX_SIZE: usize = 682;
+pub const CHAMP_MAX_SIZE: usize = 2048;
 
 pub const COMMENT_CHAR: char = '#';
 pub const LABEL_CHAR: char = ':';
