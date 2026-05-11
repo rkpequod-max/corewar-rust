@@ -27,6 +27,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
         // Handle multi-line name quotes
         if in_name_quote {
             if let Some(end_pos) = line.find('"') {
+                name_buffer.push('\n');
                 name_buffer.push_str(&line[..end_pos]);
                 in_name_quote = false;
                 if !has_name {
@@ -55,6 +56,7 @@ pub fn parse_source(source: &str) -> Result<(String, String, Vec<Label>), AsmErr
         // Handle multi-line comment quotes
         if in_comment_quote {
             if let Some(end_pos) = line.find('"') {
+                comment_buffer.push('\n');
                 comment_buffer.push_str(&line[..end_pos]);
                 in_comment_quote = false;
                 if !has_comment {
