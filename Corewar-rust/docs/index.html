@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corewar — Rust</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent-cyan: #00d9d9;
+            --accent-blue: #6666ff;
+            --accent-red: #e60000;
+            --accent-green: #00cc00;
+            --accent-yellow: #b3b3b3;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .hero .badges {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--card);
+        }
+        .badge-rust { color: #f74c00; border-color: #f74c0044; }
+        .badge-ncurses { color: var(--accent-cyan); border-color: #00d9d944; }
+        .badge-fast { color: var(--accent-green); border-color: #00cc0044; }
+
+        /* Container */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Sections */
+        section {
+            padding: 50px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        section:last-child { border-bottom: none; }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2 .icon { font-size: 1.4rem; }
+
+        h3 {
+            font-size: 1.2rem;
+            margin: 20px 0 10px;
+            color: var(--accent-cyan);
+        }
+
+        /* Video container */
+        .video-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        @media (max-width: 700px) {
+            .video-grid { grid-template-columns: 1fr; }
+        }
+        .video-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .video-card video {
+            width: 100%;
+            display: block;
+        }
+        .video-card .caption {
+            padding: 12px 16px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .video-card .caption strong {
+            color: var(--text);
+        }
+
+        /* Screenshot */
+        .screenshot-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .screenshot-container img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Crates table */
+        .crates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .crate-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            transition: border-color 0.2s;
+        }
+        .crate-card:hover {
+            border-color: var(--accent-cyan);
+        }
+        .crate-card .name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--accent-cyan);
+            margin-bottom: 6px;
+        }
+        .crate-card .desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Controls table */
+        .controls-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        .controls-table th, .controls-table td {
+            padding: 10px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .controls-table th {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .controls-table td:first-child {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            color: var(--accent-cyan);
+            white-space: nowrap;
+        }
+
+        /* Benchmark table */
+        .bench-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        .bench-table th, .bench-table td {
+            padding: 12px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .bench-table th {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .bench-table td:first-child {
+            text-align: left;
+            color: var(--text-muted);
+        }
+        .fast {
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        .slow {
+            color: var(--accent-red);
+        }
+
+        /* Summary grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .summary-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .summary-card .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .summary-card .value {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+        .summary-card .sublabel {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .green { color: var(--accent-green); }
+        .cyan { color: var(--accent-cyan); }
+        .red { color: var(--accent-red); }
+
+        /* Features list */
+        .features {
+            list-style: none;
+            margin-top: 16px;
+        }
+        .features li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: var(--text-muted);
+        }
+        .features li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--accent-cyan);
+        }
+
+        /* Code block */
+        .code-block {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-top: 16px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            color: var(--accent-cyan);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+    <h1>Corewar — Rust</h1>
+    <p>Traduction du projet Corewar (C) en Rust, avec visualiseur ncurses interactif et performances 5–21× supérieures à la version C.</p>
+    <div class="badges">
+        <span class="badge badge-rust">Rust 1.95</span>
+        <span class="badge badge-ncurses">ncurses</span>
+        <span class="badge badge-fast">5–21× plus rapide</span>
+    </div>
+</div>
+
+<!-- Demo Videos -->
+<section>
+    <div class="container">
+        <h2><span class="icon">🎬</span> Démos</h2>
+        <div class="video-grid">
+            <div class="video-card">
+                <video controls preload="metadata" poster="corewar.png">
+                    <source src="dallo1.mp4" type="video/mp4">
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
+                <div class="caption"><strong>Démo 1</strong> — Bataille entre champions avec le visualiseur ncurses</div>
+            </div>
+            <div class="video-card">
+                <video controls preload="metadata" poster="corewar.png">
+                    <source src="dallo2.mp4" type="video/mp4">
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
+                <div class="caption"><strong>Démo 2</strong> — Combat avec mode step-by-step et contrôle de vitesse</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Screenshot -->
+<section>
+    <div class="container">
+        <h2><span class="icon">🖥️</span> Visualiseur ncurses</h2>
+        <div class="screenshot-container">
+            <img src="corewar.png" alt="Corewar Visualizer Screenshot">
+        </div>
+
+        <h3>Contrôles clavier</h3>
+        <table class="controls-table">
+            <thead>
+                <tr><th>Touche</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Espace</td><td>Pause / Reprendre</td></tr>
+                <tr><td>s</td><td>Step — avance d'exactement 1 cycle puis se met en pause</td></tr>
+                <tr><td>↑ / ↓</td><td>Vitesse (pas de 500)</td></tr>
+                <tr><td>+ / −</td><td>Vitesse fine (pas de 100)</td></tr>
+                <tr><td>PgUp / PgDn</td><td>Scroller les processus</td></tr>
+                <tr><td>q</td><td>Quitter</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Fonctionnalités</h3>
+        <ul class="features">
+            <li>Arène 64×64 avec coloration par propriétaire et surbrillance des écritures récentes</li>
+            <li>Panneau latéral : cycles, cycle_to_die, infos joueurs, liste des processus</li>
+            <li>Barre d'état en bas : légende des contrôles et couleurs des joueurs</li>
+            <li>Mode step-by-step (s) : avancer cycle par cycle pour le debugging</li>
+            <li>Scroll des processus : PgUp/PgDn quand il y en a trop</li>
+            <li>Double buffering : wnoutrefresh() + doupdate() pour un affichage sans scintillement</li>
+        </ul>
+    </div>
+</section>
+
+<!-- Crates -->
+<section>
+    <div class="container">
+        <h2><span class="icon">📦</span> Crates</h2>
+        <div class="crates-grid">
+            <div class="crate-card">
+                <div class="name">corewar-common</div>
+                <div class="desc">Constantes, types, op_table, utilitaires partagés</div>
+            </div>
+            <div class="crate-card">
+                <div class="name">corewar-asm</div>
+                <div class="desc">Assembleur — traduit les fichiers .s en bytecode .cor</div>
+            </div>
+            <div class="crate-card">
+                <div class="name">corewar-vm</div>
+                <div class="desc">Machine virtuelle — exécute les champions dans l'arène</div>
+            </div>
+            <div class="crate-card">
+                <div class="name">corewar-disasm</div>
+                <div class="desc">Désassembleur — traduit les .cor en .s</div>
+            </div>
+        </div>
+
+        <h3>Utilisation</h3>
+        <div class="code-block">
+cargo build<br>
+<br>
+# Assembleur : .s → .cor<br>
+./target/debug/asm champs/zork.s<br>
+<br>
+# Désassembleur : .cor → .s<br>
+./target/debug/disasm champs/zork.cor<br>
+<br>
+# Machine virtuelle<br>
+./target/debug/corewar --dump 1000 champs/zork.cor champs/big_feet.cor<br>
+./target/debug/corewar -v champs/zork.cor champs/big_feet.cor<br>
+<br>
+# Visualiseur ncurses interactif<br>
+./target/debug/corewar -n champs/zork.cor champs/big_feet.cor
+        </div>
+    </div>
+</section>
+
+<!-- Benchmark -->
+<section>
+    <div class="container">
+        <h2><span class="icon">⚡</span> Benchmark : C vs Rust</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px;">
+            Comparaison des performances entre la version C (compilée avec <code>-O2</code>) et la version Rust (compilée en <code>--release</code>).
+        </p>
+
+        <table class="bench-table">
+            <thead>
+                <tr>
+                    <th>Test</th>
+                    <th>C (-O2)</th>
+                    <th>Rust (release)</th>
+                    <th>Ratio</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2 champions / 10k cycles</td>
+                    <td class="slow">20 ms</td>
+                    <td class="fast">8 ms</td>
+                    <td class="fast">2.5×</td>
+                </tr>
+                <tr>
+                    <td>2 champions / 50k cycles</td>
+                    <td class="slow">50 ms</td>
+                    <td class="fast">10 ms</td>
+                    <td class="fast">5.0×</td>
+                </tr>
+                <tr>
+                    <td>2 champions / 100k cycles</td>
+                    <td class="slow">51 ms</td>
+                    <td class="fast">11 ms</td>
+                    <td class="fast">4.6×</td>
+                </tr>
+                <tr>
+                    <td>4 champions / 10k cycles</td>
+                    <td class="slow">160 ms</td>
+                    <td class="fast">13 ms</td>
+                    <td class="fast">12.3×</td>
+                </tr>
+                <tr>
+                    <td>4 champions / 100k cycles</td>
+                    <td class="slow">1 990 ms</td>
+                    <td class="fast">93 ms</td>
+                    <td class="fast">21×</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="label">Vitesse d'exécution</div>
+                <div class="value green">5–21×</div>
+                <div class="sublabel">Rust plus rapide</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Taille binaire C</div>
+                <div class="value cyan">231 Ko</div>
+                <div class="sublabel">5× plus petit</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Taille binaire Rust</div>
+                <div class="value red">1.2 Mo</div>
+                <div class="sublabel">Runtime complet</div>
+            </div>
+            <div class="summary-card">
+                <div class="label">Scaling</div>
+                <div class="value green">Rust</div>
+                <div class="sublabel">Performances stables</div>
+            </div>
+        </div>
+
+        <h3>Pourquoi le Rust est plus rapide ?</h3>
+        <ul class="features">
+            <li><strong>Vec&lt;Process&gt; vs liste chaînée</strong> — Tableau contigu en mémoire = excellente localité cache. Le C utilise des t_list avec malloc individuel = cache misses constants.</li>
+            <li><strong>Pas de malloc/free par fork/zombie</strong> — Le C alloue/libère un nœud pour chaque fork et zombie. Le Rust utilise un Vec qui recycle la mémoire.</li>
+            <li><strong>Optimisations LLVM</strong> — Inlining automatique, vectorisation SIMD, élimination de code mort. GCC -O2 ne matche pas LLVM sur cette base de code.</li>
+            <li><strong>ft_printf vs formatage Rust</strong> — La réimplémentation perso de printf dans le C est nettement plus lente que le formatage natif Rust.</li>
+        </ul>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <a href="https://github.com/rkpequod-max/corewar-rust">github.com/rkpequod-max/corewar-rust</a>
+</footer>
+
+</body>
+</html>
