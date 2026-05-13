@@ -1112,6 +1112,502 @@
     .ctd-log .log-check { color: var(--text-muted); }
     .ctd-log .log-death { color: var(--red); font-weight: 700; }
 
+    /* ── Mini-Simulateur VM ── */
+    #simulateur { position: relative; }
+    #simulateur h2 { margin-bottom: .5rem; }
+    .sim-intro { color: var(--text-muted); margin-bottom: 1.5rem; max-width: 700px; }
+    .sim-container {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    /* Controls bar */
+    .sim-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+    .sim-btn {
+        font-family: var(--mono);
+        font-size: 13px;
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border-light);
+        background: var(--card2);
+        color: var(--text);
+        cursor: pointer;
+        transition: all .2s;
+        white-space: nowrap;
+    }
+    .sim-btn:hover {
+        border-color: var(--ray);
+        box-shadow: 0 0 8px rgba(0,255,136,.25);
+        color: var(--ray);
+    }
+    .sim-btn:active { transform: scale(.96); }
+    .sim-btn.active {
+        border-color: var(--ray);
+        color: var(--ray);
+        box-shadow: 0 0 12px rgba(0,255,136,.3);
+    }
+    .sim-btn.reset-btn:hover {
+        border-color: var(--pink);
+        box-shadow: 0 0 8px rgba(255,45,120,.25);
+        color: var(--pink);
+    }
+    .sim-sep {
+        width: 1px;
+        height: 24px;
+        background: var(--border);
+        flex-shrink: 0;
+    }
+    .sim-speed-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .sim-speed-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+    .sim-speed-val {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--ray);
+        min-width: 28px;
+    }
+    .sim-speed-slider {
+        -webkit-appearance: none;
+        width: 100px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--border);
+        outline: none;
+    }
+    .sim-speed-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: var(--ray);
+        cursor: pointer;
+        box-shadow: 0 0 6px rgba(0,255,136,.5);
+    }
+    .sim-speed-slider::-moz-range-thumb {
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: var(--ray);
+        cursor: pointer;
+        border: none;
+    }
+    .sim-stat {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-left: auto;
+        display: flex;
+        gap: 16px;
+    }
+    .sim-stat span { color: var(--text); }
+    .sim-stat .ctd-val { color: var(--orange); }
+
+    /* Main layout */
+    .sim-main {
+        display: flex;
+        gap: 0;
+    }
+
+    /* Arena panel */
+    .sim-arena-panel {
+        padding: 12px;
+        flex-shrink: 0;
+    }
+    .sim-arena-grid {
+        display: grid;
+        grid-template-columns: repeat(32, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        width: fit-content;
+    }
+    .sim-cell {
+        width: 14px;
+        height: 14px;
+        background: #0a0e17;
+        transition: background .15s, box-shadow .3s;
+        position: relative;
+        cursor: crosshair;
+    }
+    .sim-cell.p1 { background: #1a3a6e; }
+    .sim-cell.p2 { background: #6e1a3a; }
+    .sim-cell.pc1 {
+        box-shadow: inset 0 0 4px rgba(51,102,204,.9), 0 0 6px rgba(51,102,204,.6);
+        animation: sim-pc-pulse 1s ease-in-out infinite;
+    }
+    .sim-cell.pc2 {
+        box-shadow: inset 0 0 4px rgba(255,45,120,.9), 0 0 6px rgba(255,45,120,.6);
+        animation: sim-pc-pulse 1s ease-in-out infinite;
+    }
+    .sim-cell.write-flash {
+        animation: sim-write-flash .4s ease-out;
+    }
+    @keyframes sim-pc-pulse {
+        0%, 100% { filter: brightness(1); }
+        50% { filter: brightness(1.6); }
+    }
+    @keyframes sim-write-flash {
+        0% { filter: brightness(2.5); }
+        100% { filter: brightness(1); }
+    }
+    .sim-arena-legend {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+    }
+    .sim-arena-legend .leg-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .sim-arena-legend .leg-dot {
+        width: 10px; height: 10px;
+        border-radius: 2px;
+    }
+    .sim-arena-legend .leg-dot.p1-dot { background: #3366cc; }
+    .sim-arena-legend .leg-dot.p2-dot { background: #cc3366; }
+    .sim-arena-legend .leg-dot.empty-dot { background: #0a0e17; border: 1px solid var(--border); }
+
+    /* Tooltip */
+    .sim-tooltip {
+        position: fixed;
+        z-index: 9999;
+        background: var(--card);
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text);
+        pointer-events: none;
+        display: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .sim-tooltip .tt-addr { color: var(--electric); }
+    .sim-tooltip .tt-val { color: var(--ray); }
+    .sim-tooltip .tt-owner { color: var(--text-muted); }
+
+    /* Info panel */
+    .sim-info-panel {
+        flex: 1;
+        min-width: 0;
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        max-height: 520px;
+    }
+
+    /* Phase indicator */
+    .sim-phases {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+    }
+    .sim-phases-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-right: 4px;
+    }
+    .sim-phase-step {
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        background: var(--bg2);
+        color: var(--text-muted);
+        border: 1px solid transparent;
+        transition: all .25s;
+    }
+    .sim-phase-step.active-fetch {
+        color: var(--electric);
+        border-color: var(--electric);
+        background: rgba(0,212,255,.08);
+        box-shadow: 0 0 8px rgba(0,212,255,.2);
+    }
+    .sim-phase-step.active-decode {
+        color: var(--violet);
+        border-color: var(--violet);
+        background: rgba(155,89,255,.08);
+        box-shadow: 0 0 8px rgba(155,89,255,.2);
+    }
+    .sim-phase-step.active-wait {
+        color: var(--yellow);
+        border-color: var(--yellow);
+        background: rgba(240,192,64,.08);
+        box-shadow: 0 0 8px rgba(240,192,64,.2);
+        animation: sim-wait-pulse 0.8s ease-in-out infinite;
+    }
+    .sim-phase-step.active-exec {
+        color: var(--ray);
+        border-color: var(--ray);
+        background: rgba(0,255,136,.08);
+        box-shadow: 0 0 8px rgba(0,255,136,.2);
+    }
+    @keyframes sim-wait-pulse {
+        0%,100% { opacity:1; }
+        50% { opacity:.6; }
+    }
+    .sim-phase-arrow {
+        color: var(--border-light);
+        font-size: 10px;
+    }
+
+    /* Process list */
+    .sim-processes {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-light) transparent;
+    }
+    .sim-processes::-webkit-scrollbar { width: 4px; }
+    .sim-processes::-webkit-scrollbar-track { background: transparent; }
+    .sim-processes::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+    .sim-proc-card {
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg2);
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: all .2s;
+        animation: sim-proc-in .3s ease-out;
+    }
+    .sim-proc-card:hover {
+        border-color: var(--border-light);
+    }
+    .sim-proc-card.selected {
+        border-color: var(--ray);
+        box-shadow: 0 0 8px rgba(0,255,136,.15);
+    }
+    .sim-proc-card.dead {
+        animation: sim-proc-out .4s ease-out forwards;
+    }
+    @keyframes sim-proc-in {
+        from { opacity:0; transform:translateX(10px); }
+        to { opacity:1; transform:translateX(0); }
+    }
+    @keyframes sim-proc-out {
+        from { opacity:1; transform:translateX(0); }
+        to { opacity:0; transform:translateX(-10px); height:0; padding:0; margin:0; border:0; overflow:hidden; }
+    }
+    .sim-proc-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+    .sim-proc-owner-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .sim-proc-owner-dot.p1-dot { background: #3366cc; box-shadow: 0 0 4px rgba(51,102,204,.5); }
+    .sim-proc-owner-dot.p2-dot { background: #cc3366; box-shadow: 0 0 4px rgba(204,51,102,.5); }
+    .sim-proc-id {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text);
+        font-weight: 600;
+    }
+    .sim-proc-pc {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-left: auto;
+    }
+    .sim-proc-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--text-muted);
+    }
+    .sim-proc-opcode {
+        color: var(--electric);
+    }
+    .sim-proc-carry {
+        color: var(--yellow);
+    }
+    .sim-proc-lives {
+        color: var(--ray);
+    }
+
+    /* Register view */
+    .sim-registers {
+        border-top: 1px solid var(--border);
+        background: var(--card);
+        padding: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-light) transparent;
+    }
+    .sim-registers::-webkit-scrollbar { width: 4px; }
+    .sim-registers::-webkit-scrollbar-track { background: transparent; }
+    .sim-registers::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+    .sim-regs-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+    .sim-regs-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+    }
+    .sim-reg-item {
+        font-family: var(--mono);
+        font-size: 10px;
+        padding: 3px 5px;
+        border-radius: 3px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        display: flex;
+        justify-content: space-between;
+    }
+    .sim-reg-item .reg-name { color: var(--text-muted); }
+    .sim-reg-item .reg-val { color: var(--ray); }
+
+    /* Execution log */
+    .sim-log-container {
+        border-top: 1px solid var(--border);
+        background: var(--card);
+    }
+    .sim-log-header {
+        padding: 6px 12px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .sim-log {
+        height: 160px;
+        overflow-y: auto;
+        padding: 6px 12px;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.6;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-light) transparent;
+    }
+    .sim-log::-webkit-scrollbar { width: 4px; }
+    .sim-log::-webkit-scrollbar-track { background: transparent; }
+    .sim-log::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+    .sim-log-entry {
+        animation: sim-log-in .2s ease-out;
+    }
+    @keyframes sim-log-in {
+        from { opacity:0; transform:translateY(4px); }
+        to { opacity:1; transform:translateY(0); }
+    }
+    .sim-log-entry .log-cycle { color: var(--text-muted); }
+    .sim-log-entry .log-p1 { color: #5588dd; }
+    .sim-log-entry .log-p2 { color: #dd5588; }
+    .sim-log-entry .log-op { color: var(--electric); }
+    .sim-log-entry .log-detail { color: var(--text-muted); }
+    .sim-log-entry.log-death { color: var(--red); font-weight: 600; }
+    .sim-log-entry.log-fork { color: var(--violet); }
+    .sim-log-entry.log-ctd { color: var(--orange); font-weight: 600; }
+
+    /* Game-over overlay */
+    .sim-gameover {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(3,5,8,.85);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        animation: sim-go-in .5s ease-out;
+    }
+    @keyframes sim-go-in {
+        from { opacity:0; }
+        to { opacity:1; }
+    }
+    .sim-gameover h3 {
+        font-family: var(--mono);
+        font-size: 28px;
+        color: var(--ray);
+        text-shadow: 0 0 20px rgba(0,255,136,.5);
+        margin-bottom: 8px;
+    }
+    .sim-gameover p {
+        font-family: var(--mono);
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .sim-main {
+            flex-direction: column;
+        }
+        .sim-info-panel {
+            border-left: none;
+            border-top: 1px solid var(--border);
+            max-height: 400px;
+        }
+        .sim-arena-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sim-cell {
+            width: 10px;
+            height: 10px;
+        }
+        .sim-controls {
+            gap: 4px;
+        }
+        .sim-speed-slider {
+            width: 70px;
+        }
+        .sim-stat {
+            margin-left: 0;
+            width: 100%;
+            justify-content: center;
+        }
+    }
+    @media (max-width: 520px) {
+        .sim-cell {
+            width: 8px;
+            height: 8px;
+        }
+    }
+
     </style>
 </head>
 <body>
@@ -1137,6 +1633,7 @@
         <a href="#c-vs-rust">C vs Rust</a>
         <a href="#erreurs">Pièges</a>
         <a href="#strategie">Stratégie</a>
+        <a href="#simulateur">Simulateur</a>
     </div>
     <div style="flex:1"></div>
     <button onclick="openSearch()" style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--ray)';this.style.color='var(--ray)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">⌘K Rechercher</button>
@@ -1168,6 +1665,7 @@
         <a href="#erreurs" class="sb-link" data-section="erreurs">11 — Pièges & Erreurs</a>
         <a href="#cli" class="sb-link" data-section="cli">12 — Ligne de commande</a>
         <a href="#strategie" class="sb-link" data-section="strategie">13 — Stratégie champion</a>
+        <a href="#simulateur" class="sb-link" data-section="simulateur">14 — Simulateur VM</a>
     </div>
 </aside>
 
@@ -3286,6 +3784,86 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
 </div>
 </section>
 
+<!-- ══════════════════════════════════════════════════════════════ -->
+<section id="simulateur" class="reveal">
+<div class="container">
+    <h2><span class="num">14</span> Simulateur VM pas-à-pas</h2>
+    <p class="sim-intro">Explorez le fonctionnement intime de la machine virtuelle Corewar en temps réel. Deux champions s'affrontent sur une arène de 1024 cellules : le <strong style="color:#5588dd">Survivant</strong> (Joueur 1) enchaîne <code>live</code>, <code>sti</code> et <code>zjmp</code> en boucle, tandis que le <strong style="color:#dd5588">Bomber</strong> (Joueur 2) bombarde l'arène avec <code>fork</code> et <code>sti</code>. Avancez cycle par cycle ou lancez l'exécution automatique — chaque instruction est décodée devant vos yeux selon le cycle FETCH → DECODE → WAIT → EXECUTE.</p>
+
+    <div class="sim-container" id="simContainer">
+        <!-- Controls bar -->
+        <div class="sim-controls">
+            <button class="sim-btn" id="simStepBtn" onclick="simStep()">▶ Step</button>
+            <button class="sim-btn" id="simRunBtn" onclick="simToggleRun()">▶▶ Run</button>
+            <button class="sim-btn" id="simPauseBtn" onclick="simPause()" style="display:none">⏸ Pause</button>
+            <button class="sim-btn reset-btn" id="simResetBtn" onclick="simReset()">↺ Reset</button>
+            <div class="sim-sep"></div>
+            <div class="sim-speed-group">
+                <span class="sim-speed-label">Vitesse</span>
+                <input type="range" class="sim-speed-slider" id="simSpeedSlider" min="1" max="50" value="5" oninput="simSpeedChanged()">
+                <span class="sim-speed-val" id="simSpeedVal">5×</span>
+            </div>
+            <div class="sim-stat">
+                <div>Cycle: <span id="simCycleCount">0</span></div>
+                <div>CTD: <span class="ctd-val" id="simCTD">256</span></div>
+                <div>Procs: <span id="simProcCount">2</span></div>
+            </div>
+        </div>
+
+        <!-- Main: Arena + Info panel -->
+        <div class="sim-main">
+            <!-- Arena -->
+            <div class="sim-arena-panel">
+                <div class="sim-arena-grid" id="simArenaGrid"></div>
+                <div class="sim-arena-legend">
+                    <div class="leg-item"><div class="leg-dot p1-dot"></div> Joueur 1</div>
+                    <div class="leg-item"><div class="leg-dot p2-dot"></div> Joueur 2</div>
+                    <div class="leg-item"><div class="leg-dot empty-dot"></div> Libre</div>
+                </div>
+            </div>
+
+            <!-- Info panel -->
+            <div class="sim-info-panel">
+                <!-- Phase indicator -->
+                <div class="sim-phases">
+                    <span class="sim-phases-label">Phase:</span>
+                    <span class="sim-phase-step" id="simPhaseFetch">FETCH</span>
+                    <span class="sim-phase-arrow">→</span>
+                    <span class="sim-phase-step" id="simPhaseDecode">DECODE</span>
+                    <span class="sim-phase-arrow">→</span>
+                    <span class="sim-phase-step" id="simPhaseWait">WAIT</span>
+                    <span class="sim-phase-arrow">→</span>
+                    <span class="sim-phase-step" id="simPhaseExec">EXECUTE</span>
+                </div>
+
+                <!-- Process list -->
+                <div class="sim-processes" id="simProcesses"></div>
+
+                <!-- Register view -->
+                <div class="sim-registers" id="simRegisters" style="display:none">
+                    <div class="sim-regs-title">Registres — <span id="simRegProcName"></span></div>
+                    <div class="sim-regs-grid" id="simRegsGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Execution log -->
+        <div class="sim-log-container">
+            <div class="sim-log-header">📋 Journal d'exécution</div>
+            <div class="sim-log" id="simLog"></div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="sim-tooltip" id="simTooltip">
+        <span class="tt-addr" id="ttAddr"></span> &nbsp;
+        <span class="tt-val" id="ttVal"></span> &nbsp;
+        <span class="tt-owner" id="ttOwner"></span>
+    </div>
+</div>
+</section>
+<!-- ══════════════════════════════════════════════════════════════ -->
+
 <!-- Footer -->
 <footer>
     <a href="https://github.com/rkpequod-max/corewar-rust">github.com/rkpequod-max/corewar-rust</a>
@@ -4080,6 +4658,900 @@ function ctdPlay() {
 
 // Initialize CYCLE_TO_DIE animation
 ctdRender();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  MINI-SIMULATEUR VM COREWAR — JavaScript Engine
+// ═══════════════════════════════════════════════════════════════
+
+(function() {
+    'use strict';
+
+    // ── Constants ──
+    const MEM_SIZE = 1024;
+    const CYCLE_TO_DIE_INIT = 256;
+    const NBR_LIVE = 21;
+    const CYCLE_DELTA = 8;
+    const MAX_PROCESSES = 50;  // Prevent process explosion
+
+    const OP_TABLE = {
+        0x01: { name: 'live',    cycles: 10, has_acb: false, dir_size: 4 },
+        0x02: { name: 'ld',      cycles: 5,  has_acb: true,  dir_size: 4 },
+        0x03: { name: 'st',      cycles: 5,  has_acb: true,  dir_size: 4 },
+        0x04: { name: 'add',     cycles: 10, has_acb: true,  dir_size: 4 },
+        0x05: { name: 'sub',     cycles: 10, has_acb: true,  dir_size: 4 },
+        0x06: { name: 'and',     cycles: 6,  has_acb: true,  dir_size: 4 },
+        0x07: { name: 'or',      cycles: 6,  has_acb: true,  dir_size: 4 },
+        0x08: { name: 'xor',     cycles: 6,  has_acb: true,  dir_size: 4 },
+        0x09: { name: 'zjmp',    cycles: 20, has_acb: false, dir_size: 2 },
+        0x0a: { name: 'ldi',     cycles: 25, has_acb: true,  dir_size: 2 },
+        0x0b: { name: 'sti',     cycles: 25, has_acb: true,  dir_size: 2 },
+        0x0c: { name: 'fork',    cycles: 50, has_acb: false, dir_size: 2 },
+        0x0d: { name: 'lld',     cycles: 10, has_acb: true,  dir_size: 4 },
+        0x0e: { name: 'lldi',    cycles: 50, has_acb: true,  dir_size: 2 },
+        0x0f: { name: 'lfork',   cycles: 1000, has_acb: false, dir_size: 2 },
+        0x10: { name: 'aff',     cycles: 2,  has_acb: true,  dir_size: 4 },
+    };
+
+    // Phase constants
+    const PHASE_FETCH = 0;
+    const PHASE_DECODE = 1;
+    const PHASE_WAIT = 2;
+    const PHASE_EXECUTE = 3;
+
+    // ── Champion bytecodes ──
+    // Champion 1: "Survivant" — live + bomb loop
+    // Layout: live(5) + sti(7) + sub(5) + zjmp(3) = 20 bytes
+    const champ1Bytecode = [
+        0x01, 0x00, 0x00, 0x00, 0x01,             // live %1
+        0x0b, 0x68, 0x01, 0x00, 0x64, 0x00, 0x01, // sti r1, %100, %1
+        0x05, 0x54, 0x00, 0x00, 0x02,             // sub r0, r0, r2  (carry=1)
+        0x09, 0xff, 0xef,                          // zjmp %-17 (back to offset 0)
+    ];
+
+    // Champion 2: "Bomber" — fork + bomb loop
+    // Layout: live(5) + sti(7) + sub(5) + fork(3) + zjmp(3) = 23 bytes
+    const champ2Bytecode = [
+        0x01, 0x00, 0x00, 0x00, 0x02,             // live %2
+        0x0b, 0x68, 0x02, 0x00, 0x64, 0x00, 0x01, // sti r2, %100, %1
+        0x05, 0x54, 0x00, 0x00, 0x02,             // sub r0, r0, r2  (carry=1)
+        0x0c, 0xff, 0xef,                          // fork %-17 (child starts at offset 0)
+        0x09, 0xff, 0xec,                          // zjmp %-20 (back to offset 0)
+    ];
+
+    // ── VM State ──
+    let arena = new Uint8Array(MEM_SIZE);
+    let owner = new Uint8Array(MEM_SIZE);   // 0=none, 1=p1, 2=p2
+    let scrb  = new Uint32Array(MEM_SIZE);  // "scribble" layer - stores cycle# of last write
+    let processes = [];
+    let nextProcId = 0;
+    let cycleCount = 0;
+    let cycleToDie = CYCLE_TO_DIE_INIT;
+    let lastLiveCheck = 0;
+    let totalLivesSinceCheck = 0;
+    let gameOver = false;
+    let winner = 0;
+    let running = false;
+    let runTimer = null;
+    let speed = 5;
+    let selectedProcId = -1;
+    let recentWrites = [];  // [{addr, cycle}]
+
+    // ── Helper functions ──
+    function mem_mod(addr) {
+        return ((addr % MEM_SIZE) + MEM_SIZE) % MEM_SIZE;
+    }
+
+    function arenaRead(addr) {
+        return arena[mem_mod(addr)];
+    }
+
+    function arenaWrite(addr, val, playerNum) {
+        const a = mem_mod(addr);
+        arena[a] = val & 0xFF;
+        owner[a] = playerNum;
+        scrb[a] = cycleCount; // timestamp for flash effect
+        if (recentWrites.length > 500) recentWrites.shift();
+        recentWrites.push({ addr: a, cycle: cycleCount });
+    }
+
+    function arenaRead4(addr) {
+        let v = 0;
+        for (let i = 0; i < 4; i++) {
+            v = (v << 8) | arenaRead(addr + i);
+        }
+        return v >>> 0; // unsigned
+    }
+
+    function arenaRead2(addr) {
+        let v = 0;
+        for (let i = 0; i < 2; i++) {
+            v = (v << 8) | arenaRead(addr + i);
+        }
+        return v >>> 0;
+    }
+
+    function arenaWrite4(addr, val, playerNum) {
+        for (let i = 3; i >= 0; i--) {
+            arenaWrite(addr + i, val & 0xFF, playerNum);
+            val = val >>> 8;
+        }
+    }
+
+    function arenaWrite2(addr, val, playerNum) {
+        arenaWrite(addr, (val >> 8) & 0xFF, playerNum);
+        arenaWrite(addr + 1, val & 0xFF, playerNum);
+    }
+
+    // Convert signed interpretation
+    function toSigned32(val) {
+        if (val >= 0x80000000) return val - 0x100000000;
+        return val;
+    }
+    function toSigned16(val) {
+        if (val >= 0x8000) return val - 0x10000;
+        return val;
+    }
+
+    // Register handling: r0 is always 0
+    function getReg(proc, idx) {
+        if (idx === 0) return 0;
+        return proc.registers[idx] || 0;
+    }
+    function setReg(proc, idx, val) {
+        if (idx === 0) return; // r0 is hardwired to 0
+        proc.registers[idx] = val >>> 0;
+    }
+
+    // ── ACB decoding ──
+    function decodeACB(acb_byte) {
+        const types = [];
+        for (let i = 0; i < 3; i++) {
+            const code = (acb_byte >> (6 - i * 2)) & 0x03;
+            if (code === 0x01) types.push('reg');
+            else if (code === 0x02) types.push('dir');
+            else if (code === 0x03) types.push('ind');
+            else types.push(null);
+        }
+        return types;
+    }
+
+    function paramSize(type, dirSize) {
+        if (type === 'reg') return 1;
+        if (type === 'dir') return dirSize;
+        if (type === 'ind') return 2;
+        return 0;
+    }
+
+    // ── Process creation ──
+    function createProcess(playerNum, startPC, parentRegs, parentCarry) {
+        // Enforce process limit
+        const aliveCount = processes.filter(p => p.alive).length;
+        if (aliveCount >= MAX_PROCESSES) {
+            return null; // Cannot create more processes
+        }
+        const proc = {
+            id: nextProcId++,
+            owner: playerNum,
+            pc: mem_mod(startPC),
+            registers: new Uint32Array(16),
+            carry: 0,
+            live_count: 0,
+            phase: PHASE_FETCH,
+            wait_cycles: 0,
+            currentOp: null,
+            currentParams: [],
+            paramTypes: [],
+            acb: 0,
+            instructionSize: 0,
+            alive: true,
+        };
+        if (parentRegs) {
+            proc.registers.set(parentRegs);
+            proc.carry = parentCarry || 0;
+        } else {
+            // Initial process: r1 = player number (negated as per Corewar convention)
+            proc.registers[0] = 0;  // r0 = 0
+            proc.registers[1] = (0xFFFFFFFF - playerNum + 1) >>> 0; // -playerNum in two's complement
+        }
+        processes.push(proc);
+        return proc;
+    }
+
+    // ── Load champion into arena ──
+    function loadChampion(bytecode, startAddr, playerNum) {
+        for (let i = 0; i < bytecode.length; i++) {
+            const addr = mem_mod(startAddr + i);
+            arena[addr] = bytecode[i];
+            owner[addr] = playerNum;
+        }
+    }
+
+    // ── VM Initialization ──
+    function vmInit() {
+        arena.fill(0);
+        owner.fill(0);
+        scrb.fill(0);
+        processes = [];
+        nextProcId = 0;
+        cycleCount = 0;
+        cycleToDie = CYCLE_TO_DIE_INIT;
+        lastLiveCheck = 0;
+        totalLivesSinceCheck = 0;
+        gameOver = false;
+        winner = 0;
+        running = false;
+        if (runTimer) { clearInterval(runTimer); runTimer = null; }
+        recentWrites = [];
+        selectedProcId = -1;
+
+        // Load champions at evenly spaced addresses
+        const champ1Start = 0;
+        const champ2Start = MEM_SIZE / 2;
+
+        loadChampion(champ1Bytecode, champ1Start, 1);
+        loadChampion(champ2Bytecode, champ2Start, 2);
+
+        createProcess(1, champ1Start, null);
+        createProcess(2, champ2Start, null);
+    }
+
+    // ── Instruction Execution ──
+    function execLive(proc) {
+        const val = proc.currentParams[0];
+        proc.live_count++;
+        totalLivesSinceCheck++;
+        // Determine which player is being reported alive
+        const reportedPlayer = (val >>> 0);
+        // In Corewar, live reports the player number (negated in param, but we store direct)
+        addLog(proc, 'live %' + reportedPlayer, 'live');
+    }
+
+    function execLd(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let val;
+        if (types[0] === 'dir') {
+            val = params[0];
+        } else { // ind
+            val = arenaRead4(proc.pc + toSigned16(params[0]));
+        }
+        setReg(proc, params[1], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'ld ' + paramStr(types[0], params[0]) + ', r' + params[1], 'ld');
+    }
+
+    function execSt(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        const val = getReg(proc, params[0]);
+        if (types[1] === 'reg') {
+            setReg(proc, params[1], val);
+        } else { // ind
+            arenaWrite4(proc.pc + toSigned16(params[1]), val, proc.owner);
+        }
+        addLog(proc, 'st r' + params[0] + ', ' + paramStr(types[1], params[1]), 'st');
+    }
+
+    function execAdd(proc) {
+        const params = proc.currentParams;
+        const val = (toSigned32(getReg(proc, params[0])) + toSigned32(getReg(proc, params[1]))) >>> 0;
+        setReg(proc, params[2], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'add r' + params[0] + ', r' + params[1] + ', r' + params[2], 'add');
+    }
+
+    function execSub(proc) {
+        const params = proc.currentParams;
+        const val = (toSigned32(getReg(proc, params[0])) - toSigned32(getReg(proc, params[1]))) >>> 0;
+        setReg(proc, params[2], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'sub r' + params[0] + ', r' + params[1] + ', r' + params[2], 'sub');
+    }
+
+    function execAnd(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let a = getParamValue(proc, 0, types[0]);
+        let b = getParamValue(proc, 1, types[1]);
+        const val = (a & b) >>> 0;
+        setReg(proc, params[2], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'and ..., r' + params[2], 'and');
+    }
+
+    function execOr(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let a = getParamValue(proc, 0, types[0]);
+        let b = getParamValue(proc, 1, types[1]);
+        const val = (a | b) >>> 0;
+        setReg(proc, params[2], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'or ..., r' + params[2], 'or');
+    }
+
+    function execXor(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let a = getParamValue(proc, 0, types[0]);
+        let b = getParamValue(proc, 1, types[1]);
+        const val = (a ^ b) >>> 0;
+        setReg(proc, params[2], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'xor ..., r' + params[2], 'xor');
+    }
+
+    function execZjmp(proc) {
+        const val = proc.currentParams[0];
+        if (proc.carry === 1) {
+            const target = mem_mod(proc.pc + toSigned16(val));
+            addLog(proc, 'zjmp %' + toSigned16(val) + ' ✓ → ' + target, 'zjmp');
+            proc.pc = target;
+            return true; // PC was set, don't advance normally
+        } else {
+            addLog(proc, 'zjmp %' + toSigned16(val) + ' ✗ (carry=0)', 'zjmp');
+            return false;
+        }
+    }
+
+    function execLdi(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let a = getParamValueIdx(proc, 0, types[0]);
+        let b = getParamValueIdx(proc, 1, types[1]);
+        const addr = mem_mod(proc.pc + ((toSigned32(a) + toSigned32(b)) & 0xFFFFFFFF));
+        const val = arenaRead4(addr);
+        setReg(proc, params[2], val);
+        addLog(proc, 'ldi ..., r' + params[2], 'ldi');
+    }
+
+    function execSti(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        const val = getReg(proc, params[0]);
+        let a = getParamValueIdx(proc, 1, types[1]);
+        let b = getParamValueIdx(proc, 2, types[2]);
+        const addr = mem_mod(proc.pc + ((toSigned32(a) + toSigned32(b)) & 0xFFFFFFFF));
+        arenaWrite4(addr, val, proc.owner);
+        addLog(proc, 'sti r' + params[0] + ', ' + paramStr(types[1], params[1]) + ', ' + paramStr(types[2], params[2]) + ' → @' + addr, 'sti');
+    }
+
+    function execFork(proc) {
+        const val = proc.currentParams[0];
+        const target = mem_mod(proc.pc + toSigned16(val));
+        const child = createProcess(proc.owner, target, proc.registers, proc.carry);
+        if (child) {
+            addLog(proc, 'fork %' + toSigned16(val) + ' → P' + child.id + ' @' + target, 'fork');
+        } else {
+            addLog(proc, 'fork %' + toSigned16(val) + ' — limite atteinte', 'fork');
+        }
+    }
+
+    function execLld(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let val;
+        if (types[0] === 'dir') {
+            val = params[0];
+        } else {
+            val = arenaRead4(proc.pc + toSigned16(params[0]));
+        }
+        setReg(proc, params[1], val);
+        proc.carry = (val === 0) ? 1 : 0;
+        addLog(proc, 'lld ..., r' + params[1], 'lld');
+    }
+
+    function execLldi(proc) {
+        const params = proc.currentParams;
+        const types = proc.paramTypes;
+        let a = getParamValueIdx(proc, 0, types[0]);
+        let b = getParamValueIdx(proc, 1, types[1]);
+        const addr = mem_mod(proc.pc + ((toSigned32(a) + toSigned32(b)) & 0xFFFFFFFF));
+        const val = arenaRead4(addr);
+        setReg(proc, params[2], val);
+        addLog(proc, 'lldi ..., r' + params[2], 'lldi');
+    }
+
+    function execLfork(proc) {
+        const val = proc.currentParams[0];
+        const target = mem_mod(proc.pc + toSigned16(val));
+        const child = createProcess(proc.owner, target, proc.registers, proc.carry);
+        if (child) {
+            addLog(proc, 'lfork %' + toSigned16(val) + ' → P' + child.id + ' @' + target, 'fork');
+        } else {
+            addLog(proc, 'lfork %' + toSigned16(val) + ' — limite atteinte', 'fork');
+        }
+    }
+
+    function execAff(proc) {
+        const params = proc.currentParams;
+        const ch = String.fromCharCode(getReg(proc, params[0]) & 0xFF);
+        addLog(proc, 'aff r' + params[0] + ' → "' + ch + '"', 'aff');
+    }
+
+    // Helpers for getting param values (for operations like and/or/xor)
+    function getParamValue(proc, idx, type) {
+        const p = proc.currentParams[idx];
+        if (type === 'reg') return getReg(proc, p);
+        if (type === 'dir') return p;
+        if (type === 'ind') return arenaRead4(proc.pc + toSigned16(p));
+        return 0;
+    }
+
+    // For ldi/sti: ind params read 2 bytes from arena, dir uses direct value
+    function getParamValueIdx(proc, idx, type) {
+        const p = proc.currentParams[idx];
+        if (type === 'reg') return getReg(proc, p);
+        if (type === 'dir') return p;  // for idx operations, dir is 2 bytes (already read as such)
+        if (type === 'ind') return arenaRead2(proc.pc + toSigned16(p));
+        return 0;
+    }
+
+    function paramStr(type, val) {
+        if (type === 'reg') return 'r' + val;
+        if (type === 'dir') return '%' + val;
+        if (type === 'ind') return '' + val;
+        return '' + val;
+    }
+
+    // ── Process tick (1 cycle) ──
+    function processTick(proc) {
+        if (!proc.alive) return;
+
+        switch (proc.phase) {
+            case PHASE_FETCH: {
+                const opcode = arenaRead(proc.pc);
+                if (opcode < 1 || opcode > 16 || !OP_TABLE[opcode]) {
+                    // Invalid opcode: skip and move on
+                    proc.pc = mem_mod(proc.pc + 1);
+                    return; // stays in FETCH
+                }
+                proc.currentOp = OP_TABLE[opcode];
+                proc.currentParams = [];
+                proc.paramTypes = [];
+                proc.acb = 0;
+                proc.instructionSize = 1; // opcode byte
+                proc.phase = PHASE_DECODE;
+                break;
+            }
+
+            case PHASE_DECODE: {
+                const op = proc.currentOp;
+                let offset = proc.pc + 1; // past opcode
+
+                if (op.has_acb) {
+                    proc.acb = arenaRead(offset);
+                    offset += 1;
+                    proc.instructionSize = 2; // opcode + acb
+                    const types = decodeACB(proc.acb);
+                    proc.paramTypes = types;
+
+                    // Read params based on types and dir_size
+                    const numParams = getParamCount(op.name);
+                    for (let i = 0; i < numParams; i++) {
+                        const t = types[i];
+                        const sz = paramSize(t, op.dir_size);
+                        if (sz === 4) {
+                            proc.currentParams.push(arenaRead4(offset));
+                        } else if (sz === 2) {
+                            proc.currentParams.push(arenaRead2(offset));
+                        } else if (sz === 1) {
+                            proc.currentParams.push(arenaRead(offset));
+                        }
+                        offset += sz;
+                        proc.instructionSize += sz;
+                    }
+                } else {
+                    // No ACB: single direct param
+                    proc.paramTypes = ['dir'];
+                    const sz = op.dir_size;
+                    if (sz === 4) {
+                        proc.currentParams.push(arenaRead4(offset));
+                    } else {
+                        proc.currentParams.push(arenaRead2(offset));
+                    }
+                    proc.instructionSize = 1 + sz;
+                }
+
+                proc.wait_cycles = op.cycles;
+                proc.phase = PHASE_WAIT;
+                break;
+            }
+
+            case PHASE_WAIT: {
+                proc.wait_cycles--;
+                if (proc.wait_cycles <= 0) {
+                    proc.phase = PHASE_EXECUTE;
+                }
+                break;
+            }
+
+            case PHASE_EXECUTE: {
+                executeInstruction(proc);
+                // Advance PC by instruction size (unless instruction set PC directly)
+                proc.pc = mem_mod(proc.pc + proc.instructionSize);
+                // Reset to FETCH
+                proc.currentOp = null;
+                proc.currentParams = [];
+                proc.paramTypes = [];
+                proc.phase = PHASE_FETCH;
+                break;
+            }
+        }
+    }
+
+    function getParamCount(opName) {
+        switch (opName) {
+            case 'live': case 'zjmp': case 'fork': case 'lfork': return 1;
+            case 'ld': case 'st': case 'lld': return 2;
+            case 'add': case 'sub': case 'and': case 'or': case 'xor':
+            case 'ldi': case 'sti': case 'lldi': case 'aff': return 3;
+            default: return 0;
+        }
+    }
+
+    function executeInstruction(proc) {
+        const op = proc.currentOp;
+        if (!op) return;
+
+        switch (op.name) {
+            case 'live':  execLive(proc); break;
+            case 'ld':    execLd(proc); break;
+            case 'st':    execSt(proc); break;
+            case 'add':   execAdd(proc); break;
+            case 'sub':   execSub(proc); break;
+            case 'and':   execAnd(proc); break;
+            case 'or':    execOr(proc); break;
+            case 'xor':   execXor(proc); break;
+            case 'zjmp': {
+                const jumped = execZjmp(proc);
+                if (jumped) {
+                    // zjmp already set PC; override the normal advance
+                    // We'll handle this by setting instructionSize to the offset already jumped
+                    // Actually, we need a flag. Let's set instructionSize = 0 so PC doesn't advance further
+                    proc.instructionSize = 0;
+                }
+                break;
+            }
+            case 'ldi':   execLdi(proc); break;
+            case 'sti':   execSti(proc); break;
+            case 'fork':  execFork(proc); break;
+            case 'lld':   execLld(proc); break;
+            case 'lldi':  execLldi(proc); break;
+            case 'lfork': execLfork(proc); break;
+            case 'aff':   execAff(proc); break;
+        }
+    }
+
+    // ── Cycle step ──
+    function vmStep() {
+        if (gameOver) return;
+
+        cycleCount++;
+
+        // Tick all processes
+        const procsCopy = processes.slice(); // fork may add new ones
+        for (const proc of procsCopy) {
+            if (proc.alive) processTick(proc);
+        }
+
+        // Check CYCLE_TO_DIE
+        if (cycleCount - lastLiveCheck >= cycleToDie) {
+            // Remove processes that didn't call live
+            let died = 0;
+            for (const proc of processes) {
+                if (proc.alive && proc.live_count === 0) {
+                    proc.alive = false;
+                    died++;
+                    addSystemLog('P' + proc.id + ' (J' + proc.owner + ') est mort — aucun live', 'death');
+                }
+                proc.live_count = 0; // reset for next period
+            }
+            processes = processes.filter(p => p.alive);
+
+            // Check if totalLives >= NBR_LIVE
+            if (totalLivesSinceCheck >= NBR_LIVE) {
+                cycleToDie = Math.max(1, cycleToDie - CYCLE_DELTA);
+                addSystemLog('CTD réduit → ' + cycleToDie + ' (' + totalLivesSinceCheck + ' lives)', 'ctd');
+            }
+            totalLivesSinceCheck = 0;
+            lastLiveCheck = cycleCount;
+
+            // Check game over
+            const aliveOwners = new Set(processes.map(p => p.owner));
+            if (aliveOwners.size <= 1) {
+                gameOver = true;
+                winner = aliveOwners.size === 1 ? [...aliveOwners][0] : 0;
+                addSystemLog('🎮 FIN — Joueur ' + winner + ' gagne!', 'death');
+                showGameOver();
+            }
+        }
+    }
+
+    // ── Logging ──
+    const logEntries = [];
+    const MAX_LOG = 200;
+
+    function addLog(proc, text, opType) {
+        const entry = {
+            cycle: cycleCount,
+            player: proc.owner,
+            procId: proc.id,
+            text: text,
+            type: opType,
+        };
+        logEntries.push(entry);
+        if (logEntries.length > MAX_LOG) logEntries.shift();
+    }
+
+    function addSystemLog(text, type) {
+        logEntries.push({ cycle: cycleCount, player: 0, procId: -1, text: text, type: type || 'system' });
+        if (logEntries.length > MAX_LOG) logEntries.shift();
+    }
+
+    // ── UI Rendering ──
+    let arenaCells = [];
+    const gridEl = document.getElementById('simArenaGrid');
+    const logEl = document.getElementById('simLog');
+    const procEl = document.getElementById('simProcesses');
+    const regsEl = document.getElementById('simRegisters');
+    const regsGridEl = document.getElementById('simRegsGrid');
+    const regNameEl = document.getElementById('simRegProcName');
+    const tooltipEl = document.getElementById('simTooltip');
+    const containerEl = document.getElementById('simContainer');
+
+    // Build arena grid
+    function buildArenaGrid() {
+        gridEl.innerHTML = '';
+        arenaCells = [];
+        for (let i = 0; i < MEM_SIZE; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'sim-cell';
+            cell.dataset.addr = i;
+            gridEl.appendChild(cell);
+            arenaCells.push(cell);
+        }
+    }
+
+    function renderArena() {
+        // Determine PC positions
+        const pcSet = {};
+        for (const proc of processes) {
+            if (proc.alive) pcSet[proc.pc] = proc.owner;
+        }
+
+        const writeThreshold = 15; // Show flash for writes within this many cycles
+        for (let i = 0; i < MEM_SIZE; i++) {
+            const cell = arenaCells[i];
+            const o = owner[i];
+            const isPC = pcSet[i] !== undefined;
+
+            let cls = 'sim-cell';
+            if (isPC) {
+                cls += pcSet[i] === 1 ? ' p1 pc1' : ' p2 pc2';
+            } else if (o === 1) {
+                cls += ' p1';
+            } else if (o === 2) {
+                cls += ' p2';
+            }
+
+            if (scrb[i] > 0 && (cycleCount - scrb[i]) < writeThreshold) {
+                cls += ' write-flash';
+            }
+
+            cell.className = cls;
+        }
+    }
+
+    function renderProcesses() {
+        let html = '';
+        for (const proc of processes) {
+            if (!proc.alive) continue;
+            const pClass = proc.owner === 1 ? 'p1-dot' : 'p2-dot';
+            const opName = proc.currentOp ? proc.currentOp.name : '—';
+            const phaseNames = ['FETCH', 'DECODE', 'WAIT', 'EXEC'];
+            const sel = proc.id === selectedProcId ? ' selected' : '';
+
+            html += `<div class="sim-proc-card${sel}" data-proc-id="${proc.id}" onclick="simSelectProc(${proc.id})">
+                <div class="sim-proc-header">
+                    <div class="sim-proc-owner-dot ${pClass}"></div>
+                    <span class="sim-proc-id">P${proc.id} (J${proc.owner})</span>
+                    <span class="sim-proc-pc">@${proc.pc}</span>
+                </div>
+                <div class="sim-proc-detail">
+                    <span class="sim-proc-opcode">${opName}</span>
+                    <span>Phase: ${phaseNames[proc.phase]}</span>
+                    <span class="sim-proc-carry">C=${proc.carry}</span>
+                    <span class="sim-proc-lives">♥${proc.live_count}</span>
+                </div>
+            </div>`;
+        }
+        procEl.innerHTML = html;
+    }
+
+    function renderRegisters() {
+        if (selectedProcId < 0) {
+            regsEl.style.display = 'none';
+            return;
+        }
+        const proc = processes.find(p => p.id === selectedProcId && p.alive);
+        if (!proc) {
+            regsEl.style.display = 'none';
+            selectedProcId = -1;
+            return;
+        }
+        regsEl.style.display = '';
+        regNameEl.textContent = 'P' + proc.id + ' (J' + proc.owner + ')';
+        let html = '';
+        for (let i = 0; i < 16; i++) {
+            const val = proc.registers[i] || 0;
+            html += `<div class="sim-reg-item"><span class="reg-name">r${i}</span><span class="reg-val">${val}</span></div>`;
+        }
+        regsGridEl.innerHTML = html;
+    }
+
+    function renderPhases() {
+        // Show phase of the selected process, or first alive process
+        let proc = null;
+        if (selectedProcId >= 0) {
+            proc = processes.find(p => p.id === selectedProcId && p.alive);
+        }
+        if (!proc) {
+            proc = processes.find(p => p.alive);
+        }
+
+        const phaseEls = [
+            document.getElementById('simPhaseFetch'),
+            document.getElementById('simPhaseDecode'),
+            document.getElementById('simPhaseWait'),
+            document.getElementById('simPhaseExec'),
+        ];
+        const activeClasses = ['active-fetch', 'active-decode', 'active-wait', 'active-exec'];
+
+        for (let i = 0; i < 4; i++) {
+            phaseEls[i].className = 'sim-phase-step' + (proc && proc.phase === i ? ' ' + activeClasses[i] : '');
+        }
+    }
+
+    function renderLog() {
+        // Only render last N entries for performance
+        const entries = logEntries.slice(-80);
+        let html = '';
+        for (const e of entries) {
+            let cls = 'sim-log-entry';
+            let playerClass = '';
+            if (e.type === 'death') {
+                cls += ' log-death';
+            } else if (e.type === 'fork') {
+                cls += ' log-fork';
+            } else if (e.type === 'ctd') {
+                cls += ' log-ctd';
+            } else {
+                playerClass = e.player === 1 ? 'log-p1' : (e.player === 2 ? 'log-p2' : '');
+            }
+            html += `<div class="${cls}"><span class="log-cycle">[${e.cycle}]</span> <span class="${playerClass}">P${e.procId}</span> <span class="log-op">${e.text}</span></div>`;
+        }
+        logEl.innerHTML = html;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function renderStats() {
+        document.getElementById('simCycleCount').textContent = cycleCount;
+        document.getElementById('simCTD').textContent = cycleToDie;
+        document.getElementById('simProcCount').textContent = processes.filter(p => p.alive).length;
+    }
+
+    function renderAll() {
+        renderArena();
+        renderProcesses();
+        renderRegisters();
+        renderPhases();
+        renderLog();
+        renderStats();
+    }
+
+    function showGameOver() {
+        doPause();
+        const overlay = document.createElement('div');
+        overlay.className = 'sim-gameover';
+        overlay.id = 'simGameover';
+        const winText = winner === 0 ? 'Match nul' : 'Joueur ' + winner + ' gagne!';
+        overlay.innerHTML = `<h3>${winText}</h3><p>Après ${cycleCount} cycles</p>`;
+        containerEl.style.position = 'relative';
+        containerEl.appendChild(overlay);
+    }
+
+    // ── Tooltip ──
+    gridEl.addEventListener('mousemove', function(e) {
+        const cell = e.target.closest('.sim-cell');
+        if (!cell) {
+            tooltipEl.style.display = 'none';
+            return;
+        }
+        const addr = parseInt(cell.dataset.addr);
+        document.getElementById('ttAddr').textContent = '0x' + addr.toString(16).padStart(3, '0');
+        document.getElementById('ttVal').textContent = '0x' + arena[addr].toString(16).padStart(2, '0');
+        document.getElementById('ttOwner').textContent = owner[addr] === 0 ? 'libre' : 'J' + owner[addr];
+        tooltipEl.style.display = 'block';
+        tooltipEl.style.left = (e.clientX + 12) + 'px';
+        tooltipEl.style.top = (e.clientY - 30) + 'px';
+    });
+    gridEl.addEventListener('mouseleave', function() {
+        tooltipEl.style.display = 'none';
+    });
+
+    // ── Core pause function (used internally and exposed to window) ──
+    function doPause() {
+        running = false;
+        if (runTimer) { clearInterval(runTimer); runTimer = null; }
+        document.getElementById('simRunBtn').style.display = '';
+        document.getElementById('simPauseBtn').style.display = 'none';
+    }
+
+    // ── Public API (exposed to window for onclick handlers) ──
+    window.simStep = function() {
+        if (gameOver) return;
+        vmStep();
+        renderAll();
+    };
+
+    window.simToggleRun = function() {
+        if (running) return;
+        running = true;
+        document.getElementById('simRunBtn').style.display = 'none';
+        document.getElementById('simPauseBtn').style.display = '';
+        runTimer = setInterval(function() {
+            if (gameOver) { doPause(); return; }
+            const stepsPerTick = speed;
+            for (let i = 0; i < stepsPerTick; i++) {
+                vmStep();
+                if (gameOver) break;
+            }
+            renderAll();
+        }, 50);
+    };
+
+    window.simPause = doPause;
+
+    window.simReset = function() {
+        doPause();
+        // Remove game-over overlay
+        const go = document.getElementById('simGameover');
+        if (go) go.remove();
+        logEntries.length = 0;
+        vmInit();
+        buildArenaGrid();
+        renderAll();
+        addSystemLog('VM réinitialisée', 'system');
+        renderLog();
+    };
+
+    window.simSpeedChanged = function() {
+        speed = parseInt(document.getElementById('simSpeedSlider').value);
+        document.getElementById('simSpeedVal').textContent = speed + '×';
+    };
+
+    window.simSelectProc = function(procId) {
+        if (selectedProcId === procId) {
+            selectedProcId = -1;
+        } else {
+            selectedProcId = procId;
+        }
+        renderProcesses();
+        renderRegisters();
+        renderPhases();
+    };
+
+    // ── Initialize ──
+    vmInit();
+    buildArenaGrid();
+    renderAll();
+    addSystemLog('VM initialisée — 2 champions chargés', 'system');
+    renderLog();
+
+})();
 </script>
 
 </body>
