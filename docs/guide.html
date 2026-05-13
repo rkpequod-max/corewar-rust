@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corewar — Guide Pedagogique Complet</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #0a0e14;
+            --card: #161b22;
+            --card2: #1c2333;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --cyan: #00d9d9;
+            --blue: #6666ff;
+            --red: #e60000;
+            --green: #00cc00;
+            --yellow: #f0c040;
+            --orange: #f74c00;
+            --purple: #a855f7;
+            --code-bg: #0d1117;
+            --accent: var(--cyan);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+        /* Nav */
+        nav {
+            position: fixed; top:0; left:0; right:0; z-index:100;
+            background: rgba(13,17,23,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+            display: flex; align-items: center; gap: 20px;
+            height: 56px;
+        }
+        nav .logo { font-weight:800; font-size:1.1rem; color:var(--cyan); white-space:nowrap; }
+        nav .links { display:flex; gap:4px; overflow-x:auto; flex:1; }
+        nav a {
+            color:var(--text-muted); text-decoration:none; font-size:0.82rem;
+            padding:6px 12px; border-radius:6px; white-space:nowrap;
+            transition: all 0.2s;
+        }
+        nav a:hover, nav a.active { color:var(--cyan); background:rgba(0,217,217,0.08); }
+        .spacer { height:56px; }
+
+        /* Hero */
+        .hero {
+            text-align:center; padding:80px 20px 50px;
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 60%, #0d1117 100%);
+            border-bottom:1px solid var(--border);
+            position:relative; overflow:hidden;
+        }
+        .hero::before {
+            content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(0,217,217,0.06) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 50%, rgba(102,102,255,0.06) 0%, transparent 50%);
+        }
+        .hero h1 { font-size:3.2rem; font-weight:900; position:relative;
+            background:linear-gradient(135deg, var(--cyan), var(--blue));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .hero .sub { font-size:1.15rem; color:var(--text-muted); max-width:700px; margin:16px auto 0; position:relative; }
+        .hero .badges { margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; position:relative; }
+        .badge { display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; border:1px solid var(--border); background:var(--card); }
+        .badge-c { color:#4fc3f7; border-color:#4fc3f744; }
+        .badge-r { color:#f74c00; border-color:#f74c0044; }
+        .badge-42 { color:var(--green); border-color:#00cc0044; }
+
+        /* Sections */
+        .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+        section { padding:60px 0; border-bottom:1px solid var(--border); }
+        section:last-child { border-bottom:none; }
+        h2 { font-size:1.8rem; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+        h2 .num { color:var(--cyan); font-size:0.9rem; font-weight:700; opacity:0.6; }
+        h3 { font-size:1.25rem; margin:28px 0 12px; color:var(--cyan); }
+        h4 { font-size:1.05rem; margin:20px 0 8px; color:var(--text); }
+        p { margin-bottom:14px; color:var(--text-muted); }
+        strong { color:var(--text); }
+        a { color:var(--cyan); text-decoration:none; }
+        a:hover { text-decoration:underline; }
+
+        /* Intro cards */
+        .intro-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+        @media(max-width:800px) { .intro-grid { grid-template-columns:1fr; } }
+        .intro-card {
+            background:var(--card); border:1px solid var(--border); border-radius:12px;
+            padding:24px; text-align:center; transition:border-color 0.3s;
+        }
+        .intro-card:hover { border-color:var(--cyan); }
+        .intro-card .icon { font-size:2.2rem; margin-bottom:10px; }
+        .intro-card .title { font-weight:700; font-size:1.1rem; margin-bottom:6px; }
+        .intro-card .desc { font-size:0.85rem; color:var(--text-muted); }
+
+        /* Concept diagram */
+        .diagram-box {
+            background:var(--card); border:1px solid var(--border); border-radius:12px;
+            padding:30px; margin:24px 0; overflow-x:auto;
+        }
+        .flow-row { display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap; margin:10px 0; }
+        .flow-box {
+            padding:12px 20px; border-radius:8px; font-size:0.85rem; font-weight:600;
+            text-align:center; min-width:100px; position:relative;
+        }
+        .flow-box.asm { background:#1a3a2a; border:1px solid var(--green); color:var(--green); }
+        .flow-box.vm { background:#1a2a3a; border:1px solid var(--cyan); color:var(--cyan); }
+        .flow-box.champ { background:#2a1a2a; border:1px solid var(--purple); color:var(--purple); }
+        .flow-arrow { color:var(--text-muted); font-size:1.4rem; padding:0 8px; }
+
+        /* Code blocks */
+        .code-wrapper { margin:16px 0; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+        .code-header {
+            display:flex; align-items:center; justify-content:space-between;
+            background:var(--card2); padding:8px 16px; font-size:0.78rem;
+            border-bottom:1px solid var(--border);
+        }
+        .code-header .lang { color:var(--cyan); font-weight:600; }
+        .code-header .file { color:var(--text-muted); font-family:monospace; font-size:0.75rem; }
+        .code-tabs { display:flex; gap:2px; }
+        .code-tab {
+            padding:4px 12px; border-radius:4px; cursor:pointer;
+            font-size:0.78rem; color:var(--text-muted); background:transparent;
+            border:none; transition:all 0.2s;
+        }
+        .code-tab.active { background:var(--cyan); color:#000; font-weight:600; }
+        .code-tab:hover:not(.active) { color:var(--text); }
+        pre { background:var(--code-bg); padding:16px; overflow-x:auto; font-size:0.85rem; line-height:1.5; display:none; }
+        pre.active { display:block; }
+        code { font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace; }
+        .kw { color:var(--purple); }
+        .fn { color:var(--blue); }
+        .str { color:var(--green); }
+        .num { color:var(--yellow); }
+        .cm { color:#6a737d; font-style:italic; }
+        .ty { color:var(--orange); }
+        .mac { color:var(--cyan); }
+
+        /* Arena visual */
+        .arena-visual {
+            background:var(--card); border:1px solid var(--border); border-radius:12px;
+            padding:24px; margin:20px 0;
+        }
+        .arena-grid {
+            display:grid; grid-template-columns:repeat(32,1fr); gap:1px;
+            max-width:100%; aspect-ratio:2/1; margin:0 auto;
+        }
+        .arena-cell {
+            aspect-ratio:1; font-size:0; border-radius:1px;
+            transition:all 0.3s;
+        }
+        .arena-cell.p0 { background:#1a3a5a; }
+        .arena-cell.p1 { background:#3a1a3a; }
+        .arena-cell.p2 { background:#1a3a2a; }
+        .arena-cell.p3 { background:#3a3a1a; }
+        .arena-cell.empty { background:#161b22; }
+        .arena-cell.pc { box-shadow:0 0 6px var(--cyan); z-index:1; }
+        .arena-legend { display:flex; gap:16px; margin-top:12px; justify-content:center; flex-wrap:wrap; }
+        .arena-legend span { font-size:0.8rem; display:flex; align-items:center; gap:6px; }
+        .arena-legend .dot { width:12px; height:12px; border-radius:2px; }
+
+        /* Instruction table */
+        .op-table { width:100%; border-collapse:collapse; margin:16px 0; font-size:0.82rem; }
+        .op-table th { background:var(--card2); padding:10px 8px; text-align:center; color:var(--text-muted);
+            font-size:0.72rem; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid var(--border); position:sticky; top:56px; }
+        .op-table td { padding:8px; text-align:center; border-bottom:1px solid var(--border); }
+        .op-table td:first-child { font-family:monospace; color:var(--cyan); font-weight:700; text-align:left; }
+        .op-table tr:hover { background:rgba(0,217,217,0.03); }
+        .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.72rem; font-weight:600; }
+        .pill-yes { background:#1a3a2a; color:var(--green); }
+        .pill-no { background:#3a1a1a; color:#ff6666; }
+        .pill-idx { background:#1a2a3a; color:#4fc3f7; }
+        .pill-carry { background:#2a2a1a; color:var(--yellow); }
+
+        /* Interactive encoding demo */
+        .encoding-demo {
+            background:var(--card); border:1px solid var(--border); border-radius:12px;
+            padding:24px; margin:20px 0;
+        }
+        .encoding-demo h4 { color:var(--cyan); margin-bottom:12px; }
+        .encoding-row { display:flex; align-items:center; gap:8px; margin:8px 0; flex-wrap:wrap; }
+        .enc-token {
+            padding:6px 14px; border-radius:6px; font-family:monospace; font-size:0.85rem; font-weight:600;
+        }
+        .enc-opcode { background:#1a2a3a; color:var(--cyan); border:1px solid var(--cyan); }
+        .enc-acb { background:#2a2a1a; color:var(--yellow); border:1px solid var(--yellow); }
+        .enc-reg { background:#1a3a2a; color:var(--green); border:1px solid var(--green); }
+        .enc-dir { background:#3a1a3a; color:var(--purple); border:1px solid var(--purple); }
+        .enc-ind { background:#3a2a1a; color:var(--orange); border:1px solid var(--orange); }
+        .enc-arrow { color:var(--text-muted); font-size:1.2rem; }
+        .enc-hex { background:var(--card2); color:var(--text); border:1px solid var(--border);
+            padding:6px 14px; border-radius:6px; font-family:monospace; font-size:0.85rem; }
+
+        /* Cycle lifecycle */
+        .lifecycle { display:flex; flex-direction:column; gap:0; margin:20px 0; max-width:600px; margin-left:auto; margin-right:auto; }
+        .lc-step {
+            display:flex; gap:16px; padding:16px 0; position:relative;
+        }
+        .lc-step::before {
+            content:''; position:absolute; left:19px; top:40px; bottom:0;
+            width:2px; background:var(--border);
+        }
+        .lc-step:last-child::before { display:none; }
+        .lc-num {
+            width:40px; height:40px; border-radius:50%; display:flex; align-items:center;
+            justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0;
+        }
+        .lc-num.fetch { background:#1a2a3a; color:var(--cyan); border:2px solid var(--cyan); }
+        .lc-num.decode { background:#2a2a1a; color:var(--yellow); border:2px solid var(--yellow); }
+        .lc-num.wait { background:#2a1a2a; color:var(--purple); border:2px solid var(--purple); }
+        .lc-num.exec { background:#1a3a2a; color:var(--green); border:2px solid var(--green); }
+        .lc-content .lc-title { font-weight:700; font-size:0.95rem; margin-bottom:4px; }
+        .lc-content .lc-desc { font-size:0.85rem; color:var(--text-muted); }
+
+        /* Comparison table */
+        .cmp-table { width:100%; border-collapse:collapse; margin:16px 0; }
+        .cmp-table th { background:var(--card2); padding:12px; text-align:left; color:var(--text-muted);
+            font-size:0.75rem; text-transform:uppercase; border-bottom:2px solid var(--border); }
+        .cmp-table td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:0.85rem; color:var(--text-muted); }
+        .cmp-table td:first-child { color:var(--text); font-weight:600; }
+        .cmp-table .c-col { color:#4fc3f7; }
+        .cmp-table .r-col { color:var(--orange); }
+        .cmp-table .win { font-weight:700; }
+        .cmp-table .win-c { color:#4fc3f7; }
+        .cmp-table .win-r { color:var(--orange); }
+
+        /* Big endian visual */
+        .endian-demo { display:flex; gap:4px; justify-content:center; margin:12px 0; flex-wrap:wrap; }
+        .endian-byte {
+            width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+            border-radius:6px; font-family:monospace; font-size:0.8rem; font-weight:700;
+        }
+        .endian-byte.be { background:#1a2a3a; color:var(--cyan); border:1px solid var(--cyan); }
+        .endian-byte.le { background:#3a1a2a; color:var(--orange); border:1px solid var(--orange); }
+        .endian-label { font-size:0.78rem; color:var(--text-muted); text-align:center; margin-top:4px; }
+
+        /* Collapsible */
+        .collapse-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:14px 18px; background:var(--card2); border:1px solid var(--border);
+            border-radius:8px; cursor:pointer; margin:10px 0; transition:all 0.2s;
+        }
+        .collapse-header:hover { border-color:var(--cyan); }
+        .collapse-header .title { font-weight:600; font-size:0.92rem; }
+        .collapse-header .chevron { color:var(--cyan); transition:transform 0.3s; font-size:1.2rem; }
+        .collapse-header.open .chevron { transform:rotate(90deg); }
+        .collapse-body {
+            max-height:0; overflow:hidden; transition:max-height 0.4s ease;
+            border:1px solid transparent; border-top:none;
+        }
+        .collapse-body.open { max-height:5000px; border-color:var(--border); border-radius:0 0 8px 8px; }
+        .collapse-body-inner { padding:16px 18px; }
+
+        /* Tooltip */
+        .tip {
+            position:relative; cursor:help; border-bottom:1px dashed var(--cyan);
+            color:var(--cyan);
+        }
+        .tip:hover::after {
+            content:attr(data-tip); position:absolute; bottom:120%; left:50%;
+            transform:translateX(-50%); background:var(--card2); color:var(--text);
+            padding:8px 14px; border-radius:6px; font-size:0.8rem; white-space:nowrap;
+            border:1px solid var(--border); z-index:10; pointer-events:none;
+        }
+
+        /* Process visual */
+        .process-card {
+            background:var(--card); border:1px solid var(--border); border-radius:10px;
+            padding:20px; margin:12px 0;
+        }
+        .reg-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin:10px 0; }
+        .reg-cell {
+            background:var(--card2); border:1px solid var(--border); border-radius:4px;
+            padding:6px; text-align:center; font-family:monospace; font-size:0.7rem;
+        }
+        .reg-cell .reg-name { color:var(--cyan); font-weight:700; }
+        .reg-cell .reg-val { color:var(--text-muted); margin-top:2px; }
+        .reg-cell.r1 { border-color:var(--green); background:#1a2a1a; }
+
+        /* Footer */
+        footer { text-align:center; padding:30px 20px; color:var(--text-muted); font-size:0.85rem; }
+        footer a { color:var(--cyan); text-decoration:none; }
+        footer a:hover { text-decoration:underline; }
+
+        /* Responsive */
+        @media(max-width:700px) {
+            .hero h1 { font-size:2rem; }
+            .reg-grid { grid-template-columns:repeat(4,1fr); }
+            .op-table { font-size:0.72rem; }
+            .op-table th, .op-table td { padding:6px 4px; }
+            nav .links { gap:0; }
+            nav a { padding:6px 8px; font-size:0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+    <div class="logo">CW</div>
+    <div class="links">
+        <a href="#intro">Introduction</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#arena">Arene</a>
+        <a href="#process">Processus</a>
+        <a href="#lifecycle">Cycle de vie</a>
+        <a href="#instructions">Instructions</a>
+        <a href="#encoding">Encodage</a>
+        <a href="#assembler">Assembleur</a>
+        <a href="#c-vs-rust">C vs Rust</a>
+    </div>
+</nav>
+<div class="spacer"></div>
+
+<!-- Hero -->
+<div class="hero">
+    <h1>Corewar — Guide Complet</h1>
+    <p class="sub">Comment resoudre le projet Corewar de l'ecole 42 : machine virtuelle, assembleur, champion. Avec des implementations concrètes en C et en Rust.</p>
+    <div class="badges">
+        <span class="badge badge-42">Projet 42</span>
+        <span class="badge badge-c">C (reference)</span>
+        <span class="badge badge-r">Rust (traduction)</span>
+    </div>
+</div>
+
+<!-- Section 1: Introduction -->
+<section id="intro">
+<div class="container">
+    <h2><span class="num">01</span> Qu'est-ce que le Corewar ?</h2>
+    <p>Le <strong>Corewar</strong> est un jeu dans lequel des programmes — appelés <strong>champions</strong> — s'affrontent à l'intérieur d'une <strong>machine virtuelle</strong>. Chaque champion est un bytecode qui s'exécute dans un espace mémoire partagé : l'<strong>arène</strong>. Le but est d'être le <strong>dernier processus en vie</strong>.</p>
+    <p>Le projet se décompose en <strong>trois parties</strong> que vous devez rendre :</p>
+    <div class="intro-grid">
+        <div class="intro-card">
+            <div class="icon">⚙️</div>
+            <div class="title">La Machine Virtuelle</div>
+            <div class="desc">L'arène dans laquelle les champions s'exécutent. Elle gère la mémoire, les processus, le cycle de vie et détermine le vainqueur.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">🔧</div>
+            <div class="title">L'Assembleur</div>
+            <div class="desc">Compile les fichiers <code>.s</code> (assembleur lisible) en bytecode <code>.cor</code> exécutable par la VM. Parsing, résolution de labels, encodage.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">⚔️</div>
+            <div class="title">Le Champion</div>
+            <div class="desc">Un programme en assembleur Corewar capable de survivre. Il doit faire des <code>live</code> avec son numéro pour rester en vie.</div>
+        </div>
+    </div>
+    <p>Le flux de données est simple : vous écrivez un champion en <code>.s</code>, l'assembleur le compile en <code>.cor</code>, et la VM charge et exécute les champions :</p>
+    <div class="diagram-box">
+        <div class="flow-row">
+            <div class="flow-box champ">champion.s</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box asm">Assembleur (asm)</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box champ">champion.cor</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box vm">Machine Virtuelle (corewar)</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box vm">Arene 4096 octets</div>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- Section 2: Architecture -->
+<section id="architecture">
+<div class="container">
+    <h2><span class="num">02</span> Architecture globale</h2>
+    <p>Le projet est structuré autour de composants bien séparés. Voici la correspondance entre les fichiers C et les crates Rust :</p>
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Composant</th><th class="c-col">C</th><th class="r-col">Rust</th></tr></thead>
+            <tbody>
+                <tr><td>Constantes / op_table</td><td class="c-col"><code>include/op.h</code>, <code>op.c</code></td><td class="r-col"><code>corewar-common/</code></td></tr>
+                <tr><td>Assembleur</td><td class="c-col"><code>assembler/</code></td><td class="r-col"><code>corewar-asm/</code></td></tr>
+                <tr><td>Machine virtuelle</td><td class="c-col"><code>vm/</code></td><td class="r-col"><code>corewar-vm/</code></td></tr>
+                <tr><td>Desassembleur</td><td class="c-col"><code>disassembler/</code></td><td class="r-col"><code>corewar-disasm/</code></td></tr>
+                <tr><td>Librairie partagée</td><td class="c-col"><code>libft/</code></td><td class="r-col"><code>corewar-common/</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Constantes fondamentales</h3>
+    <p>Ces constantes définissent les règles du jeu. Elles sont identiques en C et en Rust :</p>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Constantes</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-const')">C — op.h</button>
+                <button class="code-tab" onclick="showCode(this,'r-const')">Rust — constants.rs</button>
+            </div>
+        </div>
+        <pre id="c-const" class="active"><code><span class="cm">// C — include/op.h</span>
+<span class="mac">#define</span> <span class="mac">MEM_SIZE</span>       <span class="num">4096</span>    <span class="cm">// Taille de l'arene (octets)</span>
+<span class="mac">#define</span> <span class="mac">IDX_MOD</span>        <span class="num">512</span>     <span class="cm">// MEM_SIZE / 8, modulo d'adressage</span>
+<span class="mac">#define</span> <span class="mac">CYCLE_TO_DIE</span>   <span class="num">1536</span>    <span class="cm">// Cycles avant verification des lives</span>
+<span class="mac">#define</span> <span class="mac">NBR_LIVE</span>       <span class="num">21</span>      <span class="cm">// Lives pour decrementer CYCLE_DELTA</span>
+<span class="mac">#define</span> <span class="mac">CYCLE_DELTA</span>    <span class="num">50</span>      <span class="cm">// Reduction de cycle_to_die</span>
+<span class="mac">#define</span> <span class="mac">MAX_CHECKS</span>     <span class="num">10</span>      <span class="cm">// Checks avant decrementation forcee</span>
+<span class="mac">#define</span> <span class="mac">REG_NUMBER</span>     <span class="num">16</span>      <span class="cm">// Registres par processus</span></code></pre>
+        <pre id="r-const"><code><span class="cm">// Rust — corewar-common/src/constants.rs</span>
+<span class="kw">pub const</span> <span class="mac">MEM_SIZE</span>: <span class="ty">usize</span> = <span class="num">4096</span>;
+<span class="kw">pub const</span> <span class="mac">IDX_MOD</span>: <span class="ty">i32</span> = <span class="num">512</span>;
+<span class="kw">pub const</span> <span class="mac">CYCLE_TO_DIE</span>: <span class="ty">i32</span> = <span class="num">1536</span>;
+<span class="kw">pub const</span> <span class="mac">NBR_LIVE</span>: <span class="ty">i32</span> = <span class="num">21</span>;
+<span class="kw">pub const</span> <span class="mac">CYCLE_DELTA</span>: <span class="ty">i32</span> = <span class="num">50</span>;
+<span class="kw">pub const</span> <span class="mac">MAX_CHECKS</span>: <span class="ty">i32</span> = <span class="num">10</span>;
+<span class="kw">pub const</span> <span class="mac">REG_NUMBER</span>: <span class="ty">usize</span> = <span class="num">16</span>;</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Section 3: Arena -->
+<section id="arena">
+<div class="container">
+    <h2><span class="num">03</span> L'Arene — Mémoire circulaire</h2>
+    <p>L'arène est un tableau de <strong>4096 octets</strong> (<code>MEM_SIZE</code>). Chaque octet peut contenir une instruction ou une donnée. La mémoire est <strong>circulaire</strong> : l'adresse 4096 est la même que l'adresse 0. Tous les adressages sont modulo <code>MEM_SIZE</code>.</p>
+    <p>En plus du bytecode, la VM maintient deux tableaux parallèles : <code>owner[]</code> qui indique quel joueur possède chaque octet (pour l'affichage couleur), et <code>scrb[]</code> qui marque les écritures récentes (surbrillance ncurses).</p>
+
+    <div class="arena-visual">
+        <h4 style="text-align:center;margin-bottom:16px">Vue schématique de l'arene (1024 cellules)</h4>
+        <div class="arena-grid" id="arenaGrid"></div>
+        <div class="arena-legend">
+            <span><span class="dot" style="background:#1a3a5a"></span> Joueur 1</span>
+            <span><span class="dot" style="background:#3a1a3a"></span> Joueur 2</span>
+            <span><span class="dot" style="background:#1a3a2a"></span> Joueur 3</span>
+            <span><span class="dot" style="background:#3a3a1a"></span> Joueur 4</span>
+            <span><span class="dot" style="background:#161b22"></span> Vide</span>
+            <span><span class="dot" style="background:#00d9d9;box-shadow:0 0 6px #00d9d9"></span> PC actif</span>
+        </div>
+    </div>
+
+    <h3>Structure de données — Arene</h3>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Arene</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-arena')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-arena')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-arena" class="active"><code><span class="cm">// C — vm/include/vm.h</span>
+<span class="kw">typedef struct</span> s_arena {
+    <span class="ty">t_uchar</span> arena[<span class="mac">MEM_SIZE</span>];   <span class="cm">// Le bytecode</span>
+    <span class="ty">char</span>    owner[<span class="mac">MEM_SIZE</span>];   <span class="cm">// Proprietaire de chaque octet</span>
+    <span class="ty">char</span>    scrb[<span class="mac">MEM_SIZE</span>];    <span class="cm">// Surbrillance ecriture recente</span>
+} t_arena;</code></pre>
+        <pre id="r-arena"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
+<span class="kw">pub struct</span> <span class="ty">Vm</span> {
+    <span class="kw">pub</span> arena: [<span class="ty">u8</span>; <span class="mac">MEM_SIZE</span>],       <span class="cm">// Le bytecode</span>
+    <span class="kw">pub</span> owner: [<span class="ty">u8</span>; <span class="mac">MEM_SIZE</span>],      <span class="cm">// Proprietaire</span>
+    <span class="kw">pub</span> scrb: [<span class="ty">u8</span>; <span class="mac">MEM_SIZE</span>],       <span class="cm">// Surbrillance</span>
+    <span class="kw">pub</span> processes: <span class="ty">Vec&lt;Process&gt;</span>,   <span class="cm">// Liste des processus</span>
+    <span class="kw">pub</span> players: <span class="ty">Vec&lt;Player&gt;</span>,      <span class="cm">// Liste des joueurs</span>
+    <span class="kw">pub</span> cycle_to_die: <span class="ty">i32</span>,
+    <span class="cm">// ...</span>
+}</code></pre>
+    </div>
+
+    <h3>Big Endian — Pourquoi c'est important</h3>
+    <p>La VM Corewar est <strong>Big Endian</strong> : l'octet de poids fort est stocké en premier. Quand vous lisez 4 octets depuis la mémoire pour former un <code>int</code>, le premier octet est le plus significatif. C'est l'inverse de l'architecture x86 (Little Endian).</p>
+    <div class="diagram-box" style="text-align:center">
+        <p style="margin-bottom:12px">Valeur <code>0x0EA83F3</code> stockée en mémoire :</p>
+        <div class="endian-demo">
+            <div><div class="endian-byte be">0E</div><div class="endian-label">+0</div></div>
+            <div><div class="endian-byte be">A8</div><div class="endian-label">+1</div></div>
+            <div><div class="endian-byte be">3F</div><div class="endian-label">+2</div></div>
+            <div><div class="endian-byte be">03</div><div class="endian-label">+3</div></div>
+        </div>
+        <p style="margin-top:12px;color:var(--cyan);font-size:0.85rem">Big Endian : l'octet le plus significatif (0E) est à l'adresse la plus basse</p>
+    </div>
+    <p>En C, on utilise <code>reverse_bytes()</code> pour lire correctement les valeurs Big Endian depuis le tableau d'octets. En Rust, on utilise <code>i32::from_be_bytes()</code>, ce qui est plus sûr et idiomatique :</p>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Lecture Big Endian</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-be')">C — type punning</button>
+                <button class="code-tab" onclick="showCode(this,'r-be')">Rust — safe</button>
+            </div>
+        </div>
+        <pre id="c-be" class="active"><code><span class="cm">// C — type punning (marche sur x86, UB en strict C)</span>
+<span class="ty">int</span> <span class="fn">reverse_bytes</span>(t_vm *vm, <span class="ty">int</span> pc, <span class="ty">int</span> size) {
+    <span class="ty">t_uchar</span> bytes[<span class="num">4</span>] = {<span class="num">0</span>};
+    <span class="kw">for</span> (<span class="ty">int</span> i = <span class="num">0</span>; i < size; i++)
+        bytes[i] = vm->ram.arena[(pc + i) % <span class="mac">MEM_SIZE</span>];
+    <span class="kw">return</span> *(<span class="ty">int</span>*)&bytes[<span class="num">0</span>]; <span class="cm">// Type punning !</span>
+}</code></pre>
+        <pre id="r-be"><code><span class="cm">// Rust — parsing sur, pas de type punning</span>
+<span class="kw">fn</span> <span class="fn">read_mem</span>(&<span class="kw">self</span>, pc: <span class="ty">usize</span>, size: <span class="ty">usize</span>) -> <span class="ty">i32</span> {
+    <span class="kw">let mut</span> bytes = [<span class="num">0u8</span>; <span class="num">4</span>];
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="num">0</span>..size {
+        bytes[<span class="num">4</span> - size + i] = <span class="kw">self</span>.arena[(pc + i) % <span class="mac">MEM_SIZE</span>];
+    }
+    <span class="ty">i32</span>::<span class="fn">from_be_bytes</span>(bytes) <span class="cm">// Safe et idiomatique</span>
+}</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Section 4: Process -->
+<section id="process">
+<div class="container">
+    <h2><span class="num">04</span> Le Processus</h2>
+    <p>Chaque champion démarre avec un processus. Un processus est une unité d'exécution autonome qui possède ses propres registres, un PC (Program Counter), un flag carry, et un compteur de cycles restants avant exécution.</p>
+
+    <div class="process-card">
+        <h4 style="color:var(--cyan);margin-bottom:12px">Anatomie d'un processus</h4>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">
+            <div><strong style="color:var(--yellow)">PC</strong> <span style="color:var(--text-muted)">(Program Counter)</span> : adresse de la prochaine instruction dans l'arène</div>
+            <div><strong style="color:var(--green)">Carry</strong> : flag mis à 1 si la dernière opération a donné 0</div>
+            <div><strong style="color:var(--purple)">IR</strong> <span style="color:var(--text-muted)">(Instruction Register)</span> : opcode en cours (0-15, ou -1)</div>
+            <div><strong style="color:var(--orange)">Duration</strong> : cycles restants avant exécution</div>
+        </div>
+        <div class="reg-grid">
+            <div class="reg-cell r1"><div class="reg-name">r1</div><div class="reg-val">-N°</div></div>
+            <div class="reg-cell"><div class="reg-name">r2</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r3</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r4</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r5</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r6</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r7</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r8</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r9</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r10</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r11</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r12</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r13</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r14</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r15</div><div class="reg-val">0</div></div>
+            <div class="reg-cell"><div class="reg-name">r16</div><div class="reg-val">0</div></div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:8px">⚠️ Le registre <strong style="color:var(--green)">r1</strong> contient le numéro du joueur au démarrage (négatif). Tous les autres sont initialisés à 0.</p>
+    </div>
+
+    <h3>Structure Process</h3>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Process</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-proc')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-proc')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-proc" class="active"><code><span class="cm">// C — vm/include/vm.h</span>
+<span class="kw">typedef struct</span> s_process {
+    <span class="ty">int</span>     carry;             <span class="cm">// Flag carry (0 ou 1)</span>
+    <span class="ty">int</span>     reg[<span class="mac">REG_NUMBER</span>];   <span class="cm">// 16 registres</span>
+    <span class="ty">int</span>     pc;                <span class="cm">// Program Counter</span>
+    <span class="ty">int</span>     duration;          <span class="cm">// Cycles restants avant execution</span>
+    <span class="ty">int</span>     live_count;        <span class="cm">// A fait un live ce tour ?</span>
+    <span class="ty">int</span>     live_since;        <span class="cm">// Cycles depuis le dernier live</span>
+    <span class="ty">int</span>     owner;             <span class="cm">// Numero du joueur proprietaire</span>
+    <span class="ty">t_uchar</span> ir;                <span class="cm">// Instruction en cours (0-15, -1=aucune)</span>
+    <span class="ty">t_uchar</span> last_ir;           <span class="cm">// Dernier opcode execute</span>
+} t_process;</code></pre>
+        <pre id="r-proc"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
+<span class="kw">pub struct</span> <span class="ty">Process</span> {
+    <span class="kw">pub</span> carry: <span class="ty">i32</span>,
+    <span class="kw">pub</span> reg: [<span class="ty">i32</span>; <span class="mac">REG_NUMBER</span>],
+    <span class="kw">pub</span> pc: <span class="ty">usize</span>,
+    <span class="kw">pub</span> duration: <span class="ty">i32</span>,
+    <span class="kw">pub</span> live_count: <span class="ty">i32</span>,
+    <span class="kw">pub</span> live_since: <span class="ty">i32</span>,
+    <span class="kw">pub</span> owner: <span class="ty">i32</span>,
+    <span class="kw">pub</span> ir: <span class="ty">i32</span>,         <span class="cm">// -1 = pas d'instruction</span>
+    <span class="kw">pub</span> last_ir: <span class="ty">i32</span>,
+    <span class="kw">pub</span> optab: <span class="ty">usize</span>,
+}</code></pre>
+    </div>
+
+    <h3>Fork — Créer de nouveaux processus</h3>
+    <p>Les instructions <code>fork</code> et <code>lfork</code> créent un <strong>nouveau processus</strong> qui hérite de tous les registres et du carry du parent. Seul le PC diffère : il est positionné à <code>PC + (param % IDX_MOD)</code> pour <code>fork</code>, ou <code>PC + param</code> (sans modulo) pour <code>lfork</code>.</p>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">fork vs lfork</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-fork')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-fork')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-fork" class="active"><code><span class="cm">// fork : avec IDX_MOD</span>
+<span class="kw">void</span> <span class="fn">op_fork</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="fn">add_process</span>(vm, process, <span class="fn">mem_mod</span>(P->pc + (move % <span class="mac">IDX_MOD</span>)));
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+}
+
+<span class="cm">// lfork : SANS IDX_MOD (long fork)</span>
+<span class="kw">void</span> <span class="fn">op_lfork</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="fn">add_process</span>(vm, process, <span class="fn">mem_mod</span>(P->pc + move)); <span class="cm">// Pas de % IDX_MOD !</span>
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+}</code></pre>
+        <pre id="r-fork"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
+<span class="kw">fn</span> <span class="fn">op_fork</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
+    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="kw">let</span> new_pc = (pc <span class="kw">as</span> <span class="ty">i32</span> + move % <span class="mac">IDX_MOD</span>).rem_euclid(<span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>);
+    <span class="kw">self</span>.new_processes.<span class="fn">push</span>(<span class="fn">clone_process</span>(idx, new_pc <span class="kw">as</span> <span class="ty">usize</span>));
+    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">3</span>) % <span class="mac">MEM_SIZE</span>;
+}
+
+<span class="kw">fn</span> <span class="fn">op_lfork</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
+    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="kw">let</span> new_pc = (pc <span class="kw">as</span> <span class="ty">i32</span> + move).rem_euclid(<span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>); <span class="cm">// Pas de IDX_MOD !</span>
+    <span class="kw">self</span>.new_processes.<span class="fn">push</span>(<span class="fn">clone_process</span>(idx, new_pc <span class="kw">as</span> <span class="ty">usize</span>));
+    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">3</span>) % <span class="mac">MEM_SIZE</span>;
+}</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Section 5: Lifecycle -->
+<section id="lifecycle">
+<div class="container">
+    <h2><span class="num">05</span> Cycle de vie d'une instruction</h2>
+    <p>Chaque instruction passe par 4 phases. La notion clé est que les instructions <strong>consomment toujours leurs cycles</strong> : même si l'instruction est invalide, les cycles sont déduits. Une instruction ne s'exécute qu'à la <strong>fin de son dernier cycle</strong>.</p>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+            <div class="lc-content">
+                <div class="lc-title">Fetch — Lecture de l'opcode</div>
+                <div class="lc-desc">Le processus lit l'octet à son PC dans l'arène. Si c'est un opcode valide (1-16), il stocke l'index dans <code>ir</code> et initialise <code>duration</code> avec le nombre de cycles de l'instruction. Sinon, il avance le PC de 1.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title">Decode — Attente des cycles</div>
+                <div class="lc-desc">À chaque cycle, le compteur <code>duration</code> est décrémenté. L'instruction attend sa durée complète (ex: <code>live</code> = 10 cycles, <code>fork</code> = 800 cycles). Pendant ce temps, les autres processus continuent.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Validate — Vérification des paramètres</div>
+                <div class="lc-desc">Quand <code>duration</code> atteint 0, l'instruction est prête. La VM vérifie l'OCP (octet de codage des paramètres) et valide que les types de paramètres correspondent à ceux attendus par l'opcode. Si invalide, l'instruction est ignorée mais le PC avance.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Execute — Exécution et mise à jour</div>
+                <div class="lc-desc">L'instruction est exécutée : modification des registres, écriture mémoire, saut du PC, création de processus (fork), etc. Le PC avance au-delà de l'instruction complète, et <code>ir</code> est remis à -1 pour la prochaine instruction.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>La boucle principale</h3>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Boucle principale</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-loop')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-loop')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-loop" class="active"><code><span class="cm">// C — vm/src/computer-system/run_cpu.c</span>
+<span class="kw">int</span> <span class="fn">run_processes</span>(t_vm *vm, <span class="ty">int</span> control) {
+    <span class="kw">while</span> (vm->processes != NULL && vm->cycle_to_die > <span class="num">0</span>) {
+        <span class="cm">// Verification CYCLE_TO_DIE ?</span>
+        <span class="ty">int</span> check = (vm->cycles && (vm->cycles - vm->diff_to_die)
+                                         % vm->cycle_to_die == <span class="num">0</span>);
+        <span class="fn">update_cycles</span>(vm);             <span class="cm">// Incremente, decremente CYCLE_DELTA</span>
+        <span class="fn">process_operations</span>(vm, vm->processes);  <span class="cm">// Execute tous les processus</span>
+        <span class="fn">kill_zombies</span>(vm, vm->processes, check); <span class="cm">// Tue les processus sans live</span>
+    }
+    <span class="cm">// Annoncer le gagnant...</span>
+}</code></pre>
+        <pre id="r-loop"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
+<span class="kw">pub fn</span> <span class="fn">run</span>(&<span class="kw">mut self</span>) {
+    <span class="kw">while</span> !<span class="kw">self</span>.processes.<span class="fn">is_empty</span>() && <span class="kw">self</span>.cycle_to_die > <span class="num">0</span> {
+        <span class="kw">let</span> check = <span class="kw">self</span>.cycles > <span class="num">0</span>
+            && (<span class="kw">self</span>.cycles - <span class="kw">self</span>.diff_to_die) % <span class="kw">self</span>.cycle_to_die == <span class="num">0</span>;
+        <span class="kw">self</span>.<span class="fn">update_cycles</span>();
+        <span class="kw">self</span>.<span class="fn">process_operations</span>();
+        <span class="kw">self</span>.<span class="fn">kill_zombies</span>(check);
+    }
+}</code></pre>
+    </div>
+
+    <h3>CYCLE_TO_DIE — Le mécanisme de survie</h3>
+    <p>Tous les <code>CYCLE_TO_DIE</code> cycles, la VM vérifie que chaque processus a fait au moins un <code>live</code>. Ceux qui n'en ont pas fait sont <strong>tués</strong> (zombies). Ce mécanisme est ce qui fait que la partie finit par se terminer :</p>
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title">📖 Détail du mécanisme CYCLE_TO_DIE</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p><strong>1.</strong> Tous les <code>CYCLE_TO_DIE</code> cycles, on vérifie les lives.</p>
+            <p><strong>2.</strong> Si le nombre total de <code>live</code> (variable <code>nlives</code>) est ≥ <code>NBR_LIVE</code> (21), alors <code>CYCLE_TO_DIE</code> est décrémenté de <code>CYCLE_DELTA</code> (50). La partie s'accélère.</p>
+            <p><strong>3.</strong> Si après <code>MAX_CHECKS</code> (10) vérifications consécutives sans assez de lives, on décrémente quand même <code>CYCLE_TO_DIE</code>.</p>
+            <p><strong>4.</strong> Quand <code>CYCLE_TO_DIE</code> atteint 0 ou moins, tous les processus sont tués et la partie se termine.</p>
+            <p><strong>5.</strong> Le gagnant est le dernier joueur à avoir été rapporté comme "en vie" par l'instruction <code>live</code>.</p>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- Section 6: Instructions -->
+<section id="instructions">
+<div class="container">
+    <h2><span class="num">06</span> Les 16 instructions</h2>
+    <p>Chaque instruction a un opcode (1-16), un nombre de cycles, des types de paramètres acceptés, et parfois des règles spéciales. Le tableau ci-dessous résume tout :</p>
+
+    <table class="op-table">
+        <thead>
+            <tr>
+                <th>#</th><th>Mnémonique</th><th>Params</th><th>Cycles</th>
+                <th>OCP?</th><th>Dir size</th><th>IDX_MOD?</th><th>Carry?</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td>live</td><td>%dir</td><td>10</td><td><span class="pill pill-no">non</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>2</td><td>ld</td><td>%dir|ind, r</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>3</td><td>st</td><td>r, r|ind</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>4</td><td>add</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>5</td><td>sub</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>6</td><td>and</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>7</td><td>or</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>8</td><td>xor</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>9</td><td>zjmp</td><td>%dir</td><td>20</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td>lit</td></tr>
+            <tr><td>10</td><td>ldi</td><td>r|d|i, d|r, r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>11</td><td>sti</td><td>r, r|d|i, d|r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>12</td><td>fork</td><td>%dir</td><td>800</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>13</td><td>lld</td><td>%dir|ind, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>14</td><td>lldi</td><td>r|d|i, d|r, r</td><td>50</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr><td>15</td><td>lfork</td><td>%dir</td><td>1000</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr><td>16</td><td>aff</td><td>r</td><td>2</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
+        </tbody>
+    </table>
+
+    <h3>Instructions clés en détail</h3>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">live</code> — Signaler qu'un joueur est en vie</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend un paramètre direct de 4 octets. Incrémente <code>live_count</code> du processus et <code>nlives</code> global. Si le numéro correspond à un joueur, celui-ci est déclaré "en vie". Le PC avance de 5 (1 opcode + 4 octets). <strong>Pas d'OCP</strong>.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">live</span></div>
+            <pre style="display:block"><code><span class="cm">// C</span>
+<span class="kw">void</span> <span class="fn">op_live</span>(t_vm *vm, t_list *process) {
+    P->live_count++;
+    vm->nlives++;
+    <span class="ty">int</span> live = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">4</span>);
+    <span class="fn">player_alive</span>(vm, live);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">5</span>);
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">zjmp</code> — Saut conditionnel si carry = 1</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend un index direct de 2 octets. <strong>Pas d'OCP</strong>. Si le carry est à 1, le PC saute à <code>PC + (param % IDX_MOD)</code>. Sinon, le PC avance de 3 (1 opcode + 2 octets). C'est l'instruction de contrôle de flux principale, utilisée pour les boucles et les conditions.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">zjmp</span></div>
+            <pre style="display:block"><code><span class="cm">// C</span>
+<span class="kw">void</span> <span class="fn">op_zjmp</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>) % <span class="mac">IDX_MOD</span>;
+    P->pc = <span class="fn">mem_mod</span>(P->pc + (P->carry ? move : <span class="num">3</span>));
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">sti</code> — Stockage indexé</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend un registre et deux index. Additionne les deux derniers, utilise cette somme comme adresse, et y copie la valeur du registre. Les paramètres indirects sont modulo <code>IDX_MOD</code>. L'adresse de stockage est <strong>relative au PC</strong>, et la VM écrit 4 octets via <code>store_at</code>. <strong>Piège</strong> : <code>store_at</code> écrit les octets de l'adresse la plus haute vers la plus basse, il faut donc ajouter +3 à l'adresse calculée.</p>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">ld</code> / <code style="color:var(--cyan)">lld</code> — Chargement avec/sans IDX_MOD</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p><code>ld</code> charge une valeur dans un registre. Si le paramètre est indirect, l'adresse est modulo <code>IDX_MOD</code>. <code>lld</code> (long load) fait la même chose <strong>sans IDX_MOD</strong>, ce qui permet d'accéder à n'importe quelle adresse dans l'arène. Les deux modifient le carry : <code>carry = 1</code> si le résultat est 0, sinon <code>carry = 0</code>.</p>
+        </div>
+    </div>
+</div>
+</section>
+
+<!-- Section 7: Encoding -->
+<section id="encoding">
+<div class="container">
+    <h2><span class="num">07</span> Encodage — Du .s au .cor</h2>
+    <p>La compilation transforme un fichier assembleur lisible en bytecode exécutable par la VM. Voici le format d'une instruction encodée :</p>
+
+    <h3>Le header .cor</h3>
+    <p>Chaque fichier <code>.cor</code> commence par un header de <strong>2192 octets</strong> :</p>
+    <div class="encoding-demo">
+        <div class="encoding-row">
+            <div><div class="enc-token enc-opcode">MAGIC<br><small>0xEA83F3</small></div><div class="endian-label">4 octets</div></div>
+            <div class="enc-arrow">→</div>
+            <div><div class="enc-token enc-reg">PROG_NAME<br><small>128 octets</small></div><div class="endian-label">nom</div></div>
+            <div class="enc-arrow">→</div>
+            <div><div class="enc-token enc-acb">PADDING<br><small>4 octets</small></div><div class="endian-label">null</div></div>
+            <div class="enc-arrow">→</div>
+            <div><div class="enc-token enc-dir">PROG_SIZE<br><small>4 octets</small></div><div class="endian-label">taille</div></div>
+            <div class="enc-arrow">→</div>
+            <div><div class="enc-token enc-reg">COMMENT<br><small>2048 octets</small></div><div class="endian-label">description</div></div>
+            <div class="enc-arrow">→</div>
+            <div><div class="enc-token enc-acb">PADDING<br><small>4 octets</small></div><div class="endian-label">null</div></div>
+        </div>
+    </div>
+
+    <h3>L'OCP — Octet de Codage des Paramètres</h3>
+    <p>L'OCP (ou ACB) encode le type de chaque paramètre sur <strong>2 bits</strong> : <code>01</code> = registre, <code>10</code> = direct, <code>11</code> = indirect. Les bits inutilisés sont à 0.</p>
+    <div class="encoding-demo">
+        <h4>Exemple : <code>sti r1, %:live, %1</code></h4>
+        <div class="encoding-row">
+            <div class="enc-token enc-reg">r1 → <strong>01</strong></div>
+            <div class="enc-token enc-dir">%:live → <strong>10</strong></div>
+            <div class="enc-token enc-dir">%1 → <strong>10</strong></div>
+            <div class="enc-arrow">→</div>
+            <div class="enc-hex">01 10 10 00 = <strong>0x68</strong></div>
+        </div>
+    </div>
+
+    <h3>Exemple complet de compilation</h3>
+    <p>Voici le champion "zork" du sujet, avec chaque instruction décodée :</p>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">zork.s → bytecode</span></div>
+        <pre style="display:block"><code><span class="cm"># Source assembleur</span>
+.name <span class="str">"zork"</span>
+.comment <span class="str">"just a basic living prog"</span>
+l2:  sti   r1, %:live, %1
+     and   r1, %0, r1
+live: live  %1
+     zjmp  %:live
+
+<span class="cm"># Bytecode compilé :</span>
+<span class="num">0x0b</span> <span class="str">0x68</span> <span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x0f</span> <span class="num">0x00</span> <span class="num">0x01</span>  <span class="cm">← sti r1,%:live,%1</span>
+<span class="num">0x06</span> <span class="str">0x64</span> <span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x01</span>  <span class="cm">← and r1,%0,r1</span>
+<span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x01</span>                <span class="cm">← live %1</span>
+<span class="num">0x09</span> <span class="num">0xff</span> <span class="num">0xfb</span>                          <span class="cm">← zjmp %:live  (−5 = 0xFFFB)</span></code></pre>
+    </div>
+
+    <h3>Calcul de l'OCP en code</h3>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">OCP (ACB)</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-ocp')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-ocp')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-ocp" class="active"><code><span class="cm">// C — assembler/src/synthesis/collect_codebytes.c</span>
+<span class="kw">static char</span> <span class="fn">get_acb</span>(t_instruction *instruction) {
+    <span class="ty">t_args</span> *argument = instruction->args;
+    <span class="ty">int</span> i = <span class="num">7</span>, acb = <span class="num">0</span>;
+    <span class="kw">while</span> (argument) {
+        <span class="kw">if</span> (argument->reg && i--)
+            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i);                       <span class="cm">// 01 = registre</span>
+        <span class="kw">else if</span> (argument->dir && i--)
+            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i + <span class="num">1</span>);                 <span class="cm">// 10 = direct</span>
+        <span class="kw">else if</span> (argument->ind && i--)
+            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i + <span class="num">1</span>) + <span class="fn">ft_power</span>(<span class="num">2</span>, i); <span class="cm">// 11 = indirect</span>
+        i--;
+        argument = argument->next;
+    }
+    <span class="kw">return</span> (acb);
+}</code></pre>
+        <pre id="r-ocp"><code><span class="cm">// Rust — corewar-asm/src/codegen.rs</span>
+<span class="kw">fn</span> <span class="fn">compute_acb</span>(instr: &<span class="ty">Instruction</span>) -> <span class="ty">u8</span> {
+    <span class="kw">let mut</span> acb: <span class="ty">u8</span> = <span class="num">0</span>;
+    <span class="kw">let mut</span> bit_pos: <span class="ty">i32</span> = <span class="num">7</span>;
+    <span class="kw">for</span> arg <span class="kw">in</span> &instr.args {
+        bit_pos -= <span class="num">1</span>;
+        <span class="kw">match</span> arg {
+            <span class="ty">Arg::Reg</span>(_) => { acb |= <span class="num">1</span> << bit_pos; }     <span class="cm">// 01</span>
+            <span class="ty">Arg::Dir</span>(_) => { acb |= <span class="num">2</span> << bit_pos; }     <span class="cm">// 10</span>
+            <span class="ty">Arg::Ind</span>(_) => { acb |= <span class="num">3</span> << bit_pos; }     <span class="cm">// 11</span>
+        }
+        bit_pos -= <span class="num">1</span>;
+    }
+    acb
+}</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Section 8: Assembler -->
+<section id="assembler">
+<div class="container">
+    <h2><span class="num">08</span> L'Assembleur — Pipeline complet</h2>
+    <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+            <div class="lc-content">
+                <div class="lc-title">Lexer — Tokenisation</div>
+                <div class="lc-desc">Découpe le fichier en tokens : labels, opcodes, paramètres, commentaires. Vérifie la syntaxe de base (caractères autorisés dans les labels, séparateurs valides).</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title">Parser — Validation sémantique</div>
+                <div class="lc-desc">Valide que chaque instruction a le bon nombre de paramètres et les bons types. Vérifie que tous les labels référencés existent. Construit la structure interne (liste chaînée en C, <code>Vec&lt;Label&gt;</code> en Rust).</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Calcul des positions — Première passe</div>
+                <div class="lc-desc">Parcourt toutes les instructions pour calculer leur position en mémoire (<code>mem_pos</code>) et la taille totale du programme. Chaque instruction a une taille variable qui dépend de l'OCP et des types de paramètres.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Codegen — Deuxième passe</div>
+                <div class="lc-desc">Résout les labels (calcule les offsets relatifs) et génère le bytecode final. Écrit le header + le bytecode dans le fichier <code>.cor</code>. Toutes les valeurs sont en Big Endian.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Résolution des labels</h3>
+    <p>Un label référencé par <code>%:label</code> est résolu en calculant la <strong>différence de position</strong> entre l'instruction qui référence et l'instruction cible :</p>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">Label resolution</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-label')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-label')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-label" class="active"><code><span class="cm">// C — assembler/src/analysis/parsing.c</span>
+<span class="ty">int</span> <span class="fn">exist_label</span>(t_code *code, <span class="ty">char</span> *label, <span class="ty">int</span> line) {
+    <span class="kw">while</span> (code) {
+        <span class="kw">if</span> (<span class="fn">ft_strcmp</span>(label, code->label) == <span class="num">0</span>)
+            <span class="kw">return</span> (<span class="num">1</span>); <span class="cm">// Label trouvé</span>
+        code = code->next;
+    }
+    <span class="cm">// Erreur : label inconnu</span>
+    <span class="kw">return</span> (<span class="num">0</span>);
+}</code></pre>
+        <pre id="r-label"><code><span class="cm">// Rust — corewar-asm/src/parser.rs</span>
+<span class="kw">pub fn</span> <span class="fn">validate_labels</span>(code_tab: &[<span class="ty">Label</span>]) -> <span class="ty">Result</span>&lt;(), <span class="ty">AsmError</span>&gt; {
+    <span class="kw">let</span> defined: <span class="ty">Vec</span>&lt;&str&gt; = code_tab.<span class="fn">iter</span>().<span class="fn">map</span>(|l| l.label.<span class="fn">as_str</span>()).<span class="fn">collect</span>();
+    <span class="kw">for</span> label <span class="kw">in</span> code_tab {
+        <span class="kw">for</span> instr <span class="kw">in</span> &label.instructions {
+            <span class="kw">for</span> arg <span class="kw">in</span> &instr.args {
+                <span class="kw">match</span> arg {
+                    <span class="ty">Arg::Dir</span>(s) <span class="kw">if</span> s.<span class="fn">starts_with</span>(<span class="str">':'</span>) => {
+                        <span class="kw">if</span> !defined.<span class="fn">contains</span>(&&s[<span class="num">1</span>..]) {
+                            <span class="kw">return</span> <span class="ty">Err</span>(<span class="ty">AsmError::Label</span>(...));
+                        }
+                    }
+                    <span class="cm">// idem pour Arg::Ind</span>
+                    _ => {}
+                }
+            }
+        }
+    }
+    <span class="ty">Ok</span>(())
+}</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Section 9: C vs Rust -->
+<section id="c-vs-rust">
+<div class="container">
+    <h2><span class="num">09</span> C vs Rust — Comparaison d'implémentation</h2>
+    <p>Le même projet implémenté en C et en Rust illustre les différences fondamentales entre les deux langages. Voici les choix architecturaux et leurs conséquences :</p>
+
+    <table class="cmp-table">
+        <thead><tr><th>Aspect</th><th class="c-col">C</th><th class="r-col">Rust</th><th>Impact</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>Processus</td>
+                <td class="c-col"><code>t_list*</code> (liste chaînée, <code>malloc</code> par nœud)</td>
+                <td class="r-col"><code>Vec&lt;Process&gt;</code> (tableau contigu)</td>
+                <td><span class="win win-r">Rust 5-21× plus rapide</span> (localité cache)</td>
+            </tr>
+            <tr>
+                <td>Dispatch</td>
+                <td class="c-col">Pointeurs de fonction dans <code>g_op_tab[].f</code></td>
+                <td class="r-col"><code>match ir { 0 => ..., 15 => ... }</code></td>
+                <td>Équivalent (les deux sont O(1))</td>
+            </tr>
+            <tr>
+                <td>Lecture mémoire</td>
+                <td class="c-col"><code>*(int*)&bytes[0]</code> (type punning, UB)</td>
+                <td class="r-col"><code>i32::from_be_bytes()</code> (safe)</td>
+                <td><span class="win win-r">Rust</span> (pas d'UB)</td>
+            </tr>
+            <tr>
+                <td>Gestion erreurs</td>
+                <td class="c-col">Codes de retour <code>-1</code>, <code>ft_printf_fd(2,...)</code></td>
+                <td class="r-col"><code>Result&lt;T, E&gt;</code> + <code>?</code> + <code>thiserror</code></td>
+                <td><span class="win win-r">Rust</span> (impossible d'oublier)</td>
+            </tr>
+            <tr>
+                <td>Fork insertion</td>
+                <td class="c-col">Insère immédiatement dans la liste</td>
+                <td class="r-col">Buffer <code>new_processes</code>, insère après le cycle</td>
+                <td><span class="win win-c">C</span> (comportement natif du sujet)</td>
+            </tr>
+            <tr>
+                <td>Débordement entier</td>
+                <td class="c-col">UB en C standard</td>
+                <td class="r-col"><code>wrapping_add()</code> / <code>wrapping_sub()</code></td>
+                <td><span class="win win-r">Rust</span> (comportement défini)</td>
+            </tr>
+            <tr>
+                <td>Taille binaire</td>
+                <td class="c-col"><strong>231 Ko</strong></td>
+                <td class="r-col">1.2 Mo</td>
+                <td><span class="win win-c">C</span> (5× plus petit)</td>
+            </tr>
+            <tr>
+                <td>Architecture</td>
+                <td class="c-col">Monolithique + <code>libft</code></td>
+                <td class="r-col">4 crates (<code>common</code>, <code>asm</code>, <code>vm</code>, <code>disasm</code>)</td>
+                <td><span class="win win-r">Rust</span> (modulaire)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Pourquoi le Rust est 5-21× plus rapide ?</h3>
+    <div class="intro-grid">
+        <div class="intro-card">
+            <div class="icon">🧱</div>
+            <div class="title">Vec&lt;Process&gt; vs liste chaînée</div>
+            <div class="desc">Le Rust stocke les processus dans un tableau contigu en mémoire. Le CPU peut précharger les données (cache lines). Le C utilise des nœuds éparpillés avec <code>malloc</code> individuel = cache misses constants.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">♻️</div>
+            <div class="title">Pas de malloc/free par fork</div>
+            <div class="desc">Le C alloue et libère un nœud de liste chaînée pour chaque <code>fork</code> et chaque zombie tué. Le Rust utilise un <code>Vec</code> qui recycle la mémoire via <code>retain_mut</code>.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">⚡</div>
+            <div class="title">Optimisations LLVM</div>
+            <div class="desc">Le compilateur Rust (backend LLVM) est plus agressif : inlining automatique, vectorisation SIMD, élimination de code mort. Même avec <code>-O2</code>, GCC ne matche pas LLVM sur cette base de code.</div>
+        </div>
+    </div>
+
+    <h3>Kill zombies — La différence algorithmique</h3>
+    <div class="code-wrapper">
+        <div class="code-header">
+            <span class="lang">kill_zombies</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-kill')">C — O(N²)</button>
+                <button class="code-tab" onclick="showCode(this,'r-kill')">Rust — O(N)</button>
+            </div>
+        </div>
+        <pre id="c-kill" class="active"><code><span class="cm">// C — parcours de liste + suppression de nœud</span>
+<span class="kw">void</span> <span class="fn">kill_zombies</span>(t_vm *vm, t_list *process, <span class="ty">int</span> check) {
+    <span class="kw">while</span> (process) {
+        <span class="kw">if</span> (!P->live_count || vm->cycle_to_die < <span class="num">0</span>) {
+            <span class="cm">// Supprimer le nœud de la liste chaînée</span>
+            <span class="cm">// + free() le nœud et le processus</span>
+            <span class="cm">// Complexité : O(N) par suppression × N processus</span>
+            vm->process_alive--;
+        }
+        P->live_count = <span class="num">0</span>;
+        process = process->next;
+    }
+}</code></pre>
+        <pre id="r-kill"><code><span class="cm">// Rust — retain_mut en O(N) total</span>
+<span class="kw">fn</span> <span class="fn">kill_zombies</span>(&<span class="kw">mut self</span>, check: <span class="ty">bool</span>) {
+    <span class="kw">if</span> <span class="kw">self</span>.cycles > <span class="num">0</span> && check {
+        <span class="kw">let</span> cycle_to_die = <span class="kw">self</span>.cycle_to_die;
+        <span class="kw">self</span>.processes.<span class="fn">retain_mut</span>(|p| {
+            <span class="kw">if</span> p.live_count == <span class="num">0</span> || cycle_to_die < <span class="num">0</span> { <span class="kw">false</span> }
+            <span class="kw">else</span> { p.live_count = <span class="num">0</span>; <span class="kw">true</span> }
+        });
+        <span class="kw">self</span>.process_alive = <span class="kw">self</span>.processes.<span class="fn">len</span>() <span class="kw">as</span> <span class="ty">i32</span>;
+    }
+}</code></pre>
+    </div>
+</div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <a href="https://github.com/rkpequod-max/corewar-rust">github.com/rkpequod-max/corewar-rust</a>
+    <span style="margin:0 12px;color:var(--border)">|</span>
+    <a href="https://github.com/rkpequod-max/corewar-rust/blob/main/LICENSE" target="_blank">Tous droits reserves</a>
+</footer>
+
+<script>
+// Arena grid visualization
+(function() {
+    const grid = document.getElementById('arenaGrid');
+    if (!grid) return;
+    const players = [0,0,0,0]; // player zones
+    for (let i = 0; i < 1024; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'arena-cell';
+        const row = Math.floor(i / 32);
+        // Player zones (each ~256 cells, evenly spaced)
+        if (row < 8 && i % 32 >= 4 && i % 32 < 20) cell.classList.add('p0');
+        else if (row >= 8 && row < 16 && i % 32 >= 12 && i % 32 < 28) cell.classList.add('p1');
+        else if (row >= 16 && row < 24 && i % 32 >= 4 && i % 32 < 20) cell.classList.add('p2');
+        else if (row >= 24 && row < 32 && i % 32 >= 12 && i % 32 < 28) cell.classList.add('p3');
+        else cell.classList.add('empty');
+        // Active PCs
+        if (i === 4*32+4 || i === 12*32+12 || i === 20*32+4 || i === 28*32+12) cell.classList.add('pc');
+        grid.appendChild(cell);
+    }
+})();
+
+// Code tab switching
+function showCode(btn, id) {
+    const wrapper = btn.closest('.code-wrapper');
+    wrapper.querySelectorAll('pre').forEach(p => p.classList.remove('active'));
+    wrapper.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+}
+
+// Collapsible sections
+function toggleCollapse(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+}
+
+// Nav active state
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+        if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    navLinks.forEach(a => {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+});
+</script>
+</body>
+</html>
