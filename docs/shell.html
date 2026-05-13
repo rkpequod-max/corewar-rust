@@ -28,7 +28,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 /* ── MAIN LAYOUT ── */
 .main{display:flex;height:calc(100vh - 48px);overflow:hidden}
 .left{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)}
-.right{width:420px;min-width:320px;display:flex;flex-direction:column;background:var(--surface);overflow-y:auto}
+.right{width:520px;min-width:400px;display:flex;flex-direction:column;background:var(--surface);overflow-y:auto}
 /* ── TERMINAL ── */
 .term-wrap{flex:1;min-height:0;padding:6px;background:var(--bg)}
 .term-wrap .xterm{height:100%}
@@ -45,7 +45,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .arena-section{padding:10px}
 .arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
 .arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
-.arena-canvas-wrap canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.arena-canvas-wrap canvas{display:block;width:100%;height:auto}
 /* ── INFO PANEL ── */
 .info-section{padding:10px 12px}
 .info-section h3{font-size:.82rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
@@ -120,25 +120,28 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   <!-- RIGHT: Visualization -->
   <div class="right">
     <div class="arena-section">
-      <h3>Arena — 4096 bytes</h3>
       <div class="arena-canvas-wrap">
-        <canvas id="arena-canvas" width="512" height="512"></canvas>
+        <canvas id="arena-canvas" width="768" height="512"></canvas>
       </div>
     </div>
-    <div class="info-section">
-      <h3>Status</h3>
-      <div class="info-grid" id="info-grid">
+    <div class="info-section" style="padding:6px 10px">
+      <div class="info-grid" id="info-grid" style="font-size:.72rem">
         <span class="lbl">Cycle</span><span class="val" id="info-cycle">0</span>
-        <span class="lbl">Cycle to die</span><span class="val" id="info-ctd">1536</span>
+        <span class="lbl">CYCLE_TO_DIE</span><span class="val" id="info-ctd">1536</span>
+        <span class="lbl">CYCLE_DELTA</span><span class="val" id="info-delta">50</span>
         <span class="lbl">Processes</span><span class="val" id="info-procs">0</span>
-        <span class="lbl">Checks</span><span class="val" id="info-checks">0</span>
+        <span class="lbl">Checks</span><span class="val" id="info-checks">0 / 10</span>
         <span class="lbl">Lives</span><span class="val" id="info-lives">0</span>
-        <span class="lbl">Winner</span><span class="val" id="info-winner">—</span>
+        <span class="lbl">Speed</span><span class="val" id="info-speed">50</span>
+        <span class="lbl" id="info-status-lbl">Status</span><span class="val" id="info-status" style="color:var(--text3)">—</span>
       </div>
     </div>
-    <div class="info-section">
-      <h3>Champions</h3>
-      <div id="player-list"><span style="color:var(--text3);font-size:.8rem">Aucun champion chargé</span></div>
+    <div class="info-section" style="padding:4px 10px">
+      <div id="player-list"><span style="color:var(--text3);font-size:.75rem">Aucun champion chargé</span></div>
+    </div>
+    <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
+      <h3 style="font-size:.72rem;margin-bottom:4px">Processus <span id="proc-count" style="color:var(--text3)">(0)</span></h3>
+      <div id="proc-list" style="max-height:120px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.68rem;color:var(--text2);line-height:1.6"></div>
     </div>
     <div class="editor-section">
       <h3>Assembleur</h3>
@@ -1128,21 +1131,28 @@ start:
 // ║               ARENA VISUALIZER (CANVAS)                     ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-const PLAYER_COLORS = ['#0e7490', '#1d4ed8', '#dc2626', '#16a34a']; // dark
-const PLAYER_COLORS_BRIGHT = ['#22d3ee', '#60a5fa', '#f87171', '#4ade80']; // bright
-const EMPTY_COLOR = '#111827';
-const EMPTY_SCRB_COLOR = '#1e293b';
+// Ncurses-style colors: foreground text on black background
+const PLAYER_FG = ['#00d9d9', '#6666ff', '#e60000', '#00cc00']; // cyan, blue, red, green
+const PLAYER_FG_BOLD = ['#55ffff', '#9999ff', '#ff4444', '#44ff44']; // bright variants
+const PLAYER_FG_DIM = ['#005555', '#222266', '#660000', '#005500']; // dim for non-scrb
+const GRAY = '#b4b4b4'; // gray for owner=0
+const GRAY_BOLD = '#e0e0e0';
 
 class ArenaVisualizer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.cellSize = 8; // 512 / 64 = 8
+    this.cellW = 12; // width per hex cell ("xx " = ~12px at 7px font)
+    this.cellH = 8;  // height per row
+    this.font = '7px monospace';
+    this.ctx.font = this.font;
+    this.ctx.textBaseline = 'top';
   }
 
   render(vm) {
     const ctx = this.ctx;
-    const cs = this.cellSize;
+    const cw = this.cellW;
+    const ch = this.cellH;
     const w = this.canvas.width;
     const h = this.canvas.height;
 
@@ -1150,77 +1160,89 @@ class ArenaVisualizer {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
-    // Build process PC set for highlighting
-    const pcSet = new Set();
-    const irSet = new Set();
+    // Build process PC map for highlighting
+    const pcMap = new Map(); // addr -> {ownerIdx, hasIr}
     for (const proc of vm.processes) {
-      pcSet.add(proc.pc);
-      if (proc.ir >= 0) irSet.add(proc.pc);
+      const existing = pcMap.get(proc.pc);
+      if (!existing) {
+        pcMap.set(proc.pc, { ownerIdx: this._procOwnerIdx(proc.owner), hasIr: proc.ir >= 0 });
+      } else if (proc.ir >= 0) {
+        existing.hasIr = true;
+      }
     }
 
-    // Draw arena cells
+    ctx.font = this.font;
+    ctx.textBaseline = 'top';
+
+    // Draw arena — ncurses style: hex text on black background
     for (let i = 0; i < MEM_SIZE; i++) {
       const col = i % 64;
       const row = Math.floor(i / 64);
-      const x = col * cs;
-      const y = row * cs;
+      const x = col * cw;
+      const y = row * ch;
 
       const ownerIdx = vm.owner[i];
       const byte = vm.arena[i];
       const isScrb = vm.scrb[i] > 0;
-      const isPc = pcSet.has(i);
-      const isIr = irSet.has(i);
+      const pcInfo = pcMap.get(i);
+      const isPc = !!pcInfo;
+      const isIr = pcInfo && pcInfo.hasIr;
 
-      if (ownerIdx > 0 && ownerIdx <= 4) {
-        const baseColor = isScrb ? PLAYER_COLORS_BRIGHT[ownerIdx - 1] : PLAYER_COLORS[ownerIdx - 1];
-        ctx.fillStyle = baseColor;
-        ctx.fillRect(x, y, cs, cs);
+      const hex = byte.toString(16).padStart(2, '0');
 
-        // Brightness based on byte value
-        const brightness = byte / 255;
-        if (isScrb && brightness < 0.3) {
-          ctx.fillStyle = PLAYER_COLORS_BRIGHT[ownerIdx - 1];
-          ctx.globalAlpha = 0.3;
-          ctx.fillRect(x, y, cs, cs);
-          ctx.globalAlpha = 1.0;
-        }
-      } else if (byte !== 0) {
-        ctx.fillStyle = isScrb ? EMPTY_SCRB_COLOR : '#1a1a2e';
-        ctx.fillRect(x, y, cs, cs);
-      } else if (isScrb) {
-        ctx.fillStyle = EMPTY_SCRB_COLOR;
-        ctx.fillRect(x, y, cs, cs);
+      // Determine colors — match ncurses visualizer
+      let fg, bg = null;
+
+      if (isIr && ownerIdx > 0) {
+        // Active instruction: reverse video — colored bg, black text
+        fg = '#000';
+        bg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
+      } else if (isIr && ownerIdx === 0) {
+        // IR on empty cell: reverse video gray
+        fg = '#000';
+        bg = isScrb ? GRAY_BOLD : GRAY;
+      } else if (isPc && ownerIdx > 0) {
+        // PC on owned cell: bright text
+        fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
+        // Small marker underline
+        bg = null;
+      } else if (isPc && ownerIdx === 0) {
+        // PC on empty cell: black text on gray bg (ncurses CP_BLACK_ON_GRAY)
+        fg = '#000';
+        bg = GRAY;
+      } else if (ownerIdx > 0) {
+        // Owned cell: player color text
+        fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG_DIM[ownerIdx - 1];
+        bg = null;
+      } else {
+        // Empty cell: gray text
+        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#555555' : '#222222');
+        bg = null;
       }
 
-      // Process indicator
-      if (isPc) {
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 0.9;
-        ctx.fillRect(x + cs/2 - 1, y + cs/2 - 1, 3, 3);
-        ctx.globalAlpha = 1.0;
+      // Draw background if needed
+      if (bg) {
+        ctx.fillStyle = bg;
+        ctx.fillRect(x, y, cw - 1, ch);
       }
 
-      // IR indicator (active instruction)
-      if (isIr) {
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+      // Draw hex text
+      ctx.fillStyle = fg;
+      ctx.fillText(hex, x + 1, y + 1);
+
+      // PC underline marker (for owned PCs without reverse video)
+      if (isPc && !isIr && ownerIdx > 0) {
+        ctx.fillStyle = fg;
+        ctx.fillRect(x, y + ch - 2, cw - 1, 2);
       }
     }
+  }
 
-    // Draw grid lines (subtle)
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= 64; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i * cs, 0);
-      ctx.lineTo(i * cs, h);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, i * cs);
-      ctx.lineTo(w, i * cs);
-      ctx.stroke();
+  _procOwnerIdx(nplayer) {
+    for (let i = 0; i < vm.players.length; i++) {
+      if (vm.players[i].nplayer === nplayer) return i + 1;
     }
+    return 0;
   }
 }
 
@@ -1547,6 +1569,7 @@ function cmdRunWithArgs(args) {
 
   running = true;
   document.getElementById('btn-run').classList.add('active');
+  document.getElementById('btn-pause').classList.remove('active');
   termPrint('▶ VM en cours d\'exécution... (tapez "pause" pour arrêter)', '1;32');
 
   runInterval = setInterval(() => {
@@ -1725,12 +1748,42 @@ function cmdProcs() {
 }
 
 
-// ── BUTTON HANDLERS ──
+// ── BUTTON HANDLERS (direct, no processCommand to avoid recursion) ──
 
-function cmdRun() { processCommand('run'); }
-function cmdStep() { processCommand('step'); }
-function cmdPause() { processCommand('pause'); }
-function cmdReset() { processCommand('reset'); }
+function cmdRun() { cmdRunWithArgs([]); }
+function cmdStep() { cmdStepN([]); }
+function cmdPause() {
+  if (running) {
+    clearInterval(runInterval);
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+    document.getElementById('btn-pause').classList.add('active');
+    termPrint('⏸ VM en pause', '1;33');
+    updateInfo();
+  } else {
+    termPrint('La VM n\'est pas en cours d\'exécution.', '1;33');
+  }
+  prompt();
+}
+function cmdReset() {
+  if (running) {
+    clearInterval(runInterval);
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+    document.getElementById('btn-pause').classList.remove('active');
+  }
+  vm = new Vm();
+  if (loadedChampions.length > 0) {
+    for (const ch of loadedChampions) {
+      vm.addPlayer(ch.name, ch.comment, ch.code);
+    }
+    vm.init();
+  }
+  updateInfo();
+  viz.render(vm);
+  termPrint('↺ VM réinitialisée', '1;32');
+  prompt();
+}
 
 function setSpeed(val) {
   speed = 101 - parseInt(val);
@@ -1813,27 +1866,89 @@ function updateInfo() {
   if (!vm) return;
   document.getElementById('info-cycle').textContent = vm.cycles;
   document.getElementById('info-ctd').textContent = vm.cycleToDie;
+  document.getElementById('info-delta').textContent = CYCLE_DELTA;
   document.getElementById('info-procs').textContent = vm.processes.length;
-  document.getElementById('info-checks').textContent = vm.nchecks;
-  document.getElementById('info-lives').textContent = vm.nlives;
-  document.getElementById('info-winner').textContent = vm.winner ? `${vm.winner.nplayer} (${vm.winner.name})` : '—';
-  document.getElementById('cycle-display').textContent = `Cycle: ${vm.cycles}`;
+  document.getElementById('info-checks').textContent = vm.nchecks + ' / ' + MAX_CHECKS;
+  document.getElementById('info-lives').textContent = vm.nlives + ' / ' + NBR_LIVE;
+  const speedVal = 101 - speed;
+  document.getElementById('info-speed').textContent = speedVal + '/100';
+  const statusEl = document.getElementById('info-status');
+  if (vm.winner) {
+    statusEl.textContent = vm.winner.nplayer + ' (' + vm.winner.name + ') won!';
+    statusEl.style.color = 'var(--yellow)';
+  } else if (running) {
+    statusEl.textContent = '** RUNNING **';
+    statusEl.style.color = 'var(--green)';
+  } else if (vm.processes.length > 0) {
+    statusEl.textContent = '** PAUSED **';
+    statusEl.style.color = 'var(--yellow)';
+  } else {
+    statusEl.textContent = '—';
+    statusEl.style.color = 'var(--text3)';
+  }
+  document.getElementById('cycle-display').textContent = 'Cycle: ' + vm.cycles;
+
+  // Update process list (ncurses-style)
+  const procEl = document.getElementById('proc-list');
+  const procCount = document.getElementById('proc-count');
+  procCount.textContent = '(' + vm.processes.length + ')';
+  if (vm.processes.length === 0) {
+    procEl.innerHTML = '<span style="color:var(--text3)">Aucun processus</span>';
+  } else {
+    const max = Math.min(vm.processes.length, 50);
+    let html = '';
+    for (let i = 0; i < max; i++) {
+      const p = vm.processes[i];
+      const carry = p.carry ? '*' : ' ';
+      const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
+      const ownerColor = getPlayerColor(p.owner);
+      // Register map: x=nonzero, .=zero
+      let regMap = '';
+      for (let r = 0; r < REG_NUMBER; r++) {
+        regMap += p.reg[r] !== 0 ? 'x' : '.';
+      }
+      html += '<div style="display:flex;gap:4px">';
+      html += '<span style="color:var(--text3)">' + carry + '</span>';
+      html += '<span style="color:' + ownerColor + '">P' + i + '</span>';
+      html += '<span style="color:var(--text3)">PC:</span>';
+      html += '<span style="color:var(--cyan)">' + p.pc.toString(16).padStart(4,'0') + '</span>';
+      html += '<span style="color:var(--green)">' + op + '</span>';
+      html += '<span style="color:var(--text3);font-size:.6rem">' + regMap + '</span>';
+      html += '</div>';
+    }
+    if (vm.processes.length > 50) {
+      html += '<div style="color:var(--text3)">... +' + (vm.processes.length - 50) + ' more</div>';
+    }
+    procEl.innerHTML = html;
+  }
+}
+
+function getPlayerColor(nplayer) {
+  for (let i = 0; i < vm.players.length; i++) {
+    if (vm.players[i].nplayer === nplayer) return PLAYER_FG[i];
+  }
+  return GRAY;
 }
 
 function updatePlayerList() {
   const el = document.getElementById('player-list');
   if (loadedChampions.length === 0) {
-    el.innerHTML = '<span style="color:var(--text3);font-size:.8rem">Aucun champion chargé</span>';
+    el.innerHTML = '<span style="color:var(--text3);font-size:.75rem">Aucun champion chargé</span>';
     return;
   }
-  const colors = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
-  el.innerHTML = loadedChampions.map((ch, i) =>
-    `<div class="player-row">
+  const colors = PLAYER_FG;
+  el.innerHTML = loadedChampions.map((ch, i) => {
+    const player = vm && vm.players[i];
+    const lastLive = player ? player.lastLive : '-';
+    const lives = player ? player.livesThisPeriod : '-';
+    return `<div class="player-row" style="gap:8px;padding:4px 0">
       <div class="player-dot" style="background:${colors[i]}"></div>
-      <span class="player-name">${ch.name} (${ch.code.length}o)</span>
-      <button class="ctrl-btn" style="font-size:.7rem;padding:2px 6px" onclick="removeChampion(${i})">✕</button>
-    </div>`
-  ).join('');
+      <span style="color:${colors[i]};font-weight:700;font-size:.75rem">P${i+1}</span>
+      <span class="player-name" style="font-size:.75rem">${ch.name}</span>
+      <span style="color:var(--text3);font-family:'Courier New',monospace;font-size:.68rem">live:${lastLive}</span>
+      <button class="ctrl-btn" style="font-size:.65rem;padding:1px 5px" onclick="removeChampion(${i})">✕</button>
+    </div>`;
+  }).join('');
 }
 
 function removeChampion(idx) {
