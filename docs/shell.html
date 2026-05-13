@@ -618,11 +618,37 @@ class ArenaVisualizer {
 let term, fitAddon, viz;
 let running = false;
 let runInterval = null;
-let speed = 50; // ms per cycle
+let speedSliderVal = 50; // 1-100, left=slow right=fast
 let loadedChampions = []; // {name, data: Uint8Array}
 let commandHistory = [];
 let historyIndex = -1;
 let vmInitialized = false; // whether vm.init() has been called
+
+// ── SPEED SYSTEM ──
+// Slider 1-100: left=slow, right=fast
+// At low speed: 1 step per tick, long delay between ticks
+// At high speed: multiple steps per tick (batch), short delay
+// Max speed = 3x the old max (30 steps per tick vs ~10 effective)
+function getSpeedConfig() {
+  const val = speedSliderVal;
+  if (val <= 20) {
+    // Very slow: 1 step, 200ms down to 80ms
+    const delay = Math.round(200 - (val - 1) * 120 / 19);
+    return { steps: 1, delay: Math.max(80, delay) };
+  } else if (val <= 50) {
+    // Medium: 1 step, 80ms down to 16ms
+    const delay = Math.round(80 - (val - 20) * 64 / 30);
+    return { steps: 1, delay: Math.max(16, delay) };
+  } else if (val <= 75) {
+    // Fast: 1-10 steps per 16ms tick
+    const steps = Math.max(1, Math.round(1 + (val - 50) * 9 / 25));
+    return { steps, delay: 16 };
+  } else {
+    // Very fast: 10-30 steps per 1ms tick (3x old max)
+    const steps = Math.max(10, Math.round(10 + (val - 75) * 20 / 25));
+    return { steps, delay: 1 };
+  }
+}
 
 // ── CONTEXTUAL TIPS ──
 let tipsEnabled = true;
@@ -824,15 +850,15 @@ function processCommand(cmd) {
       if (args[0]) {
         const s = parseInt(args[0]);
         if (s >= 1 && s <= 100) {
-          speed = 101 - s;
+          speedSliderVal = s;
           document.getElementById('speed-slider').value = s;
+          if (running && vm) restartRunInterval();
           termPrint(`Vitesse: ${s}/100`, '1;32');
         } else {
           termPrint('Usage: speed <1-100>', '1;31');
         }
       } else {
-        const s = 101 - speed;
-        termPrint(`Vitesse: ${s}/100`, '1;33');
+        termPrint(`Vitesse: ${speedSliderVal}/100`, '1;33');
       }
       prompt();
       break;
@@ -981,13 +1007,21 @@ function initVmFromChampions(verbose) {
   let loadedCount = 0;
   for (const ch of loadedChampions) {
     try {
-      const result = vm.load_player_bytes(ch.data, ch.name);
+      vm.load_player_bytes(ch.data, ch.name);
       loadedCount++;
     } catch (e) {
       termPrint(`⚠ Erreur chargement "${ch.name}": ${e}`, '1;31');
     }
   }
-  vm.init();
+  if (loadedCount === 0) {
+    throw new Error('Aucun champion n\'a pu être chargé dans la VM');
+  }
+  try {
+    vm.init();
+  } catch (e) {
+    vmInitialized = false;
+    throw new Error('Erreur vm.init(): ' + (e.message || e));
+  }
   vmInitialized = true;
   vm.set_verbose(verbose);
 
@@ -1016,29 +1050,8 @@ function cmdRunWithArgs(args) {
     if (args[i] === '-v') verbose = true;
   }
 
-  // Auto-load editor content as champion if none loaded yet
-  if (loadedChampions.length === 0) {
-    const source = document.getElementById('asm-editor').value.trim();
-    if (source) {
-      try {
-        const result = wasmAssemble(source);
-        loadedChampions.push(result);
-        termPrint(`✓ Auto-chargement: "${result.name}" (${result.codeSize} octets)`, '1;32');
-        updatePlayerList();
-      } catch (e) {
-        termPrint('Aucun champion chargé et l\'éditeur contient des erreurs.', '1;31');
-        termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
-        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez le code .s dans l\'éditeur, puis \x1b[1;32m⚙ Assembler & Charger\x1b[0m.');
-        prompt();
-        return;
-      }
-    } else {
-      termPrint('Aucun champion chargé et l\'éditeur est vide.', '1;31');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
-      prompt();
-      return;
-    }
-  }
+  // Ensure a champion is loaded
+  if (!ensureChampionLoaded()) { prompt(); return; }
 
   if (vm && !vm.is_running() && vmInitialized && vm.process_count() > 0) {
     // Check if game already ended
@@ -1066,69 +1079,27 @@ function cmdRunWithArgs(args) {
   document.getElementById('btn-run').classList.add('active');
   document.getElementById('btn-pause').classList.remove('active');
   const champCount = loadedChampions.length;
-  termPrint('▶ Combat en cours ! — ' + champCount + ' champion' + (champCount > 1 ? 's' : '') + ', vitesse ' + (101-speed) + '/100', '1;32');
+  const cfg = getSpeedConfig();
+  termPrint('▶ Combat en cours ! — ' + champCount + ' champion' + (champCount > 1 ? 's' : '') + ', vitesse ' + speedSliderVal + '/100 (' + cfg.steps + ' cycles/tick)', '1;32');
   printTip('run', 'L\'arène à droite montre la mémoire en temps réel. Chaque couleur = un joueur. ⏸ Pause pour analyser.');
 
-  runInterval = setInterval(() => {
-    const ok = vm.step();
-    // Drain events
-    drainAndPrintEvents();
-    updateInfo();
-    viz.render(vm);
-    if (!ok) {
-      clearInterval(runInterval);
-      runInterval = null;
-      running = false;
-      document.getElementById('btn-run').classList.remove('active');
-      const winnerNplayer = vm.winner_nplayer();
-      if (winnerNplayer !== 0) {
-        const winnerName = vm.winner_name();
-        const finalCycles = vm.cycles();
-        termPrint('');
-        termPrint(`🏆 Le joueur ${winnerNplayer} (${winnerName}) a gagné en ${finalCycles} cycles !`, '1;33');
-        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, modifiez votre code .s et rechargez, ou essayez un autre champion.');
-      }
-    }
-  }, speed);
+  restartRunInterval();
   prompt();
 }
 
 function cmdStepN(args) {
   if (!checkWasm()) return;
-  let n = parseInt(args[0]) || 1;
+  const n = Math.max(1, parseInt(args[0]) || 1);
 
-  // Auto-load editor content as champion if none loaded yet
-  if (loadedChampions.length === 0) {
-    const source = document.getElementById('asm-editor').value.trim();
-    if (source) {
-      try {
-        const result = wasmAssemble(source);
-        loadedChampions.push(result);
-        termPrint(`✓ Auto-chargement: "${result.name}" (${result.codeSize} octets)`, '1;32');
-        updatePlayerList();
-      } catch (e) {
-        termPrint('Aucun champion chargé et l\'éditeur contient des erreurs.', '1;31');
-        termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
-        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez le code .s dans l\'éditeur, puis \x1b[1;32m⚙ Assembler & Charger\x1b[0m.');
-        prompt();
-        return;
-      }
-    } else {
-      termPrint('Aucun champion chargé et l\'éditeur est vide.', '1;31');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
-      prompt();
-      return;
-    }
-  }
+  // Ensure a champion is loaded
+  if (!ensureChampionLoaded()) { prompt(); return; }
 
-  // Pause the VM if currently running (Step implies single-step, not concurrent stepping)
+  // Pause the VM if currently running
   if (running) {
     clearInterval(runInterval);
     runInterval = null;
     running = false;
     document.getElementById('btn-run').classList.remove('active');
-    document.getElementById('btn-pause').classList.add('active');
-    termPrint('⏸ Pause automatique avant Step.', '1;33');
   }
 
   // Initialize VM if needed
@@ -1143,38 +1114,78 @@ function cmdStepN(args) {
     }
   }
 
+  // Check if VM already finished
   try {
-    const winnerNplayer = vm.winner_nplayer();
-    if (winnerNplayer !== 0) {
-      termPrint('La VM est terminée.', '1;33');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Tapez \x1b[1;31mreset\x1b[0m ou \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
+    if (vm.winner_nplayer() !== 0) {
+      termPrint('La VM est terminée. Tapez "reset" pour recommencer.', '1;33');
       prompt();
       return;
     }
+  } catch (e) {
+    termPrint('Erreur VM: ' + (e.message || e), '1;31');
+    console.error('winner check error:', e);
+    prompt();
+    return;
+  }
 
-    const ok = vm.step_n(n);
-    drainAndPrintEvents();
-    updateInfo();
-    viz.render(vm);
+  // Execute N steps using vm.step() in a loop (more robust than vm.step_n)
+  let ok = true;
+  try {
+    for (let i = 0; i < n && ok; i++) {
+      ok = vm.step();
+    }
+  } catch (e) {
+    termPrint('Erreur d\'exécution step: ' + (e.message || e), '1;31');
+    console.error('vm.step() error:', e);
+    ok = false;
+  }
 
+  try { drainAndPrintEvents(); } catch (e) { /* ignore */ }
+  try { updateInfo(); } catch (e) { /* ignore */ }
+  try { viz.render(vm); } catch (e) { console.error('viz.render error:', e); }
+
+  try {
     const cycles = vm.cycles();
     const procs = vm.process_count();
     const ctd = vm.cycle_to_die();
     termPrint(`⏭ Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
-    printTip('step', 'Tapez step N pour avancer de N cycles d\'un coup. ▶ Run pour lancer en continu.');
 
     if (!ok) {
       const wn = vm.winner_nplayer();
       if (wn !== 0) {
         termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
-        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
+      } else {
+        termPrint('La VM s\'est arrêtée (plus de processus).', '1;33');
       }
     }
   } catch (e) {
-    termPrint('Erreur step: ' + (e.message || e), '1;31');
-    console.error('cmdStepN error:', e);
+    console.error('post-step info error:', e);
   }
   prompt();
+}
+
+// Ensures at least one champion is loaded (auto-loads editor content if needed)
+function ensureChampionLoaded() {
+  if (loadedChampions.length > 0) return true;
+
+  const source = document.getElementById('asm-editor').value.trim();
+  if (!source) {
+    termPrint('Aucun champion chargé et l\'éditeur est vide.', '1;31');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+    return false;
+  }
+
+  try {
+    const result = wasmAssemble(source);
+    loadedChampions.push(result);
+    termPrint(`✓ Auto-chargement: "${result.name}" (${result.codeSize} octets)`, '1;32');
+    updatePlayerList();
+    return true;
+  } catch (e) {
+    termPrint('Aucun champion chargé et l\'éditeur contient des erreurs.', '1;31');
+    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+    return false;
+  }
 }
 
 function drainAndPrintEvents() {
@@ -1349,29 +1360,48 @@ function cmdReset() {
 }
 
 function setSpeed(val) {
-  speed = 101 - parseInt(val);
-  // If running, restart with new speed
+  speedSliderVal = parseInt(val);
+  // If running, restart with new speed config
   if (running && vm) {
-    clearInterval(runInterval);
-    runInterval = setInterval(() => {
-      const ok = vm.step();
-      drainAndPrintEvents();
-      updateInfo();
-      viz.render(vm);
-      if (!ok) {
-        clearInterval(runInterval);
-        runInterval = null;
-        running = false;
-        document.getElementById('btn-run').classList.remove('active');
-        const winnerNplayer = vm.winner_nplayer();
-        if (winnerNplayer !== 0) {
-          const finalCycles = vm.cycles();
-          termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné en ${finalCycles} cycles !`, '1;33');
-          term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
-        }
-      }
-    }, speed);
+    restartRunInterval();
   }
+  updateSpeedDisplay();
+}
+
+function updateSpeedDisplay() {
+  document.getElementById('info-speed').textContent = speedSliderVal + '/100';
+  document.getElementById('fs-speed').textContent = speedSliderVal + '/100';
+}
+
+// Run loop callback: executes N steps, renders, checks for winner
+function runTick() {
+  if (!vm || !running) return;
+  const cfg = getSpeedConfig();
+  let ok = true;
+  for (let i = 0; i < cfg.steps && ok; i++) {
+    ok = vm.step();
+  }
+  drainAndPrintEvents();
+  updateInfo();
+  viz.render(vm);
+  if (!ok) {
+    clearInterval(runInterval);
+    runInterval = null;
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+    const winnerNplayer = vm.winner_nplayer();
+    if (winnerNplayer !== 0) {
+      const finalCycles = vm.cycles();
+      termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné en ${finalCycles} cycles !`, '1;33');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
+    }
+  }
+}
+
+function restartRunInterval() {
+  if (runInterval) clearInterval(runInterval);
+  const cfg = getSpeedConfig();
+  runInterval = setInterval(runTick, cfg.delay);
 }
 
 // ── ARENA CANVAS HELPERS ──
@@ -1425,7 +1455,7 @@ function toggleArenaFullscreen() {
     if (fsViz) fsViz.render(vm);
     updateFsInfo();
     startFsRenderLoop();
-    document.getElementById('fs-speed-slider').value = 101 - speed;
+    document.getElementById('fs-speed-slider').value = speedSliderVal;
   } else {
     overlay.classList.remove('active');
     stopFsRenderLoop();
@@ -1477,7 +1507,7 @@ function updateFsInfo() {
   el('fs-procs').textContent = vm.process_count();
   el('fs-checks').textContent = vm.nchecks() + ' / ' + MAX_CHECKS_VAL;
   el('fs-lives').textContent = vm.nlives() + ' / ' + NBR_LIVE_VAL;
-  el('fs-speed').textContent = (101 - speed) + '/100';
+  el('fs-speed').textContent = speedSliderVal + '/100';
   el('fs-cycle-display').textContent = 'Cycle: ' + vm.cycles();
 
   const statusVal = el('fs-status-val');
@@ -1709,8 +1739,7 @@ function updateInfo() {
   document.getElementById('info-procs').textContent = vm.process_count();
   document.getElementById('info-checks').textContent = vm.nchecks() + ' / ' + MAX_CHECKS_VAL;
   document.getElementById('info-lives').textContent = vm.nlives() + ' / ' + NBR_LIVE_VAL;
-  const speedVal = 101 - speed;
-  document.getElementById('info-speed').textContent = speedVal + '/100';
+  document.getElementById('info-speed').textContent = speedSliderVal + '/100';
   const statusEl = document.getElementById('info-status');
   const winnerNplayer = vm.winner_nplayer();
   if (winnerNplayer !== 0) {
