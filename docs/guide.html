@@ -3090,8 +3090,8 @@
 <section id="intro" class="reveal">
 <div class="container">
     <h2><span class="num">01</span> Qu'est-ce que le Corewar ?</h2>
-    <p>Le <strong>Corewar</strong> est un jeu dans lequel des programmes — appelés <strong>champions</strong> — s'affrontent à l'intérieur d'une <strong>machine virtuelle</strong>. Chaque champion est un bytecode qui s'exécute dans un espace mémoire partagé : l'<strong>arène</strong>. Le but est d'être le <strong>dernier processus en vie</strong>.</p>
-    <p>Le projet se décompose en <strong>trois parties</strong> que vous devez rendre :</p>
+    <p>Le <strong>Corewar</strong> est un jeu dans lequel des programmes — appelés <strong>champions</strong> — s'affrontent à l'intérieur d'une <strong>machine virtuelle</strong>. Chaque champion est un bytecode qui s'exécute dans un espace mémoire partagé : l'<strong>arène</strong>. Le but est d'être le <strong>dernier processus en vie</strong>. C'est un projet qui vous plonge au coeur de l'architecture des machines : vous allez construire de vos mains un processeur logiciel, un compilateur et des programmes qui s'exécutent dessus — exactement comme les concepteurs de puces et les ingénieurs système le font dans le monde réel.</p>
+    <p>Le projet se décompose en <strong>trois parties</strong> que vous devez rendre :
     <div class="intro-grid">
         <div class="intro-card">
             <div class="icon">⚙️</div>
@@ -3125,8 +3125,10 @@
     </div>
 
     <h3>Pourquoi ce projet ?</h3>
-    <p>Le Corewar a été inventé par <strong>D.G. Jones</strong> et <strong>A.K. Dewdney</strong> en 1984, popularisé par un article dans <em>Scientific American</em>. C'est un jeu de programmation qui enseigne des concepts fondamentaux : l'architecture de machine virtuelle, le langage assembleur, la compilation, la gestion mémoire et l'exécution concurrente. À l'école 42, c'est l'un des projets les plus difficiles car il exige de comprendre <strong>toutes les couches</strong> : de la syntaxe assembleur à l'exécution par la VM, en passant par l'encodage binaire et la résolution de symboles.</p>
-    <p>Les compétences acquises sont transversales : compréhension des ISA (Instruction Set Architectures), manipulation de données au niveau octet, tampons circulaires, endianness, ordonnancement de processus, et la notion de contrat entre un compilateur et un runtime.</p>
+    <p>Le Corewar trouve ses origines dans un jeu appelé <strong>Darwin</strong>, inventé par <strong>Victor A. Vyssotsky</strong> aux laboratoires Bell d'AT&T dans les années 1960. Dans Darwin, des programmes s'affrontaient dans la mémoire partagée d'un ordinateur, chacun tentant de désactiver les autres. En 1984, <strong>A.K. Dewdney</strong> a popularisé une version raffinée de ce concept, nommée <strong>Core War</strong>, dans sa rubrique « Computer Recreations » du magazine <em>Scientific American</em>. Le nom « Core » vient des <strong>core memories</strong> (mémoires à tores magnétiques) utilisées dans les premiers ordinateurs — ces tores formaient littéralement un tableau d'anneaux, d'où l'image d'une arène circulaire. Le simulateur qui exécutait les programmes s'appelait <strong>MARS</strong> (Memory Array Redcode Simulator), et le langage dans lequel les champions étaient écrits s'appelait <strong>Redcode</strong>.</p>
+    <p>Les premiers champions historiques sont légendaires : <strong>Imp</strong>, le plus simple — une seule instruction <code>MOV 0 1</code> qui se copie indéfiniment vers l'avant ; <strong>Dwarf</strong>, qui bombarde la mémoire avec des <code>DAT 0</code> toutes les 5 adresses ; <strong>Mortar</strong>, un bomber Fibonacci inventé par Michael Mauldin à Carnegie-Mellon ; et <strong>Voter</strong>, un programme auto-réparateur en trois parties. Ces programmes formaient un équilibre de type pierre-papier-ciseaux : Dwarf bat Mortar 60% du temps, Mortar tue Voter, mais Voter bat Dwarf. Cet équilibre illustre un principe fondamental de la théorie des jeux : <strong>il n'existe pas de stratégie dominante</strong>.</p>
+    <p>Ce jeu de programmation enseigne des concepts fondamentaux de l'informatique : l'architecture de machine virtuelle, le langage assembleur, la compilation, la gestion mémoire et l'exécution concurrente. À l'école 42, c'est l'un des projets les plus difficiles car il exige de comprendre <strong>toutes les couches</strong> : de la syntaxe assembleur à l'exécution par la VM, en passant par l'encodage binaire et la résolution de symboles.</p>
+    <p>Les compétences acquises sont transversales et profondes : compréhension des <strong>ISA</strong> (Instruction Set Architectures) — ce concept d'interface entre logiciel et matériel formalisé par Patterson et Hennessy —, manipulation de données au niveau octet, tampons circulaires, endianness, ordonnancement de processus, et la notion cruciale de <strong>contrat</strong> entre un compilateur et un runtime. Comme le soulignent Bryant et O'Hallaron dans <em>Computer Systems: A Programmer's Perspective</em>, l'ISA est l'abstraction fondamentale qui sépare ce que le programme voit de comment le matériel l'exécute : « The ISA defines the processor state, the format of instructions, and the effect each instruction will have on the state. » Votre VM Corewar est, en miniature, exactement cette abstraction.</p>
 
     <div class="insight-box">
         <div class="ib-title">📖 Prérequis et ordre de lecture</div>
@@ -3136,21 +3138,32 @@
     </div>
 
     <h3>Correspondance avec l'informatique réelle</h3>
-    <p>Les concepts du Corewar ne sont pas abstraits — ils correspondent directement à des mécanismes réels des processeurs et des systèmes d'exploitation :</p>
+    <p>Les concepts du Corewar ne sont pas abstraits — ils correspondent directement à des mécanismes réels des processeurs et des systèmes d'exploitation. En étudiant ce projet, vous manipulez les mêmes abstractions qu'un ingénieur qui conçoit un processeur ou un compilateur. Le tableau ci-dessous fait le pont entre le monde de Corewar et les architectures réelles, en s'appuyant sur les concepts formalisés dans <em>Computer Systems: A Programmer's Perspective</em> (Bryant & O'Hallaron) :</p>
     <div class="cmp-table-wrapper">
         <table class="cmp-table">
             <thead><tr><th>Concept Corewar</th><th>Équivalent réel</th><th>Explication</th></tr></thead>
             <tbody>
-                <tr><td><code>Arena</code></td><td>RAM (mémoire partagée)</td><td>Espace mémoire unique accessible par tous les processus</td></tr>
-                <tr><td><code>Process</code></td><td>Thread (unité d'exécution concurrente)</td><td>Chaque processus a son propre état mais partage la mémoire</td></tr>
-                <tr><td><code>PC</code></td><td>Instruction Pointer / registre RIP (x86)</td><td>Pointe vers la prochaine instruction à exécuter</td></tr>
-                <tr><td><code>Registres r1-r16</code></td><td>Registres généralistes CPU (rax, rbx...)</td><td>Stockage rapide pour les opérations en cours</td></tr>
-                <tr><td><code>Carry</code></td><td>CPU flag (ZF — Zero Flag en x86)</td><td>Indique si le résultat de la dernière opération est 0</td></tr>
-                <tr><td><code>OCP</code></td><td>Octet ModR/M en x86</td><td>Encode les types d'opérandes pour le décodage</td></tr>
-                <tr><td><code>IDX_MOD</code></td><td>Segmentation mémoire (limitation d'adressage)</td><td>Restreint l'espace d'adressage à ±512 (limitation de plage)</td></tr>
-                <tr><td><code>live</code></td><td>Heartbeat / watchdog timer</td><td>Signal périodique de survie — sans lui, le processus est tué</td></tr>
+                <tr><td><code>Arena (4096 octets)</code></td><td>Mémoire physique RAM / Espace d'adressage virtuel</td><td>La mémoire est conceptuellement un grand tableau d'octets (CSAPP §9.1). L'arène est une version miniature : un espace d'adressage unique, partagé, sans isolation — contrairement à la mémoire virtuelle des OS modernes qui isole chaque processus.</td></tr>
+                <tr><td><code>Process</code></td><td>Processus OS (instance d'un programme en exécution)</td><td>CSAPP définit un processus comme « an instance of a program in execution » (§8.2). Chaque processus possède un état (PC, registres, pile) et s'exécute de manière concurrente. La différence clé : l'OS isole les espaces d'adressage, alors que Corewar les partage.</td></tr>
+                <tr><td><code>PC</code></td><td>Program Counter / registre RIP (x86-64)</td><td>Le PC contient l'adresse de la prochaine instruction. C'est le pilier du modèle d'exécution séquentielle de l'ISA : « the program counter holds the address of the instruction currently being executed » (CSAPP §4.1.1).</td></tr>
+                <tr><td><code>Registres r1-r16</code></td><td>Registres CPU (%rax–%r15 en x86-64, ou les 15 registres du Y86-64)</td><td>Le fichier de registres est une petite mémoire rapide à l'intérieur du CPU. Le Y86-64 de CSAPP possède 15 registres 64-bit, chacun avec un identifiant unique (0x0–0xE) — exactement comme les registres r1-r16 de Corewar.</td></tr>
+                <tr><td><code>Carry</code></td><td>Condition Codes (ZF, SF, OF en x86-64)</td><td>Les flags de condition du CPU stockent l'état de la dernière opération arithmétique/logique. Le carry de Corewar est l'équivalent du Zero Flag (ZF) : il vaut 1 quand le résultat est 0. Le Y86-64 possède 3 codes de condition (ZF, SF, OF) — Corewar simplifie à un seul.</td></tr>
+                <tr><td><code>OCP</code></td><td>Octet ModR/M + REX prefix (x86-64)</td><td>L'x86-64 utilise des octets ModR/M, SIB et REX pour encoder les types d'opérandes et les registres. L'OCP de Corewar est un équivalent simplifié : 2 bits par paramètre pour encoder registre (01), direct (10) ou indirect (11). Le Y86-64 de CSAPP utilise un encodage encore plus simple : un octet rA:rB avec 4 bits par registre.</td></tr>
+                <tr><td><code>IDX_MOD (512)</code></td><td>Segmentation mémoire / adressage relatif</td><td>L'x86-64 utilise des adresses 64-bit absolues avec des offsets 32-bit. L'IDX_MOD de Corewar restreint l'adressage relatif à ±512, similaire aux limitations de segment des architectures 16-bit. C'est un compromis entre flexibilité et prévisibilité du jeu.</td></tr>
+                <tr><td><code>live</code></td><td>Heartbeat / watchdog timer / signal SIGALIVE</td><td>Dans les systèmes embarqués, un watchdog timer tue un processus qui ne s'est pas signalé dans un délai donné. Le mécanisme <code>live</code> / <code>CYCLE_TO_DIE</code> est exactement cela : sans signal périodique de survie, le processus est éliminé.</td></tr>
+                <tr><td><code>fork / lfork</code></td><td>Appel système <code>fork()</code> (UNIX)</td><td>En UNIX, <code>fork()</code> crée un processus enfant qui hérite de l'état du parent (mémoire, registres, descripteurs de fichiers). Le <code>fork</code> Corewar est similaire : le nouveau processus hérite de tous les registres et du carry. La différence : <code>fork()</code> retourne deux fois (0 chez l'enfant, PID chez le parent), tandis que le fork Corewar ne retourne pas — le processus enfant est simplement ajouté à la file d'exécution.</td></tr>
+                <tr><td><code>mem_mod()</code></td><td>MMU (Memory Management Unit) / Translation d'adresses</td><td>L'OS utilise la MMU pour traduire les adresses virtuelles en adresses physiques (CSAPP §9.6). <code>mem_mod()</code> est un traducteur d'adresse ultra-simplifié : il ramène tout dans [0, 4095]. C'est la même idée — une couche d'indirection entre l'adresse demandée et l'adresse réelle.</td></tr>
+                <tr><td><code>CYCLE_TO_DIE</code></td><td>Quantum de temps / Time slice (ordonnanceur OS)</td><td>L'ordonnanceur d'un OS attribue un quantum de temps à chaque processus (CSAPP §8.2.5). Si le processus ne rend pas la main, il est préempté. <code>CYCLE_TO_DIE</code> est un quantum inversé : au lieu de limiter le temps d'un processus, il exige une preuve de vie périodique.</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 ISA et abstraction : du Corewar au Y86-64</div>
+        <div class="ib-content">
+            <p>L'ISA (Instruction Set Architecture) est l'abstraction centrale de l'architecture des ordinateurs. Elle définit trois choses : <strong>l'état du processeur</strong> (registres, PC, codes de condition, mémoire), <strong>le format des instructions</strong> (comment les octets sont organisés), et <strong>l'effet de chaque instruction sur l'état</strong> (sémantique). Le Y86-64, un ISA pédagogique présenté dans <em>CSAPP</em> (Chapitre 4), est un sous-ensemble simplifié de l'x86-64 — tout comme le Redcode de Corewar est un ISA simplifié pour le jeu.</p>
+            <p>Les parallèles sont frappants : le Y86-64 possède 15 registres, un PC, 3 codes de condition (ZF, SF, OF), un statut (AOK, HLT, ADR, INS), et un jeu d'instructions réduit (halt, nop, mov, OP, jump, call/ret, push/pop). Le Corewar possède 16 registres, un PC, un code de condition (carry), et 16 instructions. Les deux partagent un principe fondamental : <strong>les encodages d'instructions doivent avoir une interprétation unique</strong>. Toute séquence d'octets encode soit une séquence d'instructions unique, soit n'est pas une séquence légale. C'est ce qui permet au processeur de décoder le bytecode sans ambiguïté.</p>
+        </div>
     </div>
 
     <div class="insight-box">
@@ -3234,6 +3247,28 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>Une propriété fondamentale de l'architecture : <strong>l'assembleur et la VM sont indépendants</strong>. L'assembleur dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de la VM. La VM dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de l'assembleur. Ils communiquent <strong>uniquement</strong> via le format de fichier <code>.cor</code>.</p>
     <p>Cette séparation signifie que vous pouvez tester chaque composant indépendamment : compilez un champion avec votre assembleur, dumpz le bytecode, et vérifiez manuellement qu'il correspond à ce que vous attendez. De même, vous pouvez tester la VM avec un fichier <code>.cor</code> généré par un assembleur de référence.</p>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 RISC vs CISC : où se situe le Corewar ?</div>
+        <div class="ib-content">
+            <p>L'architecture des processeurs se divise historiquement en deux philosophies : <strong>CISC</strong> (Complex Instruction Set Computer) et <strong>RISC</strong> (Reduced Instruction Set Computer). Comme l'expliquent Bryant et O'Hallaron (CSAPP §4.1), les ISA CISC comme l'x86-64 possèdent un grand nombre d'instructions (le manuel Intel dépasse 1200 pages), des encodages de longueur variable (1 à 15 octets), et permettent des opérations arithmétiques directement en mémoire. Les ISA RISC, à l'inverse, ont moins de 100 instructions, des encodages de longueur fixe (typiquement 4 octets), et adoptent une architecture load/store : seules les instructions <code>load</code> et <code>store</code> accèdent à la mémoire, toutes les opérations arithmétiques se font entre registres.</p>
+            <p>L'ISA de Corewar se situe entre les deux, comme le Y86-64 pédagogique de CSAPP :</p>
+            <div class="cmp-table-wrapper" style="margin-top:12px">
+                <table class="cmp-table">
+                    <thead><tr><th>Caractéristique</th><th>CISC (x86-64)</th><th>Corewar</th><th>RISC (ARM/Y86-64)</th></tr></thead>
+                    <tbody>
+                        <tr><td>Nombre d'instructions</td><td>~1500+</td><td>16</td><td>< 100</td></tr>
+                        <tr><td>Encodage</td><td>Variable (1-15 octets)</td><td>Variable (1-15 octets)</td><td>Fixe (4 octets)</td></tr>
+                        <tr><td>Opérations en mémoire</td><td>Oui (add %rax, (%rbx))</td><td>Non (load/store uniquement)</td><td>Non (load/store)</td></tr>
+                        <tr><td>Codes de condition</td><td>Oui (ZF, SF, OF, CF)</td><td>Oui (carry = ZF simplifié)</td><td>Non (registres de test)</td></tr>
+                        <tr><td>Taille des registres</td><td>64 bits</td><td>32 bits</td><td>64 bits</td></tr>
+                        <tr><td>Nombre de registres</td><td>16</td><td>16</td><td>15-32</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>Le Corewar est <strong>du côté RISC</strong> pour l'architecture load/store et le petit nombre d'instructions, mais <strong>du côté CISC</strong> pour l'encodage variable et les codes de condition. Comme le note CSAPP : « Y86-64 includes attributes of both CISC and RISC instruction sets. On the CISC side, it has condition codes and variable-length instructions. On the RISC side, it uses a load/store architecture and a regular instruction encoding. » Le Corewar suit exactement le même modèle hybride.</p>
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -3250,6 +3285,15 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>Il faut comprendre une chose essentielle : <strong>chaque octet est partagé</strong>. Tous les champions lisent et écrivent dans le <strong>même espace mémoire</strong>. Il n'y a pas de mémoire privée, pas de zone protégée. Quand un champion écrit à l'adresse 500, tous les autres champions peuvent lire cette valeur — ou l'écraser ! C'est ce qui fait de l'arène un véritable <strong>champ de bataille</strong> : la mémoire est le territoire que les champions se disputent.</p>
 
     <p>En réalité, l'arène n'a rien de magique. C'est simplement un tableau de 4096 octets en RAM, comme n'importe quel autre tableau en C ou en Rust. La « magie » circulaire est entièrement assurée par la fonction <code>mem_mod()</code>, qui prend n'importe quel entier et le ramène dans l'intervalle [0, 4095]. <strong>Chaque accès mémoire</strong> — lecture comme écriture — passe par cette fonction. C'est elle qui transforme un tableau linéaire banal en un anneau sans couture.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Arène et mémoire virtuelle : l'illusion de l'espace infini</div>
+        <div class="ib-content">
+            <p>L'arène circulaire de Corewar est un cas particulier d'une abstraction fondamentale de l'informatique : la <strong>mémoire virtuelle</strong>. Comme l'expliquent Bryant et O'Hallaron (CSAPP §9.1), la mémoire virtuelle fournit à chaque processus « the illusion that it has exclusive use of the main memory » en créant un espace d'adressage uniforme. Le mécanisme repose sur une couche d'indirection : la <strong>MMU</strong> (Memory Management Unit) traduit chaque adresse virtuelle en adresse physique via des tables de pages.</p>
+            <p>Dans Corewar, <code>mem_mod()</code> joue le rôle de la MMU. Quand un processus demande l'adresse 4097, <code>mem_mod(4097)</code> retourne 1 — exactement comme la MMU traduirait une adresse virtuelle en adresse physique différente. La différence est que la MMU d'un vrai OS gère des milliards d'adresses, des droits d'accès par page, et un cache TLB pour accélérer les traductions. <code>mem_mod()</code> fait la même chose en un seul modulo — mais le principe est identique : <strong>l'adresse que le programme voit n'est pas l'adresse réelle</strong>.</p>
+            <p>Cette couche d'indirection est aussi ce qui permet à la mémoire d'être « circulaire » : tout comme un système d'exploitation peut mapper les adresses hautes d'un processus vers la mémoire basse physique, Corewar mappe l'adresse 4096 vers l'adresse 0. La circularité n'est pas une propriété du support physique — c'est une propriété de la <strong>traduction d'adresses</strong>.</p>
+        </div>
+    </div>
 
     <!-- Ring diagram SVG -->
     <div class="ring-diagram-container">
@@ -3742,6 +3786,15 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 
     <p><strong>Pourquoi Big Endian ?</strong> C'est le standard pour les <strong>machines virtuelles</strong> et les <strong>protocoles réseau</strong> (c'est pourquoi on l'appelle aussi « network byte order »). Le choix du Big Endian garantit que tous les champions voient les données de la même manière, indépendamment de l'architecture matérielle de la machine qui exécute la VM. C'est un choix de <strong>portabilité</strong> et de <strong>prévisibilité</strong>.</p>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Endianness : un problème de convention, pas de technologie</div>
+        <div class="ib-content">
+            <p>L'endianness n'est pas une propriété des données — c'est une <strong>convention d'interprétation</strong>. Comme l'explique CSAPP (§2.1.3), la même séquence de 4 octets <code>01 23 45 67</code> représente <code>0x01234567</code> en Big Endian et <code>0x67452301</code> en Little Endian. Les deux sont « corrects » — la question est de savoir qui lit les données et selon quelle convention.</p>
+            <p>Le problème se pose dès que des données traversent une frontière de convention : un fichier <code>.cor</code> généré sur une machine Little Endian (x86) sera lu par la VM qui l'interprète en Big Endian. Si l'assembleur et la VM ne s'accordent pas sur l'endianness, les valeurs seront systématiquement inversées. C'est exactement le même problème que la communication réseau : TCP/IP impose le Big Endian (« network byte order ») précisément pour éviter ce genre de confusion quand des machines d'architectures différentes communiquent.</p>
+            <p>En pratique, cela signifie que votre assembleur doit écrire les valeurs 32-bit en Big Endian (MSB en premier), et votre VM doit lire en Big Endian. Les fonctions <code>htonl()</code>/<code>ntohl()</code> de la bibliothèque standard C font exactement cette traduction pour le réseau. Dans votre projet, <code>store_at()</code> et <code>reverse_bytes()</code> sont vos équivalents manuels de ces fonctions.</p>
+        </div>
+    </div>
+
     <div class="endian-interactive">
         <h4 style="text-align:center;color:var(--cyan);margin-bottom:12px">Comparaison Big Endian vs Little Endian</h4>
         <p style="text-align:center;font-size:0.85rem;color:var(--text-muted);margin-bottom:16px">Valeur <code>0x0EA83F03</code> stockée en mémoire — comparez les deux conventions</p>
@@ -3908,7 +3961,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 <section id="process" class="reveal">
 <div class="container">
     <h2><span class="num">04</span> Le Processus</h2>
-    <p>Chaque champion démarre avec un processus. Un processus est une unité d'exécution autonome qui possède ses propres registres, un PC (Program Counter), un flag carry, et un compteur de cycles restants avant exécution.</p>
+    <p>Chaque champion démarre avec un processus. Un processus est une unité d'exécution autonome qui possède ses propres registres, un PC (Program Counter), un flag carry, et un compteur de cycles restants avant exécution. C'est l'équivalent d'un <strong>processus léger</strong> (thread) dans un système d'exploitation : il partage la mémoire avec les autres processus mais possède son propre état d'exécution.</p>
+    <p>Pour comprendre la profondeur de ce concept, il faut se référer à la définition classique de Bryant et O'Hallaron : <em>« The classic definition of a process is an instance of a program in execution. Each program in the system runs in the context of some process. The context consists of the state that the program needs to run correctly — the program's code and data stored in memory, its stack, the contents of its general-purpose registers, its program counter, environment variables, and the set of open file descriptors. »</em> (CSAPP §8.2). Un processus Corewar est exactement cela en miniature : un PC qui pointe dans le code, des registres pour les données, et un contexte d'exécution. La seule différence est que dans un OS, chaque processus a un espace d'adressage <strong>privé</strong> — dans Corewar, l'espace est <strong>partagé</strong>, ce qui rend l'interaction entre processus beaucoup plus directe et violente.</p>
 
     <div class="process-card">
         <h4 style="color:var(--cyan);margin-bottom:12px">Anatomie d'un processus</h4>
@@ -3977,7 +4031,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     </div>
 
     <h3>Fork — Créer de nouveaux processus</h3>
-    <p>Les instructions <code>fork</code> et <code>lfork</code> créent un <strong>nouveau processus</strong> qui hérite de tous les registres et du carry du parent. Seul le PC diffère : il est positionné à <code>PC + (param % IDX_MOD)</code> pour <code>fork</code>, ou <code>PC + param</code> (sans modulo) pour <code>lfork</code>.</p>
+    <p>Les instructions <code>fork</code> et <code>lfork</code> créent un <strong>nouveau processus</strong> qui hérite de tous les registres et du carry du parent. Seul le PC diffère : il est positionné à <code>PC + (param % IDX_MOD)</code> pour <code>fork</code>, ou <code>PC + param</code> (sans modulo) pour <code>lfork</code>. C'est le mécanisme le plus puissant du jeu — et le plus proche de la réalité des systèmes d'exploitation.</p>
+    <p>En UNIX, l'appel système <code>fork()</code> crée un processus enfant qui est une copie quasi-identique du parent. Comme le décrivent Bryant et O'Hallaron (CSAPP §8.4.2) : « fork() is called once but returns twice — 0 in the child, the child's PID in the parent. The child gets a copy of the parent's address space and file descriptors. Parent and child are concurrent — instruction interleaving is arbitrary. » Le fork de Corewar est une version simplifiée : le processus enfant hérite des registres et du carry (comme un <code>fork()</code> UNIX copie l'état des registres CPU), mais il n'y a pas de valeur de retour — l'enfant est simplement ajouté à la file d'exécution et commencera à s'exécuter à son tour au cycle suivant. La clé est que <strong>parent et enfant sont concurrents</strong> : leur entrelacement d'exécution est arbitraire et dépend de l'ordonnanceur de la VM.</p>
     <div class="code-wrapper">
         <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
@@ -4021,6 +4076,14 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>Les nouveaux processus créés par <code>fork</code> sont ajoutés à la fin de la liste (C) ou dans le buffer <code>new_processes</code> (Rust) et sont insérés <strong>après</strong> la fin du cycle en cours. Cela signifie qu'un processus forké ne s'exécute <strong>pas</strong> au cycle où il a été créé.</p>
     <p>L'ordre d'exécution a des conséquences concrètes : si le processus A écrit à l'adresse X et le processus B lit à l'adresse X pendant le même cycle, le processus B verra l'<strong>ancienne</strong> valeur s'il est traité après A, ou la <strong>nouvelle</strong> valeur s'il est traité avant A (cela dépend de la phase d'exécution respective des deux processus).</p>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Commutation de contexte et ordonnancement</div>
+        <div class="ib-content">
+            <p>L'exécution alternée des processus dans Corewar est un exemple concret de <strong>commutation de contexte</strong> (context switch). CSAPP (§8.2.5) décrit ce mécanisme : « The kernel maintains a context for each process. The context includes the general-purpose registers, floating-point registers, program counter, user's stack, status registers, and various kernel data structures. » Un context switch se déroule en trois étapes : (1) sauvegarder le contexte du processus courant, (2) restaurer le contexte d'un processus préempté, (3) passer le contrôle au processus restauré.</p>
+            <p>Dans Corewar, la commutation est implicite et beaucoup plus simple : la VM parcourt la liste des processus et exécute un cycle pour chacun. Il n'y a pas de sauvegarde/restauration explicite car chaque processus possède <strong>déjà</strong> son propre état (PC, registres, carry, duration) — contrairement à un OS où tous les processus partagent le même fichier de registres physique et doivent donc être sauvegardés dans des structures kernel. Mais le principe est le même : <strong>les processus s'exécutent de manière concurrente par entrelacement de leurs flux logiques</strong> (CSAPP §8.2.1), chacun croyant avoir le processeur pour lui seul.</p>
+        </div>
+    </div>
+
     <h3>Le carry en pratique</h3>
     <p>Le carry est un flag binaire (0 ou 1) qui détermine le comportement de <code>zjmp</code>. Voici un tableau de référence pour comprendre quelles instructions le modifient et comment :</p>
     <div class="cmp-table-wrapper">
@@ -4044,6 +4107,14 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <h3>Mort d'un processus</h3>
     <p>Un processus meurt quand il n'a pas fait de <code>live</code> avant la vérification de <code>CYCLE_TO_DIE</code>. Quand un processus meurt, <strong>tout son état est perdu</strong> (registres, carry, PC). En C, le nœud de liste est libéré (<code>free()</code>). En Rust, le processus est retiré du <code>Vec</code> via <code>retain_mut</code>.</p>
     <p><strong>Important</strong> : si <strong>tous</strong> les processus d'un joueur meurent, ce joueur peut <strong>encore gagner</strong> s'il a été le dernier joueur à être rapporté en vie par une instruction <code>live</code>. Un processus mort ne peut pas être ranimé — seul un <code>fork</code> depuis un processus vivant peut créer de nouveaux processus.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Processus zombie et ramasse-miettes</div>
+        <div class="ib-content">
+            <p>En UNIX, un processus qui se termine mais dont le parent n'a pas encore appelé <code>wait()</code> devient un <strong>zombie</strong> — il conserve une entrée dans la table des processus mais ne consomme plus de ressources CPU. CSAPP (§8.4.3) explique que les zombies doivent être « récoltés » (reaped) par le parent, sinon ils s'accumulent et épuisent les ressources du système.</p>
+            <p>Dans Corewar, la fonction <code>kill_zombies()</code> est l'équivalent de ce ramasse-miettes : à chaque vérification de <code>CYCLE_TO_DIE</code>, elle parcourt la liste des processus et élimine ceux qui n'ont pas fait de <code>live</code>. En C, cette opération coûte O(N²) dans l'implémentation naive (parcours de liste chaînée + suppression), tandis qu'en Rust, l'utilisation de <code>retain_mut()</code> réduit la complexité à O(N). C'est un exemple concret où le choix de la structure de données impacte directement les performances — un thème central de CSAPP.</p>
+        </div>
+    </div>
 
     <div class="quiz-box">
         <div class="quiz-title">🎯 Quiz — Le Processus</div>
@@ -4075,6 +4146,22 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 <div class="container">
     <h2><span class="num">05</span> Cycle de vie d'une instruction</h2>
     <p>Chaque instruction passe par 4 phases. La notion clé est que les instructions <strong>consomment toujours leurs cycles</strong> : même si l'instruction est invalide, les cycles sont déduits. Une instruction ne s'exécute qu'à la <strong>fin de son dernier cycle</strong>.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Du processeur réel au processeur Corewar</div>
+        <div class="ib-content">
+            <p>Dans un processeur réel, le traitement d'une instruction suit un pipeline matériel. Le Y86-64 de CSAPP (§4.3) décompose l'exécution en <strong>6 étages</strong> : Fetch → Decode → Execute → Memory → Writeback → PC Update. Chaque étage accomplit une tâche précise :</p>
+            <ul style="margin:8px 0 8px 20px;line-height:1.8">
+                <li><strong>Fetch</strong> : lire les octets d'instruction depuis la mémoire à l'adresse du PC, extraire l'opcode et les champs de registre</li>
+                <li><strong>Decode</strong> : lire les opérandes depuis le fichier de registres</li>
+                <li><strong>Execute</strong> : l'ALU effectue l'opération, calcule les adresses effectives, met à jour les codes de condition</li>
+                <li><strong>Memory</strong> : lire ou écrire dans la mémoire de données</li>
+                <li><strong>Writeback</strong> : écrire les résultats dans les registres</li>
+                <li><strong>PC Update</strong> : avancer le PC à l'instruction suivante</li>
+            </ul>
+            <p>Le Corewar simplifie ce pipeline en <strong>4 phases</strong> : Fetch → Decode/Wait → Validate → Execute. Les étages Memory et Writeback sont fusionnés dans Execute, et l'étage Decode est étiré en une attente de plusieurs cycles (simulant la latence variable des instructions). C'est un choix de design qui rend le jeu plus tactique : les instructions longues comme <code>fork</code> (800 cycles) créent des fenêtres de vulnérabilité pendant lesquelles le processus ne peut pas réagir.</p>
+        </div>
+    </div>
 
     <div class="lifecycle">
         <div class="lc-step">
@@ -4558,6 +4645,14 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 
     <h3>L'OCP — Octet de Codage des Paramètres</h3>
     <p>L'OCP (ou ACB) encode le type de chaque paramètre sur <strong>2 bits</strong> : <code>01</code> = registre, <code>10</code> = direct, <code>11</code> = indirect. Les bits inutilisés sont à 0.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 L'OCP et le ModR/M : même combat, complexité différente</div>
+        <div class="ib-content">
+            <p>L'encodage des types d'opérandes est un problème universel en architecture des processeurs. L'x86-64 utilise un octet <strong>ModR/M</strong> (2 bits de mode + 3 bits de registre + 3 bits de registre/mémoire) suivi optionnellement d'un octet SIB (Scale-Index-Base) et d'un préfixe REX — permettant jusqu'à 10 modes d'adressage différents. Le Y86-64 de CSAPP simplifie drastiquement : un seul octet <code>rA:rB</code> (4 bits + 4 bits), chaque champ identifiant un registre ou la valeur 0xF (pas de registre).</p>
+            <p>L'OCP de Corewar est entre les deux : 2 bits par paramètre (3 paramètres max = 6 bits), permettant d'encoder registre, direct ou indirect. C'est plus expressif que le Y86-64 (qui ne supporte pas l'adressage indirect) mais beaucoup plus simple que l'x86-64 (pas de scale, pas d'index, pas de displacement variable). Comme pour tout ISA, la propriété fondamentale est que <strong>l'encodage doit avoir une interprétation unique</strong> (CSAPP §4.1.3) : toute séquence d'octets encode soit une instruction unique, soit n'est pas légale. C'est ce qui permet à la VM de décoder le bytecode sans ambiguïté.</p>
+        </div>
+    </div>
     <div class="encoding-demo">
         <h4>Exemple : <code>sti r1, %:live, %1</code></h4>
         <div class="encoding-row">
@@ -4639,6 +4734,25 @@ live: live  %1
 <div class="container">
     <h2><span class="num">08</span> L'Assembleur — Pipeline complet</h2>
     <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Du pipeline de compilation au pipeline de l'assembleur</div>
+        <div class="ib-content">
+            <p>Le pipeline de l'assembleur Corewar est une version miniature du pipeline de compilation décrit par Bryant et O'Hallaron (CSAPP §1.2) : <code>Source → Préprocesseur → Compilateur → Assembleur → Éditeur de liens → Exécutable</code>. En Corewar, les étapes sont simplifiées car le langage source est déjà de l'assembleur :</p>
+            <div class="cmp-table-wrapper" style="margin-top:8px">
+                <table class="cmp-table">
+                    <thead><tr><th>Étape CSAPP</th><th>Équivalent Corewar</th><th>Rôle</th></tr></thead>
+                    <tbody>
+                        <tr><td>Préprocesseur (#include, #define)</td><td>Lexer (tokenisation)</td><td>Découper le texte brut en unités syntaxiques</td></tr>
+                        <tr><td>Compilateur (C → assembleur)</td><td>Parser (syntaxe → structure)</td><td>Construire une représentation structurée (AST)</td></tr>
+                        <tr><td>Assembleur (asm → objet)</td><td>Codegen (structure → bytecode)</td><td>Générer le code binaire avec résolution de symboles</td></tr>
+                        <tr><td>Éditeur de liens (objets → exécutable)</td><td>Résolution de labels (2 passes)</td><td>Résoudre les références croisées entre les labels et leurs adresses</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>La différence majeure est que le pipeline CSAPP est <strong>séquentiel entre des outils séparés</strong> (cpp, gcc, as, ld), tandis que votre assembleur est <strong>un programme unique avec deux passes</strong>. La première passe collecte les labels et leurs adresses, la deuxième génère le bytecode en résolvant les références. C'est la technique classique de l'<strong>assemblage en deux passes</strong>, utilisée par tous les assembleurs réels depuis les années 1950.</p>
+        </div>
+    </div>
 
     <div class="lifecycle">
         <div class="lc-step">
@@ -5196,6 +5310,21 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
 <div class="container">
     <h2><span class="num">13</span> Stratégie — Écrire un champion gagnant</h2>
     <p>Comprendre la mécanique du Corewar est une chose, écrire un champion qui gagne en est une autre. Cette section présente les stratégies classiques, les patterns de code récurrents, et des exemples concrets de champions commentés.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Histoire : les programmes de bataille originaux (1984)</div>
+        <div class="ib-content">
+            <p>Les premiers programmes de Core War, décrits par A.K. Dewdney dans <em>Scientific American</em> (mai 1984), ont posé les fondations de toute stratégie moderne. En Redcode original :</p>
+            <ul style="margin:8px 0 8px 20px;line-height:2">
+                <li><strong>Imp</strong> — <code>MOV 0 1</code> : le programme le plus simple jamais écrit. Il se copie une position en avant, indéfiniment. Une seule instruction, impossible à tuer en le bombardant (il se reconstitue au passage), mais incapable d'attaquer.</li>
+                <li><strong>Dwarf</strong> — <code>ADD #5 -1 / MOV #0 @-2 / JMP -2</code> : le premier bomber. Il incrémente un pointeur de 5 à chaque itération et largue un <code>DAT 0</code> (code invalide qui tue tout processus qui tente de l'exécuter) à l'adresse pointée. Simple, efficace, primitif.</li>
+                <li><strong>Mortar</strong> (Michael Mauldin, Carnegie-Mellon) : un bomber Fibonacci qui attaque aux adresses 1, 1, 2, 3, 5, 8, 13... Ce pattern de bombing est beaucoup plus difficile à esquiver que le bombing régulier de Dwarf car les intervalles sont imprévisibles.</li>
+                <li><strong>Voter</strong> : un programme auto-réparateur en trois parties qui utilise un vote majoritaire pour détecter et réparer les corruptions. Si une de ses trois copies est endommagée, les deux autres « votent » pour la restaurer.</li>
+            </ul>
+            <p>L'analyse stratégique de Goetsch, Mauldin et Milazzo (Carnegie-Mellon / Rice) a démontré un résultat fondamental : <strong>aucun programme de plus de 10 instructions ne peut battre Mortar sans être auto-réparateur, et aucun programme de plus de 14 instructions ne peut se réparer assez vite pour survivre à Mortar</strong>. Ce résultat établit une tension permanente entre complexité (plus de fonctionnalités) et vulnérabilité (plus de surface d'attaque) — le même compromis qu'en ingénierie logicielle réelle.</p>
+            <p>Les interactions entre ces programmes forment un équilibre de Nash de type <strong>pierre-papier-ciseaux</strong> : Dwarf bat Mortar 60% du temps (ses bombes régulières touchent Mortar avant que les bombes Fibonacci ne le couvrent), Mortar tue Voter (les bombes Fibonacci sont trop denses pour la réparation), mais Voter bat Dwarf (la réparation résiste au bombing régulier clairsemé). <strong>Il n'existe pas de stratégie dominante</strong> — c'est ce qui rend le jeu intéressant et compétitif.</p>
+        </div>
+    </div>
 
     <h3>Les 3 grands archétypes</h3>
     <div class="arena-three-layers">
