@@ -45,7 +45,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .arena-section{padding:10px}
 .arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
 .arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1/1}
-.arena-canvas-wrap canvas{display:block;width:100%;height:100%}
+.arena-canvas-wrap canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges}
 /* ── ARENA FULLSCREEN ── */
 .arena-fullscreen-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:var(--bg);flex-direction:row}
 .arena-fullscreen-overlay.active{display:flex}
@@ -54,7 +54,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .arena-fs-toolbar .nav-logo{font-size:1.1rem;font-weight:800;color:var(--cyan);text-decoration:none;letter-spacing:1px}
 .arena-fs-toolbar .nav-logo span{color:var(--text2);font-weight:400}
 .arena-fs-canvas-wrap{flex:1;min-height:0;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:4px}
-.arena-fs-canvas-wrap canvas{display:block}
+.arena-fs-canvas-wrap canvas{display:block;image-rendering:pixelated;image-rendering:-moz-crisp-edges;image-rendering:crisp-edges}
 .arena-fs-controls{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface2);border-top:1px solid var(--border);height:44px}
 .arena-fs-sidebar{width:280px;min-width:220px;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
 .arena-fs-sidebar .info-section{padding:8px 10px}
@@ -306,7 +306,7 @@ loop:
 // ║  The JS code below is only the UI (terminal, canvas, etc.)   ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import init, { WasmVm, WasmAsm, mem_size, cycle_to_die_init, cycle_delta, nbr_live, max_checks, reg_number, op_name, op_cycle } from './wasm/corewar_wasm.js';
+import init, { WasmVm, WasmAsm, WasmRenderer, mem_size, cycle_to_die_init, cycle_delta, nbr_live, max_checks, reg_number, op_name, op_cycle } from './wasm/corewar_wasm.js';
 
 let wasmReady = false;
 let vm = null; // WasmVm instance
@@ -401,37 +401,36 @@ start:
 
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║               ARENA VISUALIZER (CANVAS)                     ║
+// ║          ARENA VISUALIZER (WASM PIXEL BUFFER)                ║
+// ║                                                              ║
+// ║  The rendering logic runs in WebAssembly, compiled from the  ║
+// ║  SAME Rust code as the ncurses visualizer.                   ║
+// ║  Zero JavaScript reimplementation of color logic.            ║
+// ║  JS only blits the pixel buffer to Canvas and overlays text. ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-// Ncurses-style colors: foreground text on black background
-const PLAYER_FG = ['#00d9d9', '#6666ff', '#e60000', '#00cc00']; // cyan, blue, red, green
-const PLAYER_FG_BOLD = ['#55ffff', '#9999ff', '#ff4444', '#44ff44']; // bright variants
-const PLAYER_FG_DIM = ['#007777', '#3838aa', '#992222', '#007700']; // dim but readable
-const GRAY = '#b4b4b4'; // gray for owner=0
-const GRAY_BOLD = '#e0e0e0';
+// Text overlay colors (for hex display in large-cell mode)
+const PLAYER_FG = ['#00d9d9', '#6666ff', '#e60000', '#00cc00'];
+const PLAYER_FG_BOLD = ['#55ffff', '#9999ff', '#ff4444', '#44ff44'];
+const GRAY = '#b4b4b4';
 
 class ArenaVisualizer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.cellW = 14;
-    this.cellH = 14;
-    this.font = '10px monospace';
-    this.dpr = window.devicePixelRatio || 1;
-    this.logW = 896;
-    this.logH = 896;
-    this.ctx.textBaseline = 'top';
+    this.cellSize = 10;
+    this.gap = 1;
+    this.textMode = false;
+    this.renderer = null; // WasmRenderer instance
     this.ctx.imageSmoothingEnabled = false;
-    // Initial resize to match actual display
+    // Initial resize
     this._resizeToDisplay();
   }
 
-  // Resize canvas to match its CSS display size at native resolution
+  // Resize canvas to match its CSS display size
   _resizeToDisplay() {
     const rect = this.canvas.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) {
-      // Canvas not yet laid out — use parent container size as fallback
       const parent = this.canvas.parentElement;
       if (parent) {
         const prect = parent.getBoundingClientRect();
@@ -440,7 +439,6 @@ class ArenaVisualizer {
           this.canvas.style.height = prect.height + 'px';
         }
       }
-      // Re-read
       const rect2 = this.canvas.getBoundingClientRect();
       if (rect2.width <= 0 || rect2.height <= 0) return;
       this._applySize(rect2);
@@ -450,80 +448,86 @@ class ArenaVisualizer {
   }
 
   _applySize(rect) {
-    this.dpr = window.devicePixelRatio || 1;
-    this.logW = rect.width;
-    this.logH = rect.height;
-    // Set backing store to native resolution
-    this.canvas.width = Math.round(rect.width * this.dpr);
-    this.canvas.height = Math.round(rect.height * this.dpr);
-    // Only set CSS size if it differs (avoid resize loops)
-    const curW = parseFloat(this.canvas.style.width) || 0;
-    const curH = parseFloat(this.canvas.style.height) || 0;
-    if (Math.abs(curW - rect.width) > 1 || Math.abs(curH - rect.height) > 1) {
-      this.canvas.style.width = rect.width + 'px';
-      this.canvas.style.height = rect.height + 'px';
-    }
-    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    this._recalcCells();
-  }
+    const side = Math.floor(Math.min(rect.width, rect.height));
+    if (side <= 0) return;
 
-  _recalcCells() {
-    const cols = 64, rows = 64;
-    this.cellW = Math.floor(this.logW / cols);
-    this.cellH = Math.floor(this.logH / rows);
-    // Ensure minimum cell size
-    this.cellW = Math.max(4, this.cellW);
-    this.cellH = Math.max(4, this.cellH);
-    // Determine rendering mode based on cell size
-    // Threshold: cellW >= 16 means we can fit "ff" text with spacing
-    this.textMode = this.cellW >= 16 && this.cellH >= 12;
-    if (this.textMode) {
-      // In text mode, reserve 2px gap on the right and bottom for visual separation
-      this.gapW = 2;
-      this.gapH = 2;
-      const innerW = this.cellW - this.gapW;
-      const innerH = this.cellH - this.gapH;
-      const fontSize = Math.max(7, Math.floor(Math.min(innerW * 0.5, innerH * 0.65)));
-      this.font = fontSize + 'px "Courier New", monospace';
-    } else {
-      // Block mode: 1px gap for subtle grid
-      this.gapW = 1;
-      this.gapH = 1;
-      this.font = null;
+    // Calculate cell size: how many pixels per cell
+    this.cellSize = Math.max(4, Math.floor(side / 64));
+    this.gap = 1;
+    this.textMode = this.cellSize >= 18;
+
+    // Canvas backing store = exact pixel buffer size (no DPR scaling needed)
+    const pxSide = 64 * this.cellSize;
+    if (this.canvas.width !== pxSide || this.canvas.height !== pxSide) {
+      this.canvas.width = pxSide;
+      this.canvas.height = pxSide;
+    }
+
+    // CSS sizes the canvas to fill the container — browser scales the pixel buffer
+    this.canvas.style.width = side + 'px';
+    this.canvas.style.height = side + 'px';
+    this.canvas.style.imageRendering = 'pixelated';
+
+    this.ctx.imageSmoothingEnabled = false;
+
+    // Configure or create the WASM renderer
+    if (this.renderer) {
+      this.renderer.configure(this.cellSize, this.gap);
+    } else if (wasmReady) {
+      this.renderer = new WasmRenderer(this.cellSize, this.gap);
     }
   }
 
-  // Call when the canvas container changes size
   resize() {
     this._resizeToDisplay();
     this.render(vm);
   }
 
   render(wasmVm) {
-    const ctx = this.ctx;
-    const cw = this.cellW;
-    const ch = this.cellH;
-    const gapW = this.gapW || 0;
-    const gapH = this.gapH || 0;
-    const innerW = cw - gapW;
-    const innerH = ch - gapH;
-
-    // Reset transform to dpr scale
-    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-
-    // Clear entire logical area to black (this also fills the gaps)
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, this.logW, this.logH);
-
     if (!wasmVm) return;
 
-    // Get arena data from WASM
+    // Create renderer on first call if not yet created (WASM might not have been ready at construction)
+    if (!this.renderer && wasmReady) {
+      this.renderer = new WasmRenderer(this.cellSize, this.gap);
+    }
+    if (!this.renderer) return;
+
+    // Render arena in WASM (pixel buffer)
+    this.renderer.render(wasmVm);
+
+    // Get the pixel buffer and blit to canvas
+    const buf = this.renderer.get_buffer();
+    const imgW = this.renderer.width();
+    const imgH = this.renderer.height();
+
+    // Create ImageData from the WASM buffer
+    const clamped = new Uint8ClampedArray(buf.buffer, buf.byteOffset, buf.byteLength);
+    const imgData = new ImageData(clamped, imgW, imgH);
+    this.ctx.putImageData(imgData, 0, 0);
+
+    // Text overlay for large cells: draw hex values on top of the pixel buffer
+    if (this.textMode) {
+      this._overlayText(wasmVm);
+    }
+  }
+
+  // Overlay hex text on top of the WASM-rendered pixel buffer
+  _overlayText(wasmVm) {
     const arena = wasmVm.get_arena();
     const owner = wasmVm.get_owner();
     const scrb = wasmVm.get_scrb();
+    const cs = this.cellSize;
+    const gap = this.gap;
+    const inner = cs - gap;
 
-    // Build process PC map for highlighting
-    const pcMap = new Map(); // addr -> {ownerIdx, hasIr}
+    // Font size proportional to cell inner area
+    const fontSize = Math.max(7, Math.floor(Math.min(inner * 0.5, inner * 0.65)));
+    this.ctx.font = `${fontSize}px "Courier New", monospace`;
+    this.ctx.textBaseline = 'top';
+    this.ctx.textAlign = 'center';
+
+    // Build PC map for text styling
+    const pcMap = new Map();
     const procCount = wasmVm.process_count();
     for (let i = 0; i < procCount; i++) {
       const pc = wasmVm.process_pc(i);
@@ -538,30 +542,11 @@ class ArenaVisualizer {
       }
     }
 
-    const cols = 64;
-    const textMode = this.textMode;
-
-    if (textMode) {
-      ctx.font = this.font;
-      ctx.textBaseline = 'top';
-      ctx.imageSmoothingEnabled = false;
-    }
-
-    // Pre-compute colors for each owner state (avoid string creation in hot loop)
-    // ownerIdx: 0=unowned, 1-4=player
-    // Color slots: [bg, fg] for each state
-    const BG_BLACK = '#000';
-    const CELL_GAP = '#0a0a0a';
-
     for (let i = 0; i < MEM_SIZE; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const x = col * cw;
-      const y = row * ch;
-      // Inner area (excluding gap)
-      const ix = x;
-      const iy = y;
-
+      const col = i % 64;
+      const row = Math.floor(i / 64);
+      const x = col * cs;
+      const y = row * cs;
       const ownerIdx = owner[i];
       const byte = arena[i];
       const isScrb = scrb[i] > 0;
@@ -569,89 +554,26 @@ class ArenaVisualizer {
       const isPc = !!pcInfo;
       const isIr = pcInfo && pcInfo.hasIr;
 
-      // Determine cell background and foreground colors
-      let bg, fg;
-
-      if (isIr && ownerIdx > 0) {
-        // IR executing: inverted (colored bg, black text)
-        bg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
-        fg = '#000';
-      } else if (isIr && ownerIdx === 0) {
-        bg = isScrb ? GRAY_BOLD : GRAY;
-        fg = '#000';
+      // Determine text color
+      let fg;
+      if (isIr) {
+        fg = '#000'; // inverted = black text on colored bg
       } else if (isPc && ownerIdx === 0) {
-        // PC on unowned: gray background (ncurses: black on gray)
-        bg = GRAY;
-        fg = '#000';
+        fg = '#000'; // black text on gray bg
       } else if (ownerIdx > 0) {
-        // Owned cell: player color on black
-        bg = null; // black background
-        fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG_DIM[ownerIdx - 1];
+        fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
       } else {
-        // Unowned: gray tones on black
-        bg = null;
-        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#444' : '#111');
+        fg = isScrb ? '#ccc' : (byte !== 0 ? '#555' : '#222');
       }
 
-      // ── BLOCK MODE (small cells): colored rectangles ──
-      if (!textMode) {
-        // Choose block fill color
-        let blockColor;
-        if (isIr) {
-          // IR (executing): bright inverted block
-          blockColor = ownerIdx > 0
-            ? (isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1])
-            : (isScrb ? GRAY_BOLD : GRAY);
-        } else if (isPc && ownerIdx === 0) {
-          // PC on unowned: gray block
-          blockColor = GRAY;
-        } else if (ownerIdx > 0) {
-          // Owned: full player color (brighter than dim text)
-          blockColor = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
-        } else if (byte !== 0) {
-          // Non-zero unowned
-          blockColor = isScrb ? '#555' : '#252525';
-        } else {
-          // Zero: near-black
-          blockColor = '#0e0e0e';
-        }
+      const hex = byte.toString(16).padStart(2, '0');
+      this.ctx.fillStyle = fg;
+      this.ctx.fillText(hex, x + inner / 2, y + Math.floor((inner - fontSize) / 2));
 
-        ctx.fillStyle = blockColor;
-        ctx.fillRect(ix, iy, innerW, innerH);
-
-        // PC indicator: white dot in center
-        if (isPc && !isIr) {
-          ctx.fillStyle = ownerIdx > 0 ? '#fff' : '#000';
-          const dotSize = Math.max(2, Math.floor(Math.min(innerW, innerH) * 0.35));
-          const dx = ix + Math.floor((innerW - dotSize) / 2);
-          const dy = iy + Math.floor((innerH - dotSize) / 2);
-          ctx.fillRect(dx, dy, dotSize, dotSize);
-        }
-      }
-      // ── TEXT MODE (large cells): hex text with spacing ──
-      else {
-        const hex = byte.toString(16).padStart(2, '0');
-
-        // Draw cell background
-        if (bg) {
-          ctx.fillStyle = bg;
-          ctx.fillRect(ix, iy, innerW, innerH);
-        } else {
-          ctx.fillStyle = BG_BLACK;
-          ctx.fillRect(ix, iy, innerW, innerH);
-        }
-
-        // Draw hex text (centered in inner area)
-        ctx.fillStyle = fg;
-        const textX = ix + Math.floor((innerW - ctx.measureText(hex).width) / 2);
-        const textY = iy + Math.floor((innerH - parseInt(this.font)) / 2);
-        ctx.fillText(hex, textX, textY);
-
-        // PC underline indicator
-        if (isPc && !isIr && ownerIdx > 0) {
-          ctx.fillStyle = fg;
-          ctx.fillRect(ix, iy + innerH - 2, innerW, 2);
-        }
+      // PC underline indicator for owned cells
+      if (isPc && !isIr && ownerIdx > 0) {
+        this.ctx.fillStyle = fg;
+        this.ctx.fillRect(x, y + inner - 2, inner, 2);
       }
     }
   }

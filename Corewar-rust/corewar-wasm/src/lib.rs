@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use corewar_vm::{Vm, VmEvent, Player, Process};
+use corewar_vm::{Vm, VmEvent, Player};
 use corewar_common::constants::*;
 
 /// WASM bridge for the Corewar VM.
@@ -275,6 +275,246 @@ pub fn op_cycle(opcode: usize) -> u32 {
         corewar_common::op_table::OP_TABLE[opcode - 1].cycle
     } else {
         0
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WASM Arena Renderer — pixel-perfect rendering in Rust
+// ═══════════════════════════════════════════════════════════════
+//
+// Renders the 64×64 arena grid to an RGBA pixel buffer using the
+// SAME color logic as the ncurses visualizer (visualizer.rs).
+// JS blits the buffer to a Canvas via putImageData() — zero gaps,
+// zero subpixel issues, pixel-perfect at any zoom level.
+//
+// This is the "WASM visualizer" approach: the rendering logic runs
+// in Rust (matching ncurses exactly), while the display is handled
+// by the browser's Canvas API.
+
+use std::cmp;
+
+// ── RGBA colors matching ncurses visualizer ──
+// ncurses init_color uses 0-1000 scale; we pre-convert to 0-255.
+
+const BG: [u8; 4]           = [10, 10, 10, 255];    // #0A0A0A gap/background
+const BLACK: [u8; 4]        = [0, 0, 0, 255];
+const WHITE: [u8; 4]        = [255, 255, 255, 255];
+const GRAY: [u8; 4]         = [180, 180, 180, 255];  // #B4B4B4 (ncurses COLOR_YELLOW 180/1000)
+const GRAY_BOLD: [u8; 4]    = [224, 224, 224, 255];  // #E0E0E0 bright gray
+const CYAN: [u8; 4]         = [0, 217, 217, 255];    // #00D9D9 (ncurses 0,850,850)
+const CYAN_BOLD: [u8; 4]    = [85, 255, 255, 255];   // #55FFFF
+const BLUE: [u8; 4]         = [102, 102, 255, 255];  // #6666FF (ncurses 400,400,1000)
+const BLUE_BOLD: [u8; 4]    = [153, 153, 255, 255];  // #9999FF
+const RED: [u8; 4]          = [230, 0, 0, 255];      // #E60000 (ncurses 900,0,0)
+const RED_BOLD: [u8; 4]     = [255, 68, 68, 255];    // #FF4444
+const GREEN: [u8; 4]        = [0, 204, 0, 255];      // #00CC00 (ncurses 0,800,0)
+const GREEN_BOLD: [u8; 4]   = [68, 255, 68, 255];    // #44FF44
+const CYAN_DIM: [u8; 4]     = [0, 119, 119, 255];    // #007777
+const BLUE_DIM: [u8; 4]     = [56, 56, 170, 255];    // #3838AA
+const RED_DIM: [u8; 4]      = [153, 34, 34, 255];    // #992222
+const GREEN_DIM: [u8; 4]    = [0, 119, 0, 255];      // #007700
+const DARK_GRAY: [u8; 4]    = [37, 37, 37, 255];     // #252525 non-zero unowned
+const NEAR_BLACK: [u8; 4]   = [14, 14, 14, 255];     // #0E0E0E zero unowned
+
+fn player_color(idx: usize) -> [u8; 4] {
+    match idx {
+        0 => CYAN,
+        1 => BLUE,
+        2 => RED,
+        3 => GREEN,
+        _ => GRAY,
+    }
+}
+
+fn player_bold_color(idx: usize) -> [u8; 4] {
+    match idx {
+        0 => CYAN_BOLD,
+        1 => BLUE_BOLD,
+        2 => RED_BOLD,
+        3 => GREEN_BOLD,
+        _ => GRAY_BOLD,
+    }
+}
+
+fn player_dim_color(idx: usize) -> [u8; 4] {
+    match idx {
+        0 => CYAN_DIM,
+        1 => BLUE_DIM,
+        2 => RED_DIM,
+        3 => GREEN_DIM,
+        _ => GRAY,
+    }
+}
+
+/// Fill a rectangle in an RGBA pixel buffer.
+/// Coordinates are in pixels. No bounds checking for performance.
+fn fill_rect(buf: &mut [u8], buf_w: usize, x: usize, y: usize, w: usize, h: usize, color: [u8; 4]) {
+    for row in y..y + h {
+        let offset = (row * buf_w + x) * 4;
+        let end = offset + w * 4;
+        if end > buf.len() { return; }
+        let mut px = offset;
+        while px < end {
+            buf[px]     = color[0];
+            buf[px + 1] = color[1];
+            buf[px + 2] = color[2];
+            buf[px + 3] = color[3];
+            px += 4;
+        }
+    }
+}
+
+/// WASM Arena Renderer — renders the 64×64 arena to an RGBA pixel buffer.
+///
+/// Uses the SAME color logic as the ncurses visualizer (visualizer.rs):
+/// - Owned cells: player color on black background
+/// - Bold (scrb): brighter player color
+/// - IR (executing instruction): inverted (player color as background)
+/// - PC on unowned: gray background, black dot
+/// - PC on owned: white dot in center
+/// - Unowned non-zero: dark gray
+/// - Unowned zero: near-black
+///
+/// JS retrieves the pixel buffer and blits it to a Canvas via putImageData().
+#[wasm_bindgen]
+pub struct WasmRenderer {
+    cell_size: usize,
+    gap: usize,
+    img_w: usize,
+    img_h: usize,
+    buffer: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl WasmRenderer {
+    /// Create a new renderer with the given cell size and gap (in pixels).
+    /// cell_size: pixels per cell side (e.g., 10)
+    /// gap: pixels between cells (e.g., 1)
+    #[wasm_bindgen(constructor)]
+    pub fn new(cell_size: usize, gap: usize) -> Self {
+        let cell_size = cmp::max(4, cell_size);
+        let gap = cmp::min(gap, cell_size - 1);
+        let img_w = 64 * cell_size;
+        let img_h = 64 * cell_size;
+        let buffer = vec![0u8; img_w * img_h * 4];
+        WasmRenderer { cell_size, gap, img_w, img_h, buffer }
+    }
+
+    /// Reconfigure cell size and gap (reallocates buffer if needed).
+    pub fn configure(&mut self, cell_size: usize, gap: usize) {
+        let cell_size = cmp::max(4, cell_size);
+        let gap = cmp::min(gap, cell_size - 1);
+        if cell_size == self.cell_size && gap == self.gap {
+            return;
+        }
+        self.cell_size = cell_size;
+        self.gap = gap;
+        self.img_w = 64 * cell_size;
+        self.img_h = 64 * cell_size;
+        self.buffer.resize(self.img_w * self.img_h * 4, 0);
+    }
+
+    /// Render the arena from the VM state into the internal pixel buffer.
+    /// Accesses the VM internals directly — same code path as ncurses visualizer.
+    pub fn render(&mut self, vm: &WasmVm) {
+        let cs = self.cell_size;
+        let gap = self.gap;
+        let inner = cs - gap;
+        let w = self.img_w;
+
+        // Fill entire buffer with background (gap color)
+        for chunk in self.buffer.chunks_exact_mut(4) {
+            chunk.copy_from_slice(&BG);
+        }
+
+        // ── Build PC/IR maps (same logic as ncurses visualizer fill_arena) ──
+        // pc_owner[i] = player index (1-4) if a process has PC at address i, else 0
+        // ir_flag[i] = true if a process with active IR is at address i
+        let mut pc_owner: [u8; MEM_SIZE] = [0; MEM_SIZE];
+        let mut ir_flag: [bool; MEM_SIZE] = [false; MEM_SIZE];
+
+        for proc in &vm.vm.processes {
+            let pc = proc.pc;
+            if pc >= MEM_SIZE { continue; }
+            // Map nplayer to player index (1-4) — same as JS _procOwnerIdx
+            let pidx = vm.vm.players.iter()
+                .position(|p| p.nplayer == proc.owner)
+                .map(|i| (i + 1) as u8)
+                .unwrap_or(0);
+            if pidx > 0 {
+                pc_owner[pc] = pidx;
+            }
+            // IR flag: process is executing an instruction at this PC
+            if proc.ir >= 0 && proc.ir <= 15 {
+                ir_flag[pc] = true;
+            }
+        }
+
+        // ── Render each cell ──
+        // Color logic mirrors ncurses visualizer.rs fill_arena() exactly:
+        //   owner == 0 && is_pc → CP_BLACK_ON_GRAY (gray bg)
+        //   owner != 0          → CP_CYAN/BLUE/RED/GREEN on black
+        //   scrb != 0           → A_BOLD (bright variant)
+        //   is_ir && owner != 0 → A_STANDOUT (inverted: player color bg)
+        for i in 0..MEM_SIZE {
+            let col = i % 64;
+            let row = i / 64;
+            let px = col * cs;
+            let py = row * cs;
+
+            let owner = vm.vm.owner[i] as usize; // 0=unowned, 1-4=player
+            let scrb = vm.vm.scrb[i];
+            let is_pc = pc_owner[i] > 0;
+            let is_ir = ir_flag[i];
+
+            // Determine cell fill color
+            let color: [u8; 4] = if is_ir && owner > 0 {
+                // IR executing on owned cell: player color as background (inverted in ncurses)
+                if scrb != 0 { player_bold_color(owner - 1) } else { player_color(owner - 1) }
+            } else if is_ir && owner == 0 {
+                // IR on unowned: gray bg
+                if scrb != 0 { GRAY_BOLD } else { GRAY }
+            } else if is_pc && owner == 0 {
+                // PC on unowned: gray background (ncurses CP_BLACK_ON_GRAY)
+                GRAY
+            } else if owner > 0 {
+                // Owned cell: player color on black bg
+                if scrb != 0 { player_color(owner - 1) } else { player_dim_color(owner - 1) }
+            } else {
+                // Unowned
+                if scrb != 0 {
+                    GRAY
+                } else if vm.vm.arena[i] != 0 {
+                    DARK_GRAY
+                } else {
+                    NEAR_BLACK
+                }
+            };
+
+            // Fill cell rectangle (inner area, gap remains as BG)
+            fill_rect(&mut self.buffer, w, px, py, inner, inner, color);
+
+            // PC indicator: dot in center of cell
+            if is_pc && !is_ir {
+                let dot = cmp::max(2, inner * 35 / 100);
+                let dot_color: [u8; 4] = if owner > 0 { WHITE } else { BLACK };
+                let dx = px + (inner - dot) / 2;
+                let dy = py + (inner - dot) / 2;
+                fill_rect(&mut self.buffer, w, dx, dy, dot, dot, dot_color);
+            }
+        }
+    }
+
+    /// Get the pixel width of the rendered image
+    pub fn width(&self) -> usize { self.img_w }
+
+    /// Get the pixel height of the rendered image
+    pub fn height(&self) -> usize { self.img_h }
+
+    /// Get the RGBA pixel buffer as a Uint8Array (zero-copy view into WASM memory).
+    /// The view is valid until the next render() or configure() call.
+    pub fn get_buffer(&self) -> js_sys::Uint8Array {
+        unsafe { js_sys::Uint8Array::view(&self.buffer) }
     }
 }
 
