@@ -915,6 +915,7 @@ impl Vm {
         }
     }
 
+    #[cfg(feature = "visualizer")]
     pub fn run(&mut self) {
         self.load_champions();
         self.load_processes();
@@ -939,9 +940,6 @@ impl Vm {
                     // Paused — skip this cycle but keep window responsive
                     continue;
                 }
-                // CTRL_STEP (3) and CTRL_CONTINUE (0) both proceed to execute the cycle
-                // CTRL_STEP will have already set paused=true in the visualizer,
-                // so after this one cycle, the next ncupdate() will return CTRL_PAUSED
             }
 
             if self.cycles == self.dump_param {
@@ -965,7 +963,6 @@ impl Vm {
             if !quit {
                 v.show_winner(self);
                 v.set_blocking_input();
-                // Wait for user to press a key before exiting
                 v.wait_for_key();
             }
             v.end();
@@ -981,9 +978,52 @@ impl Vm {
         if vis.is_none() {
             for player in &self.players {
                 if self.last_alive == player.nplayer {
+                    self.events.push(VmEvent::Winner {
+                        nplayer: player.nplayer,
+                        name: player.name.clone(),
+                    });
                     println!("Player {} ({}) won", player.nplayer, player.name);
                     return;
                 }
+            }
+        }
+    }
+
+    /// Headless run without visualizer (for WASM / lib usage)
+    #[cfg(not(feature = "visualizer"))]
+    pub fn run(&mut self) {
+        self.load_champions();
+        self.load_processes();
+
+        while !self.processes.is_empty() && self.cycle_to_die > 0 {
+            if self.cycles == self.dump_param {
+                self.print_ram();
+                return;
+            }
+
+            let check = self.cycles > 0
+                && (self.cycles - self.diff_to_die) % self.cycle_to_die == 0;
+
+            self.update_cycles();
+            self.process_operations();
+            self.kill_zombies(check);
+        }
+
+        if self.dump_param > 0 && self.dump_param > self.cycles {
+            self.print_ram();
+        } else if self.verbose {
+            self.print_ram();
+        }
+
+        // Announce winner
+        for player in &self.players {
+            if self.last_alive == player.nplayer {
+                self.events.push(VmEvent::Winner {
+                    nplayer: player.nplayer,
+                    name: player.name.clone(),
+                });
+                println!("Player {} ({}) won", player.nplayer, player.name);
+                return;
             }
         }
     }
