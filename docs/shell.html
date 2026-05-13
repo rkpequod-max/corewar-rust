@@ -238,6 +238,82 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 [data-theme="nier"] .arena-fs-toolbar { background: #FFFFFF; border-bottom-color: #D4CFC6; }
 [data-theme="nier"] .arena-fs-controls { background: #F8F5EF; border-top-color: #D4CFC6; }
 [data-theme="nier"] .arena-fs-sidebar { background: #FFFFFF; border-left-color: #D4CFC6; }
+
+/* ── THEME TRANSITION OVERLAY ── */
+#theme-transition {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 10000; pointer-events: none;
+    opacity: 0;
+}
+#theme-transition.transition-to-nier {
+    animation: nierGlitch 0.7s ease-out forwards;
+}
+#theme-transition.transition-to-rayon {
+    animation: rayonFluorescent 0.9s ease-out forwards;
+}
+#theme-transition.transition-to-rayon::before {
+    content: '';
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 2px;
+    background: rgba(200,220,255,0.9);
+    box-shadow: 0 0 30px rgba(200,220,255,0.6), 0 0 60px rgba(200,220,255,0.3), 0 0 100px rgba(0,255,136,0.2);
+    animation: rayonLine 0.8s ease-out forwards;
+}
+
+@keyframes nierGlitch {
+    0% { opacity: 0; }
+    5% { opacity: 1; background: rgba(245,240,232,0); }
+    10% { background: rgba(245,240,232,0.3); transform: translateX(-3px); }
+    15% { background: rgba(196,54,43,0.1); transform: translateX(5px); }
+    20% { background: rgba(245,240,232,0.5); transform: translateX(-2px); }
+    25% { background: rgba(58,110,165,0.1); transform: translateX(3px) skewX(2deg); }
+    30% { background: rgba(245,240,232,0.8); transform: translateX(0) skewX(0); }
+    40% { background: rgba(245,240,232,1); }
+    80% { background: rgba(245,240,232,1); }
+    100% { background: rgba(245,240,232,0); opacity: 0; }
+}
+
+@keyframes rayonFluorescent {
+    0% { opacity: 0; background: transparent; }
+    5% { opacity: 1; }
+    8% { background: rgba(200,220,255,0.0); }
+    12% { background: rgba(200,220,255,0.6); }
+    16% { background: rgba(200,220,255,0.05); }
+    20% { background: rgba(200,220,255,0.8); }
+    24% { background: rgba(200,220,255,0.1); }
+    30% { background: rgba(0,255,136,0.05); }
+    35% { background: rgba(200,220,255,0.9); }
+    40% { background: rgba(3,5,8,0.95); }
+    50% { background: rgba(3,5,8,1); }
+    55% { box-shadow: inset 0 0 200px rgba(0,255,136,0.1); }
+    80% { background: rgba(3,5,8,1); box-shadow: inset 0 0 200px rgba(0,255,136,0.05); }
+    100% { background: rgba(3,5,8,0); opacity: 0; box-shadow: none; }
+}
+
+@keyframes rayonLine {
+    0% { opacity: 0; transform: scaleX(0); }
+    10% { opacity: 1; transform: scaleX(0.3); }
+    20% { opacity: 0.5; transform: scaleX(0.8); }
+    30% { opacity: 1; transform: scaleX(1); }
+    40% { opacity: 0.8; }
+    60% { opacity: 0.3; height: 4px; }
+    100% { opacity: 0; height: 100vh; top: 0; }
+}
+
+/* ── CUSTOM CURSORS ── */
+body {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%2300ff88'/%3E%3Ccircle cx='12' cy='12' r='4' stroke='%2300ff88' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+a, button, .ctrl-btn, select, input, textarea {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%2300ff88'/%3E%3Ccircle cx='12' cy='12' r='4' stroke='%2300ff88' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+[data-theme="nier"] body {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='3' x2='12' y2='9' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='15' x2='12' y2='21' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='3' y1='12' x2='9' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='15' y1='12' x2='21' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='5' stroke='%23C4362B' stroke-width='1' fill='none'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23C4362B'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+[data-theme="nier"] a, [data-theme="nier"] button, [data-theme="nier"] .ctrl-btn, [data-theme="nier"] select, [data-theme="nier"] input, [data-theme="nier"] textarea {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='3' x2='12' y2='9' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='15' x2='12' y2='21' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='3' y1='12' x2='9' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='15' y1='12' x2='21' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='5' stroke='%23C4362B' stroke-width='1' fill='none'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23C4362B'/%3E%3C/svg%3E") 12 12, crosshair;
+}
 </style>
 </head>
 <body>
@@ -2066,15 +2142,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.toggleTheme = function() {
+        const overlay = document.getElementById('theme-transition');
+        if (!overlay || overlay.classList.contains('transition-to-nier') || overlay.classList.contains('transition-to-rayon')) return;
+
         const current = document.documentElement.getAttribute('data-theme');
-        if (current === 'nier') {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('cw-theme', 'rayon');
+        const goingNier = current !== 'nier';
+
+        if (goingNier) {
+            overlay.classList.add('transition-to-nier');
         } else {
-            document.documentElement.setAttribute('data-theme', 'nier');
-            localStorage.setItem('cw-theme', 'nier');
+            overlay.classList.add('transition-to-rayon');
         }
-        updateToggleIcon();
+
+        // Switch theme at 40% of the animation
+        setTimeout(function() {
+            if (goingNier) {
+                document.documentElement.setAttribute('data-theme', 'nier');
+                localStorage.setItem('cw-theme', 'nier');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('cw-theme', 'rayon');
+            }
+            updateToggleIcon();
+        }, goingNier ? 240 : 320);
+
+        // Remove overlay class after animation
+        setTimeout(function() {
+            overlay.classList.remove('transition-to-nier', 'transition-to-rayon');
+        }, goingNier ? 700 : 900);
     };
 
     function updateToggleIcon() {
@@ -2097,5 +2192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 })();
 </script>
+
+<div id="theme-transition"></div>
 </body>
 </html>
