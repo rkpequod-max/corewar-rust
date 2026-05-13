@@ -240,14 +240,15 @@ loop:
 
 <script type="module">
 // ╔══════════════════════════════════════════════════════════════╗
-// ║     COREWAR SHELL — WASM BACKEND (Real Rust VM)             ║
+// ║     COREWAR SHELL — WASM BACKEND (Real Rust VM + ASM)       ║
 // ║                                                              ║
-// ║  The VM logic runs in WebAssembly, compiled from the SAME    ║
-// ║  Rust code as the CLI binary. Zero reimplementation.         ║
+// ║  Both the VM and the Assembler run in WebAssembly, compiled  ║
+// ║  from the SAME Rust code as the CLI binaries.               ║
+// ║  Zero JavaScript reimplementation of any logic.              ║
 // ║  The JS code below is only the UI (terminal, canvas, etc.)   ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-import init, { WasmVm, mem_size, cycle_to_die_init, cycle_delta, nbr_live, max_checks, reg_number, op_name, op_cycle } from './wasm/corewar_wasm.js';
+import init, { WasmVm, WasmAsm, mem_size, cycle_to_die_init, cycle_delta, nbr_live, max_checks, reg_number, op_name, op_cycle } from './wasm/corewar_wasm.js';
 
 let wasmReady = false;
 let vm = null; // WasmVm instance
@@ -261,241 +262,42 @@ let CYCLE_DELTA_VAL = 50;
 let NBR_LIVE_VAL = 21;
 let MAX_CHECKS_VAL = 10;
 let REG_NUMBER_VAL = 16;
-const COREWAR_EXEC_MAGIC = 0x00EA83F3;
-
-// ── OP TABLE (for assembler only — VM uses WASM) ──
-const OP_TABLE = [
-  {name:'live',  opcode:1,  cycles:10,  has_acb:false, dir_size:4, args:'d',                  desc:'Declare player alive'},
-  {name:'ld',    opcode:2,  cycles:5,   has_acb:true,  dir_size:4, args:'di,r',               desc:'Load into register'},
-  {name:'st',    opcode:3,  cycles:5,   has_acb:true,  dir_size:4, args:'r,ri',               desc:'Store register'},
-  {name:'add',   opcode:4,  cycles:10,  has_acb:true,  dir_size:4, args:'r,r,r',              desc:'Add registers'},
-  {name:'sub',   opcode:5,  cycles:10,  has_acb:true,  dir_size:4, args:'r,r,r',              desc:'Subtract registers'},
-  {name:'and',   opcode:6,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise AND'},
-  {name:'or',    opcode:7,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise OR'},
-  {name:'xor',   opcode:8,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise XOR'},
-  {name:'zjmp',  opcode:9,  cycles:20,  has_acb:false, dir_size:2, args:'d',                  desc:'Jump if carry'},
-  {name:'ldi',   opcode:10, cycles:25,  has_acb:true,  dir_size:2, args:'rdi,dr,r',           desc:'Load index'},
-  {name:'sti',   opcode:11, cycles:25,  has_acb:true,  dir_size:2, args:'r,rdi,dr',           desc:'Store index'},
-  {name:'fork',  opcode:12, cycles:800, has_acb:false, dir_size:2, args:'d',                  desc:'Fork process'},
-  {name:'lld',   opcode:13, cycles:10,  has_acb:true,  dir_size:4, args:'di,r',               desc:'Long load'},
-  {name:'lldi',  opcode:14, cycles:50,  has_acb:true,  dir_size:2, args:'rdi,dr,r',           desc:'Long load index'},
-  {name:'lfork', opcode:15, cycles:1000,has_acb:false, dir_size:2, args:'d',                  desc:'Long fork'},
-  {name:'aff',   opcode:16, cycles:2,   has_acb:true,  dir_size:4, args:'r',                  desc:'Print char'},
-];
-
-// Arg type codes
-const ARG_REG = 1, ARG_DIR = 2, ARG_IND = 3;
 
 // ── UTILITY ──
 function memMod(n) { return ((n % MEM_SIZE) + MEM_SIZE) % MEM_SIZE; }
 
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║               ASSEMBLER (generates full .cor file)           ║
+// ║               ASSEMBLER (WASM — Real Rust asm)               ║
+// ║                                                              ║
+// ║  The assembler runs in WebAssembly, compiled from the SAME   ║
+// ║  Rust code as the CLI `asm` binary. Zero JS reimplementation.║
 // ╚══════════════════════════════════════════════════════════════╝
 
-class Assembler {
-  constructor() {
-    this.name = '';
-    this.comment = '';
-    this.labels = {};
-    this.instructions = [];
-    this.output = [];
+function wasmAssemble(source) {
+  if (!wasmReady) {
+    throw new Error('Module WASM non chargé');
+  }
+  // Call the real Rust assembler via WASM
+  const corBytes = WasmAsm.assemble(source);
+  // Parse header to extract name, comment, codeSize
+  const headerSize = 2192; // 4 + 128 + 8 + 2048 + 4
+  const data = new Uint8Array(corBytes);
+  const codeSize = new DataView(data.buffer, data.byteOffset).getUint32(136, false); // big-endian at offset 136
+
+  // Extract name from offset 4 (128 bytes, null-terminated)
+  let name = '';
+  for (let i = 4; i < 4 + 128 && data[i] !== 0; i++) {
+    name += String.fromCharCode(data[i]);
   }
 
-  assemble(source) {
-    this.name = '';
-    this.comment = '';
-    this.labels = {};
-    this.instructions = [];
-    this.output = [];
-
-    const lines = source.split('\n');
-    let currentLabel = '__main';
-
-    // ── PASS 1: Parse labels & instructions ──
-    for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-      let line = lines[lineNum].trim();
-      // Remove comments
-      const hashIdx = line.indexOf('#');
-      if (hashIdx >= 0) line = line.substring(0, hashIdx).trim();
-      if (line === '') continue;
-
-      // Handle .name
-      if (line.startsWith('.name')) {
-        const m = line.match(/\.name\s+"([^"]*)"/);
-        if (m) this.name = m[1];
-        continue;
-      }
-      if (line.startsWith('.comment')) {
-        const m = line.match(/\.comment\s+"([^"]*)"/);
-        if (m) this.comment = m[1];
-        continue;
-      }
-
-      // Handle label
-      if (line.match(/^[a-z_][a-z_0-9]*:/)) {
-        const colonIdx = line.indexOf(':');
-        currentLabel = line.substring(0, colonIdx);
-        line = line.substring(colonIdx + 1).trim();
-        if (line === '') continue;
-      }
-
-      // Parse instruction
-      const parts = line.split(/\s+/);
-      const opName = parts[0].toLowerCase();
-      const opIndex = OP_TABLE.findIndex(op => op.name === opName);
-      if (opIndex === -1) {
-        throw new Error(`Ligne ${lineNum + 1}: Instruction inconnue "${opName}"`);
-      }
-
-      const argStr = parts.slice(1).join('').split(',');
-      const args = argStr.map(a => this.parseArg(a.trim(), lineNum));
-      this.instructions.push({ opIndex, args, label: currentLabel, line: lineNum + 1 });
-    }
-
-    // ── PASS 2: Calculate byte positions & resolve labels ──
-    let bytePos = 0;
-    const labelPositions = {};
-
-    for (const instr of this.instructions) {
-      if (!(instr.label in labelPositions)) {
-        labelPositions[instr.label] = bytePos;
-      }
-      const op = OP_TABLE[instr.opIndex];
-      let size = 1; // opcode
-      if (op.has_acb) size += 1;
-      for (let i = 0; i < op.args.split(',').length; i++) {
-        const a = instr.args[i];
-        if (a.type === 'reg') size += 1;
-        else if (a.type === 'dir') size += op.dir_size;
-        else if (a.type === 'ind') size += 2;
-      }
-      instr.bytePos = bytePos;
-      instr.size = size;
-      bytePos += size;
-    }
-
-    // ── PASS 3: Generate bytecode ──
-    for (const instr of this.instructions) {
-      const op = OP_TABLE[instr.opIndex];
-      this.output.push(op.opcode);
-
-      // ACB
-      if (op.has_acb) {
-        let acb = 0;
-        for (let i = 0; i < op.args.split(',').length; i++) {
-          const a = instr.args[i];
-          let bits = 0;
-          if (a.type === 'reg') bits = ARG_REG;
-          else if (a.type === 'dir') bits = ARG_DIR;
-          else if (a.type === 'ind') bits = ARG_IND;
-          acb |= (bits << (6 - i * 2));
-        }
-        this.output.push(acb);
-      }
-
-      // Arguments
-      const argTypes = op.args.split(',');
-      for (let i = 0; i < argTypes.length; i++) {
-        const a = instr.args[i];
-        if (a.type === 'reg') {
-          this.output.push(a.value & 0xFF);
-        } else if (a.type === 'dir') {
-          let val = a.value;
-          if (a.label) {
-            val = (labelPositions[a.label] || 0) - instr.bytePos;
-          }
-          if (op.dir_size === 4) {
-            this.output.push((val >>> 24) & 0xFF, (val >>> 16) & 0xFF, (val >>> 8) & 0xFF, val & 0xFF);
-          } else {
-            val = val & 0xFFFF;
-            this.output.push((val >>> 8) & 0xFF, val & 0xFF);
-          }
-        } else if (a.type === 'ind') {
-          let val = a.value;
-          if (a.label) {
-            val = (labelPositions[a.label] || 0) - instr.bytePos;
-          }
-          val = val & 0xFFFF;
-          this.output.push((val >>> 8) & 0xFF, val & 0xFF);
-        }
-      }
-    }
-
-    // ── Generate full .cor file ──
-    const bytecode = new Uint8Array(this.output);
-    return this.buildCorFile(this.name || 'unknown', this.comment || '', bytecode);
+  // Extract comment from offset 140 (2048 bytes, null-terminated)
+  let comment = '';
+  for (let i = 140; i < 140 + 2048 && data[i] !== 0; i++) {
+    comment += String.fromCharCode(data[i]);
   }
 
-  // Build a full .cor file with header
-  buildCorFile(name, comment, bytecode) {
-    // .cor format:
-    // 4 bytes: magic (0x00EA83F3 big-endian)
-    // 128 bytes: prog_name (null-padded)
-    // 4 bytes: padding
-    // 4 bytes: prog_size (big-endian)
-    // 2048 bytes: comment (null-padded)
-    // 4 bytes: trailing padding
-    // N bytes: bytecode
-    const headerSize = 4 + 128 + 4 + 4 + 2048 + 4; // = 2192
-    const totalSize = headerSize + bytecode.length;
-    const buf = new ArrayBuffer(totalSize);
-    const view = new DataView(buf);
-    const arr = new Uint8Array(buf);
-
-    // Magic number
-    view.setUint32(0, COREWAR_EXEC_MAGIC, false); // big-endian
-
-    // Program name (128 bytes at offset 4)
-    const nameArr = new TextEncoder().encode(name);
-    for (let i = 0; i < 128; i++) {
-      arr[4 + i] = i < nameArr.length ? nameArr[i] : 0;
-    }
-
-    // Padding (4 bytes at offset 132)
-    view.setUint32(132, 0, false);
-
-    // Program size (4 bytes at offset 136, big-endian)
-    view.setUint32(136, bytecode.length, false);
-
-    // Comment (2048 bytes at offset 140)
-    const commentArr = new TextEncoder().encode(comment);
-    for (let i = 0; i < 2048; i++) {
-      arr[140 + i] = i < commentArr.length ? commentArr[i] : 0;
-    }
-
-    // Trailing padding (4 bytes at offset 2188)
-    view.setUint32(2188, 0, false);
-
-    // Bytecode (at offset 2192)
-    arr.set(bytecode, 2192);
-
-    return { name, comment, data: new Uint8Array(buf), codeSize: bytecode.length };
-  }
-
-  parseArg(s, lineNum) {
-    s = s.trim();
-    if (s.startsWith('%:')) {
-      return { type: 'dir', value: 0, label: s.substring(2) };
-    }
-    if (s.startsWith('%')) {
-      const val = parseInt(s.substring(1), 10);
-      if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Valeur directe invalide "${s}"`);
-      return { type: 'dir', value: val };
-    }
-    if (s.startsWith(':')) {
-      return { type: 'ind', value: 0, label: s.substring(1) };
-    }
-    if (s.startsWith('r')) {
-      const num = parseInt(s.substring(1), 10);
-      if (num < 1 || num > 16) throw new Error(`Ligne ${lineNum + 1}: Registre invalide "${s}" (r1-r16)`);
-      return { type: 'reg', value: num };
-    }
-    const val = parseInt(s, 10);
-    if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Argument invalide "${s}"`);
-    return { type: 'ind', value: val };
-  }
+  return { name, comment, data, codeSize };
 }
 
 
@@ -719,7 +521,7 @@ function initTerminal() {
 
   // Welcome message
   term.writeln('\x1b[1;36m╔══════════════════════════════════════════════════════════╗\x1b[0m');
-  term.writeln('\x1b[1;36m║\x1b[0m  \x1b[1;33mCorewar VM Shell\x1b[0m — WASM Backend (Rust VM)  \x1b[1;36m║\x1b[0m');
+  term.writeln('\x1b[1;36m║\x1b[0m  \x1b[1;33mCorewar Shell\x1b[0m — WASM Backend (Rust VM+ASM) \x1b[1;36m║\x1b[0m');
   term.writeln('\x1b[1;36m╚══════════════════════════════════════════════════════════╝\x1b[0m');
   term.writeln('');
 
@@ -915,8 +717,7 @@ function cmdLoadSample(args) {
   const source = SAMPLES[name];
   document.getElementById('asm-editor').value = source;
   try {
-    const asm = new Assembler();
-    const result = asm.assemble(source);
+    const result = wasmAssemble(source);
     if (loadedChampions.length >= 4) {
       termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
       prompt();
@@ -935,8 +736,7 @@ function cmdAsm() {
   if (!checkWasm()) return;
   const source = document.getElementById('asm-editor').value;
   try {
-    const asm = new Assembler();
-    const result = asm.assemble(source);
+    const result = wasmAssemble(source);
     termPrint(`✓ Assemblage réussi: "${result.name}" (${result.codeSize} octets)`, '1;32');
     // Show hex of just the bytecode portion
     let hex = '';
@@ -956,8 +756,7 @@ function cmdAsmLoad() {
   if (!checkWasm()) return;
   const source = document.getElementById('asm-editor').value;
   try {
-    const asm = new Assembler();
-    const result = asm.assemble(source);
+    const result = wasmAssemble(source);
     if (loadedChampions.length >= 4) {
       termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
       prompt();

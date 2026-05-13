@@ -374,60 +374,72 @@ diff /tmp/zork_rt1.cor /tmp/zork_rt2.cor && echo "Roundtrip OK" || echo "Roundtr
 
 ## Shell Web — WASM (WebAssembly)
 
-La page `docs/shell.html` offre un shell Corewar complet dans le navigateur, utilisant la **vraie VM Rust compilée en WebAssembly**. Cela signifie que le code qui exécute les champions dans le navigateur est **exactement le même** que le binaire CLI — il n'y a aucune réimplémentation JavaScript de la logique de la VM. Le WASM s'exécute entièrement côté client (dans le navigateur), il n'y a pas de backend ni de serveur.
+La page `docs/shell.html` offre un shell Corewar complet dans le navigateur, utilisant la **vraie VM Rust et le vrai assembleur Rust compilés en WebAssembly**. Cela signifie que le code qui exécute les champions et le code qui assemble les fichiers `.s` dans le navigateur sont **exactement les mêmes** que les binaires CLI — il n'y a aucune réimplémentation JavaScript de la logique. Le WASM s'exécute entièrement côté client (dans le navigateur), il n'y a pas de backend ni de serveur.
 
 ### Pourquoi WASM et pas JavaScript ?
 
-Une réimplémentation JavaScript de la VM Corewar serait :
-- **Incorrecte par nature** : les bugs de traduction seraient inévitables (arithmétique modulo, gestion des carry, encodage des opcodes, etc.)
+Une réimplémentation JavaScript de la VM ou de l'assembleur Corewar serait :
+- **Incorrecte par nature** : les bugs de traduction seraient inévitables (arithmétique modulo, gestion des carry, encodage des opcodes, résolution des labels, etc.)
 - **Inutile comme référence** : le but du projet est de fournir une implémentation de référence fiable pour aider d'autres à corriger leur projet
 - **Impossible à maintenir** : chaque modification du code Rust devrait être répliquée manuellement en JS
 
-En compilant la VM Rust en WASM, on obtient :
+En compilant la VM et l'assembleur Rust en WASM, on obtient :
 - **Zéro réimplémentation** : le code est le même que le CLI, compilé vers une cible différente
-- **Fidélité garantie** : si le CLI produit un dump correct, le shell Web aussi
+- **Fidélité garantie** : si le CLI produit un dump correct ou un `.cor` correct, le shell Web aussi
 - **Maintenance automatique** : toute modification du code Rust se répercute automatiquement dans le shell Web à la prochaine compilation WASM
 
 ### Architecture de `corewar-wasm`
 
-Le crate `corewar-wasm` est un bridge mince qui enveloppe la VM Rust avec `wasm-bindgen` pour l'exposer au JavaScript du navigateur. Il ne contient **aucune logique de VM** — il se contente de traduire les types Rust en types JS et d'exposer les méthodes nécessaires.
+Le crate `corewar-wasm` est un bridge mince qui enveloppe la VM Rust et l'assembleur Rust avec `wasm-bindgen` pour les exposer au JavaScript du navigateur. Il ne contient **aucune logique métier** — il se contente de traduire les types Rust en types JS et d'exposer les méthodes nécessaires.
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Navigateur                            │
-│                                                          │
-│  shell.html (JS)                                        │
-│  ┌──────────────────┐  ┌──────────────────────────┐     │
-│  │  UI : terminal    │  │  UI : canvas arène       │     │
-│  │  (xterm.js)       │  │  (visualisation 64×64)   │     │
-│  └────────┬─────────┘  └────────────┬─────────────┘     │
-│           │                         │                    │
-│           └──────────┬──────────────┘                    │
-│                      │ appels WASM                       │
-│                      ▼                                   │
-│  ┌──────────────────────────────────────────────┐       │
-│  │  corewar-wasm (WasmVm)                       │       │
-│  │  ─────────────────────────                   │       │
-│  │  load_player_bytes() → charge un .cor        │       │
-│  │  init()              → place les champions   │       │
-│  │  step() / step_n()   → exécute N cycles      │       │
-│  │  get_arena()         → mémoire 4096 octets    │       │
-│  │  get_owner()         → carte des propriétaires│       │
-│  │  get_scrb()          → buffer d'écriture      │       │
-│  │  drain_events_json() → événements (live, aff) │       │
-│  └──────────────────┬───────────────────────────┘       │
-│                     │ utilise                             │
-│  ┌──────────────────▼───────────────────────────┐       │
-│  │  corewar-vm (Vm, Player, Process, VmEvent)   │       │
-│  │  ────────────────────────────────────         │       │
-│  │  LE MÊME CODE QUE LE BINAIRE CLI             │       │
-│  └──────────────────────────────────────────────┘       │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                       Navigateur                              │
+│                                                               │
+│  shell.html (JS)                                             │
+│  ┌──────────────────┐  ┌──────────────────────────┐          │
+│  │  UI : terminal    │  │  UI : canvas arène       │          │
+│  │  (xterm.js)       │  │  (visualisation 64×64)   │          │
+│  └────────┬─────────┘  └────────────┬─────────────┘          │
+│           │                         │                         │
+│           └──────────┬──────────────┘                         │
+│                      │ appels WASM                            │
+│                      ▼                                        │
+│  ┌──────────────────────────────────────────────┐            │
+│  │  corewar-wasm                                │            │
+│  │  ────────────                                │            │
+│  │  WasmVm:                                     │            │
+│  │    load_player_bytes() → charge un .cor      │            │
+│  │    init()              → place les champions │            │
+│  │    step() / step_n()   → exécute N cycles    │            │
+│  │    get_arena()         → mémoire 4096 octets  │            │
+│  │    get_owner()         → carte des proprios   │            │
+│  │    get_scrb()          → buffer d'écriture    │            │
+│  │    drain_events_json() → événements (live...) │            │
+│  │  WasmAsm:                                    │            │
+│  │    assemble(source)    → bytes .cor complet   │            │
+│  │    assemble_json(src)  → info détaillée JSON  │            │
+│  └──────────┬───────────────────┬───────────────┘            │
+│             │ utilise           │ utilise                      │
+│  ┌──────────▼──────┐  ┌────────▼───────────────┐            │
+│  │  corewar-vm     │  │  corewar-asm            │            │
+│  │  (Vm, Process,  │  │  (lexer, parser,        │            │
+│  │   VmEvent)      │  │   codegen)              │            │
+│  │                 │  │                         │            │
+│  │  LE MÊME CODE   │  │  LE MÊME CODE           │            │
+│  │  QUE LE CLI     │  │  QUE LE BINAIRE asm     │            │
+│  └─────────────────┘  └─────────────────────────┘            │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-### Feature gating du visualiseur ncurses
+### Feature gating (ncurses + clap)
 
-La VM Rust utilise normalement ncurses (via `pancurses`) pour le visualiseur interactif. Or ncurses ne peut pas se compiler en WASM — c'est une bibliothèque système C qui nécessite un terminal. Pour résoudre ce problème, le visualiseur est **feature-gated** dans `corewar-vm` :
+Deux dépendances ne peuvent pas se compiler en WASM :
+
+1. **ncurses** (visualiseur de `corewar-vm`) — bibliothèque système C nécessitant un terminal
+2. **clap** (CLI de `corewar-asm`) — parseur d'arguments CLI, inutile en WASM
+
+Ces dépendances sont **feature-gated** :
 
 ```toml
 # corewar-vm/Cargo.toml
@@ -439,15 +451,26 @@ visualizer = ["ncurse-dep"]
 ncurse-dep = { package = "ncurses", version = "5.101", optional = true }
 ```
 
-Quand `corewar-wasm` dépend de `corewar-vm`, il **désactive les features par défaut** :
+```toml
+# corewar-asm/Cargo.toml
+[features]
+default = ["cli"]
+cli = ["dep:clap"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"], optional = true }
+```
+
+Quand `corewar-wasm` dépend de ces crates, il **désactive les features par défaut** :
 
 ```toml
 # corewar-wasm/Cargo.toml
 [dependencies]
 corewar-vm = { path = "../corewar-vm", default-features = false }
+corewar-asm = { path = "../corewar-asm", default-features = false }
 ```
 
-Ainsi, la compilation WASM n'inclut ni ncurses ni le module `visualizer` — uniquement le cœur de la VM. Le module `visualizer` est conditionné par `#[cfg(feature = "visualizer")]` dans `lib.rs` et `main.rs`, ce qui signifie qu'il est totalement exclu de la compilation WASM.
+Ainsi, la compilation WASM n'inclut ni ncurses, ni le module `visualizer`, ni clap — uniquement le cœur de la VM et de l'assembleur.
 
 ### Système d'événements (`VmEvent`)
 
@@ -671,6 +694,6 @@ Le shell offre une interface complète dans le navigateur :
 - **Champions exemples** — `live`, `zork`, `forker`, `stimp` pré-intégrés
 - **Contrôle de vitesse** — Slider de 1 à 100, adaptatif pour les simulations longues
 
-### Assembleur JavaScript
+### Assembleur WASM
 
-Le shell inclut un assembleur JavaScript autonome pour le code `.s` écrit dans l'éditeur. Cet assembleur n'est **pas** une réimplémentation de `corewar-asm` — il est utilisé uniquement pour le workflow interactif dans le navigateur (écrire du code → assembler → charger dans la VM). Pour les besoins de référence et de validation, l'assembleur Rust (`corewar-asm`) doit être utilisé en CLI. L'assembleur JS génère un fichier `.cor` complet avec le header correct (magic number, nom, commentaire, taille du programme, bytecode), compatible avec la VM Rust.
+L'assembleur du shell Web utilise le **vrai `corewar-asm` Rust** compilé en WASM via la struct `WasmAsm`. Il n'y a **plus aucune réimplémentation JavaScript** — ni pour la VM, ni pour l'assembleur. La fonction `WasmAsm.assemble(source)` prend le texte source `.s` et renvoie les bytes du fichier `.cor` complet, avec le même résultat que le binaire CLI `asm`. Cela garantit que les champions assemblés dans le navigateur sont **byte-à-byte identiques** à ceux assemblés en CLI.

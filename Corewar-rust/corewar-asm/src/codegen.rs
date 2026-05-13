@@ -195,6 +195,45 @@ fn compute_arg_sizes(instr: &Instruction) -> Vec<(Arg, usize)> {
     }).collect()
 }
 
+/// Build the complete .cor file bytes in memory (no filesystem access — for WASM / lib usage)
+pub fn build_cor_bytes(
+    program_name: &str,
+    comment: &str,
+    prog_size: u32,
+    bytecode: &[u8],
+) -> Vec<u8> {
+    let header_size = 4 + PROG_NAME_LENGTH + 8 + COMMENT_LENGTH + 4;
+    let mut buf = Vec::with_capacity(header_size + bytecode.len());
+
+    // Magic number (big-endian)
+    buf.extend_from_slice(&COREWAR_EXEC_MAGIC.to_be_bytes());
+
+    // Program name (PROG_NAME_LENGTH bytes, null-padded)
+    let mut name_bytes = vec![0u8; PROG_NAME_LENGTH];
+    let copy_len = program_name.as_bytes().len().min(PROG_NAME_LENGTH);
+    name_bytes[..copy_len].copy_from_slice(&program_name.as_bytes()[..copy_len]);
+    buf.extend_from_slice(&name_bytes);
+
+    // 8 bytes: 4 padding zeros + 4 bytes big-endian prog_size
+    let mut size_bytes = [0u8; 8];
+    size_bytes[4..8].copy_from_slice(&prog_size.to_be_bytes());
+    buf.extend_from_slice(&size_bytes);
+
+    // Comment (COMMENT_LENGTH bytes, null-padded)
+    let mut comment_bytes = vec![0u8; COMMENT_LENGTH];
+    let copy_len = comment.as_bytes().len().min(COMMENT_LENGTH);
+    comment_bytes[..copy_len].copy_from_slice(&comment.as_bytes()[..copy_len]);
+    buf.extend_from_slice(&comment_bytes);
+
+    // 4 trailing zero bytes
+    buf.extend_from_slice(&[0u8; 4]);
+
+    // Bytecode
+    buf.extend_from_slice(bytecode);
+
+    buf
+}
+
 /// Write the complete .cor file
 pub fn write_cor_file(
     filename: &str,

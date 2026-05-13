@@ -277,3 +277,46 @@ pub fn op_cycle(opcode: usize) -> u32 {
         0
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// WASM bridge for the Corewar Assembler
+// ═══════════════════════════════════════════════════════════════
+
+/// WASM bridge for the Corewar Assembler.
+/// Compiles .s source code into .cor bytecode using the REAL Rust assembler.
+/// Zero JavaScript reimplementation — same code as the CLI `asm` binary.
+#[wasm_bindgen]
+pub struct WasmAsm;
+
+#[wasm_bindgen]
+impl WasmAsm {
+    /// Assemble a .s source string into a complete .cor file.
+    /// Returns the raw .cor file bytes (header + bytecode).
+    /// Throws a JS error if assembly fails (syntax error, unknown label, etc.).
+    pub fn assemble(source: &str) -> Result<Vec<u8>, JsValue> {
+        corewar_asm::assemble_from_str(source)
+            .map_err(|e| JsValue::from_str(&format!("{}", e)))
+    }
+
+    /// Assemble a .s source string and return detailed info as JSON.
+    /// JSON format: {"name":"...","comment":"...","code_size":123,"data":[...bytes...]}
+    /// Throws a JS error if assembly fails.
+    pub fn assemble_json(source: &str) -> Result<String, JsValue> {
+        let (name, comment, code_size, cor_bytes) =
+            corewar_asm::assemble_from_str_detailed(source)
+                .map_err(|e| JsValue::from_str(&format!("{}", e)))?;
+
+        // Convert cor_bytes to a JSON array of numbers
+        let bytes_json: Vec<String> = cor_bytes.iter().map(|b| b.to_string()).collect();
+
+        Ok(format!(
+            r#"{{"name":"{}","comment":"{}","code_size":{},"header_size":{},"total_size":{},"data":[{}]}}"#,
+            name.replace('"', "\\\""),
+            comment.replace('"', "\\\""),
+            code_size,
+            cor_bytes.len() - code_size,
+            cor_bytes.len(),
+            bytes_json.join(",")
+        ))
+    }
+}

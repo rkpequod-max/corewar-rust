@@ -3,11 +3,20 @@ name = "corewar-asm"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "corewar_asm"
+path = "src/lib.rs"
+
 [[bin]]
 name = "asm"
 path = "src/main.rs"
+required-features = ["cli"]
+
+[features]
+default = ["cli"]
+cli = ["dep:clap"]
 
 [dependencies]
 corewar-common = { path = "../corewar-common" }
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
 thiserror = "1"
