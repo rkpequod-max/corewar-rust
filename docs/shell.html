@@ -217,7 +217,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
         Éditez du code <b style="color:var(--text2)">.s</b> ci-dessous, puis :
         <b style="color:var(--green)">⚙ Assembler &amp; Charger</b> = compile + charge dans la VM (le plus courant) ;
         <b style="color:var(--text2)">⚙ Assembler</b> = compile seulement (vérifie sans charger) ;
-        <b style="color:var(--text2)">📋 Exemple</b> = sélectionnez dans la liste puis charge (raccourci : cliquez juste sur la liste).
+        <b style="color:var(--text2)">📋 Exemple</b> = ajoute un fichier .s à la liste déroulante.
       </p>
       <textarea class="editor-area" id="asm-editor" spellcheck="false">.name "live"
 .comment "Just lives forever"
@@ -236,7 +236,10 @@ loop:
           <option value="forker">forker (fork bomb)</option>
           <option value="stimp">stimp (attaquant)</option>
         </select>
-        <button class="asm-btn tooltip" onclick="loadSample()" data-tip="Charge l'exemple sélectionné dans l'éditeur, puis assemble et charge">📋 Exemple</button>
+        <div class="file-input-wrap" style="display:inline-block">
+          <button class="asm-btn tooltip" data-tip="Ajoute un fichier .s à la liste d'exemples">📋 Exemple</button>
+          <input type="file" id="file-example" accept=".s" multiple onchange="addExampleFiles(this.files)">
+        </div>
       </div>
     </div>
   </div>
@@ -602,7 +605,7 @@ function initTerminal() {
     term.writeln('    Éditez du code .s, puis cliquez un bouton :');
     term.writeln('    \x1b[1;32m⚙ Assembler & Charger\x1b[0m = compile + charge (le plus courant)');
     term.writeln('    \x1b[1;33m⚙ Assembler\x1b[0m         = compile seulement (vérifie sans charger)');
-    term.writeln('    \x1b[1;33m📋 Exemple\x1b[0m            = charge un code d\'exemple dans l\'éditeur');
+    term.writeln('    \x1b[1;33m📋 Exemple\x1b[0m            = ajoute un fichier .s à la liste déroulante');
     term.writeln('');
     term.writeln('\x1b[1;36m  Astuce :\x1b[0m Le bouton \x1b[1;33m📂 .cor\x1b[0m charge un binaire pré-compilé (avancé).');
     term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour toutes les commandes.');
@@ -1464,56 +1467,49 @@ function handleCorFiles(files) {
 
 function onSampleSelect(val) {
   if (!val) return;
-  // Immediately load the selected example into the editor
-  document.getElementById('asm-editor').value = SAMPLES[val];
+  const source = SAMPLES[val];
+  if (!source) return;
+  document.getElementById('asm-editor').value = source;
   if (term) {
     termPrint('📋 Exemple "' + val + '" chargé dans l\'éditeur.', '1;34');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger, ou \x1b[1;33m📋 Exemple\x1b[0m pour charger directement.');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger ce champion dans la VM.');
     prompt();
   }
 }
 
-function loadSample() {
-  const sel = document.getElementById('sample-select');
-  const val = sel.value;
-  if (!val) {
-    if (term) {
-      termPrint('Sélectionnez d\'abord un exemple dans la liste déroulante, ou tapez "sample live".', '1;33');
-      prompt();
-    }
-    return;
-  }
-  // Load into editor + assemble + load into VM in one click
-  const source = SAMPLES[val];
-  document.getElementById('asm-editor').value = source;
-  sel.value = ''; // reset dropdown
+let customExampleCount = 0;
 
-  if (!checkWasm()) return;
-  try {
-    const result = wasmAssemble(source);
-    if (loadedChampions.length >= 4) {
-      termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
-      prompt();
-      return;
-    }
-    loadedChampions.push(result);
-    termPrint(`✓ Exemple "${result.name}" chargé dans l'éditeur, assemblé et chargé (${result.codeSize} octets)`, '1;32');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code est dans l\'éditeur — modifiez-le et \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour recompiler.');
-    updatePlayerList();
-    const count = loadedChampions.length;
-    const colorNames = ['cyan', 'bleu', 'rouge', 'vert'];
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Joueur ' + count + ' (' + colorNames[count-1] + ') prêt.');
-    if (count < 2) {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un adversaire avec \x1b[1;33m📝 .s\x1b[0m / \x1b[1;33msample <nom>\x1b[0m, ou lancez \x1b[1;32m▶ Run\x1b[0m.');
-    } else if (count < 4) {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Lancez le combat avec \x1b[1;32m▶ Run\x1b[0m, ou chargez encore un champion (max 4).');
-    } else {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
-    }
-  } catch (e) {
-    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+function addExampleFiles(files) {
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const source = e.target.result;
+      // Derive a key from the filename
+      const baseName = file.name.replace(/\.s$/i, '');
+      customExampleCount++;
+      const key = 'custom_' + customExampleCount;
+      // Add to SAMPLES dictionary
+      SAMPLES[key] = source;
+      // Add to the dropdown
+      const sel = document.getElementById('sample-select');
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = baseName + ' (importé)';
+      // Insert before any previous custom entries but after built-ins
+      sel.appendChild(opt);
+      // Auto-select it and load into editor
+      sel.value = key;
+      document.getElementById('asm-editor').value = source;
+      if (term) {
+        termPrint('📋 Fichier .s "' + baseName + '" ajouté à la liste d\'exemples et chargé dans l\'éditeur.', '1;32');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger, ou modifiez le code d\'abord.');
+        prompt();
+      }
+    };
+    reader.readAsText(file);
   }
-  prompt();
+  // Reset file input so the same file can be re-uploaded
+  document.getElementById('file-example').value = '';
 }
 
 function handleSFiles(files) {
@@ -1679,7 +1675,7 @@ window.toggleArenaEnlarge = toggleArenaEnlarge;
 window.toggleArenaFullscreen = toggleArenaFullscreen;
 window.handleCorFiles = handleCorFiles;
 window.handleSFiles = handleSFiles;
-window.loadSample = loadSample;
+window.addExampleFiles = addExampleFiles;
 window.onSampleSelect = onSampleSelect;
 window.removeChampion = removeChampion;
 
