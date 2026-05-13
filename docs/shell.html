@@ -1185,8 +1185,8 @@ function cmdStatus() {
   termPrint(`  Lives:          ${vm.nlives()}`, '');
   termPrint(`  Champions:      ${vm.player_count()}`, '');
   const winnerNplayer = vm.winner_nplayer();
-  if (winnerNplayer !== 0) {
-    termPrint(`  Gagnant:        ${winnerNplayer} (${vm.winner_name()})`, '1;33');
+  if (winnerNplayer !== 0 && !vm.is_running()) {
+    termPrint(`  Gagnant:        ${winnerNplayer} (${vm.winner_name()}) — dernier live`, '1;33');
   }
   term.writeln('');
   prompt();
@@ -1480,8 +1480,8 @@ function updateFsInfo() {
   const statusVal = el('fs-status-val');
   const statusEl = el('fs-status');
   const winnerNplayer = vm.winner_nplayer();
-  if (winnerNplayer !== 0) {
-    const txt = winnerNplayer + ' (' + vm.winner_name() + ') won!';
+  if (winnerNplayer !== 0 && !vm.is_running()) {
+    const txt = winnerNplayer + ' (' + vm.winner_name() + ') a gagné';
     if (statusVal) { statusVal.textContent = txt; statusVal.style.color = 'var(--yellow)'; }
     if (statusEl) { statusEl.textContent = txt; statusEl.style.color = 'var(--yellow)'; }
   } else if (running) {
@@ -1721,8 +1721,8 @@ function updateInfo() {
   document.getElementById('info-speed').textContent = speedSliderVal + '/100';
   const statusEl = document.getElementById('info-status');
   const winnerNplayer = vm.winner_nplayer();
-  if (winnerNplayer !== 0) {
-    statusEl.textContent = winnerNplayer + ' (' + vm.winner_name() + ') won!';
+  if (winnerNplayer !== 0 && !vm.is_running()) {
+    statusEl.textContent = winnerNplayer + ' (' + vm.winner_name() + ') a gagné';
     statusEl.style.color = 'var(--yellow)';
   } else if (running) {
     statusEl.textContent = '** RUNNING **';
