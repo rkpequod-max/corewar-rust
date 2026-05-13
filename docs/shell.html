@@ -662,7 +662,7 @@ function initTerminal() {
       brightWhite: '#f1f5f9'
     },
     fontFamily: "'Courier New', 'Fira Code', monospace",
-    fontSize: 14,
+    fontSize: 11,
     lineHeight: 1.2,
     cursorBlink: true,
     scrollback: 5000,
@@ -1016,12 +1016,28 @@ function cmdRunWithArgs(args) {
     if (args[i] === '-v') verbose = true;
   }
 
+  // Auto-load editor content as champion if none loaded yet
   if (loadedChampions.length === 0) {
-    termPrint('Aucun champion chargé.', '1;31');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion d\'abord :');
-    term.writeln('       \x1b[1;33m📝 .s\x1b[0m (source assemblé auto), \x1b[1;33m📋 Exemple + ⚙ Assembler & Charger\x1b[0m, ou \x1b[1;33m📂 .cor\x1b[0m (binaire pré-compilé)');
-    prompt();
-    return;
+    const source = document.getElementById('asm-editor').value.trim();
+    if (source) {
+      try {
+        const result = wasmAssemble(source);
+        loadedChampions.push(result);
+        termPrint(`✓ Auto-chargement: "${result.name}" (${result.codeSize} octets)`, '1;32');
+        updatePlayerList();
+      } catch (e) {
+        termPrint('Aucun champion chargé et l\'éditeur contient des erreurs.', '1;31');
+        termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez le code .s dans l\'éditeur, puis \x1b[1;32m⚙ Assembler & Charger\x1b[0m.');
+        prompt();
+        return;
+      }
+    } else {
+      termPrint('Aucun champion chargé et l\'éditeur est vide.', '1;31');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+      prompt();
+      return;
+    }
   }
 
   if (vm && !vm.is_running() && vmInitialized && vm.process_count() > 0) {
@@ -1081,15 +1097,50 @@ function cmdStepN(args) {
   if (!checkWasm()) return;
   let n = parseInt(args[0]) || 1;
 
+  // Auto-load editor content as champion if none loaded yet
   if (loadedChampions.length === 0) {
-    termPrint('Aucun champion chargé.', '1;31');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
-    prompt();
-    return;
+    const source = document.getElementById('asm-editor').value.trim();
+    if (source) {
+      try {
+        const result = wasmAssemble(source);
+        loadedChampions.push(result);
+        termPrint(`✓ Auto-chargement: "${result.name}" (${result.codeSize} octets)`, '1;32');
+        updatePlayerList();
+      } catch (e) {
+        termPrint('Aucun champion chargé et l\'éditeur contient des erreurs.', '1;31');
+        termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez le code .s dans l\'éditeur, puis \x1b[1;32m⚙ Assembler & Charger\x1b[0m.');
+        prompt();
+        return;
+      }
+    } else {
+      termPrint('Aucun champion chargé et l\'éditeur est vide.', '1;31');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+      prompt();
+      return;
+    }
   }
 
+  // Pause the VM if currently running (Step implies single-step, not concurrent stepping)
+  if (running) {
+    clearInterval(runInterval);
+    runInterval = null;
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+    document.getElementById('btn-pause').classList.add('active');
+    termPrint('⏸ Pause automatique avant Step.', '1;33');
+  }
+
+  // Initialize VM if needed
   if (!vm || !vmInitialized) {
-    initVmFromChampions(false);
+    try {
+      initVmFromChampions(false);
+    } catch (e) {
+      termPrint('Erreur d\'initialisation de la VM: ' + (e.message || e), '1;31');
+      console.error('initVmFromChampions error:', e);
+      prompt();
+      return;
+    }
   }
 
   try {
@@ -1109,7 +1160,7 @@ function cmdStepN(args) {
     const cycles = vm.cycles();
     const procs = vm.process_count();
     const ctd = vm.cycle_to_die();
-    termPrint(`Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
+    termPrint(`⏭ Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
     printTip('step', 'Tapez step N pour avancer de N cycles d\'un coup. ▶ Run pour lancer en continu.');
 
     if (!ok) {
@@ -1245,18 +1296,7 @@ function cmdProcs() {
 
 function cmdRun() { cmdRunWithArgs([]); }
 function cmdStep() {
-  // Visual feedback: flash active state
-  const btn = document.getElementById('btn-step');
-  const fsBtn = document.getElementById('fs-btn-step');
-  if (btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 200); }
-  if (fsBtn) { fsBtn.classList.add('active'); setTimeout(() => fsBtn.classList.remove('active'), 200); }
-
-  try {
-    cmdStepN([]);
-  } catch (e) {
-    console.error('cmdStep error:', e);
-    if (term) termPrint('Step error: ' + (e.message || e), '1;31');
-  }
+  cmdStepN([]);
 }
 function cmdPause() {
   if (running) {
