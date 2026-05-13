@@ -165,9 +165,13 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       </div>
       <!-- File group -->
       <div class="ctrl-group">
-        <span class="ctrl-group-label">Charger</span>
+        <span class="ctrl-group-label">Fichiers</span>
         <div class="file-input-wrap">
-          <button class="ctrl-btn load">📂 .cor</button>
+          <button class="ctrl-btn load tooltip" data-tip="Source .s → assemblé et chargé automatiquement">📝 .s</button>
+          <input type="file" id="file-s" accept=".s" multiple onchange="handleSFiles(this.files)">
+        </div>
+        <div class="file-input-wrap">
+          <button class="ctrl-btn load tooltip" data-tip="Binaire pré-compilé (avancé)">📂 .cor</button>
           <input type="file" id="file-cor" accept=".cor" multiple onchange="handleCorFiles(this.files)">
         </div>
       </div>
@@ -217,8 +221,8 @@ loop:
     ld %0, r1
     zjmp %:loop</textarea>
       <div class="editor-actions">
-        <button class="asm-btn" onclick="cmdAsm()">⚙ Assembler</button>
-        <button class="asm-btn primary tooltip" onclick="cmdAsmLoad()" data-tip="Assemble et charge le champion dans la VM">⚙ Assembler &amp; Charger</button>
+        <button class="asm-btn tooltip" onclick="cmdAsm()" data-tip="Compile le code .s en bytecode (sans le charger dans la VM)">⚙ Assembler</button>
+        <button class="asm-btn primary tooltip" onclick="cmdAsmLoad()" data-tip="Compile le code .s ET charge le champion dans la VM">⚙ Assembler &amp; Charger</button>
         <select id="sample-select" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem">
           <option value="">— Exemples —</option>
           <option value="live">live (basique)</option>
@@ -226,7 +230,7 @@ loop:
           <option value="forker">forker (fork bomb)</option>
           <option value="stimp">stimp (attaquant)</option>
         </select>
-        <button class="asm-btn" onclick="loadSample()">Charger</button>
+        <button class="asm-btn tooltip" onclick="loadSample()" data-tip="Charge l'exemple dans l'éditeur (à assembler ensuite)">📋 Exemple</button>
       </div>
     </div>
   </div>
@@ -584,10 +588,11 @@ function initTerminal() {
 
   if (wasmReady) {
     term.writeln('\x1b[1;36m  \u27a1 Pour commencer :\x1b[0m');
-    term.writeln('    1. Chargez un champion : \x1b[1;33m📂 .cor\x1b[0m ou \x1b[1;33msample live\x1b[0m');
-    term.writeln('    2. Lancez le combat :    \x1b[1;32m▶ Run\x1b[0m ou \x1b[1;32mrun\x1b[0m');
+    term.writeln('    1. Chargez un champion : \x1b[1;33m📝 .s\x1b[0m (source assemblé auto), \x1b[1;33m📋 Exemple\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+    term.writeln('    2. Lancez le combat :    \x1b[1;32m▶ Run\x1b[0m ou tapez \x1b[1;32mrun\x1b[0m');
     term.writeln('    3. Observez l\'arène se remplir de couleurs !');
     term.writeln('');
+    term.writeln('\x1b[1;36m  Astuce :\x1b[0m Le bouton \x1b[1;33m📂 .cor\x1b[0m charge un binaire pré-compilé (avancé).');
     term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour toutes les commandes.');
   } else if (wasmInitError) {
     term.writeln('\x1b[1;31m⚠ Erreur de chargement WASM: ' + wasmInitError + '\x1b[0m');
@@ -744,10 +749,10 @@ function cmdHelp() {
   termPrint('╚══════════════════════════════════════════════════════════╝', '1;36');
   term.writeln('');
   termPrint('  help                    Afficher cette aide', '');
-  termPrint('  load                    Charger un fichier .cor', '1;33');
-  termPrint('  sample <nom>            Charger un champion exemple', '1;33');
-  termPrint('  asm                     Assembler le code de l\'éditeur', '1;33');
-  termPrint('  asmload                 Assembler + charger le champion', '1;33');
+  termPrint('  load                    Charger un fichier .cor (binaire pré-compilé)', '1;33');
+  termPrint('  sample <nom>            Charger un champion exemple (.s assemblé auto)', '1;33');
+  termPrint('  asm                     Assembler le code .s (sans charger dans la VM)', '1;33');
+  termPrint('  asmload                 Assembler + charger le champion dans la VM', '1;33');
   termPrint('  run [-v] [--dump N]     Lancer la VM', '1;32');
   termPrint('  step [N]                Exécuter N cycles (défaut: 1)', '1;32');
   termPrint('  pause                   Mettre en pause', '1;33');
@@ -786,13 +791,14 @@ function cmdLoadSample(args) {
       return;
     }
     loadedChampions.push(result);
-    termPrint(`✓ Champion "${result.name}" chargé (${result.codeSize} octets)`, '1;32');
+    termPrint(`✓ Exemple "${result.name}" assemblé et chargé (${result.codeSize} octets)`, '1;32');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code source a été placé dans l\'éditeur et \x1b[1;32mcompilé + chargé\x1b[0m dans la VM.');
     updatePlayerList();
     const count = loadedChampions.length;
     const colorNames = ['cyan', 'bleu', 'rouge', 'vert'];
     term.writeln('\x1b[1;36m  \u27a1\x1b[0m Joueur ' + count + ' (' + colorNames[count-1] + ') prêt.');
     if (count < 2) {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m pour un combat solo.');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un adversaire avec \x1b[1;33m📝 .s\x1b[0m / \x1b[1;33msample <nom>\x1b[0m, ou lancez \x1b[1;32m▶ Run\x1b[0m pour un combat solo.');
     } else if (count < 4) {
       term.writeln('\x1b[1;36m  \u27a1\x1b[0m Lancez le combat avec \x1b[1;32m▶ Run\x1b[0m, ou chargez encore un champion (max 4).');
     } else {
@@ -810,7 +816,8 @@ function cmdAsm() {
   try {
     const result = wasmAssemble(source);
     termPrint(`✓ Assemblage réussi: "${result.name}" (${result.codeSize} octets)`, '1;32');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Pour charger ce champion dans la VM, utilisez \x1b[1;32m⚙ Assembler & Charger\x1b[0m ou \x1b[1;33masmload\x1b[0m.');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code .s a été compilé en bytecode .cor, mais \x1b[1;33mpas encore chargé\x1b[0m dans la VM.');
+    term.writeln('  Pour charger ce champion, utilisez \x1b[1;32m⚙ Assembler & Charger\x1b[0m ou tapez \x1b[1;33masmload\x1b[0m.');
     // Show hex of just the bytecode portion
     let hex = '';
     const bytecode = result.data.slice(2192);
@@ -821,6 +828,7 @@ function cmdAsm() {
     termPrint('Bytecode: ' + hex.trim(), '1;34');
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez les erreurs dans l\'éditeur, puis réessayez.');
   }
   prompt();
 }
@@ -837,17 +845,19 @@ function cmdAsmLoad() {
     }
     loadedChampions.push(result);
     termPrint(`✓ Champion "${result.name}" assemblé et chargé (${result.codeSize} octets)`, '1;32');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code .s a été \x1b[1;32mcompilé\x1b[0m par l\'assembleur puis \x1b[1;32mchargé\x1b[0m dans la VM.');
     updatePlayerList();
     const count = loadedChampions.length;
     if (count === 1) {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Premier champion prêt ! Chargez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m.');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Premier champion prêt ! Chargez un adversaire avec \x1b[1;33m📝 .s\x1b[0m / \x1b[1;33m📋 Exemple\x1b[0m, ou lancez \x1b[1;32m▶ Run\x1b[0m pour un combat solo.');
     } else if (count < 4) {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + count + ' champions chargés. Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat.');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + count + ' champions chargés. Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat, ou ajoutez encore un champion (max 4).');
     } else {
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat.');
     }
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Corrigez les erreurs dans l\'éditeur, puis \x1b[1;32m⚙ Assembler & Charger\x1b[0m.');
   }
   prompt();
 }
@@ -896,7 +906,7 @@ function cmdRunWithArgs(args) {
   if (loadedChampions.length === 0) {
     termPrint('Aucun champion chargé.', '1;31');
     term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion d\'abord :');
-    term.writeln('       \x1b[1;33m📂 .cor\x1b[0m (fichier), \x1b[1;33msample live\x1b[0m (exemple), ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m (éditeur)');
+    term.writeln('       \x1b[1;33m📝 .s\x1b[0m (source assemblé auto), \x1b[1;33m📋 Exemple + ⚙ Assembler & Charger\x1b[0m, ou \x1b[1;33m📂 .cor\x1b[0m (binaire pré-compilé)');
     prompt();
     return;
   }
@@ -947,7 +957,7 @@ function cmdRunWithArgs(args) {
         const finalCycles = vm.cycles();
         termPrint('');
         termPrint(`🏆 Le joueur ${winnerNplayer} (${winnerName}) a gagné en ${finalCycles} cycles !`, '1;33');
-        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou changez de champion et relancez.');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, modifiez votre code .s et rechargez, ou essayez un autre champion.');
       }
     }
   }, speed);
@@ -960,7 +970,7 @@ function cmdStepN(args) {
 
   if (loadedChampions.length === 0) {
     termPrint('Aucun champion chargé.', '1;31');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33msample live\x1b[0m, \x1b[1;33m📂 .cor\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m, \x1b[1;33msample live\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
     prompt();
     return;
   }
@@ -992,7 +1002,7 @@ function cmdStepN(args) {
     const wn = vm.winner_nplayer();
     if (wn !== 0) {
       termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou changez de champion.');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
     }
   }
   prompt();
@@ -1163,7 +1173,7 @@ function cmdReset() {
   updateInfo();
   if (viz && vm) viz.render(vm);
   termPrint('↺ VM réinitialisée — champions déchargés.', '1;32');
-  term.writeln('\x1b[1;36m  \u27a1\x1b[0m Modifiez votre code dans l\'assembleur, ou rechargez des champions avec \x1b[1;33m📂 .cor\x1b[0m / \x1b[1;33msample\x1b[0m.');
+  term.writeln('\x1b[1;36m  \u27a1\x1b[0m Modifiez votre code dans l\'assembleur, ou rechargez des champions avec \x1b[1;33m📝 .s\x1b[0m / \x1b[1;33m📋 Exemple\x1b[0m / \x1b[1;33m📂 .cor\x1b[0m.');
   prompt();
 }
 
@@ -1186,7 +1196,7 @@ function setSpeed(val) {
         if (winnerNplayer !== 0) {
           const finalCycles = vm.cycles();
           termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné en ${finalCycles} cycles !`, '1;33');
-          term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
         }
       }
     }, speed);
@@ -1419,6 +1429,8 @@ function handleCorFiles(files) {
         // Report bytecode size (after the 2192-byte header)
         const codeSize = data.length > 2192 ? data.length - 2192 : 0;
         termPrint(`✓ Fichier .cor chargé: "${name}" (${codeSize} octets de bytecode)`, '1;32');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;33mBinaire pré-compilé\x1b[0m — ce fichier .cor a été compilé en dehors du shell.');
+        term.writeln('  Si vous voulez modifier le code, utilisez \x1b[1;33m📝 .s\x1b[0m pour charger le source à la place.');
         updatePlayerList();
         const count = loadedChampions.length;
         if (count === 1) {
@@ -1444,6 +1456,53 @@ function loadSample() {
   if (!val) return;
   document.getElementById('asm-editor').value = SAMPLES[val];
   sel.value = '';
+  termPrint('📋 Exemple "' + val + '" chargé dans l\'éditeur.', '1;34');
+  term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger ce champion dans la VM.');
+  term.writeln('  Ou \x1b[1;33m⚙ Assembler\x1b[0m pour vérifier la compilation sans charger.');
+  prompt();
+}
+
+function handleSFiles(files) {
+  if (!checkWasm()) return;
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const source = e.target.result;
+        // Put the source in the editor so the user can see/modify it
+        document.getElementById('asm-editor').value = source;
+
+        if (loadedChampions.length >= 4) {
+          termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
+          prompt();
+          return;
+        }
+
+        // Assemble the .s source automatically
+        const result = wasmAssemble(source);
+        loadedChampions.push(result);
+        const fileName = file.name.replace(/\.s$/i, '');
+        termPrint(`✓ Fichier .s chargé et assemblé: "${result.name}" (${result.codeSize} octets)`, '1;32');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code source \x1b[1;33m' + file.name + '\x1b[0m a été compilé par l\'assembleur en binaire .cor.');
+        term.writeln('  Le code est aussi dans l\'éditeur — modifiez-le et \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour recompiler.');
+        updatePlayerList();
+        const count = loadedChampions.length;
+        if (count === 1) {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m Premier champion prêt ! Ajoutez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m.');
+        } else if (count < 4) {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + count + ' champions chargés. Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat.');
+        } else {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
+        }
+        prompt();
+      } catch (err) {
+        termPrint('Erreur d\'assemblage du fichier .s: ' + err.message, '1;31');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code source a été placé dans l\'éditeur. Corrigez les erreurs puis \x1b[1;32m⚙ Assembler\x1b[0m.');
+        prompt();
+      }
+    };
+    reader.readAsText(file);
+  }
 }
 
 
@@ -1565,6 +1624,7 @@ window.setSpeed = setSpeed;
 window.toggleArenaEnlarge = toggleArenaEnlarge;
 window.toggleArenaFullscreen = toggleArenaFullscreen;
 window.handleCorFiles = handleCorFiles;
+window.handleSFiles = handleSFiles;
 window.loadSample = loadSample;
 window.removeChampion = removeChampion;
 
@@ -1602,7 +1662,7 @@ async function initWasm() {
     if (term) {
       termPrint('✓ Module WASM chargé avec succès !', '1;32');
       termPrint(`  MEM_SIZE=${MEM_SIZE} CTD=${CYCLE_TO_DIE_INIT} DELTA=${CYCLE_DELTA_VAL} NBR_LIVE=${NBR_LIVE_VAL} MAX_CHECKS=${MAX_CHECKS_VAL}`, '1;34');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion pour commencer (\x1b[1;33msample live\x1b[0m ou \x1b[1;33m📂 .cor\x1b[0m)');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33m📝 .s\x1b[0m (assemblé auto), \x1b[1;33m📋 Exemple\x1b[0m + \x1b[1;33m⚙ Assembler & Charger\x1b[0m, ou \x1b[1;33m📂 .cor\x1b[0m (binaire pré-compilé)');
       prompt();
     }
   } catch (e) {
