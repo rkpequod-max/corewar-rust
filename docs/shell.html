@@ -44,8 +44,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 /* ── ARENA VIZ ── */
 .arena-section{padding:10px}
 .arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
-.arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
-.arena-canvas-wrap canvas{display:block;width:100%;height:auto;image-rendering:crisp-edges;image-rendering:pixelated}
+.arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1/1}
+.arena-canvas-wrap canvas{display:block;width:100%;height:100%}
 /* ── ARENA FULLSCREEN ── */
 .arena-fullscreen-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:var(--bg);flex-direction:row}
 .arena-fullscreen-overlay.active{display:flex}
@@ -82,7 +82,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 /* ── ARENA ENLARGED MODE ── */
 .main.arena-enlarged .left{flex:0 0 25%;max-width:25%}
 .main.arena-enlarged .right{flex:0 0 75%;max-width:75%;width:auto;min-width:0}
-.main.arena-enlarged .arena-canvas-wrap canvas{width:100%;height:auto;image-rendering:crisp-edges;image-rendering:pixelated}
+.main.arena-enlarged .arena-canvas-wrap canvas{width:100%;height:100%}
 /* ── RESPONSIVE ── */
 @media(max-width:900px){
   .main{flex-direction:column}
@@ -189,7 +189,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   <div class="right">
     <div class="arena-section">
       <div class="arena-canvas-wrap">
-        <canvas id="arena-canvas" width="896" height="640"></canvas>
+        <canvas id="arena-canvas"></canvas>
       </div>
     </div>
     <div class="info-section" style="padding:6px 10px">
@@ -264,7 +264,7 @@ loop:
       <button class="ctrl-btn" id="btn-exit-fs" onclick="toggleArenaFullscreen()" style="border-color:var(--red);color:var(--red)">✕ Fermer</button>
     </div>
     <div class="arena-fs-canvas-wrap" id="arena-fs-canvas-wrap">
-      <canvas id="arena-fs-canvas" width="1024" height="680"></canvas>
+      <canvas id="arena-fs-canvas"></canvas>
     </div>
     <div class="arena-fs-controls">
       <span id="fs-status" style="font-size:.78rem;color:var(--text3)">—</span>
@@ -407,7 +407,7 @@ start:
 // Ncurses-style colors: foreground text on black background
 const PLAYER_FG = ['#00d9d9', '#6666ff', '#e60000', '#00cc00']; // cyan, blue, red, green
 const PLAYER_FG_BOLD = ['#55ffff', '#9999ff', '#ff4444', '#44ff44']; // bright variants
-const PLAYER_FG_DIM = ['#005555', '#222266', '#660000', '#005500']; // dim for non-scrb
+const PLAYER_FG_DIM = ['#007777', '#3838aa', '#992222', '#007700']; // dim but readable
 const GRAY = '#b4b4b4'; // gray for owner=0
 const GRAY_BOLD = '#e0e0e0';
 
@@ -416,25 +416,86 @@ class ArenaVisualizer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.cellW = 14;
-    this.cellH = 10;
-    this.font = '9px monospace';
+    this.cellH = 14;
+    this.font = '10px monospace';
+    this.dpr = window.devicePixelRatio || 1;
+    this.logW = 896;
+    this.logH = 896;
     this.ctx.textBaseline = 'top';
     this.ctx.imageSmoothingEnabled = false;
+    // Initial resize to match actual display
+    this._resizeToDisplay();
+  }
+
+  // Resize canvas to match its CSS display size at native resolution
+  _resizeToDisplay() {
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      // Canvas not yet laid out — use parent container size as fallback
+      const parent = this.canvas.parentElement;
+      if (parent) {
+        const prect = parent.getBoundingClientRect();
+        if (prect.width > 0 && prect.height > 0) {
+          this.canvas.style.width = prect.width + 'px';
+          this.canvas.style.height = prect.height + 'px';
+        }
+      }
+      // Re-read
+      const rect2 = this.canvas.getBoundingClientRect();
+      if (rect2.width <= 0 || rect2.height <= 0) return;
+      this._applySize(rect2);
+      return;
+    }
+    this._applySize(rect);
+  }
+
+  _applySize(rect) {
+    this.dpr = window.devicePixelRatio || 1;
+    this.logW = rect.width;
+    this.logH = rect.height;
+    // Set backing store to native resolution
+    this.canvas.width = Math.round(rect.width * this.dpr);
+    this.canvas.height = Math.round(rect.height * this.dpr);
+    // Only set CSS size if it differs (avoid resize loops)
+    const curW = parseFloat(this.canvas.style.width) || 0;
+    const curH = parseFloat(this.canvas.style.height) || 0;
+    if (Math.abs(curW - rect.width) > 1 || Math.abs(curH - rect.height) > 1) {
+      this.canvas.style.width = rect.width + 'px';
+      this.canvas.style.height = rect.height + 'px';
+    }
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this._recalcCells();
+  }
+
+  _recalcCells() {
+    const cols = 64, rows = 64;
+    this.cellW = Math.floor(this.logW / cols);
+    this.cellH = Math.floor(this.logH / rows);
+    // Ensure minimum cell size
+    this.cellW = Math.max(8, this.cellW);
+    this.cellH = Math.max(8, this.cellH);
+    // Font should be ~55-65% of cell height for good readability
+    const fontSize = Math.max(7, Math.floor(this.cellH * 0.6));
+    this.font = fontSize + 'px "Courier New", monospace';
+  }
+
+  // Call when the canvas container changes size
+  resize() {
+    this._resizeToDisplay();
+    this.render(vm);
   }
 
   render(wasmVm) {
     const ctx = this.ctx;
     const cw = this.cellW;
     const ch = this.cellH;
-    const w = this.canvas.width;
-    const h = this.canvas.height;
 
-    // Reset transform
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Reset transform to dpr scale
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    // Clear
+    // Clear entire logical area
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, this.logW, this.logH);
 
     if (!wasmVm) return;
 
@@ -463,10 +524,14 @@ class ArenaVisualizer {
     ctx.textBaseline = 'top';
     ctx.imageSmoothingEnabled = false;
 
+    const cols = 64;
+    const textXoffset = Math.max(1, Math.floor(cw * 0.08));
+    const textYoffset = Math.max(1, Math.floor(ch * 0.15));
+
     // Draw arena — ncurses style: hex text on black background
     for (let i = 0; i < MEM_SIZE; i++) {
-      const col = i % 64;
-      const row = Math.floor(i / 64);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
       const x = col * cw;
       const y = row * ch;
 
@@ -498,21 +563,24 @@ class ArenaVisualizer {
         fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG_DIM[ownerIdx - 1];
         bg = null;
       } else {
-        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#555555' : '#222222');
+        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#555555' : '#1a1a1a');
         bg = null;
       }
 
+      // Draw background highlight
       if (bg) {
         ctx.fillStyle = bg;
-        ctx.fillRect(x, y, cw - 1, ch);
+        ctx.fillRect(x, y, cw, ch);
       }
 
+      // Draw hex text
       ctx.fillStyle = fg;
-      ctx.fillText(hex, x + 1, y + 1);
+      ctx.fillText(hex, x + textXoffset, y + textYoffset);
 
+      // Draw PC underline indicator (ncurses: bold/reverse for owned PC)
       if (isPc && !isIr && ownerIdx > 0) {
         ctx.fillStyle = fg;
-        ctx.fillRect(x, y + ch - 2, cw - 1, 2);
+        ctx.fillRect(x, y + ch - 2, cw, 2);
       }
     }
   }
@@ -1236,15 +1304,9 @@ function setSpeed(val) {
 // ── ARENA CANVAS HELPERS ──
 
 function recalcMainCanvas() {
-  // Recalculate cell dimensions to match the actual canvas size
+  // Resize canvas to match its CSS display size at native DPI
   if (!viz) return;
-  const canvas = document.getElementById('arena-canvas');
-  if (!canvas) return;
-  const cols = 64, rows = 64;
-  viz.cellW = Math.max(8, Math.floor(canvas.width / cols));
-  viz.cellH = Math.max(6, Math.floor(canvas.height / rows));
-  viz.font = Math.max(7, Math.floor(viz.cellH * 0.85)) + 'px monospace';
-  if (vm) viz.render(vm);
+  viz.resize();
 }
 
 // ── ARENA ENLARGED MODE ──
@@ -1267,7 +1329,7 @@ function toggleArenaEnlarge() {
   // Re-render after layout change
   setTimeout(() => {
     if (fitAddon) fitAddon.fit();
-    if (viz && vm) viz.render(vm);
+    if (viz) viz.resize();
   }, 100);
 }
 
@@ -1300,32 +1362,17 @@ function toggleArenaFullscreen() {
 function resizeFsCanvas() {
   const wrap = document.getElementById('arena-fs-canvas-wrap');
   const canvas = document.getElementById('arena-fs-canvas');
-  if (!wrap || !canvas) return;
+  if (!wrap || !canvas || !fsViz) return;
+  // Use the same _resizeToDisplay logic via fsViz.resize()
+  // But first set canvas CSS size to fill the wrapper
   const availW = wrap.clientWidth - 8;
   const availH = wrap.clientHeight - 8;
   if (availW <= 0 || availH <= 0) return;
-  const cols = 64, rows = 64;
-  const cellWFromW = Math.floor(availW / cols);
-  const cellHFromH = Math.floor(availH / rows);
-  let cellW, cellH;
-  if (cellWFromW * rows * 0.7 <= availH) {
-    cellW = cellWFromW;
-    cellH = Math.max(1, Math.floor(cellW * 0.7));
-  } else {
-    cellH = cellHFromH;
-    cellW = Math.max(1, Math.floor(cellH / 0.7));
-  }
-  cellW = Math.max(8, cellW);
-  cellH = Math.max(6, cellH);
-  canvas.width = cellW * cols;
-  canvas.height = cellH * rows;
-  if (fsViz) {
-    fsViz.cellW = cellW;
-    fsViz.cellH = cellH;
-    fsViz.font = Math.max(7, Math.floor(cellH * 0.85)) + 'px monospace';
-    fsViz.ctx.imageSmoothingEnabled = false;
-    fsViz.render(vm);
-  }
+  // Make the canvas square to fit the 64x64 grid
+  const side = Math.min(availW, availH);
+  canvas.style.width = side + 'px';
+  canvas.style.height = side + 'px';
+  fsViz.resize();
 }
 
 function startFsRenderLoop() {
@@ -1763,6 +1810,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initTerminal();
 
+  // Watch for canvas container resize (layout changes, enlarge mode, etc.)
+  const canvasWrap = document.querySelector('.arena-canvas-wrap');
+  if (canvasWrap && window.ResizeObserver) {
+    let resizeTimer = null;
+    new ResizeObserver(() => {
+      // Debounce to avoid excessive redraws
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (viz) viz.resize();
+      }, 50);
+    }).observe(canvasWrap);
+  }
+
   // Re-layout on window resize
   window.addEventListener('resize', () => {
     if (arenaFsActive) resizeFsCanvas();
@@ -1771,7 +1831,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize WASM, then render arena
   initWasm().then(() => {
     requestAnimationFrame(() => {
-      viz.render(vm);
+      viz.resize();
     });
   });
 });
