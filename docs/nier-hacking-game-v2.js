@@ -99,7 +99,7 @@
         try {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(C_BG);
-            scene.fog = new THREE.Fog(C_BG, 30, 60);
+            /* No fog */
 
             /* Top-down camera */
             const aspect = 960/540;
@@ -115,7 +115,6 @@
 
             /* Flat lighting — ambient only for that 2D look */
             scene.add(new THREE.AmbientLight(0xFFFFFF, 1.0));
-            scene.add(new THREE.DirectionalLight(0xFFFFFF, 0.15));
 
             clock = new THREE.Clock();
 
@@ -152,7 +151,7 @@
         clearMaze();
         /* Floor */
         const fg = new THREE.PlaneGeometry(MAZE_W*CELL+2, MAZE_H*CELL+2);
-        const fm = new THREE.MeshBasicMaterial({color:0xD8D8D8});
+        const fm = new THREE.MeshBasicMaterial({color:C_BG});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(MAZE_W*CELL/2, -0.01, MAZE_H*CELL/2);
