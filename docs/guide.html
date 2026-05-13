@@ -6,30 +6,47 @@
     <title>Corewar — Guide Pedagogique Complet</title>
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&family=Space+Grotesk:wght@400;600;700;800&display=swap');
         :root {
-            --bg: #0d1117;
-            --bg2: #0a0e14;
-            --card: #161b22;
-            --card2: #1c2333;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --cyan: #00d9d9;
-            --blue: #6666ff;
-            --red: #e60000;
-            --green: #00cc00;
-            --yellow: #f0c040;
-            --orange: #f74c00;
-            --purple: #a855f7;
-            --code-bg: #0d1117;
+            --bg: #05080c;
+            --bg2: #0a0f16;
+            --card: #0c1219;
+            --card2: #111924;
+            --border: #1a2433;
+            --text: #c8d6e5;
+            --text-muted: #5a6a7a;
+            --cyan: #00e5e5;
+            --blue: #4488ff;
+            --red: #ff3344;
+            --green: #00dd66;
+            --yellow: #ffcc00;
+            --orange: #ff7722;
+            --purple: #aa66ff;
+            --code-bg: #05080c;
             --accent: var(--cyan);
+            --mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+            --sans: 'Space Grotesk', system-ui, sans-serif;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            font-family: var(--sans);
             background: var(--bg);
             color: var(--text);
             line-height: 1.7;
+        }
+        /* Scanline overlay */
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.03) 2px,
+                rgba(0,0,0,0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
         }
         /* Nav */
         nav {
@@ -41,14 +58,15 @@
             display: flex; align-items: center; gap: 20px;
             height: 56px;
         }
-        nav .logo { font-weight:800; font-size:1.1rem; color:var(--cyan); white-space:nowrap; }
+        nav .logo { font-family:var(--mono); font-weight:800; font-size:1.1rem; color:var(--cyan); white-space:nowrap; letter-spacing:2px; text-decoration:none; }
+        nav .logo span { color:var(--text-muted); font-weight:400; }
         nav .links { display:flex; gap:4px; overflow-x:auto; flex:1; }
         nav a {
-            color:var(--text-muted); text-decoration:none; font-size:0.82rem;
-            padding:6px 12px; border-radius:6px; white-space:nowrap;
-            transition: all 0.2s;
+            font-family:var(--mono); color:var(--text-muted); text-decoration:none; font-size:0.78rem;
+            padding:6px 12px; border-radius:4px; white-space:nowrap;
+            transition: all 0.15s; letter-spacing:0.5px;
         }
-        nav a:hover, nav a.active { color:var(--cyan); background:rgba(0,217,217,0.08); }
+        nav a:hover, nav a.active { color:var(--cyan); background:rgba(0,229,229,0.06); }
         .spacer { height:56px; }
 
         /* Hero */
@@ -63,12 +81,12 @@
             background: radial-gradient(ellipse at 30% 50%, rgba(0,217,217,0.06) 0%, transparent 50%),
                         radial-gradient(ellipse at 70% 50%, rgba(102,102,255,0.06) 0%, transparent 50%);
         }
-        .hero h1 { font-size:3.2rem; font-weight:900; position:relative;
-            background:linear-gradient(135deg, var(--cyan), var(--blue));
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .hero .sub { font-size:1.15rem; color:var(--text-muted); max-width:700px; margin:16px auto 0; position:relative; }
+        .hero h1 { font-family:var(--mono); font-size:clamp(2rem,5vw,3.2rem); font-weight:900; position:relative;
+            color:var(--text); }
+        .hero h1 .accent { color:var(--cyan); }
+        .hero .sub { font-family:var(--mono); font-size:clamp(0.85rem,1.5vw,1.05rem); color:var(--text-muted); max-width:700px; margin:16px auto 0; position:relative; line-height:1.8; }
         .hero .badges { margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; position:relative; }
-        .badge { display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; border:1px solid var(--border); background:var(--card); }
+        .badge { font-family:var(--mono); display:inline-block; padding:4px 14px; border-radius:3px; font-size:0.72rem; font-weight:600; border:1px solid var(--border); background:var(--card); letter-spacing:0.5px; }
         .badge-c { color:#4fc3f7; border-color:#4fc3f744; }
         .badge-r { color:#f74c00; border-color:#f74c0044; }
         .badge-42 { color:var(--green); border-color:#00cc0044; }
@@ -77,10 +95,10 @@
         .container { max-width:1100px; margin:0 auto; padding:0 20px; }
         section { padding:60px 0; border-bottom:1px solid var(--border); }
         section:last-child { border-bottom:none; }
-        h2 { font-size:1.8rem; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
+        h2 { font-family:var(--mono); font-size:1.6rem; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
         h2 .num { color:var(--cyan); font-size:0.9rem; font-weight:700; opacity:0.6; }
-        h3 { font-size:1.25rem; margin:28px 0 12px; color:var(--cyan); }
-        h4 { font-size:1.05rem; margin:20px 0 8px; color:var(--text); }
+        h3 { font-family:var(--mono); font-size:1.15rem; margin:28px 0 12px; color:var(--cyan); }
+        h4 { font-family:var(--mono); font-size:1rem; margin:20px 0 8px; color:var(--text); }
         p { margin-bottom:14px; color:var(--text-muted); }
         strong { color:var(--text); }
         a { color:var(--cyan); text-decoration:none; }
@@ -132,7 +150,7 @@
         .code-tab:hover:not(.active) { color:var(--text); }
         pre { background:var(--code-bg); padding:16px; overflow-x:auto; font-size:0.85rem; line-height:1.5; display:none; }
         pre.active { display:block; }
-        code { font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace; }
+        code { font-family:var(--mono); }
         .kw { color:var(--purple); }
         .fn { color:var(--blue); }
         .str { color:var(--green); }
@@ -687,7 +705,7 @@
 
 <!-- Nav -->
 <nav>
-    <a href="index.html" class="logo" style="text-decoration:none">CW</a>
+    <a href="index.html" class="logo" style="text-decoration:none">CW<span>.rs</span></a>
     <div class="links">
         <a href="shell.html">Shell</a>
         <a href="#intro">Introduction</a>
@@ -705,7 +723,7 @@
 
 <!-- Hero -->
 <div class="hero">
-    <h1>Corewar — Guide Complet</h1>
+    <h1>Corewar<span class="accent">.</span>rs — Guide</h1>
     <p class="sub">Comment resoudre le projet Corewar de l'ecole 42 : machine virtuelle, assembleur, champion. Avec des implementations concrètes en C et en Rust.</p>
     <div class="badges">
         <span class="badge badge-42">Projet 42</span>
@@ -713,7 +731,7 @@
         <span class="badge badge-r">Rust (traduction)</span>
     </div>
     <div style="margin-top:24px;position:relative">
-        <a href="shell.html" style="display:inline-block;padding:12px 28px;border-radius:8px;background:var(--cyan);color:#0d1117;font-weight:700;font-size:1rem;text-decoration:none;transition:all 0.2s;border:2px solid var(--cyan)">Essayer le Shell interactif</a>
+        <a href="shell.html" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:4px;background:var(--cyan);color:#05080c;font-family:var(--mono);font-weight:700;font-size:0.88rem;text-decoration:none;transition:all 0.2s;border:1px solid var(--cyan);letter-spacing:0.5px"><span style="opacity:0.6">$</span> Shell interactif</a>
     </div>
 </div>
 
