@@ -698,3 +698,68 @@ Le shell offre une interface complète dans le navigateur :
 ### Assembleur WASM
 
 L'assembleur du shell Web utilise le **vrai `corewar-asm` Rust** compilé en WASM via la struct `WasmAsm`. Il n'y a **plus aucune réimplémentation JavaScript** — ni pour la VM, ni pour l'assembleur. La fonction `WasmAsm.assemble(source)` prend le texte source `.s` et renvoie les bytes du fichier `.cor` complet, avec le même résultat que le binaire CLI `asm`. Cela garantit que les champions assemblés dans le navigateur sont **byte-à-byte identiques** à ceux assemblés en CLI.
+
+---
+
+### Visualisation de l'arène en WASM
+
+Le shell Web affiche l'arène Corewar (grille 64×64 = 4096 cellules mémoire) avec un rendu Canvas 2D qui reproduit fidèlement le visualiseur ncurses du CLI. Chaque cellule affiche sa valeur hexadécimale (2 chiffres, ex: `4f`, `00`) avec un code couleur identique au visualiseur terminal.
+
+#### Architecture du rendu
+
+Le rendu utilise le Canvas 2D API avec support HiDPI/Retina (`devicePixelRatio`). Chaque cycle de rendu :
+
+1. Récupère les données de la VM via WASM : `get_arena()` (valeurs), `get_owner()` (propriétaires), `get_scrb()` (buffer d'écriture)
+2. Construit les maps PC/IR à partir des processus (`process_pc`, `process_ir`, `process_owner`)
+3. Pour chaque cellule, détermine la couleur de fond et de texte selon la **même logique que `visualizer.rs`**
+4. Dessine le fond coloré (`fillRect`) puis le texte hexadécimal (`fillText`)
+5. Ajoute un indicateur de PC (barre en bas) pour les cellules avec un processus actif
+
+#### Logique de couleurs (identique à ncurses)
+
+Les couleurs reproduisent exactement les paires de couleurs du visualiseur ncurses (`visualizer.rs` `fill_arena()`) :
+
+| Condition | Fond | Texte | Équivalent ncurses |
+|-----------|------|-------|--------------------|
+| IR + possédé | Couleur joueur (pleine) | Noir | `A_STANDOUT` (inversé) |
+| IR + non possédé | Gris | Noir | Gris inversé |
+| PC + non possédé | Gris `#b4b4b4` | Noir | `CP_BLACK_ON_GRAY` |
+| Possédé + scrb | Teinté foncé | Couleur joueur vive | `A_BOLD` |
+| Possédé | Teinté très sombre | Couleur joueur normale | Couleur joueur standard |
+| Non possédé + scrb | Noir | Gris clair `#b4b4b4` | Gras gris |
+| Non possédé + non-zéro | Noir | Gris moyen `#666` | `CP_GRAY` |
+| Non possédé + zéro | Noir | Gris sombre `#2a2a2a` | Gris discret |
+
+Les couleurs joueurs (converties de l'échelle ncurses 0-1000 vers 0-255) :
+
+| Joueur | Couleur normale | Couleur bold (scrb) | Couleur dim |
+|--------|----------------|---------------------|-------------|
+| 1 (Cyan) | `#00d9d9` | `#55ffff` | `#007777` |
+| 2 (Bleu) | `#6666ff` | `#9999ff` | `#3838aa` |
+| 3 (Rouge) | `#e60000` | `#ff4444` | `#992222` |
+| 4 (Vert) | `#00cc00` | `#44ff44` | `#007700` |
+
+#### Indicateurs visuels
+
+- **PC (Program Counter)** : Barre lumineuse en bas de la cellule (couleur du joueur propriétaire)
+- **IR (Instruction Register)** : Fond plein en couleur joueur avec texte noir — indique qu'un processus exécute une instruction à cette adresse
+- **Scrb (Screen Buffer)** : Texte en version "bold" (couleur vive) — indique une cellule récemment écrite. Le buffer est réinitialisé toutes les 200 cycles
+
+#### Modes d'affichage
+
+Le shell offre trois modes de visualisation :
+
+1. **Mode normal** — Arène dans le panneau droit (~500px), avec terminal à gauche
+2. **Mode agrandi** (`⬒ Agrandir`) — L'arène occupe 75% de la page, le terminal est réduit à 25%
+3. **Mode plein écran** — L'arène occupe tout l'écran avec :
+   - Toolbar de contrôle (Run, Step, Pause, Reset, Speed)
+   - Panneau d'information latéral (cycles, joueurs, processus)
+   - Rendu via `requestAnimationFrame` pour une fluidité maximale
+
+#### Performances
+
+Le rendu Canvas 2D de 4096 cellules (fond + texte) est exécuté à chaque cycle de la VM. Sur un écran standard, cela prend environ 2-5ms par frame, largement suffisant pour une exécution fluide même à vitesse maximale. Le DPR-awareness garantit un texte net sur les écrans Retina sans surcoût significatif.
+
+#### Comparaison avec l'ancien approche
+
+Le shell utilisait auparavant un `WasmRenderer` (en Rust/WASM) qui produisait un tampon de pixels RGBA, ensuite blitté via `putImageData()`. Cette approche ne permettait pas d'afficher du texte hexadécimal à petite taille (les cellules étaient trop petites pour le rendu pixel de caractères). Le rendu Canvas 2D actuel résout ce problème en utilisant le moteur de rendu de texte natif du navigateur, qui gère l'antialiasing et le subpixel rendering automatiquement.

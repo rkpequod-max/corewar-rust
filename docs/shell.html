@@ -44,8 +44,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 /* ── ARENA VIZ ── */
 .arena-section{padding:10px}
 .arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
-.arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1/1}
-.arena-canvas-wrap canvas{display:block;width:100%;height:100%}
+.arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
+.arena-canvas-wrap canvas{display:block}
 /* ── ARENA FULLSCREEN ── */
 .arena-fullscreen-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:var(--bg);flex-direction:row}
 .arena-fullscreen-overlay.active{display:flex}
@@ -451,7 +451,10 @@ class ArenaVisualizer {
   }
 
   _applySize(rect) {
-    const side = Math.floor(Math.min(rect.width, rect.height));
+    // Use the wrapper's rect for accurate sizing (canvas may have stale inline styles)
+    const wrapper = this.canvas.parentElement;
+    const wRect = wrapper ? wrapper.getBoundingClientRect() : rect;
+    const side = Math.floor(Math.min(wRect.width, wRect.height));
     if (side <= 0) return;
 
     this.displayW = side;
@@ -466,6 +469,7 @@ class ArenaVisualizer {
       this.canvas.width = pxSide;
       this.canvas.height = pxSide;
     }
+    // Size canvas to exactly fit the square — no black border
     this.canvas.style.width = side + 'px';
     this.canvas.style.height = side + 'px';
 
@@ -1088,31 +1092,36 @@ function cmdStepN(args) {
     initVmFromChampions(false);
   }
 
-  const winnerNplayer = vm.winner_nplayer();
-  if (winnerNplayer !== 0) {
-    termPrint('La VM est terminée.', '1;33');
-    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Tapez \x1b[1;31mreset\x1b[0m ou \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
-    prompt();
-    return;
-  }
-
-  const ok = vm.step_n(n);
-  drainAndPrintEvents();
-  updateInfo();
-  viz.render(vm);
-
-  const cycles = vm.cycles();
-  const procs = vm.process_count();
-  const ctd = vm.cycle_to_die();
-  termPrint(`Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
-  printTip('step', 'Tapez step N pour avancer de N cycles d\'un coup. ▶ Run pour lancer en continu.');
-
-  if (!ok) {
-    const wn = vm.winner_nplayer();
-    if (wn !== 0) {
-      termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
+  try {
+    const winnerNplayer = vm.winner_nplayer();
+    if (winnerNplayer !== 0) {
+      termPrint('La VM est terminée.', '1;33');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Tapez \x1b[1;31mreset\x1b[0m ou \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
+      prompt();
+      return;
     }
+
+    const ok = vm.step_n(n);
+    drainAndPrintEvents();
+    updateInfo();
+    viz.render(vm);
+
+    const cycles = vm.cycles();
+    const procs = vm.process_count();
+    const ctd = vm.cycle_to_die();
+    termPrint(`Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
+    printTip('step', 'Tapez step N pour avancer de N cycles d\'un coup. ▶ Run pour lancer en continu.');
+
+    if (!ok) {
+      const wn = vm.winner_nplayer();
+      if (wn !== 0) {
+        termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
+      }
+    }
+  } catch (e) {
+    termPrint('Erreur step: ' + (e.message || e), '1;31');
+    console.error('cmdStepN error:', e);
   }
   prompt();
 }
@@ -1235,7 +1244,14 @@ function cmdProcs() {
 // ── BUTTON HANDLERS (attached to window for onclick) ──
 
 function cmdRun() { cmdRunWithArgs([]); }
-function cmdStep() { cmdStepN([]); }
+function cmdStep() {
+  const btn = document.getElementById('btn-step');
+  if (btn) {
+    btn.classList.add('active');
+    setTimeout(() => btn.classList.remove('active'), 150);
+  }
+  cmdStepN([]);
+}
 function cmdPause() {
   if (running) {
     clearInterval(runInterval);
