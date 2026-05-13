@@ -231,7 +231,8 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 [data-theme="nier"] .ctrl-btn.active { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
 [data-theme="nier"] .left { border-right-color: #D4CFC6; }
 [data-theme="nier"] .right { background: #FFFFFF; }
-[data-theme="nier"] .arena-canvas-wrap { background: #F5F0E8; border-color: #D4CFC6; }
+[data-theme="nier"] .arena-canvas-wrap { background: #F5F0E8; border-color: #D4CFC6; box-shadow: 0 0 15px rgba(196,54,43,0.08), 0 0 30px rgba(196,54,43,0.03); }
+[data-theme="nier"] .arena-canvas-wrap::after { background: linear-gradient(135deg, rgba(196,54,43,0.1), rgba(58,110,165,0.08), rgba(196,54,43,0.05), transparent); }
 [data-theme="nier"] .info-section h3 { color: #6B6560; }
 [data-theme="nier"] #film-grain { display: none; }
 [data-theme="nier"] body::after { background: none; }
@@ -314,6 +315,18 @@ a, button, .ctrl-btn, select, input, textarea {
 [data-theme="nier"] a, [data-theme="nier"] button, [data-theme="nier"] .ctrl-btn, [data-theme="nier"] select, [data-theme="nier"] input, [data-theme="nier"] textarea {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='3' x2='12' y2='9' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='15' x2='12' y2='21' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='3' y1='12' x2='9' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='15' y1='12' x2='21' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='5' stroke='%23C4362B' stroke-width='1' fill='none'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23C4362B'/%3E%3C/svg%3E") 12 12, crosshair;
 }
+/* ── ASSEMBLER ERROR OVERLAY ── */
+.editor-wrap{position:relative}
+.asm-error-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;border-radius:6px;z-index:5}
+.asm-error-line{position:absolute;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,#ef4444 0px,#ef4444 4px,transparent 4px,transparent 8px);opacity:0.8;pointer-events:auto;cursor:help}
+.asm-error-line:hover::after{content:attr(data-error);position:absolute;bottom:calc(100% + 6px);left:8px;padding:6px 10px;background:#1a0a0a;border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#f87171;font-family:'Courier New',monospace;font-size:.72rem;line-height:1.5;white-space:pre-wrap;max-width:350px;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+[data-theme="nier"] .asm-error-line{background:repeating-linear-gradient(90deg,#C4362B 0px,#C4362B 4px,transparent 4px,transparent 8px)}
+[data-theme="nier"] .asm-error-line:hover::after{background:#FFFFFF;border-color:rgba(196,54,43,0.3);color:#C4362B;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.asm-status-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;transition:all 0.3s;z-index:6}
+.asm-status-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.5)}
+.asm-status-dot.error{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.5)}
+.asm-status-dot.checking{background:var(--yellow);animation:statusPulse 0.6s ease-in-out infinite}
+@keyframes statusPulse{0%,100%{opacity:0.5}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -414,6 +427,7 @@ a, button, .ctrl-btn, select, input, textarea {
         <b style="color:var(--text2)">⚙ Assembler</b> = compile seulement (vérifie sans charger) ;
         <b style="color:var(--text2)">📋 Exemple</b> = ajoute un fichier .s à la liste déroulante.
       </p>
+      <div class="editor-wrap">
       <textarea class="editor-area" id="asm-editor" spellcheck="false">.name "live"
 .comment "Just lives forever"
 
@@ -421,6 +435,8 @@ loop:
     live %1
     ld %0, r1
     zjmp %:loop</textarea>
+      <div id="asm-error-overlay" class="asm-error-overlay"></div>
+      </div>
       <div class="editor-actions">
         <button class="asm-btn tooltip" onclick="cmdAsm()" data-tip="Compile le code .s en bytecode (sans le charger dans la VM)">⚙ Assembler</button>
         <button class="asm-btn primary tooltip" onclick="cmdAsmLoad()" data-tip="Compile le code .s ET charge le champion dans la VM">⚙ Assembler &amp; Charger</button>
@@ -553,6 +569,117 @@ function wasmAssemble(source) {
 }
 
 
+// ── REAL-TIME ASSEMBLY ERROR CHECKING ──
+(function() {
+    let checkTimeout = null;
+    let statusDot = null;
+    const editor = document.getElementById('asm-editor');
+    const errorOverlay = document.getElementById('asm-error-overlay');
+    if (!editor || !errorOverlay) return;
+
+    // Create status dot
+    statusDot = document.createElement('div');
+    statusDot.className = 'asm-status-dot checking';
+    editor.parentElement.appendChild(statusDot);
+
+    function clearErrors() {
+        errorOverlay.innerHTML = '';
+    }
+
+    function showErrors(errors) {
+        clearErrors();
+        if (!errors || errors.length === 0) return;
+
+        const style = window.getComputedStyle(editor);
+        const lineHeight = parseFloat(style.lineHeight) || 18;
+        const paddingTop = parseFloat(style.paddingTop) || 8;
+        const borderTop = parseFloat(style.borderTopWidth) || 1;
+        const scrollTop = editor.scrollTop;
+
+        errors.forEach(function(err) {
+            const lineNum = err.line;
+            if (lineNum < 1) return;
+
+            const lineEl = document.createElement('div');
+            lineEl.className = 'asm-error-line';
+            lineEl.setAttribute('data-error', err.message);
+
+            // Position the wavy line under the text of the error line
+            const topOffset = paddingTop + borderTop + (lineNum - 1) * lineHeight + lineHeight - scrollTop + 2;
+            lineEl.style.top = topOffset + 'px';
+
+            errorOverlay.appendChild(lineEl);
+        });
+    }
+
+    function checkAssembly() {
+        if (!wasmReady) {
+            if (statusDot) statusDot.className = 'asm-status-dot checking';
+            return;
+        }
+
+        const source = editor.value;
+        if (!source.trim()) {
+            clearErrors();
+            if (statusDot) statusDot.className = 'asm-status-dot checking';
+            return;
+        }
+
+        try {
+            wasmAssemble(source);
+            clearErrors();
+            if (statusDot) statusDot.className = 'asm-status-dot ok';
+        } catch (e) {
+            const errors = parseAsmError(e.message, source);
+            showErrors(errors);
+            if (statusDot) statusDot.className = 'asm-status-dot error';
+        }
+    }
+
+    function parseAsmError(message, source) {
+        const errors = [];
+        const lines = source.split('\n');
+
+        // Try to extract line number from Rust error message
+        // Common patterns:
+        //   "error at line 3: ..."
+        //   "line 3: ..."
+        //   "parse error at line 3"
+        //   "Line 3: ..."
+        //   "instruction at line 5: ..."
+        // If no line number found, default to line 1
+        const lineMatch = message.match(/[Ll]ine\s+(\d+)/) || message.match(/at line\s+(\d+)/) || message.match(/ligne\s+(\d+)/i);
+        const lineNum = lineMatch ? parseInt(lineMatch[1]) : 1;
+
+        errors.push({
+            line: Math.min(lineNum, lines.length),
+            message: message
+        });
+
+        return errors;
+    }
+
+    // Debounced input handler
+    editor.addEventListener('input', function() {
+        if (statusDot) statusDot.className = 'asm-status-dot checking';
+        if (checkTimeout) clearTimeout(checkTimeout);
+        checkTimeout = setTimeout(checkAssembly, 400);
+    });
+
+    // Also update on scroll to reposition error lines
+    editor.addEventListener('scroll', function() {
+        if (statusDot && statusDot.classList.contains('error')) {
+            checkAssembly();
+        }
+    });
+
+    // Initial check when WASM is ready
+    window.addEventListener('wasmReady', function() {
+        checkAssembly();
+    });
+})();
+
+
 // ╔══════════════════════════════════════════════════════════════╗
 // ║               SAMPLE CHAMPIONS                              ║
 // ╚══════════════════════════════════════════════════════════════╝
@@ -612,6 +739,13 @@ const GRAY = '#b4b4b4'; // ncurses CP_GRAY for unowned cells
 // Subtle background tints for owned cells (barely visible, gives spatial context)
 const PLAYER_BG_TINT = ['#0d1414', '#0d0d16', '#140d0d', '#0d140d'];
 const PLAYER_BG_TINT_BOLD = ['#102020', '#10102a', '#201010', '#102010'];
+// Nier Automata theme colors for arena
+const NIER_PLAYER_FG      = ['#3A6EA5', '#C4362B', '#4A7C59', '#B8860B']; // muted, elegant
+const NIER_PLAYER_FG_BOLD = ['#5A8EC5', '#E4564B', '#6A9C79', '#D8A62B']; // brighter
+const NIER_PLAYER_BG_TINT = ['#E8ECF0', '#F0E8E8', '#E8F0EC', '#F0ECE8']; // very subtle warm tints
+const NIER_PLAYER_BG_TINT_BOLD = ['#D8E0E8', '#E8D8D8', '#D8E8E0', '#E8E0D8'];
+const NIER_GRAY = '#8A847C'; // unowned cells
+const NIER_BG = '#F5F0E8'; // arena background
 
 class ArenaVisualizer {
   constructor(canvas) {
@@ -622,6 +756,8 @@ class ArenaVisualizer {
     this.displayW = 0;
     this.displayH = 0;
     this.renderer = null;    // WasmRenderer kept for compatibility
+    this.trailMap = new Float32Array(MEM_SIZE); // trail intensity 0-1
+    this.trailOwner = new Uint8Array(MEM_SIZE); // 0=none, 1-4=player
     this._resizeToDisplay();
   }
 
@@ -683,12 +819,13 @@ class ArenaVisualizer {
   render(wasmVm) {
     const ctx = this.ctx;
     const cs = this.cellSize;
+    const isNierMode = document.documentElement.getAttribute('data-theme') === 'nier';
 
     // Reset transform in case it was lost
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     if (!wasmVm) {
-      ctx.fillStyle = '#0a0a0a';
+      ctx.fillStyle = isNierMode ? NIER_BG : '#0a0a0a';
       ctx.fillRect(0, 0, this.displayW, this.displayH);
       return;
     }
@@ -711,8 +848,11 @@ class ArenaVisualizer {
       if (wasmVm.process_ir(i) >= 0) irFlag[pc] = 1;
     }
 
+    // ── Update trails ──
+    this._updateTrails(pcOwner);
+
     // ── Clear canvas ──
-    ctx.fillStyle = '#0a0a0a';
+    ctx.fillStyle = isNierMode ? NIER_BG : '#0a0a0a';
     ctx.fillRect(0, 0, this.displayW, this.displayH);
 
     // ── Font setup: scale to fit hex text in cells ──
@@ -720,12 +860,16 @@ class ArenaVisualizer {
     const maxFontW = cs / 1.35;   // max font size that fits "XX" width-wise
     const maxFontH = cs * 0.72;   // max font size that fits height-wise
     const fontSize = Math.max(4, Math.min(maxFontW, maxFontH));
-    ctx.font = `bold ${fontSize}px "Courier New","Lucida Console",monospace`;
+    if (isNierMode) {
+      ctx.font = `${fontSize}px "Courier New","Lucida Console",monospace`; // no bold in Nier
+    } else {
+      ctx.font = `bold ${fontSize}px "Courier New","Lucida Console",monospace`;
+    }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     // ── Render each cell: background rect + hex text ──
-    const gap = Math.max(0.5, cs * 0.06);
+    const gap = isNierMode ? Math.max(0.8, cs * 0.08) : Math.max(0.5, cs * 0.06);
     const inner = cs - gap;
 
     for (let i = 0; i < MEM_SIZE; i++) {
@@ -751,28 +895,34 @@ class ArenaVisualizer {
       let bg, fg;
       if (isIr && ow > 0) {
         // Standout/inverted: player color background, black text
-        bg = isScrb ? PLAYER_FG_BOLD[ow - 1] : PLAYER_FG[ow - 1];
-        fg = '#000';
+        bg = isScrb
+          ? (isNierMode ? NIER_PLAYER_FG_BOLD[ow - 1] : PLAYER_FG_BOLD[ow - 1])
+          : (isNierMode ? NIER_PLAYER_FG[ow - 1] : PLAYER_FG[ow - 1]);
+        fg = isNierMode ? '#F5F0E8' : '#000';
       } else if (isIr && ow === 0) {
-        bg = isScrb ? '#e0e0e0' : '#b4b4b4';
-        fg = '#000';
+        bg = isScrb ? '#e0e0e0' : (isNierMode ? '#D4CFC6' : '#b4b4b4');
+        fg = isNierMode ? '#F5F0E8' : '#000';
       } else if (isPc && ow === 0) {
         // CP_BLACK_ON_GRAY
-        bg = '#b4b4b4';
-        fg = '#000';
+        bg = isNierMode ? '#D4CFC6' : '#b4b4b4';
+        fg = isNierMode ? '#F5F0E8' : '#000';
       } else if (ow > 0) {
         // Owned cell: subtle tinted bg + player color text
-        bg = isScrb ? PLAYER_BG_TINT_BOLD[ow - 1] : PLAYER_BG_TINT[ow - 1];
-        fg = isScrb ? PLAYER_FG_BOLD[ow - 1] : PLAYER_FG[ow - 1];
+        bg = isScrb
+          ? (isNierMode ? NIER_PLAYER_BG_TINT_BOLD[ow - 1] : PLAYER_BG_TINT_BOLD[ow - 1])
+          : (isNierMode ? NIER_PLAYER_BG_TINT[ow - 1] : PLAYER_BG_TINT[ow - 1]);
+        fg = isScrb
+          ? (isNierMode ? NIER_PLAYER_FG_BOLD[ow - 1] : PLAYER_FG_BOLD[ow - 1])
+          : (isNierMode ? NIER_PLAYER_FG[ow - 1] : PLAYER_FG[ow - 1]);
       } else {
         // Unowned: dark bg + gray text
-        bg = '#0a0a0a';
+        bg = isNierMode ? '#F0ECE4' : '#0a0a0a';
         if (isScrb) {
-          fg = '#b4b4b4';
+          fg = isNierMode ? NIER_GRAY : '#b4b4b4';
         } else if (byte !== 0) {
-          fg = '#666';
+          fg = isNierMode ? NIER_GRAY : '#666';
         } else {
-          fg = '#2a2a2a';
+          fg = isNierMode ? '#E0DCD4' : '#2a2a2a';
         }
       }
 
@@ -780,16 +930,57 @@ class ArenaVisualizer {
       ctx.fillStyle = bg;
       ctx.fillRect(x, y, inner, inner);
 
+      // Trail glow
+      const trailIntensity = this.trailMap[i];
+      const trailPlayer = this.trailOwner[i];
+      if (trailIntensity > 0 && trailPlayer > 0 && !isIr) {
+        const trailColor = isNierMode ? NIER_PLAYER_FG[trailPlayer - 1] : PLAYER_FG[trailPlayer - 1];
+        ctx.fillStyle = trailColor;
+        ctx.globalAlpha = trailIntensity * 0.4;
+        // Draw a subtle glow — slightly larger than the cell
+        const glowPad = cs * 0.15 * trailIntensity;
+        ctx.fillRect(x - glowPad, y - glowPad, inner + glowPad * 2, inner + glowPad * 2);
+        ctx.globalAlpha = 1.0;
+      }
+
       // Draw hex text
       const hex = byte.toString(16).padStart(2, '0');
       ctx.fillStyle = fg;
       ctx.fillText(hex, x + inner * 0.5, y + inner * 0.5);
 
-      // PC underline indicator for owned cells (like ncurses cursor highlight)
+      // PC indicator for owned cells
       if (isPc && !isIr && ow > 0) {
-        const barH = Math.max(1, cs * 0.07);
-        ctx.fillStyle = fg;
-        ctx.fillRect(x, y + inner - barH, inner, barH);
+        if (isNierMode) {
+          // Small circle indicator
+          const dotR = Math.max(1, cs * 0.1);
+          ctx.beginPath();
+          ctx.arc(x + inner * 0.5, y + inner * 0.15, dotR, 0, Math.PI * 2);
+          ctx.fillStyle = fg;
+          ctx.fill();
+        } else {
+          // Original underline bar
+          const barH = Math.max(1, cs * 0.07);
+          ctx.fillStyle = fg;
+          ctx.fillRect(x, y + inner - barH, inner, barH);
+        }
+      }
+    }
+  }
+
+  _updateTrails(pcOwner) {
+    // Decay existing trails
+    for (let i = 0; i < MEM_SIZE; i++) {
+      this.trailMap[i] *= 0.92;
+      if (this.trailMap[i] < 0.02) {
+        this.trailMap[i] = 0;
+        this.trailOwner[i] = 0;
+      }
+    }
+    // Mark PC positions as bright trails
+    for (let i = 0; i < MEM_SIZE; i++) {
+      if (pcOwner[i] > 0) {
+        this.trailMap[i] = 1.0;
+        this.trailOwner[i] = pcOwner[i];
       }
     }
   }
@@ -2047,6 +2238,9 @@ async function initWasm() {
   try {
     await init(); // Initialize the WASM module
     wasmReady = true;
+
+    // Dispatch event so real-time error checker can start
+    window.dispatchEvent(new Event('wasmReady'));
 
     // Read constants from WASM
     MEM_SIZE = mem_size();
