@@ -1,4 +1,4 @@
-name: Deploy GitHub Pages
+name: Build WASM and Deploy
 
 on:
   push:
@@ -20,17 +20,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-      - name: Build
-        uses: actions/jekyll-build-pages@v1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          source: docs
-          destination: ./_site
-        env:
-          JEKYLL_ENV: production
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM
+        run: |
+          cd Corewar-rust/corewar-wasm
+          wasm-pack build --target web --out-dir ../../docs/wasm -- --no-default-features
+
+      - name: Verify WASM output
+        run: |
+          ls -la docs/wasm/
+          test -f docs/wasm/corewar_wasm.js || (echo "Missing JS glue" && exit 1)
+          test -f docs/wasm/corewar_wasm_bg.wasm || (echo "Missing WASM binary" && exit 1)
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
   deploy:
     environment:
       name: github-pages
