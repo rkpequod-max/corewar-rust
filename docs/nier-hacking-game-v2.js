@@ -63,74 +63,6 @@
     const keys = {};
     let mouseDown = false;
 
-    /* ══════════════ AUDIO ENGINE ══════════════ */
-    const SFX = {
-        shoot:    "nier-sfx-shoot.mp3",
-        hit:      "nier-sfx-hit.mp3",
-        death:    "nier-sfx-death.mp3",
-        damage:   "nier-sfx-damage.mp3",
-        clear:    "nier-sfx-clear.mp3",
-        gameover: "nier-sfx-gameover.mp3",
-        bgm:      "nier-sfx-bgm.mp3",
-    };
-    let audioCtx = null;
-    let sfxBuffers = {};
-    let bgmSource = null;
-    let bgmGain = null;
-    let audioReady = false;
-
-    function initAudio() {
-        if (audioCtx) return;
-        try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            bgmGain = audioCtx.createGain();
-            bgmGain.gain.value = 0.35;
-            bgmGain.connect(audioCtx.destination);
-            loadAllSFX();
-        } catch(e) { console.warn("[NH] Audio init failed:", e); }
-    }
-
-    function loadAllSFX() {
-        const basePath = (document.querySelector('script[src*="nier-hacking"]')?.src || "").replace(/nier-hacking-game-v2\.js$/, "") || "";
-        for (const [name, file] of Object.entries(SFX)) {
-            fetch(basePath + file)
-                .then(r => r.arrayBuffer())
-                .then(buf => audioCtx.decodeAudioData(buf))
-                .then(audio => { sfxBuffers[name] = audio; console.log("[NH] Loaded SFX:", name); })
-                .catch(e => console.warn("[NH] Failed to load", file, e));
-        }
-    }
-
-    function playSFX(name, volume) {
-        if (!audioCtx || !sfxBuffers[name]) return;
-        try {
-            if (audioCtx.state === "suspended") audioCtx.resume();
-            const src = audioCtx.createBufferSource();
-            src.buffer = sfxBuffers[name];
-            const gain = audioCtx.createGain();
-            gain.gain.value = volume || 0.5;
-            src.connect(gain);
-            gain.connect(audioCtx.destination);
-            src.start(0);
-        } catch(e) {}
-    }
-
-    function startBGM() {
-        if (!audioCtx || !sfxBuffers.bgm || bgmSource) return;
-        try {
-            if (audioCtx.state === "suspended") audioCtx.resume();
-            bgmSource = audioCtx.createBufferSource();
-            bgmSource.buffer = sfxBuffers.bgm;
-            bgmSource.loop = true;
-            bgmSource.connect(bgmGain);
-            bgmSource.start(0);
-        } catch(e) {}
-    }
-
-    function stopBGM() {
-        if (bgmSource) { try { bgmSource.stop(); } catch(e) {} bgmSource = null; }
-    }
-
     /* Shared geos & mats */
     let geoBullet, matPBullet, matEBullet, geoParticle;
     let geoWallH, geoWallV, matWall;
@@ -138,6 +70,8 @@
 
     /* DOM */
     let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, fsBtn, flashEl;
+    let pauseMenu, pauseItems, pauseIdx = 0;
+    let pauseWasActive = false;
 
     /* ══════════════ MAZE ══════════════ */
     function genMaze(w, h) {
@@ -448,7 +382,7 @@
 
         /* Shoot */
         shootT-=dt;
-        if(mouseDown&&shootT<=0){mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);shootT=SHOOT_CD;playSFX("shoot",0.25);}
+        if(mouseDown&&shootT<=0){mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);shootT=SHOOT_CD;}
 
         /* Player bullets */
         for(let i=pBullets.length-1;i>=0;i--){
@@ -460,11 +394,11 @@
             for(let j=enemies.length-1;j>=0;j--){
                 const e=enemies[j];
                 if(d2(b.mesh.position.x,b.mesh.position.z,e.pos.x,e.pos.z)<0.4){
-                    e.hp--;spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);playSFX("hit",0.35);
+                    e.hp--;spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);
                     /* Flash core white on hit */
                     if(e.mesh.userData.core){e.mesh.userData.core.material.color.setHex(0xFFFFFF);setTimeout(()=>{if(e.mesh.userData.core)e.mesh.userData.core.material.color.setHex(C_ENEMY);},60);}
                     if(e.hp<=0){
-                        spawnP(e.pos.x,e.pos.z,C_ENEMYEMT,10);spawnP(e.pos.x,e.pos.z,C_PARTICLE,8);playSFX("death",0.5);
+                        spawnP(e.pos.x,e.pos.z,C_ENEMYEMT,10);spawnP(e.pos.x,e.pos.z,C_PARTICLE,8);
                         scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});
                         score+=e.type==="core"?500:200;enemies.splice(j,1);
                     }
@@ -479,7 +413,7 @@
             const b=eBullets[i];b.mesh.position.x+=b.vx*dt;b.mesh.position.z+=b.vz*dt;b.life-=dt;
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){scene.remove(b.mesh);eBullets.splice(i,1);continue;}
             if(invulnT<=0&&d2(b.mesh.position.x,b.mesh.position.z,playerPos.x,playerPos.z)<0.3){
-                playerHP-=10;invulnT=INVULN_T;playSFX("damage",0.6);
+                playerHP-=10;invulnT=INVULN_T;
                 spawnP(playerPos.x,playerPos.z,C_EBULLET,5);
                 flashScreen(); shake(0.3);
                 scene.remove(b.mesh);eBullets.splice(i,1);
@@ -533,16 +467,16 @@
         spawnEnemies();
         const cx=MAZE_W*CELL/2,cz=MAZE_H*CELL/2;
         camera.position.set(cx,30,cz);camera.lookAt(cx,0,cz);
-        active=true;paused=false;hideOv();updHUD();startBGM();
+        active=true;paused=false;hideOv();updHUD();
     }
     function lvlClear(){
-        active=false;playSFX("clear",0.7);stopBGM();
+        active=false;
         if(curLvl<LEVELS.length-1) showOv("HACKING COMPLETE",LEVELS[curLvl].name+" — all targets eliminated","NEXT SECTOR",function(){curLvl++;startLvl();});
         else showOv("SYSTEM COMPROMISED","All sectors breached — hack successful","RESTART",function(){curLvl=0;score=0;startLvl();});
     }
     function gameOver(){
         active=false;
-        flashScreen();shake(0.5);playSFX("gameover",0.7);stopBGM();
+        flashScreen();shake(0.5);
         showOv("CONNECTION LOST","Signal terminated — hack failed","RETRY",function(){startLvl();});
     }
     function clearBP(){
@@ -578,8 +512,78 @@
         renderer.render(scene,camera);
     }
 
+    /* ══════════════ PAUSE MENU ══════════════ */
+    function togglePause(){
+        if(!active && !paused) return; /* not in gameplay */
+        if(paused) resumeGame();
+        else pauseGame();
+    }
+    function pauseGame(){
+        if(!active) return;
+        paused = true; active = false; mouseDown = false;
+        for(var k in keys) keys[k] = false;
+        pauseWasActive = true;
+        showPauseMenu();
+    }
+    function resumeGame(){
+        if(!pauseWasActive) return;
+        paused = false; active = true;
+        pauseWasActive = true;
+        hidePauseMenu();
+        /* Reset clock to avoid dt spike */
+        if(clock) clock.getDelta();
+    }
+    function showPauseMenu(){
+        if(!pauseMenu) return;
+        pauseIdx = 0;
+        pauseMenu.style.display = "flex";
+        pauseMenu.style.opacity = "1";
+        pauseMenu.style.pointerEvents = "auto";
+        pauseMenu.classList.add("visible");
+        pauseMenu.classList.remove("hidden");
+        updPauseHL();
+    }
+    function hidePauseMenu(){
+        if(!pauseMenu) return;
+        pauseMenu.style.display = "none";
+        pauseMenu.style.opacity = "0";
+        pauseMenu.style.pointerEvents = "none";
+        pauseMenu.classList.remove("visible");
+        pauseMenu.classList.add("hidden");
+    }
+    function updPauseHL(){
+        if(!pauseItems || !pauseItems.length) return;
+        for(let i=0;i<pauseItems.length;i++){
+            if(i===pauseIdx){pauseItems[i].classList.add("selected");}
+            else{pauseItems[i].classList.remove("selected");}
+        }
+    }
+    function pauseSelect(){
+        if(!pauseItems || !pauseItems.length) return;
+        const action = pauseItems[pauseIdx].dataset.action;
+        switch(action){
+            case "continue": resumeGame(); break;
+            case "restart": hidePauseMenu(); paused=false; curLvl=0; score=0; startLvl(); break;
+            case "retry": hidePauseMenu(); paused=false; startLvl(); break;
+            case "quit": hidePauseMenu(); paused=false; pauseWasActive=false; curLvl=0; score=0; active=false; clearBP(); enemies.forEach(function(e){scene.remove(e.mesh);e.mesh.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});enemies=[]; clearMaze(); showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();}); break;
+        }
+    }
+
     /* ══════════════ INPUT ══════════════ */
-    function onKD(e){keys[e.code]=true;if(active&&e.code.startsWith("Arrow"))e.preventDefault();if(e.code==="KeyF")toggleFS();}
+    function onKD(e){
+        keys[e.code]=true;
+        /* Pause menu navigation */
+        if(paused && pauseWasActive){
+            if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="KeyZ"){e.preventDefault();pauseIdx=(pauseIdx-1+pauseItems.length)%pauseItems.length;updPauseHL();return;}
+            if(e.code==="ArrowDown"||e.code==="KeyS"){e.preventDefault();pauseIdx=(pauseIdx+1)%pauseItems.length;updPauseHL();return;}
+            if(e.code==="Enter"||e.code==="Space"){e.preventDefault();pauseSelect();return;}
+            if(e.code==="KeyP"||e.code==="Escape"){e.preventDefault();resumeGame();return;}
+            return;
+        }
+        if(active && e.code.startsWith("Arrow")) e.preventDefault();
+        if(e.code==="KeyF") toggleFS();
+        if(e.code==="KeyP" && active) togglePause();
+    }
     function onKU(e){keys[e.code]=false;}
     function onMD(e){if(e.button===0)mouseDown=true;}
     function onMU(e){if(e.button===0)mouseDown=false;}
@@ -593,9 +597,18 @@
             hudScore=document.getElementById("nh-score");hudLvl=document.getElementById("nh-level");
             hudEnm=document.getElementById("nh-enemies");hudName=document.getElementById("nh-level-name");
             fsBtn=document.getElementById("nh-fullscreen");flashEl=document.getElementById("nh-flash");
+            pauseMenu=document.getElementById("nh-pause");
+            if(pauseMenu){
+                pauseItems=pauseMenu.querySelectorAll(".nh-pause-item");
+                /* Mouse interaction for pause items */
+                pauseItems.forEach(function(item,idx){
+                    item.addEventListener("mouseenter",function(){pauseIdx=idx;updPauseHL();});
+                    item.addEventListener("click",function(e){e.stopPropagation();pauseIdx=idx;updPauseHL();pauseSelect();});
+                });
+            }
             if(!canvas){console.error("[NH] No canvas");return;}
             if(!renderer){
-                initScene();if(!sceneOK)return;createPlayer();initAudio();
+                initScene();if(!sceneOK)return;createPlayer();
                 document.addEventListener("keydown",onKD);document.addEventListener("keyup",onKU);
                 canvas.addEventListener("mousedown",onMD);canvas.addEventListener("mouseup",onMU);canvas.addEventListener("mouseleave",onMU);
                 canvas.addEventListener("contextmenu",function(e){e.preventDefault();});
@@ -603,7 +616,8 @@
                 document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement){isFS=false;if(fsBtn)fsBtn.textContent="⤒";resizeR();}});
                 if(fsBtn)fsBtn.addEventListener("click",function(e){e.stopPropagation();toggleFS();});
             }
-            curLvl=0;score=0;mouseDown=false;initAudio();
+            curLvl=0;score=0;mouseDown=false;paused=false;pauseWasActive=false;
+            hidePauseMenu();
             showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();});
             if(!rafId)animate();
         },
@@ -611,8 +625,9 @@
             if(document.documentElement.getAttribute("data-theme")==="nier")this.init();else this.destroy();
         },
         destroy:function(){
-            active=false;stopBGM();if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+            active=false;paused=false;pauseWasActive=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
             mouseDown=false;for(var k in keys)keys[k]=false;
+            hidePauseMenu();
             if(sceneOK){clearBP();enemies.forEach(function(e){scene.remove(e.mesh);e.mesh.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});enemies=[];clearMaze();}
             hideOv();
         },
