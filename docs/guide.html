@@ -8,16 +8,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
         :root {
-            --bg: #06090f;
-            --bg2: #0b1018;
-            --card: #0d1320;
-            --card2: #111828;
-            --border: #1c2640;
-            --border-light: #253050;
+            --bg: #030508;
+            --bg2: #070b12;
+            --card: #0a0f1a;
+            --card2: #0e1524;
+            --border: #151e35;
+            --border-light: #1e2d4a;
             --text: #d4dce8;
-            --text-muted: #6b7a90;
+            --text-muted: #5a6b82;
             --cyan: #00ff88;
             --ray: #00ff88;
+            --pink: #ff2d78;
+            --electric: #00d4ff;
+            --violet: #9b59ff;
             --blue: #3366cc;
             --red: #e84050;
             --green: #00dd66;
@@ -25,7 +28,7 @@
             --orange: #f08030;
             --purple: #8866dd;
             --ivory: #f0ece4;
-            --code-bg: #06090f;
+            --code-bg: #030508;
             --accent: var(--ray);
             --mono: 'IBM Plex Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace;
             --sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -45,25 +48,65 @@
             z-index: 0; pointer-events: none;
         }
 
-        /* Cosmic dust overlay */
+        /* Atmospheric shader canvas */
+        #atmosphere-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none; opacity: 0.6;
+        }
+
+        /* Scan lines overlay */
+        #scan-lines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9997;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px, transparent 2px,
+                rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+            );
+        }
+
+        /* Cosmic fog overlay — Rayon Vert tricolor */
         body::before {
             content: '';
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background:
-                radial-gradient(ellipse at 15% 50%, rgba(0,255,136,0.03) 0%, transparent 50%),
-                radial-gradient(ellipse at 85% 20%, rgba(51,102,204,0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(136,102,221,0.03) 0%, transparent 40%);
+                radial-gradient(ellipse at 20% 50%, rgba(0,255,136,0.025) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 25%, rgba(0,212,255,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 85%, rgba(255,45,120,0.02) 0%, transparent 45%),
+                radial-gradient(ellipse at 65% 60%, rgba(155,89,255,0.015) 0%, transparent 40%);
             pointer-events: none;
             z-index: 0;
+            animation: fogDrift 30s ease-in-out infinite alternate;
+        }
+        @keyframes fogDrift {
+            0%   { transform: translate(0, 0) scale(1); }
+            33%  { transform: translate(10px, -5px) scale(1.02); }
+            66%  { transform: translate(-8px, 8px) scale(0.98); }
+            100% { transform: translate(5px, -3px) scale(1.01); }
         }
 
-        /* Subtle vignette overlay */
+        /* Cinematic vignette overlay */
         body::after {
             content: '';
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(ellipse at center, transparent 50%, rgba(6,9,15,0.4) 100%);
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(3,5,8,0.6) 100%);
             pointer-events: none;
             z-index: 9998;
+        }
+
+        /* Film grain overlay */
+        #film-grain {
+            position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+            pointer-events: none; z-index: 9999; opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+            animation: grainShift 0.5s steps(4) infinite;
+        }
+        @keyframes grainShift {
+            0%   { transform: translate(0, 0); }
+            25%  { transform: translate(-2%, -1%); }
+            50%  { transform: translate(1%, 2%); }
+            75%  { transform: translate(-1%, -2%); }
+            100% { transform: translate(2%, 1%); }
         }
 
         /* Scroll reveal */
@@ -79,15 +122,15 @@
         /* Nav */
         nav {
             position: fixed; top:0; left:0; right:0; z-index:100;
-            background: rgba(6,9,15,0.85);
-            backdrop-filter: blur(20px) saturate(1.4);
-            -webkit-backdrop-filter: blur(20px) saturate(1.4);
-            border-bottom: 1px solid rgba(28,38,64,0.6);
+            background: rgba(3,5,8,0.80);
+            backdrop-filter: blur(24px) saturate(1.6);
+            -webkit-backdrop-filter: blur(24px) saturate(1.6);
+            border-bottom: 1px solid rgba(21,30,53,0.7);
             padding: 0 24px;
             display: flex; align-items: center; gap: 20px;
             height: 56px;
         }
-        nav .logo { font-family:var(--mono); font-weight:500; font-size:1rem; color:var(--ray); white-space:nowrap; letter-spacing:1.5px; text-decoration:none; text-shadow:0 0 20px rgba(0,255,136,0.3); }
+        nav .logo { font-family:var(--mono); font-weight:500; font-size:1rem; color:var(--ray); white-space:nowrap; letter-spacing:1.5px; text-decoration:none; text-shadow:0 0 20px rgba(0,255,136,0.4), 0 0 40px rgba(0,255,136,0.1); }
         nav .logo span { color:var(--text-muted); font-weight:300; }
         nav .links { display:flex; gap:4px; overflow-x:auto; flex:1; }
         nav a {
@@ -98,8 +141,8 @@
         nav a { position: relative; }
         nav a::after {
             content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 1px;
-            background: var(--ray); transition: all 0.4s ease; transform: translateX(-50%);
-            box-shadow: 0 0 6px rgba(0,255,136,0.4);
+            background: linear-gradient(90deg, var(--ray), var(--electric)); transition: all 0.5s ease; transform: translateX(-50%);
+            box-shadow: 0 0 8px rgba(0,255,136,0.4);
         }
         nav a:hover::after { width: 60%; }
         nav a:hover, nav a.active { color:var(--ray); background:rgba(0,255,136,0.05); }
@@ -114,8 +157,9 @@
         }
         .hero::before {
             content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
-            background: radial-gradient(ellipse at 30% 50%, rgba(0,255,136,0.04) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 50%, rgba(51,102,204,0.04) 0%, transparent 50%);
+            background: radial-gradient(ellipse at 25% 50%, rgba(0,255,136,0.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 75% 30%, rgba(0,212,255,0.04) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(255,45,120,0.03) 0%, transparent 45%);
         }
         /* Green ray beam */
         .hero::after {
@@ -127,18 +171,47 @@
             z-index:0;
         }
         @keyframes rayBreathe {
-            0%, 100% { opacity:0.6; }
+            0%, 100% { opacity:0.5; }
             50% { opacity:1; }
         }
         .hero h1 { font-family:var(--sans); font-size:clamp(2.2rem,5vw,3.4rem); font-weight:300; position:relative;
             color:var(--ivory); display:inline-block; letter-spacing:-1px; }
-        .hero h1 .accent { color:var(--ray); text-shadow:0 0 30px rgba(0,255,136,0.4),0 0 60px rgba(0,255,136,0.15); }
+        .hero h1 .accent { color:var(--ray); text-shadow:0 0 30px rgba(0,255,136,0.5),0 0 60px rgba(0,255,136,0.2),0 0 100px rgba(0,255,136,0.08); animation: accentPulseGuide 6s ease-in-out infinite, chromaticGuide 20s ease-in-out infinite; }
+        @keyframes accentPulseGuide {
+            0%, 100% { text-shadow: 0 0 30px rgba(0,255,136,0.5), 0 0 60px rgba(0,255,136,0.2), 0 0 100px rgba(0,255,136,0.08); }
+            50% { text-shadow: 0 0 40px rgba(0,255,136,0.6), 0 0 80px rgba(0,212,255,0.2), 0 0 120px rgba(0,255,136,0.1); }
+        }
+        @keyframes chromaticGuide {
+            0%, 100% { filter: none; }
+            25% { filter: drop-shadow(-1px 0 0 rgba(255,45,120,0.25)) drop-shadow(1px 0 0 rgba(0,212,255,0.25)); }
+            50% { filter: none; }
+            75% { filter: drop-shadow(1px 0 0 rgba(255,45,120,0.15)) drop-shadow(-1px 0 0 rgba(0,212,255,0.15)); }
+        }
+        /* Hero horizontal scanning light */
+        .hero-scan {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,255,136,0.3) 30%, rgba(0,212,255,0.5) 50%, rgba(0,255,136,0.3) 70%, transparent 100%);
+            filter: blur(2px);
+            animation: heroScanGuide 10s ease-in-out infinite;
+            pointer-events: none; z-index: 2;
+            box-shadow: 0 0 25px rgba(0,255,136,0.2), 0 0 50px rgba(0,212,255,0.1);
+        }
+        @keyframes heroScanGuide {
+            0% { top: -2px; opacity: 0; }
+            5% { opacity: 1; }
+            95% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
         .hero .sub { font-family:var(--mono); font-size:clamp(0.82rem,1.4vw,0.98rem); color:var(--text-muted); max-width:700px; margin:16px auto 0; position:relative; line-height:1.9; font-weight:300; }
         .hero .badges { margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; position:relative; }
-        .badge { font-family:var(--mono); display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.72rem; font-weight:400; border:1px solid var(--border); background:var(--card); letter-spacing:0.5px; animation: badgePulse 6s ease-in-out infinite; }
+        .badge { font-family:var(--mono); display:inline-block; padding:4px 14px; border-radius:20px; font-size:0.72rem; font-weight:400; border:1px solid var(--border); background:var(--card); letter-spacing:0.5px; animation: badgePulse 6s ease-in-out infinite, badgeGlow 4s ease-in-out infinite; }
         @keyframes badgePulse {
             0%, 100% { box-shadow: none; }
             50% { box-shadow: 0 0 12px rgba(0,255,136,0.15); }
+        }
+        @keyframes badgeGlow {
+            0%, 100% { text-shadow: none; }
+            50% { text-shadow: 0 0 8px currentColor; }
         }
         .badge-c { color:#4fc3f7; border-color:#4fc3f744; }
         .badge-r { color:#f74c00; border-color:#f74c0044; }
@@ -164,7 +237,7 @@
             background:var(--card); border:1px solid var(--border); border-radius:12px;
             padding:24px; text-align:center; transition:border-color 0.3s;
         }
-        .intro-card:hover { border-color:rgba(0,255,136,0.3); transform:translateY(-4px); box-shadow:0 0 25px rgba(0,255,136,0.08); }
+        .intro-card:hover { border-color:rgba(0,255,136,0.25); transform:translateY(-6px); box-shadow:0 0 40px rgba(0,255,136,0.1), 0 0 80px rgba(0,212,255,0.05), 0 8px 30px rgba(0,0,0,0.3); }
         .intro-card .icon { font-size:2.2rem; margin-bottom:10px; }
         .intro-card .title { font-weight:700; font-size:1.1rem; margin-bottom:6px; }
         .intro-card .desc { font-size:0.85rem; color:var(--text-muted); }
@@ -172,7 +245,13 @@
         /* Concept diagram */
         .diagram-box {
             background:var(--card); border:1px solid var(--border); border-radius:12px;
-            padding:30px; margin:24px 0; overflow-x:auto;
+            padding:30px; margin:24px 0; overflow-x:auto; position: relative;
+        }
+        .diagram-box::after, .code-wrapper::after {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 40%);
+            pointer-events: none;
         }
         .flow-row { display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap; margin:10px 0; }
         .flow-box {
@@ -185,7 +264,7 @@
         .flow-arrow { color:var(--text-muted); font-size:1.4rem; padding:0 8px; }
 
         /* Code blocks */
-        .code-wrapper { margin:16px 0; border-radius:10px; overflow:hidden; border:1px solid var(--border); }
+        .code-wrapper { margin:16px 0; border-radius:10px; overflow:hidden; border:1px solid var(--border); position: relative; }
         .code-header {
             display:flex; align-items:center; justify-content:space-between;
             background:var(--card2); padding:8px 16px; font-size:0.78rem;
@@ -758,6 +837,14 @@
 
 <!-- Starfield Canvas -->
 <canvas id="starfield"></canvas>
+<canvas id="atmosphere-canvas"></canvas>
+<div id="scan-lines"></div>
+
+<!-- Fog Canvas -->
+<canvas id="fog-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.6"></canvas>
+
+<!-- Film Grain -->
+<div id="film-grain"></div>
 
 <!-- Nav -->
 <nav>
@@ -779,6 +866,7 @@
 
 <!-- Hero -->
 <div class="hero">
+    <div class="hero-scan"></div>
     <h1 data-text="Corewar.rs — Guide">Corewar<span class="accent">.</span>rs — Guide</h1>
     <p class="sub">Comment resoudre le projet Corewar de l'ecole 42 : machine virtuelle, assembleur, champion. Avec des implementations concrètes en C et en Rust.</p>
     <div class="badges">
@@ -2614,14 +2702,22 @@ function setEndianView(mode, btn) {
 
 <script>
 /* ═══════════════════════════════════════
-   STARFIELD CANVAS — Cosmos with green ray shimmer
+   STARFIELD CANVAS — Rayon Vert: Multicolor stars
    ═══════════════════════════════════════ */
 (function() {
     const canvas = document.getElementById('starfield');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let w, h, stars;
-    const starCount = 150;
+    const starCount = 220;
+
+    const COLORS = [
+        { r: 0, g: 255, b: 136 },   // Green (rayon vert)
+        { r: 0, g: 212, b: 255 },   // Electric blue
+        { r: 255, g: 45, b: 120 },  // Pink neon
+        { r: 155, g: 89, b: 255 },  // Violet
+        { r: 200, g: 210, b: 230 }, // White
+    ];
 
     function resize() {
         w = canvas.width = window.innerWidth;
@@ -2631,14 +2727,23 @@ function setEndianView(mode, btn) {
     function createStars() {
         stars = [];
         for (let i = 0; i < starCount; i++) {
+            const rnd = Math.random();
+            let colorIdx;
+            if (rnd < 0.20) colorIdx = 0;
+            else if (rnd < 0.35) colorIdx = 1;
+            else if (rnd < 0.45) colorIdx = 2;
+            else if (rnd < 0.50) colorIdx = 3;
+            else colorIdx = 4;
+
             stars.push({
                 x: Math.random() * w,
                 y: Math.random() * h,
                 r: Math.random() * 1.5 + 0.2,
                 alpha: Math.random() * 0.7 + 0.1,
-                twinkleSpeed: Math.random() * 0.02 + 0.005,
+                twinkleSpeed: Math.random() * 0.015 + 0.003,
                 twinkleOffset: Math.random() * Math.PI * 2,
-                isGreen: Math.random() < 0.15
+                color: COLORS[colorIdx],
+                isNeon: colorIdx < 4
             });
         }
     }
@@ -2650,25 +2755,30 @@ function setEndianView(mode, btn) {
     let time = 0;
     function draw() {
         ctx.clearRect(0, 0, w, h);
-        time += 0.016;
+        time += 0.012;
 
         for (const star of stars) {
             const twinkle = Math.sin(time * star.twinkleSpeed * 60 + star.twinkleOffset);
-            const alpha = star.alpha * (0.6 + 0.4 * twinkle);
+            const alpha = star.alpha * (0.5 + 0.5 * twinkle);
+            const c = star.color;
 
-            if (star.isGreen) {
+            if (star.isNeon) {
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, star.r * 3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(0, 255, 136, ' + (alpha * 0.15) + ')';
+                ctx.arc(star.x, star.y, star.r * 4, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha * 0.08})`;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.r * 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha * 0.2})`;
                 ctx.fill();
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(0, 255, 136, ' + alpha + ')';
+                ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`;
                 ctx.fill();
             } else {
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(200, 210, 230, ' + alpha + ')';
+                ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha})`;
                 ctx.fill();
             }
         }
@@ -2676,6 +2786,61 @@ function setEndianView(mode, btn) {
         requestAnimationFrame(draw);
     }
     draw();
+})();
+
+/* ═══════════════════════════════════════
+   FOG CANVAS — Slow-moving cinematic fog
+   ═══════════════════════════════════════ */
+(function() {
+    const canvas = document.getElementById('fog-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w, h;
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const fogBlobs = [];
+    for (let i = 0; i < 5; i++) {
+        fogBlobs.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            radius: 150 + Math.random() * 250,
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: (Math.random() - 0.5) * 0.08,
+            color: [
+                `rgba(0, 255, 136, ${0.008 + Math.random() * 0.008})`,
+                `rgba(0, 212, 255, ${0.006 + Math.random() * 0.006})`,
+                `rgba(255, 45, 120, ${0.004 + Math.random() * 0.004})`,
+            ][Math.floor(Math.random() * 3)],
+        });
+    }
+
+    function drawFog() {
+        ctx.clearRect(0, 0, w, h);
+        for (const blob of fogBlobs) {
+            blob.x += blob.vx;
+            blob.y += blob.vy;
+            if (blob.x < -blob.radius) blob.x = w + blob.radius;
+            if (blob.x > w + blob.radius) blob.x = -blob.radius;
+            if (blob.y < -blob.radius) blob.y = h + blob.radius;
+            if (blob.y > h + blob.radius) blob.y = -blob.radius;
+
+            const gradient = ctx.createRadialGradient(blob.x, blob.y, 0, blob.x, blob.y, blob.radius);
+            gradient.addColorStop(0, blob.color);
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(blob.x, blob.y, blob.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        requestAnimationFrame(drawFog);
+    }
+    drawFog();
 })();
 
 /* ═══════════════════════════════════════
@@ -2690,6 +2855,152 @@ function setEndianView(mode, btn) {
     }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
     reveals.forEach(el => observer.observe(el));
 })();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<script>
+// ══ WEBGL ATMOSPHERIC SHADER (Guide) ══
+(function() {
+    const canvas = document.getElementById('atmosphere-canvas');
+    if (!canvas) return;
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    if (!gl) return;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const vsSource = `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`;
+
+    const fsSource = `
+        precision mediump float;
+        uniform float u_time;
+        uniform vec2 u_resolution;
+        vec3 hash33(vec3 p) {
+            p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+            p += dot(p.zxy, p.yxz + 19.27);
+            return fract(vec3(p.x * p.y, p.y * p.z, p.z * p.x));
+        }
+        float noise(vec2 p) {
+            vec2 i = floor(p); vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            float a = dot(hash33(vec3(i, 0.0)).xy, vec2(1.0)) * 0.5;
+            float b = dot(hash33(vec3(i + vec2(1.0, 0.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            float c = dot(hash33(vec3(i + vec2(0.0, 1.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            float d = dot(hash33(vec3(i + vec2(1.0, 1.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        float fbm(vec2 p) {
+            float v = 0.0; float a = 0.5;
+            for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; }
+            return v;
+        }
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_resolution;
+            float t = u_time * 0.12;
+            float n1 = fbm(uv * 3.0 + vec2(t * 0.3, t * 0.1));
+            float n2 = fbm(uv * 2.0 + vec2(-t * 0.2, t * 0.15) + 10.0);
+            float greenShaft = exp(-pow((uv.x - 0.5) * 6.0, 2.0)) * 
+                              (0.5 + 0.5 * sin(uv.y * 3.14 + t * 0.5)) * 0.02;
+            float pinkShaft = exp(-pow((uv.x - 0.3) * 8.0, 2.0)) * 
+                             (0.5 + 0.5 * sin(uv.y * 3.14 - t * 0.3)) * 0.01;
+            float blueShaft = exp(-pow((uv.x - 0.7) * 8.0, 2.0)) * 
+                             (0.5 + 0.5 * sin(uv.y * 3.14 + t * 0.4)) * 0.008;
+            vec3 fogColor = mix(vec3(0.0, 0.025, 0.015), vec3(0.01, 0.01, 0.025), n1);
+            vec3 color = fogColor * n2 * 0.7;
+            color += vec3(0.0, 1.0, 0.53) * greenShaft;
+            color += vec3(1.0, 0.18, 0.47) * pinkShaft;
+            color += vec3(0.0, 0.83, 1.0) * blueShaft;
+            float caustic = pow(noise(uv * 6.0 + t * 0.4), 3.0) * 0.015;
+            color += vec3(0.0, caustic * 1.2, caustic * 0.6);
+            float vig = 1.0 - pow(length(uv - 0.5) * 1.2, 2.0);
+            color *= max(0.3, vig);
+            gl_FragColor = vec4(color, 1.0);
+        }
+    `;
+
+    function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) { gl.deleteShader(shader); return null; }
+        return shader;
+    }
+    const vs = createShader(gl.VERTEX_SHADER, vsSource);
+    const fs = createShader(gl.FRAGMENT_SHADER, fsSource);
+    if (!vs || !fs) return;
+    const program = gl.createProgram();
+    gl.attachShader(program, vs); gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+    gl.useProgram(program);
+    const posBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const uTime = gl.getUniformLocation(program, 'u_time');
+    const uRes = gl.getUniformLocation(program, 'u_resolution');
+    function render(time) {
+        gl.uniform1f(uTime, time * 0.001);
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+})();
+</script>
+
+<script>
+// ══ GSAP SCROLL ANIMATIONS (Guide) ══
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+    
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero entrance
+    gsap.from('.hero h1', { opacity: 0, y: 40, duration: 1.2, delay: 0.3, ease: 'power3.out' });
+    gsap.from('.hero .sub', { opacity: 0, y: 25, duration: 1.0, delay: 0.6, ease: 'power3.out' });
+    gsap.from('.hero .badges', { opacity: 0, y: 20, duration: 0.8, delay: 0.9, ease: 'power3.out' });
+
+    // Scroll reveal for sections
+    document.querySelectorAll('.reveal').forEach(el => {
+        el.style.transition = 'none';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px)';
+        gsap.to(el, {
+            opacity: 1, y: 0, duration: 1.0, ease: 'power3.out',
+            scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' }
+        });
+    });
+
+    // Intro cards stagger
+    gsap.from('.intro-card', {
+        opacity: 0, y: 30, scale: 0.95, duration: 0.8, stagger: 0.15, ease: 'power2.out',
+        scrollTrigger: { trigger: '.intro-grid', start: 'top 80%' }
+    });
+
+    // Section headings
+    document.querySelectorAll('h2').forEach(h2 => {
+        gsap.from(h2, {
+            opacity: 0, x: -30, duration: 0.8, ease: 'power2.out',
+            scrollTrigger: { trigger: h2, start: 'top 85%' }
+        });
+    });
+
+    // Parallax on hero
+    gsap.to('.hero::before', {
+        y: 60, ease: 'none',
+        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1 }
+    });
+});
 </script>
 
 </body>

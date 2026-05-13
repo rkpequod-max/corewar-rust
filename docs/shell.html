@@ -11,20 +11,26 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--border:#1e293b;
+  --bg:#040710;--surface:#0a0f1c;--surface2:#111828;--border:#151e35;
   --cyan:#06b6d4;--blue:#3b82f6;--red:#ef4444;--green:#22c55e;
   --yellow:#eab308;--purple:#a855f7;--orange:#f97316;
-  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --pink:#ff2d78;--electric:#00d4ff;--violet:#9b59ff;
+  --text:#e2e8f0;--text2:#8899b0;--text3:#5a6b82;
   --p1:#22d3ee;--p2:#60a5fa;--p3:#f87171;--p4:#4ade80;
 }
 html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+/* Film grain */
+#film-grain{position:fixed;top:-50%;left:-50%;width:200%;height:200%;pointer-events:none;z-index:9999;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");animation:grainShift .5s steps(4) infinite}
+@keyframes grainShift{0%{transform:translate(0,0)}25%{transform:translate(-2%,-1%)}50%{transform:translate(1%,2%)}75%{transform:translate(-1%,-2%)}100%{transform:translate(2%,1%)}}
+/* Vignette */
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,transparent 40%,rgba(4,7,16,0.5) 100%);pointer-events:none;z-index:9998}
 /* ── NAV ── */
-.nav{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);height:48px}
+.nav{display:flex;align-items:center;gap:12px;padding:8px 16px;background:rgba(4,7,16,0.85);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border-bottom:1px solid rgba(21,30,53,0.7);height:48px}
 .nav-logo{font-size:1.3rem;font-weight:800;color:var(--cyan);text-decoration:none;letter-spacing:1px}
 .nav-logo span{color:var(--text2);font-weight:400}
 .nav-links{margin-left:auto;display:flex;gap:8px}
 .nav-links a{color:var(--text2);text-decoration:none;font-size:.85rem;padding:4px 10px;border-radius:6px;transition:.2s}
-.nav-links a:hover{color:var(--cyan);background:rgba(6,182,212,.1)}
+.nav-links a:hover{color:var(--electric);background:rgba(0,212,255,.08)}
 /* ── MAIN LAYOUT ── */
 .main{display:flex;height:calc(100vh - 48px);overflow:hidden}
 .left{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)}
@@ -137,9 +143,37 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 /* ── IMPROVED TOOLTIP FOR BUTTONS ── */
 .ctrl-btn.tooltip{overflow:visible}
 .ctrl-btn.tooltip::after{bottom:calc(100% + 6px);z-index:10;border:1px solid var(--border)}
+/* ── ATMOSPHERE CANVAS ── */
+#atmosphere-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:0.5}
+/* ── SCAN LINES ── */
+#scan-lines{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9997;background:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px)}
+/* ── NEON NAV GLOW ── */
+.nav-logo{text-shadow:0 0 20px rgba(6,182,212,0.6),0 0 40px rgba(6,182,212,0.2),0 0 80px rgba(6,182,212,0.1)}
+/* ── ARENA NEON BORDER GLOW ── */
+.arena-canvas-wrap{box-shadow:0 0 15px rgba(6,182,212,0.15),0 0 30px rgba(6,182,212,0.05),inset 0 0 15px rgba(0,0,0,0.5);position:relative}
+.arena-canvas-wrap::after{content:'';position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;border-radius:7px;background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,212,255,0.15),rgba(255,45,120,0.1),transparent);z-index:-1;filter:blur(4px);animation:arenaGlow 6s ease-in-out infinite}
+@keyframes arenaGlow{0%,100%{opacity:0.4}50%{opacity:1}}
+/* ── CTRL BTN GLOW HOVER ── */
+.ctrl-btn.run:hover{border-color:var(--green);background:rgba(34,197,94,.15);box-shadow:0 0 15px rgba(34,197,94,0.3),0 0 30px rgba(34,197,94,0.1)}
+.ctrl-btn.pause:hover{border-color:var(--yellow);background:rgba(234,179,8,.15);box-shadow:0 0 15px rgba(234,179,8,0.3),0 0 30px rgba(234,179,8,0.1)}
+.ctrl-btn.reset:hover{border-color:var(--red);background:rgba(239,68,68,.15);box-shadow:0 0 15px rgba(239,68,68,0.3),0 0 30px rgba(239,68,68,0.1)}
+/* ── TERMINAL BREATHING GLOW ── */
+.term-wrap{position:relative}
+.term-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(6,182,212,0.4),rgba(0,255,136,0.3),transparent);animation:termGlow 8s ease-in-out infinite;z-index:1}
+@keyframes termGlow{0%,100%{opacity:0.2}50%{opacity:0.8}}
+/* ── FULLSCREEN OVERLAY ATMOSPHERE ── */
+.arena-fullscreen-overlay{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%,transparent 50%),radial-gradient(ellipse at 70% 50%,rgba(0,255,136,0.02) 0%,transparent 50%)}
+/* ── INFO SECTION GLOW LINE ── */
+.info-section{position:relative}
+.info-section::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,rgba(6,182,212,0.3),transparent);opacity:0.5}
 </style>
 </head>
 <body>
+<!-- Film Grain -->
+<div id="film-grain"></div>
+<canvas id="atmosphere-canvas"></canvas>
+<div id="scan-lines"></div>
+
 <!-- NAV -->
 <nav class="nav">
   <a href="index.html" class="nav-logo">CW<span> Shell</span></a>
@@ -679,25 +713,25 @@ function printTip(tipId, message) {
 function initTerminal() {
   term = new Terminal({
     theme: {
-      background: '#0a0e17',
+      background: '#040710',
       foreground: '#e2e8f0',
-      cursor: '#06b6d4',
-      cursorAccent: '#0a0e17',
-      selectionBackground: '#06b6d4',
-      black: '#1e293b',
+      cursor: '#00d4ff',
+      cursorAccent: '#040710',
+      selectionBackground: '#00d4ff',
+      black: '#151e35',
       red: '#ef4444',
       green: '#22c55e',
       yellow: '#eab308',
       blue: '#3b82f6',
-      magenta: '#a855f7',
+      magenta: '#ff2d78',
       cyan: '#06b6d4',
       white: '#e2e8f0',
-      brightBlack: '#475569',
+      brightBlack: '#5a6b82',
       brightRed: '#f87171',
       brightGreen: '#4ade80',
       brightYellow: '#facc15',
       brightBlue: '#60a5fa',
-      brightMagenta: '#c084fc',
+      brightMagenta: '#f472b6',
       brightCyan: '#22d3ee',
       brightWhite: '#f1f5f9'
     },
@@ -1947,6 +1981,98 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+</script>
+<script>
+// ══ WEBGL ATMOSPHERIC SHADER (Shell — Subtle) ══
+(function() {
+    const canvas = document.getElementById('atmosphere-canvas');
+    if (!canvas) return;
+    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    if (!gl) return;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const vsSource = `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`;
+
+    const fsSource = `
+        precision mediump float;
+        uniform float u_time;
+        uniform vec2 u_resolution;
+        vec3 hash33(vec3 p) {
+            p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+            p += dot(p.zxy, p.yxz + 19.27);
+            return fract(vec3(p.x * p.y, p.y * p.z, p.z * p.x));
+        }
+        float noise(vec2 p) {
+            vec2 i = floor(p); vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            float a = dot(hash33(vec3(i, 0.0)).xy, vec2(1.0)) * 0.5;
+            float b = dot(hash33(vec3(i + vec2(1.0, 0.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            float c = dot(hash33(vec3(i + vec2(0.0, 1.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            float d = dot(hash33(vec3(i + vec2(1.0, 1.0), 0.0)).xy, vec2(1.0)) * 0.5;
+            return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        float fbm(vec2 p) {
+            float v = 0.0; float a = 0.5;
+            for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.0; a *= 0.5; }
+            return v;
+        }
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_resolution;
+            float t = u_time * 0.1;
+            float n1 = fbm(uv * 3.0 + vec2(t * 0.3, t * 0.1));
+            float n2 = fbm(uv * 2.0 + vec2(-t * 0.2, t * 0.15) + 10.0);
+            float cyanShaft = exp(-pow((uv.x - 0.3) * 8.0, 2.0)) * 
+                             (0.5 + 0.5 * sin(uv.y * 3.14 + t * 0.5)) * 0.012;
+            float greenShaft = exp(-pow((uv.x - 0.7) * 8.0, 2.0)) * 
+                              (0.5 + 0.5 * sin(uv.y * 3.14 - t * 0.3)) * 0.008;
+            vec3 fogColor = mix(vec3(0.01, 0.02, 0.04), vec3(0.02, 0.01, 0.03), n1);
+            vec3 color = fogColor * n2 * 0.6;
+            color += vec3(0.0, 0.72, 0.83) * cyanShaft;
+            color += vec3(0.0, 1.0, 0.53) * greenShaft;
+            float vig = 1.0 - pow(length(uv - 0.5) * 1.3, 2.0);
+            color *= max(0.2, vig);
+            gl_FragColor = vec4(color, 1.0);
+        }
+    `;
+
+    function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) { gl.deleteShader(shader); return null; }
+        return shader;
+    }
+    const vs = createShader(gl.VERTEX_SHADER, vsSource);
+    const fs = createShader(gl.FRAGMENT_SHADER, fsSource);
+    if (!vs || !fs) return;
+    const program = gl.createProgram();
+    gl.attachShader(program, vs); gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+    gl.useProgram(program);
+    const posBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    const uTime = gl.getUniformLocation(program, 'u_time');
+    const uRes = gl.getUniformLocation(program, 'u_resolution');
+    function render(time) {
+        gl.uniform1f(uTime, time * 0.001);
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+})();
 </script>
 </body>
 </html>
