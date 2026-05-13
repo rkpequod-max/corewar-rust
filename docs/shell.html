@@ -240,6 +240,60 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 [data-theme="nier"] .arena-fs-controls { background: #F8F5EF; border-top-color: #D4CFC6; }
 [data-theme="nier"] .arena-fs-sidebar { background: #FFFFFF; border-left-color: #D4CFC6; }
 
+/* ── ÂME DANS L'EAU THEME ── */
+[data-theme="ame"] {
+    --bg: #0A1929;
+    --surface: rgba(10,25,50,0.85);
+    --surface2: rgba(10,25,50,0.92);
+    --border: #1A3A5F;
+    --cyan: #4A90E2;
+    --blue: #4A90E2;
+    --red: #8B3A3A;
+    --green: #4A9A7A;
+    --yellow: #C8A050;
+    --purple: #6A5A9A;
+    --orange: #C8956A;
+    --pink: #7BB8E8;
+    --electric: #4A90E2;
+    --violet: #6A5A9A;
+    --text: #C8D8E8;
+    --text2: #5A7A9A;
+    --text3: #3A5A7A;
+    --p1: #4A90E2;
+    --p2: #7BB8E8;
+    --p3: #8B3A3A;
+    --p4: #4A9A7A;
+}
+[data-theme="ame"] .nav { background: rgba(10,25,50,0.92); border-bottom-color: rgba(26,58,95,0.7); }
+[data-theme="ame"] .nav-logo { color: #4A90E2; text-shadow: 0 0 20px rgba(74,144,226,0.6), 0 0 40px rgba(74,144,226,0.2), 0 0 80px rgba(74,144,226,0.1); }
+[data-theme="ame"] .nav-links a { color: #5A7A9A; }
+[data-theme="ame"] .nav-links a:hover { color: #4A90E2; background: rgba(74,144,226,0.08); }
+[data-theme="ame"] .ctrl-bar { background: rgba(10,25,50,0.92); border-top-color: #1A3A5F; }
+[data-theme="ame"] .ctrl-btn { background: rgba(10,25,50,0.85); border-color: #1A3A5F; color: #C8D8E8; border-radius: 8px; }
+[data-theme="ame"] .ctrl-btn:hover { border-color: #4A90E2; color: #4A90E2; }
+[data-theme="ame"] .ctrl-btn.active { background: #4A90E2; color: #0A1929; border-color: #4A90E2; }
+[data-theme="ame"] .left { border-right-color: #1A3A5F; }
+[data-theme="ame"] .right { background: rgba(10,25,50,0.85); }
+[data-theme="ame"] .arena-canvas-wrap { background: #060E1A; border-color: #1A3A5F; border-radius: 8px; box-shadow: 0 0 15px rgba(74,144,226,0.12), 0 0 30px rgba(74,144,226,0.04), inset 0 0 15px rgba(0,0,0,0.5); }
+[data-theme="ame"] .arena-canvas-wrap::after { background: linear-gradient(135deg, rgba(74,144,226,0.15), rgba(200,149,106,0.1), rgba(123,184,232,0.08), transparent); }
+[data-theme="ame"] .info-section h3 { color: #5A7A9A; }
+[data-theme="ame"] #film-grain { display: block; background-image: radial-gradient(circle at 20% 30%, rgba(74,144,226,0.03) 0%, transparent 1%), radial-gradient(circle at 60% 70%, rgba(74,144,226,0.02) 0%, transparent 1%), radial-gradient(circle at 80% 20%, rgba(200,149,106,0.02) 0%, transparent 1%), radial-gradient(circle at 40% 80%, rgba(74,144,226,0.02) 0%, transparent 1%); }
+[data-theme="ame"] body::after { background: radial-gradient(ellipse at center, transparent 40%, rgba(10,25,50,0.6) 100%); }
+[data-theme="ame"] .arena-fs-toolbar { background: rgba(10,25,50,0.92); border-bottom-color: #1A3A5F; }
+[data-theme="ame"] .arena-fs-controls { background: rgba(10,25,50,0.92); border-top-color: #1A3A5F; }
+[data-theme="ame"] .arena-fs-sidebar { background: rgba(10,25,50,0.85); border-left-color: #1A3A5F; }
+[data-theme="ame"] .theme-toggle { border-color: #1A3A5F; color: #5A7A9A; }
+[data-theme="ame"] .theme-toggle:hover { border-color: #4A90E2; color: #4A90E2; }
+[data-theme="ame"] .term-wrap::before { background: linear-gradient(90deg, transparent, rgba(74,144,226,0.4), rgba(200,149,106,0.3), transparent); }
+[data-theme="ame"] .asm-btn { border-color: #4A90E2; color: #4A90E2; }
+[data-theme="ame"] .asm-btn:hover { background: #4A90E2; color: #0A1929; }
+[data-theme="ame"] .editor-area { background: rgba(10,25,50,0.85); color: #4A9A7A; border-color: #1A3A5F; border-radius: 8px; }
+[data-theme="ame"] .ctrl-btn.run:hover { border-color: #4A9A7A; background: rgba(74,154,122,0.15); box-shadow: 0 0 15px rgba(74,154,122,0.25), 0 0 30px rgba(74,154,122,0.08); }
+[data-theme="ame"] .ctrl-btn.pause:hover { border-color: #C8A050; background: rgba(200,160,80,0.15); box-shadow: 0 0 15px rgba(200,160,80,0.25), 0 0 30px rgba(200,160,80,0.08); }
+[data-theme="ame"] .ctrl-btn.reset:hover { border-color: #8B3A3A; background: rgba(139,58,58,0.15); box-shadow: 0 0 15px rgba(139,58,58,0.25), 0 0 30px rgba(139,58,58,0.08); }
+[data-theme="ame"] .ctrl-group { background: rgba(74,144,226,0.05); border-radius: 8px; }
+[data-theme="ame"] body { background-image: radial-gradient(ellipse at 30% 50%, rgba(74,144,226,0.04) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(123,184,232,0.03) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(200,149,106,0.02) 0%, transparent 45%); }
+
 /* ── THEME TRANSITION OVERLAY ── */
 #theme-transition {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -251,6 +305,9 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 }
 #theme-transition.transition-to-rayon {
     animation: rayonFluorescent 0.9s ease-out forwards;
+}
+#theme-transition.transition-to-ame {
+    animation: ameSubmersion 1s ease-out forwards;
 }
 #theme-transition.transition-to-rayon::before {
     content: '';
@@ -302,6 +359,18 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
     100% { opacity: 0; height: 100vh; top: 0; }
 }
 
+@keyframes ameSubmersion {
+    0% { opacity: 0; background: transparent; transform: translateY(0); }
+    8% { opacity: 1; }
+    15% { background: rgba(10,25,50,0); transform: translateY(2px); }
+    25% { background: rgba(10,25,50,0.5); transform: translateY(-3px); }
+    35% { background: rgba(74,144,226,0.08); transform: translateY(2px); }
+    45% { background: rgba(10,25,50,0.85); transform: translateY(-1px); }
+    55% { background: rgba(10,25,50,0.9); transform: translateY(0); }
+    75% { background: rgba(10,25,50,0.7); }
+    100% { background: rgba(10,25,50,0); opacity: 0; transform: translateY(0); }
+}
+
 /* ── CUSTOM CURSORS ── */
 body {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%2300ff88' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%2300ff88'/%3E%3Ccircle cx='12' cy='12' r='4' stroke='%2300ff88' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E") 12 12, crosshair;
@@ -315,6 +384,12 @@ a, button, .ctrl-btn, select, input, textarea {
 [data-theme="nier"] a, [data-theme="nier"] button, [data-theme="nier"] .ctrl-btn, [data-theme="nier"] select, [data-theme="nier"] input, [data-theme="nier"] textarea {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='3' x2='12' y2='9' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='15' x2='12' y2='21' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='3' y1='12' x2='9' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='15' y1='12' x2='21' y2='12' stroke='%23C4362B' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='5' stroke='%23C4362B' stroke-width='1' fill='none'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%23C4362B'/%3E%3C/svg%3E") 12 12, crosshair;
 }
+[data-theme="ame"] body {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%234A90E2'/%3E%3Ccircle cx='12' cy='12' r='4' stroke='%234A90E2' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E") 12 12, crosshair;
+}
+[data-theme="ame"] a, [data-theme="ame"] button, [data-theme="ame"] .ctrl-btn, [data-theme="ame"] select, [data-theme="ame"] input, [data-theme="ame"] textarea {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%234A90E2' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%234A90E2'/%3E%3Ccircle cx='12' cy='12' r='4' stroke='%234A90E2' stroke-width='0.5' fill='none' opacity='0.3'/%3E%3C/svg%3E") 12 12, crosshair;
+}
 /* ── ASSEMBLER ERROR OVERLAY ── */
 .editor-wrap{position:relative}
 .asm-error-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;border-radius:6px;z-index:5}
@@ -322,6 +397,8 @@ a, button, .ctrl-btn, select, input, textarea {
 .asm-error-line:hover::after{content:attr(data-error);position:absolute;bottom:calc(100% + 6px);left:8px;padding:6px 10px;background:#1a0a0a;border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#f87171;font-family:'Courier New',monospace;font-size:.72rem;line-height:1.5;white-space:pre-wrap;max-width:350px;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
 [data-theme="nier"] .asm-error-line{background:repeating-linear-gradient(90deg,#C4362B 0px,#C4362B 4px,transparent 4px,transparent 8px)}
 [data-theme="nier"] .asm-error-line:hover::after{background:#FFFFFF;border-color:rgba(196,54,43,0.3);color:#C4362B;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+[data-theme="ame"] .asm-error-line{background:repeating-linear-gradient(90deg,#8B3A3A 0px,#8B3A3A 4px,transparent 4px,transparent 8px)}
+[data-theme="ame"] .asm-error-line:hover::after{background:#0A1929;border-color:rgba(139,58,58,0.3);color:#C8D8E8;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
 .asm-status-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;transition:all 0.3s;z-index:6}
 .asm-status-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.5)}
 .asm-status-dot.error{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.5)}
@@ -2327,61 +2404,100 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <script>
-// ── Nier Automata Theme Toggle ──
+// ── Theme Toggle (3-way: rayon → nier → ame → rayon) ──
 (function() {
-    const stored = localStorage.getItem('cw-theme');
-    if (stored === 'nier') {
-        document.documentElement.setAttribute('data-theme', 'nier');
+    var THEMES = ['rayon', 'nier', 'ame'];
+    var THEME_LABELS = {
+        rayon: 'Thème Nier Automata',
+        nier: "Thème L'âme dans l'eau",
+        ame: 'Thème Rayon Vert'
+    };
+    var THEME_ICONS = {
+        rayon: '☀',
+        nier: '🌊',
+        ame: '☽'
+    };
+    var TRANSITION_CLASSES = {
+        rayon: 'transition-to-rayon',
+        nier: 'transition-to-nier',
+        ame: 'transition-to-ame'
+    };
+    var TRANSITION_DURATIONS = {
+        rayon: 900,
+        nier: 700,
+        ame: 1000
+    };
+    var TRANSITION_MIDPOINTS = {
+        rayon: 320,
+        nier: 240,
+        ame: 400
+    };
+
+    function getCurrentTheme() {
+        return document.documentElement.getAttribute('data-theme') || 'rayon';
+    }
+
+    function getNextTheme(current) {
+        var idx = THEMES.indexOf(current);
+        return THEMES[(idx + 1) % THEMES.length];
+    }
+
+    function applyTheme(theme) {
+        if (theme === 'rayon') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        localStorage.setItem('cw-theme', theme);
         updateToggleIcon();
     }
 
-    window.toggleTheme = function() {
-        const overlay = document.getElementById('theme-transition');
-        if (!overlay || overlay.classList.contains('transition-to-nier') || overlay.classList.contains('transition-to-rayon')) return;
-
-        const current = document.documentElement.getAttribute('data-theme');
-        const goingNier = current !== 'nier';
-
-        if (goingNier) {
-            overlay.classList.add('transition-to-nier');
-        } else {
-            overlay.classList.add('transition-to-rayon');
-        }
-
-        // Switch theme at 40% of the animation
-        setTimeout(function() {
-            if (goingNier) {
-                document.documentElement.setAttribute('data-theme', 'nier');
-                localStorage.setItem('cw-theme', 'nier');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('cw-theme', 'rayon');
-            }
-            updateToggleIcon();
-        }, goingNier ? 240 : 320);
-
-        // Remove overlay class after animation
-        setTimeout(function() {
-            overlay.classList.remove('transition-to-nier', 'transition-to-rayon');
-        }, goingNier ? 700 : 900);
-    };
-
     function updateToggleIcon() {
-        const isNier = document.documentElement.getAttribute('data-theme') === 'nier';
+        var current = getCurrentTheme();
+        var next = getNextTheme(current);
         document.querySelectorAll('.theme-toggle').forEach(function(btn) {
-            btn.textContent = isNier ? '☽' : '☀';
-            btn.title = isNier ? 'Thème Rayon Vert' : 'Thème Nier Automata';
+            btn.textContent = THEME_ICONS[current];
+            btn.title = THEME_LABELS[current];
         });
     }
 
+    // Restore saved theme
+    var stored = localStorage.getItem('cw-theme');
+    if (stored && THEMES.indexOf(stored) !== -1) {
+        applyTheme(stored);
+    }
+
+    window.toggleTheme = function() {
+        var overlay = document.getElementById('theme-transition');
+        var current = getCurrentTheme();
+        var next = getNextTheme(current);
+
+        if (!overlay) { applyTheme(next); return; }
+
+        // Block if a transition is already running
+        var anyActive = THEMES.some(function(t) {
+            return overlay.classList.contains(TRANSITION_CLASSES[t]);
+        });
+        if (anyActive) return;
+
+        overlay.classList.add(TRANSITION_CLASSES[next]);
+
+        // Switch theme at ~40% of the animation
+        setTimeout(function() {
+            applyTheme(next);
+        }, TRANSITION_MIDPOINTS[next]);
+
+        // Remove overlay class after animation
+        setTimeout(function() {
+            THEMES.forEach(function(t) {
+                overlay.classList.remove(TRANSITION_CLASSES[t]);
+            });
+        }, TRANSITION_DURATIONS[next]);
+    };
+
     window.addEventListener('storage', function(e) {
-        if (e.key === 'cw-theme') {
-            if (e.newValue === 'nier') {
-                document.documentElement.setAttribute('data-theme', 'nier');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-            }
-            updateToggleIcon();
+        if (e.key === 'cw-theme' && e.newValue && THEMES.indexOf(e.newValue) !== -1) {
+            applyTheme(e.newValue);
         }
     });
 })();
