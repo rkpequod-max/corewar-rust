@@ -60,6 +60,13 @@
     let isFS = false, sceneOK = false;
     let screenFlash = 0;
     let shakeAmount = 0;
+    let glitchTimer = 0;      // glitch overlay timer
+    let glitchIntensity = 0;  // 0-1
+    let podQueue = [];        // queued pod dialogues
+    let podTimer = 0;         // time remaining for current pod msg
+    let podEl = null;         // pod DOM element
+    let transitionEl = null;  // level transition DOM element
+    let transitioning = false;
     const keys = {};
     let mouseDown = false;
 
@@ -338,6 +345,124 @@
     function flashScreen(){screenFlash=0.15;if(flashEl)flashEl.style.opacity="0.5";}
     function shake(amt){shakeAmount=amt;}
 
+    /* ── GLITCH EFFECT ── */
+    function triggerGlitch(intensity, duration){
+        glitchIntensity = intensity;
+        glitchTimer = duration;
+    }
+    function updGlitch(dt){
+        if(glitchTimer > 0){
+            glitchTimer -= dt;
+            if(glitchTimer <= 0){ glitchTimer = 0; glitchIntensity = 0; }
+        }
+    }
+    function renderGlitch(){
+        if(!canvas) return;
+        const wrap = document.getElementById("nier-hack-wrapper");
+        if(!wrap) return;
+        let ov = document.getElementById("nh-glitch");
+        if(!ov){
+            ov = document.createElement("div"); ov.id = "nh-glitch";
+            ov.style.cssText = "position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden;";
+            const canvasWrap = canvas.parentElement;
+            if(canvasWrap) canvasWrap.appendChild(ov);
+            else return;
+        }
+        if(glitchIntensity <= 0){ ov.innerHTML = ""; ov.style.opacity = "0"; return; }
+        ov.style.opacity = "1";
+        const g = glitchIntensity;
+        // Random horizontal slices with RGB offset
+        let html = "";
+        const slices = 3 + Math.floor(g * 8);
+        for(let i = 0; i < slices; i++){
+            const top = Math.random() * 100;
+            const height = 2 + Math.random() * 15 * g;
+            const shiftX = (Math.random() - 0.5) * 30 * g;
+            const r = Math.random() < 0.3 ? `rgba(255,0,0,${0.15*g})` : "transparent";
+            const b = Math.random() < 0.3 ? `rgba(0,100,255,${0.15*g})` : "transparent";
+            html += `<div style="position:absolute;top:${top}%;left:0;right:0;height:${height}px;transform:translateX(${shiftX}px);background:linear-gradient(90deg,${r},transparent 20%,transparent 80%,${b});mix-blend-mode:screen;"></div>`;
+        }
+        // Scanline distortion overlay
+        html += `<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,${0.08*g}) 2px,rgba(0,0,0,${0.08*g}) 4px);"></div>`;
+        ov.innerHTML = html;
+    }
+
+    /* ── DEATH PARTICLES ── */
+    function spawnDeathBurst(x, z, color, count){
+        for(let i = 0; i < count; i++){
+            const size = 0.08 + Math.random() * 0.12;
+            const geo = new THREE.BoxGeometry(size, size, size);
+            const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(x, 0.1 + Math.random() * 0.3, z);
+            scene.add(m);
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 6;
+            particles.push({mesh:m, mat, vx:Math.sin(angle)*speed, vy:1+Math.random()*3, vz:Math.cos(angle)*speed, life:0.5+Math.random()*0.6, ml:1.1, rotSpeed:(Math.random()-0.5)*10});
+        }
+    }
+
+    /* ── LEVEL TRANSITION ── */
+    function showLevelTransition(name, callback){
+        transitioning = true; active = false;
+        const wrap = document.getElementById("nier-hack-wrapper");
+        if(!wrap){ callback(); return; }
+        let el = document.getElementById("nh-transition");
+        if(!el){
+            el = document.createElement("div"); el.id = "nh-transition";
+            el.style.cssText = "position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#FFF;opacity:0;pointer-events:none;transition:opacity 0.15s;font-family:'Courier New',monospace;";
+            const canvasWrap = canvas.parentElement;
+            if(canvasWrap) canvasWrap.appendChild(el);
+        }
+        el.innerHTML = `<div style="font-size:0.65rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:8px;">HACKING COMPLETE</div><div style="font-size:1.8rem;letter-spacing:0.3em;color:#000;text-transform:uppercase;">${name}</div><div style="margin-top:16px;width:60px;height:1px;background:#C4362B;"></div>`;
+        // Phase 1: flash white
+        el.style.opacity = "1"; el.style.pointerEvents = "auto";
+        // Phase 2: scan line sweep
+        setTimeout(function(){
+            el.style.transition = "opacity 0.4s";
+            el.style.opacity = "0";
+            setTimeout(function(){
+                el.style.pointerEvents = "none";
+                el.style.transition = "opacity 0.15s";
+                transitioning = false;
+                callback();
+            }, 400);
+        }, 1200);
+    }
+
+    /* ── POD 042 DIALOGUE ── */
+    function podSay(msg, duration){
+        podQueue.push({msg, duration: duration || 3});
+        if(!podTimer && podQueue.length === 1) showNextPod();
+    }
+    function showNextPod(){
+        if(podQueue.length === 0){ hidePod(); return; }
+        const {msg, duration} = podQueue[0];
+        podTimer = duration;
+        if(!podEl){
+            podEl = document.createElement("div"); podEl.id = "nh-pod";
+            podEl.style.cssText = "position:absolute;top:42px;left:10px;right:10px;z-index:8;pointer-events:none;font-family:'Courier New',monospace;font-size:0.65rem;letter-spacing:0.05em;color:#888;background:rgba(10,10,10,0.85);border:1px solid #333;border-radius:2px;padding:6px 10px;opacity:0;transition:opacity 0.3s;line-height:1.5;";
+            const canvasWrap = canvas ? canvas.parentElement : null;
+            if(canvasWrap) canvasWrap.appendChild(podEl);
+            else return;
+        }
+        podEl.innerHTML = `<span style="color:#C4362B;font-weight:bold;">Pod 042 :</span> ${msg}`;
+        podEl.style.opacity = "1";
+    }
+    function hidePod(){
+        if(podEl) podEl.style.opacity = "0";
+    }
+    function updPod(dt){
+        if(podTimer > 0){
+            podTimer -= dt;
+            if(podTimer <= 0){
+                podTimer = 0;
+                podQueue.shift();
+                showNextPod();
+            }
+        }
+    }
+
     /* ══════════════ UPDATE ══════════════ */
     function update(dt){
         if(!active||paused||!sceneOK)return;
@@ -348,6 +473,10 @@
         /* Shake decay */
         if(shakeAmount>0)shakeAmount*=0.9;
         if(shakeAmount<0.01)shakeAmount=0;
+        /* Glitch decay */
+        updGlitch(dt);
+        /* Pod dialogue timer */
+        updPod(dt);
 
         /* Camera shake */
         const cx=MAZE_W*CELL/2, cz=MAZE_H*CELL/2;
@@ -397,9 +526,16 @@
                     /* Flash core white on hit */
                     if(e.mesh.userData.core){e.mesh.userData.core.material.color.setHex(0xFFFFFF);setTimeout(()=>{if(e.mesh.userData.core)e.mesh.userData.core.material.color.setHex(C_ENEMY);},60);}
                     if(e.hp<=0){
-                        spawnP(e.pos.x,e.pos.z,C_ENEMYEMT,10);spawnP(e.pos.x,e.pos.z,C_PARTICLE,8);
+                        // Death burst — big explosion of particles
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, 15); // orange
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFFFFFF, 12);  // white
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 6);   // red
                         scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});
                         score+=e.type==="core"?500:200;enemies.splice(j,1);
+                        // Pod commentary on kills
+                        const remaining = enemies.length; // already spliced
+                        if(remaining === 1) podSay("One target remaining.", 2);
+                        else if(remaining === 0 && curLvl < LEVELS.length - 1) podSay("Sector cleared. Proceeding to next area.", 3);
                     }
                     scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
                 }
@@ -415,8 +551,12 @@
                 playerHP-=10;invulnT=INVULN_T;
                 spawnP(playerPos.x,playerPos.z,C_EBULLET,5);
                 flashScreen(); shake(0.3);
+                triggerGlitch(0.8, 0.3); // glitch on damage
                 scene.remove(b.mesh);eBullets.splice(i,1);
                 if(playerHP<=0){playerHP=0;gameOver();return;}
+                // Low HP pod warning
+                if(playerHP <= 30 && playerHP > 20) podSay("Integrity critical. Recommendation: evade.", 3);
+                else if(playerHP <= 50 && playerHP > 40) podSay("Damage exceeding threshold.", 2.5);
                 continue;
             }
         }
@@ -426,11 +566,15 @@
             const p=particles[i];
             p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;
             p.vy-=5*dt;p.life-=dt;p.mat.opacity=Math.max(0,p.life/p.ml);
-            if(p.life<=0){scene.remove(p.mesh);p.mat.dispose();particles.splice(i,1);}
+            // Death particles have rotation
+            if(p.rotSpeed) p.mesh.rotation.x+=p.rotSpeed*dt, p.mesh.rotation.z+=p.rotSpeed*0.7*dt;
+            // Slow down death particles faster
+            if(p.ml > 0.8){ p.vx *= 0.97; p.vz *= 0.97; }
+            if(p.life<=0){scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();particles.splice(i,1);}
         }
 
         updEnemies(dt);
-        if(enemies.length===0){lvlClear();return;}
+        if(enemies.length===0 && !transitioning){lvlClear();return;}
         updHUD();
     }
 
@@ -470,18 +614,38 @@
     }
     function lvlClear(){
         active=false;
-        if(curLvl<LEVELS.length-1) showOv("HACKING COMPLETE",LEVELS[curLvl].name+" — all targets eliminated","NEXT SECTOR",function(){curLvl++;startLvl();});
-        else showOv("SYSTEM COMPROMISED","All sectors breached — hack successful","RESTART",function(){curLvl=0;score=0;startLvl();});
+        if(curLvl<LEVELS.length-1){
+            const nextLvl = curLvl + 1;
+            showLevelTransition(LEVELS[curLvl].name, function(){
+                curLvl = nextLvl; startLvl();
+            });
+        } else {
+            showLevelTransition("SYSTEM COMPROMISED", function(){
+                showOv("SYSTEM COMPROMISED","All sectors breached — hack successful","RESTART",function(){curLvl=0;score=0;startLvl();});
+            });
+        }
     }
     function gameOver(){
         active=false;
         flashScreen();shake(0.5);
-        showOv("CONNECTION LOST","Signal terminated — hack failed","RETRY",function(){startLvl();});
+        triggerGlitch(1.0, 0.5);
+        // Show glitched game over after short delay
+        setTimeout(function(){
+            showGameOverNier();
+        }, 400);
+    }
+    function showGameOverNier(){
+        if(!overlay) return;
+        overlay.classList.remove("hidden");overlay.style.pointerEvents="auto";
+        overlay.style.background="rgba(10,10,10,0.95)";
+        overlay.innerHTML = `<div class="nh-go-line" style="opacity:0;animation:nh-go-flicker 0.1s 0.2s forwards;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.3em;color:#C4362B;text-transform:uppercase;margin-bottom:12px;">This cannot continue</div><div class="nh-go-title" style="opacity:0;animation:nh-go-flicker 0.1s 0.5s forwards, nh-go-glitch 0.3s 0.6s;font-family:'Courier New',monospace;font-size:2.2rem;letter-spacing:0.15em;color:#FFF;text-transform:uppercase;margin-bottom:20px;">CONNECTION LOST</div><div class="nh-go-sub" style="opacity:0;animation:nh-go-flicker 0.1s 0.8s forwards;font-family:'Courier New',monospace;font-size:0.7rem;color:#444;letter-spacing:0.1em;">Signal terminated — hack failed</div><div style="margin-top:16px;opacity:0;animation:nh-go-flicker 0.1s 1.1s forwards;"><div style="font-family:'Courier New',monospace;font-size:0.8rem;color:#C4362B;letter-spacing:0.15em;margin-bottom:6px;">SCORE: ${score}</div></div><button class="nh-ov-btn" style="opacity:0;animation:nh-go-flicker 0.1s 1.4s forwards;margin-top:20px;" onclick="window._nhBtn()">RETRY</button><style>@keyframes nh-go-flicker{0%{opacity:0;transform:translateX(-3px)}30%{opacity:1;transform:translateX(2px)}60%{opacity:0.5;transform:translateX(-1px)}100%{opacity:1;transform:translateX(0)}}@keyframes nh-go-glitch{0%{text-shadow:-2px 0 rgba(255,0,0,0.7),2px 0 rgba(0,100,255,0.7)}50%{text-shadow:2px 0 rgba(255,0,0,0.7),-2px 0 rgba(0,100,255,0.7)}100%{text-shadow:none}}</style>`;
+        window._nhBtn=function(){overlay.style.background="";try{startLvl();}catch(e){console.error("[NH]",e);}};
+        const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
         pBullets.forEach(b=>{scene.remove(b.mesh);});pBullets=[];
         eBullets.forEach(b=>{scene.remove(b.mesh);});eBullets=[];
-        particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();});particles=[];
+        particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();});particles=[];
     }
 
     /* ══════════════ FULLSCREEN ══════════════ */
@@ -509,6 +673,8 @@
         const dt=clock.getDelta();
         update(dt);
         renderer.render(scene,camera);
+        // Glitch overlay render (after Three.js render)
+        renderGlitch();
     }
 
     /* ══════════════ PAUSE MENU ══════════════ */
@@ -615,9 +781,12 @@
                 document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement){isFS=false;if(fsBtn)fsBtn.textContent="⤒";resizeR();}});
                 if(fsBtn)fsBtn.addEventListener("click",function(e){e.stopPropagation();toggleFS();});
             }
-            curLvl=0;score=0;mouseDown=false;paused=false;pauseWasActive=false;
+            curLvl=0;score=0;mouseDown=false;paused=false;pauseWasActive=false;transitioning=false;
             hidePauseMenu();
+            podQueue=[];podTimer=0;hidePod();
             showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();});
+            // Initial pod dialogue
+            setTimeout(function(){ podSay("Hacking module engaged. Destroy all enemy cores.", 3.5); }, 500);
             if(!rafId)animate();
         },
         toggle:function(){
