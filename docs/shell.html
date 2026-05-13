@@ -189,7 +189,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   <div class="right">
     <div class="arena-section">
       <div class="arena-canvas-wrap">
-        <canvas id="arena-canvas"></canvas>
+        <canvas id="arena-canvas" width="768" height="512"></canvas>
       </div>
     </div>
     <div class="info-section" style="padding:6px 10px">
@@ -1254,10 +1254,14 @@ function resizeMainCanvas() {
   const cols = 64, rows = 64;
 
   // Measure available width from the CSS container
-  const availW = wrap.clientWidth;
+  // Use the arena-section parent for more reliable width
+  const section = wrap.parentElement;
+  const availW = section ? section.clientWidth - 20 : wrap.clientWidth;
+  if (availW <= 0) return; // layout not ready yet
+
   // Calculate cell size to fit
-  const cellW = Math.max(4, Math.floor(availW / cols));
-  const cellH = Math.max(3, Math.floor(cellW * 0.6));
+  const cellW = Math.max(8, Math.floor(availW / cols));
+  const cellH = Math.max(6, Math.floor(cellW * 0.6));
   const logicalW = cellW * cols;
   const logicalH = cellH * rows;
 
@@ -1270,7 +1274,7 @@ function resizeMainCanvas() {
   if (viz) {
     viz.cellW = cellW;
     viz.cellH = cellH;
-    viz.font = Math.max(5, Math.floor(cellH * 0.8)) + 'px monospace';
+    viz.font = Math.max(7, Math.floor(cellH * 0.8)) + 'px monospace';
     viz.updateForDpr();
     if (vm) viz.render(vm);
   }
@@ -1333,6 +1337,7 @@ function resizeFsCanvas() {
   const dpr = window.devicePixelRatio || 1;
   const availW = wrap.clientWidth - 8;
   const availH = wrap.clientHeight - 8;
+  if (availW <= 0 || availH <= 0) return;
   const cols = 64, rows = 64;
   const cellWFromW = Math.floor(availW / cols);
   const cellHFromH = Math.floor(availH / rows);
@@ -1344,8 +1349,8 @@ function resizeFsCanvas() {
     cellH = cellHFromH;
     cellW = Math.max(1, Math.floor(cellH / 0.6));
   }
-  cellW = Math.max(cellW, 4);
-  cellH = Math.max(cellH, 3);
+  cellW = Math.max(8, cellW);
+  cellH = Math.max(6, cellH);
   const logicalW = cellW * cols;
   const logicalH = cellH * rows;
   // HiDPI: physical pixels = logical * dpr
@@ -1356,7 +1361,7 @@ function resizeFsCanvas() {
   if (fsViz) {
     fsViz.cellW = cellW;
     fsViz.cellH = cellH;
-    fsViz.font = Math.max(5, Math.floor(cellH * 0.8)) + 'px monospace';
+    fsViz.font = Math.max(7, Math.floor(cellH * 0.8)) + 'px monospace';
     fsViz.updateForDpr();
     fsViz.render(vm);
   }
@@ -1793,7 +1798,6 @@ async function initWasm() {
 document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('arena-canvas');
   viz = new ArenaVisualizer(canvas);
-  resizeMainCanvas();
   viz.render(null); // blank canvas
 
   initTerminal();
@@ -1804,10 +1808,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (arenaFsActive) resizeFsCanvas();
   });
 
-  // Initialize WASM
+  // Initialize WASM, then resize canvas after layout is computed
   initWasm().then(() => {
-    resizeMainCanvas();
-    viz.render(vm);
+    // Wait for layout to be computed before resizing canvas
+    requestAnimationFrame(() => {
+      resizeMainCanvas();
+      viz.render(vm);
+    });
   });
 });
 </script>
