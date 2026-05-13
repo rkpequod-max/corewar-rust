@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corewar Shell — Execute &amp; Visualize</title>
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--border:#1e293b;
+  --cyan:#06b6d4;--blue:#3b82f6;--red:#ef4444;--green:#22c55e;
+  --yellow:#eab308;--purple:#a855f7;--orange:#f97316;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --p1:#22d3ee;--p2:#60a5fa;--p3:#f87171;--p4:#4ade80;
+}
+html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+/* ── NAV ── */
+.nav{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);height:48px}
+.nav-logo{font-size:1.3rem;font-weight:800;color:var(--cyan);text-decoration:none;letter-spacing:1px}
+.nav-logo span{color:var(--text2);font-weight:400}
+.nav-links{margin-left:auto;display:flex;gap:8px}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:.85rem;padding:4px 10px;border-radius:6px;transition:.2s}
+.nav-links a:hover{color:var(--cyan);background:rgba(6,182,212,.1)}
+/* ── MAIN LAYOUT ── */
+.main{display:flex;height:calc(100vh - 48px);overflow:hidden}
+.left{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.right{width:420px;min-width:320px;display:flex;flex-direction:column;background:var(--surface);overflow-y:auto}
+/* ── TERMINAL ── */
+.term-wrap{flex:1;min-height:0;padding:6px;background:var(--bg)}
+.term-wrap .xterm{height:100%}
+/* ── CONTROLS BAR ── */
+.ctrl-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--surface2);border-top:1px solid var(--border);flex-wrap:wrap}
+.ctrl-btn{padding:4px 12px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text);font-size:.78rem;cursor:pointer;transition:.15s;white-space:nowrap}
+.ctrl-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.ctrl-btn.active{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+.ctrl-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.ctrl-label{font-size:.72rem;color:var(--text3)}
+.speed-slider{width:80px;accent-color:var(--cyan)}
+.cycle-display{font-size:.78rem;color:var(--yellow);font-family:'Courier New',monospace;margin-left:auto;white-space:nowrap}
+/* ── ARENA VIZ ── */
+.arena-section{padding:10px}
+.arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.arena-canvas-wrap canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+/* ── INFO PANEL ── */
+.info-section{padding:10px 12px}
+.info-section h3{font-size:.82rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:.78rem}
+.info-grid .lbl{color:var(--text3)}
+.info-grid .val{color:var(--text);font-family:'Courier New',monospace;text-align:right}
+.player-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.78rem}
+.player-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.player-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.player-lives{font-family:'Courier New',monospace;color:var(--text2)}
+/* ── CHAMPION EDITOR ── */
+.editor-section{padding:10px 12px;border-top:1px solid var(--border)}
+.editor-section h3{font-size:.82rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.editor-area{width:100%;min-height:120px;background:var(--bg);color:var(--green);border:1px solid var(--border);border-radius:6px;padding:8px;font-family:'Courier New',monospace;font-size:.78rem;resize:vertical;line-height:1.5}
+.editor-actions{display:flex;gap:6px;margin-top:6px}
+.asm-btn{padding:4px 14px;border-radius:5px;border:1px solid var(--green);background:transparent;color:var(--green);font-size:.78rem;cursor:pointer;transition:.15s}
+.asm-btn:hover{background:var(--green);color:#000}
+/* ── FILE INPUT ── */
+.file-input-wrap{position:relative;display:inline-block}
+.file-input-wrap input[type=file]{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;left:0;top:0}
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .main{flex-direction:column}
+  .left{border-right:none;border-bottom:1px solid var(--border);height:55vh}
+  .right{width:100%;height:45vh;overflow-y:auto}
+}
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+/* ── TOOLTIP ── */
+.tooltip{position:relative}
+.tooltip::after{content:attr(data-tip);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);padding:3px 8px;background:#000;color:var(--text);font-size:.7rem;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:.15s}
+.tooltip:hover::after{opacity:1}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav class="nav">
+  <a href="index.html" class="nav-logo">CW<span> Shell</span></a>
+  <div class="nav-links">
+    <a href="guide.html">Guide</a>
+    <a href="index.html">Accueil</a>
+    <a href="https://github.com/rkpequod-max/corewar-rust" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- LEFT: Terminal -->
+  <div class="left">
+    <div class="term-wrap" id="term-wrap"></div>
+    <div class="ctrl-bar">
+      <button class="ctrl-btn" id="btn-run" onclick="cmdRun()">▶ Run</button>
+      <button class="ctrl-btn" id="btn-step" onclick="cmdStep()">⏭ Step</button>
+      <button class="ctrl-btn" id="btn-pause" onclick="cmdPause()">⏸ Pause</button>
+      <button class="ctrl-btn" id="btn-reset" onclick="cmdReset()">↺ Reset</button>
+      <div class="ctrl-sep"></div>
+      <div class="file-input-wrap">
+        <button class="ctrl-btn">📂 Load .cor</button>
+        <input type="file" id="file-cor" accept=".cor" multiple onchange="handleCorFiles(this.files)">
+      </div>
+      <div class="ctrl-sep"></div>
+      <span class="ctrl-label">Speed</span>
+      <input type="range" class="speed-slider" id="speed-slider" min="1" max="100" value="50" oninput="setSpeed(this.value)">
+      <div class="ctrl-sep"></div>
+      <span class="cycle-display" id="cycle-display">Cycle: 0</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Visualization -->
+  <div class="right">
+    <div class="arena-section">
+      <h3>Arena — 4096 bytes</h3>
+      <div class="arena-canvas-wrap">
+        <canvas id="arena-canvas" width="512" height="512"></canvas>
+      </div>
+    </div>
+    <div class="info-section">
+      <h3>Status</h3>
+      <div class="info-grid" id="info-grid">
+        <span class="lbl">Cycle</span><span class="val" id="info-cycle">0</span>
+        <span class="lbl">Cycle to die</span><span class="val" id="info-ctd">1536</span>
+        <span class="lbl">Processes</span><span class="val" id="info-procs">0</span>
+        <span class="lbl">Checks</span><span class="val" id="info-checks">0</span>
+        <span class="lbl">Lives</span><span class="val" id="info-lives">0</span>
+        <span class="lbl">Winner</span><span class="val" id="info-winner">—</span>
+      </div>
+    </div>
+    <div class="info-section">
+      <h3>Champions</h3>
+      <div id="player-list"><span style="color:var(--text3);font-size:.8rem">Aucun champion chargé</span></div>
+    </div>
+    <div class="editor-section">
+      <h3>Assembleur</h3>
+      <textarea class="editor-area" id="asm-editor" spellcheck="false">.name "live"
+.comment "Just lives forever"
+
+loop:
+    live %1
+    ld %0, r1
+    zjmp %:loop</textarea>
+      <div class="editor-actions">
+        <button class="asm-btn" onclick="cmdAsm()">⚙ Assembler</button>
+        <button class="asm-btn" onclick="cmdAsmLoad()">⚙ Assembler &amp; Charger</button>
+        <select id="sample-select" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem">
+          <option value="">— Exemples —</option>
+          <option value="live">live (basique)</option>
+          <option value="zork">zork (classique)</option>
+          <option value="forker">forker (fork bomb)</option>
+          <option value="stimp">stimp (attaquant)</option>
+        </select>
+        <button class="asm-btn" onclick="loadSample()">Charger</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               COREWAR VM — JAVASCRIPT IMPLEMENTATION        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// ── CONSTANTS ──
+const MEM_SIZE = 4096;
+const IDX_MOD = 512;
+const CHAMP_MAX_SIZE = 2048;
+const REG_NUMBER = 16;
+const CYCLE_TO_DIE_INIT = 1536;
+const CYCLE_DELTA = 50;
+const NBR_LIVE = 21;
+const MAX_CHECKS = 10;
+const COREWAR_EXEC_MAGIC = 0x00EA83F3;
+
+// ── OP TABLE ──
+const OP_TABLE = [
+  {name:'live',  opcode:1,  cycles:10,  has_acb:false, dir_size:4, args:'d',                  desc:'Declare player alive'},
+  {name:'ld',    opcode:2,  cycles:5,   has_acb:true,  dir_size:4, args:'di,r',               desc:'Load into register'},
+  {name:'st',    opcode:3,  cycles:5,   has_acb:true,  dir_size:4, args:'r,ri',               desc:'Store register'},
+  {name:'add',   opcode:4,  cycles:10,  has_acb:true,  dir_size:4, args:'r,r,r',              desc:'Add registers'},
+  {name:'sub',   opcode:5,  cycles:10,  has_acb:true,  dir_size:4, args:'r,r,r',              desc:'Subtract registers'},
+  {name:'and',   opcode:6,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise AND'},
+  {name:'or',    opcode:7,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise OR'},
+  {name:'xor',   opcode:8,  cycles:6,   has_acb:true,  dir_size:4, args:'rdi,rdi,r',          desc:'Bitwise XOR'},
+  {name:'zjmp',  opcode:9,  cycles:20,  has_acb:false, dir_size:2, args:'d',                  desc:'Jump if carry'},
+  {name:'ldi',   opcode:10, cycles:25,  has_acb:true,  dir_size:2, args:'rdi,dr,r',           desc:'Load index'},
+  {name:'sti',   opcode:11, cycles:25,  has_acb:true,  dir_size:2, args:'r,rdi,dr',           desc:'Store index'},
+  {name:'fork',  opcode:12, cycles:800, has_acb:false, dir_size:2, args:'d',                  desc:'Fork process'},
+  {name:'lld',   opcode:13, cycles:10,  has_acb:true,  dir_size:4, args:'di,r',               desc:'Long load'},
+  {name:'lldi',  opcode:14, cycles:50,  has_acb:true,  dir_size:2, args:'rdi,dr,r',           desc:'Long load index'},
+  {name:'lfork', opcode:15, cycles:1000,has_acb:false, dir_size:2, args:'d',                  desc:'Long fork'},
+  {name:'aff',   opcode:16, cycles:2,   has_acb:true,  dir_size:4, args:'r',                  desc:'Print char'},
+];
+
+// Arg type codes
+const ARG_REG = 1, ARG_DIR = 2, ARG_IND = 3;
+
+// ── UTILITY ──
+function memMod(n) { return ((n % MEM_SIZE) + MEM_SIZE) % MEM_SIZE; }
+function idxMod(n) { return ((n % IDX_MOD) + IDX_MOD) % IDX_MOD; }
+function toU32(v) { return v >>> 0; }
+function toI32(v) { return v | 0; }
+function signExtend16(v) { return (v & 0x8000) ? (v | 0xFFFF0000) : v; }
+
+// ── PROCESS CLASS ──
+class Process {
+  constructor(pc, owner) {
+    this.reg = new Int32Array(REG_NUMBER);
+    this.pc = pc;
+    this.carry = 0;
+    this.ir = -1; // instruction register (-1 = none)
+    this.duration = 0;
+    this.liveCount = 0;
+    this.owner = owner; // player number (negative)
+  }
+  clone() {
+    const p = new Process(this.pc, this.owner);
+    p.reg.set(this.reg);
+    p.carry = this.carry;
+    p.ir = -1;
+    p.duration = 0;
+    p.liveCount = 0;
+    return p;
+  }
+}
+
+// ── PLAYER CLASS ──
+class Player {
+  constructor(nplayer, name, comment, code) {
+    this.nplayer = nplayer;
+    this.name = name;
+    this.comment = comment;
+    this.code = code;
+    this.pcAddress = 0;
+    this.lastLive = 0;
+    this.livesThisPeriod = 0;
+  }
+}
+
+// ── VM CLASS ──
+class Vm {
+  constructor() {
+    this.arena = new Uint8Array(MEM_SIZE);
+    this.owner = new Uint8Array(MEM_SIZE);
+    this.scrb = new Uint8Array(MEM_SIZE);
+    this.processes = [];
+    this.newProcesses = [];
+    this.players = [];
+    this.cycles = 0;
+    this.cycleToDie = CYCLE_TO_DIE_INIT;
+    this.nchecks = 0;
+    this.nlives = 0;
+    this.diffToDie = 0;
+    this.running = false;
+    this.winner = null;
+    this.dumpCycle = -1;
+    this.verbose = false;
+    this.affOutput = '';
+    this.liveAnnouncements = [];
+  }
+
+  reset() {
+    this.arena.fill(0);
+    this.owner.fill(0);
+    this.scrb.fill(0);
+    this.processes = [];
+    this.newProcesses = [];
+    this.cycles = 0;
+    this.cycleToDie = CYCLE_TO_DIE_INIT;
+    this.nchecks = 0;
+    this.nlives = 0;
+    this.diffToDie = 0;
+    this.running = false;
+    this.winner = null;
+    this.dumpCycle = -1;
+    this.affOutput = '';
+    this.liveAnnouncements = [];
+    // Reload players' code
+    if (this.players.length > 0) {
+      this.loadChampions();
+      this.loadProcesses();
+    }
+  }
+
+  addPlayer(name, comment, code) {
+    const n = -(this.players.length + 1);
+    const p = new Player(n, name, comment, code);
+    this.players.push(p);
+    return p;
+  }
+
+  loadChampions() {
+    const n = this.players.length;
+    if (n === 0) return;
+    const space = Math.floor(MEM_SIZE / n);
+    for (let i = 0; i < n; i++) {
+      const p = this.players[i];
+      const start = i * space;
+      p.pcAddress = start;
+      for (let j = 0; j < p.code.length && j < CHAMP_MAX_SIZE; j++) {
+        this.arena[memMod(start + j)] = p.code[j];
+        this.owner[memMod(start + j)] = i + 1; // owner 1-4
+        this.scrb[memMod(start + j)] = 1;
+      }
+    }
+  }
+
+  loadProcesses() {
+    this.processes = [];
+    for (let i = 0; i < this.players.length; i++) {
+      const p = this.players[i];
+      const proc = new Process(p.pcAddress, p.nplayer);
+      proc.reg[0] = p.nplayer;
+      this.processes.push(proc);
+    }
+  }
+
+  init() {
+    this.arena.fill(0);
+    this.owner.fill(0);
+    this.scrb.fill(0);
+    this.processes = [];
+    this.newProcesses = [];
+    this.cycles = 0;
+    this.cycleToDie = CYCLE_TO_DIE_INIT;
+    this.nchecks = 0;
+    this.nlives = 0;
+    this.diffToDie = 0;
+    this.winner = null;
+    this.affOutput = '';
+    this.liveAnnouncements = [];
+    this.loadChampions();
+    this.loadProcesses();
+  }
+
+  // Read 4 bytes big-endian from arena
+  read4(addr) {
+    addr = memMod(addr);
+    return (this.arena[addr] << 24) | (this.arena[memMod(addr+1)] << 16) |
+           (this.arena[memMod(addr+2)] << 8) | this.arena[memMod(addr+3)];
+  }
+
+  // Write 4 bytes big-endian to arena
+  write4(addr, val, ownerIdx) {
+    addr = memMod(addr);
+    val = val | 0;
+    this.arena[addr] = (val >>> 24) & 0xFF; this.owner[addr] = ownerIdx; this.scrb[addr] = 1;
+    const a1 = memMod(addr+1);
+    this.arena[a1] = (val >>> 16) & 0xFF; this.owner[a1] = ownerIdx; this.scrb[a1] = 1;
+    const a2 = memMod(addr+2);
+    this.arena[a2] = (val >>> 8) & 0xFF; this.owner[a2] = ownerIdx; this.scrb[a2] = 1;
+    const a3 = memMod(addr+3);
+    this.arena[a3] = val & 0xFF; this.owner[a3] = ownerIdx; this.scrb[a3] = 1;
+  }
+
+  // Read 2 bytes big-endian from arena
+  read2(addr) {
+    addr = memMod(addr);
+    return (this.arena[addr] << 8) | this.arena[memMod(addr+1)];
+  }
+
+  // Parse ACB byte into [arg1_type, arg2_type, arg3_type]
+  parseAcb(acb) {
+    return [
+      (acb >> 6) & 0x03,
+      (acb >> 4) & 0x03,
+      (acb >> 2) & 0x03
+    ];
+  }
+
+  // Get the size of an argument based on its type and the op's dir_size
+  argSize(type, dirSize) {
+    if (type === ARG_REG) return 1;
+    if (type === ARG_DIR) return dirSize;
+    if (type === ARG_IND) return 2;
+    return 0;
+  }
+
+  // Read an argument value from arena
+  readArg(type, addr, dirSize) {
+    if (type === ARG_REG) return this.arena[memMod(addr)];
+    if (type === ARG_DIR) {
+      if (dirSize === 4) return this.read4(addr);
+      return signExtend16(this.read2(addr));
+    }
+    if (type === ARG_IND) return signExtend16(this.read2(addr));
+    return 0;
+  }
+
+  // Validate argument types against op specification
+  validateArgs(opIndex, types) {
+    const op = OP_TABLE[opIndex];
+    const validTypes = op.args.split(',');
+    for (let i = 0; i < validTypes.length; i++) {
+      const v = validTypes[i];
+      const t = types[i];
+      if (t === ARG_REG && !v.includes('r')) return false;
+      if (t === ARG_DIR && !v.includes('d')) return false;
+      if (t === ARG_IND && !v.includes('i')) return false;
+      if (t === 0) return false;
+    }
+    // Extra args should be 0
+    for (let i = validTypes.length; i < 3; i++) {
+      if (types[i] !== 0) return false;
+    }
+    return true;
+  }
+
+  // Calculate instruction size (opcode + optional ACB + args)
+  instrSize(opIndex, types) {
+    const op = OP_TABLE[opIndex];
+    let size = 1; // opcode
+    if (op.has_acb) size += 1;
+    const validTypes = op.args.split(',');
+    for (let i = 0; i < validTypes.length; i++) {
+      size += this.argSize(types[i], op.dir_size);
+    }
+    return size;
+  }
+
+  // Fetch arguments for an instruction
+  fetchArgs(proc, opIndex, types) {
+    const op = OP_TABLE[opIndex];
+    let addr = memMod(proc.pc + (op.has_acb ? 2 : 1));
+    const args = [];
+    const addrs = [];
+    for (let i = 0; i < types.length; i++) {
+      if (i >= op.args.split(',').length) break;
+      const t = types[i];
+      const sz = this.argSize(t, op.dir_size);
+      addrs.push(addr);
+      args.push(this.readArg(t, addr, op.dir_size));
+      addr = memMod(addr + sz);
+    }
+    return { args, addrs, totalRead: addr };
+  }
+
+  // Get effective value for an argument (register content, direct, indirect with IDX_MOD)
+  getArgValue(proc, type, rawVal, applyIdxMod) {
+    if (type === ARG_REG) {
+      const idx = rawVal - 1;
+      if (idx < 0 || idx >= REG_NUMBER) return 0;
+      return proc.reg[idx];
+    }
+    if (type === ARG_DIR) return rawVal;
+    if (type === ARG_IND) {
+      const addr = applyIdxMod ? idxMod(rawVal) : rawVal;
+      return this.read4(memMod(proc.pc + addr));
+    }
+    return 0;
+  }
+
+  // ── EXECUTE ONE CYCLE ──
+  processOperations() {
+    for (let pi = 0; pi < this.processes.length; pi++) {
+      const proc = this.processes[pi];
+
+      // If no instruction loaded, fetch one
+      if (proc.ir === -1) {
+        const opcode = this.arena[memMod(proc.pc)];
+        if (opcode >= 1 && opcode <= 16) {
+          proc.ir = opcode - 1;
+          proc.duration = OP_TABLE[opcode - 1].cycles - 1;
+          continue; // Don't execute yet
+        } else {
+          // Invalid opcode, skip
+          proc.pc = memMod(proc.pc + 1);
+          continue;
+        }
+      }
+
+      // Decrement duration
+      if (proc.duration > 0) {
+        proc.duration--;
+        continue;
+      }
+
+      // Execute the instruction
+      const opIndex = proc.ir;
+      const op = OP_TABLE[opIndex];
+
+      if (op.has_acb) {
+        const acbByte = this.arena[memMod(proc.pc + 1)];
+        const types = this.parseAcb(acbByte);
+
+        if (!this.validateArgs(opIndex, types)) {
+          // Invalid args, skip instruction
+          const size = this.instrSize(opIndex, types);
+          proc.pc = memMod(proc.pc + size);
+          proc.ir = -1;
+          continue;
+        }
+
+        const { args, addrs } = this.fetchArgs(proc, opIndex, types);
+        this.executeOp(proc, opIndex, types, args, addrs);
+      } else {
+        // No ACB — single direct argument
+        const addr = memMod(proc.pc + 1);
+        let val;
+        if (op.dir_size === 4) {
+          val = this.read4(addr);
+        } else {
+          val = signExtend16(this.read2(addr));
+        }
+        this.executeOpNoAcb(proc, opIndex, val);
+      }
+
+      proc.ir = -1;
+    }
+
+    // Insert new processes (forks) at head
+    if (this.newProcesses.length > 0) {
+      this.processes = this.newProcesses.concat(this.processes);
+      this.newProcesses = [];
+    }
+  }
+
+  // Execute instruction WITH ACB
+  executeOp(proc, opIndex, types, args, addrs) {
+    const op = OP_TABLE[opIndex];
+    const ownerIdx = this.getOwnerIdx(proc.owner);
+
+    switch (opIndex) {
+      case 0: this.opLive(proc, args, ownerIdx); break;
+      case 1: this.opLd(proc, types, args, ownerIdx); break;
+      case 2: this.opSt(proc, types, args, ownerIdx); break;
+      case 3: this.opAdd(proc, args, ownerIdx); break;
+      case 4: this.opSub(proc, args, ownerIdx); break;
+      case 5: this.opAnd(proc, types, args, ownerIdx); break;
+      case 6: this.opOr(proc, types, args, ownerIdx); break;
+      case 7: this.opXor(proc, types, args, ownerIdx); break;
+      case 9: this.opLdi(proc, types, args, ownerIdx); break;
+      case 10: this.opSti(proc, types, args, ownerIdx); break;
+      case 12: this.opLld(proc, types, args, ownerIdx); break;
+      case 13: this.opLldi(proc, types, args, ownerIdx); break;
+      case 15: this.opAff(proc, args); break;
+      default: break;
+    }
+
+    // Advance PC past the instruction
+    const size = this.instrSize(opIndex, types);
+    proc.pc = memMod(proc.pc + size);
+  }
+
+  // Execute instruction WITHOUT ACB (live, zjmp, fork, lfork)
+  executeOpNoAcb(proc, opIndex, val) {
+    const op = OP_TABLE[opIndex];
+    const ownerIdx = this.getOwnerIdx(proc.owner);
+
+    switch (opIndex) {
+      case 0: // live — same as ACB path but called differently
+        this.opLiveDirect(proc, val, ownerIdx);
+        break;
+      case 8: this.opZjmp(proc, val); return; // zjmp modifies PC directly
+      case 11: this.opFork(proc, val); break;
+      case 14: this.opLfork(proc, val); break;
+    }
+
+    // Advance PC (1 opcode + dir_size)
+    proc.pc = memMod(proc.pc + 1 + op.dir_size);
+  }
+
+  getOwnerIdx(nplayer) {
+    for (let i = 0; i < this.players.length; i++) {
+      if (this.players[i].nplayer === nplayer) return i + 1;
+    }
+    return 0;
+  }
+
+  // ── OPCODES ──
+
+  // live (ACB version)
+  opLive(proc, args, ownerIdx) {
+    const val = args[0];
+    this.nlives++;
+    proc.liveCount++;
+    // Check if val matches a player number
+    for (const p of this.players) {
+      if (val === p.nplayer) {
+        p.livesThisPeriod++;
+        p.lastLive = this.cycles;
+        if (this.verbose) {
+          this.liveAnnouncements.push(`Un processus montre que le joueur ${p.nplayer} (${p.name}) est en vie`);
+        }
+      }
+    }
+  }
+
+  // live (no-ACB version)
+  opLiveDirect(proc, val, ownerIdx) {
+    this.nlives++;
+    proc.liveCount++;
+    for (const p of this.players) {
+      if (val === p.nplayer) {
+        p.livesThisPeriod++;
+        p.lastLive = this.cycles;
+        if (this.verbose) {
+          this.liveAnnouncements.push(`Un processus montre que le joueur ${p.nplayer} (${p.name}) est en vie`);
+        }
+      }
+    }
+  }
+
+  // ld — load into register
+  opLd(proc, types, args, ownerIdx) {
+    const val = this.getArgValue(proc, types[0], args[0], true);
+    const regIdx = args[1] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = val;
+      proc.carry = (val === 0) ? 1 : 0;
+    }
+  }
+
+  // st — store register
+  opSt(proc, types, args, ownerIdx) {
+    const regIdx = args[0] - 1;
+    if (regIdx < 0 || regIdx >= REG_NUMBER) return;
+    const val = proc.reg[regIdx];
+    if (types[1] === ARG_REG) {
+      const dstIdx = args[1] - 1;
+      if (dstIdx >= 0 && dstIdx < REG_NUMBER) {
+        proc.reg[dstIdx] = val;
+      }
+    } else if (types[1] === ARG_IND) {
+      const addr = memMod(proc.pc + idxMod(args[1]));
+      this.write4(addr, val, ownerIdx);
+    }
+  }
+
+  // add
+  opAdd(proc, args, ownerIdx) {
+    const r1 = args[0] - 1, r2 = args[1] - 1, r3 = args[2] - 1;
+    if (r1 >= 0 && r1 < REG_NUMBER && r2 >= 0 && r2 < REG_NUMBER && r3 >= 0 && r3 < REG_NUMBER) {
+      proc.reg[r3] = proc.reg[r1] + proc.reg[r2];
+      proc.carry = (proc.reg[r3] === 0) ? 1 : 0;
+    }
+  }
+
+  // sub
+  opSub(proc, args, ownerIdx) {
+    const r1 = args[0] - 1, r2 = args[1] - 1, r3 = args[2] - 1;
+    if (r1 >= 0 && r1 < REG_NUMBER && r2 >= 0 && r2 < REG_NUMBER && r3 >= 0 && r3 < REG_NUMBER) {
+      proc.reg[r3] = proc.reg[r1] - proc.reg[r2];
+      proc.carry = (proc.reg[r3] === 0) ? 1 : 0;
+    }
+  }
+
+  // and
+  opAnd(proc, types, args, ownerIdx) {
+    const v1 = this.getArgValue(proc, types[0], args[0], true);
+    const v2 = this.getArgValue(proc, types[1], args[1], true);
+    const regIdx = args[2] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = v1 & v2;
+      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
+    }
+  }
+
+  // or
+  opOr(proc, types, args, ownerIdx) {
+    const v1 = this.getArgValue(proc, types[0], args[0], true);
+    const v2 = this.getArgValue(proc, types[1], args[1], true);
+    const regIdx = args[2] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = v1 | v2;
+      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
+    }
+  }
+
+  // xor
+  opXor(proc, types, args, ownerIdx) {
+    const v1 = this.getArgValue(proc, types[0], args[0], true);
+    const v2 = this.getArgValue(proc, types[1], args[1], true);
+    const regIdx = args[2] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = v1 ^ v2;
+      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
+    }
+  }
+
+  // zjmp — jump if carry
+  opZjmp(proc, val) {
+    if (proc.carry === 1) {
+      proc.pc = memMod(proc.pc + idxMod(val));
+    } else {
+      proc.pc = memMod(proc.pc + 1 + OP_TABLE[8].dir_size);
+    }
+  }
+
+  // ldi — load index
+  opLdi(proc, types, args, ownerIdx) {
+    const v1 = this.getArgValue(proc, types[0], args[0], true);
+    const v2 = this.getArgValue(proc, types[1], args[1], true);
+    const addr = memMod(proc.pc + idxMod(v1 + v2));
+    const val = this.read4(addr);
+    const regIdx = args[2] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = val;
+    }
+  }
+
+  // sti — store index
+  opSti(proc, types, args, ownerIdx) {
+    const regIdx = args[0] - 1;
+    if (regIdx < 0 || regIdx >= REG_NUMBER) return;
+    const val = proc.reg[regIdx];
+    const v2 = this.getArgValue(proc, types[1], args[1], true);
+    const v3 = this.getArgValue(proc, types[2], args[2], true);
+    const addr = memMod(proc.pc + idxMod(v2 + v3));
+    this.write4(addr, val, ownerIdx);
+  }
+
+  // fork
+  opFork(proc, val) {
+    const newPc = memMod(proc.pc + idxMod(val));
+    const newProc = proc.clone();
+    newProc.pc = newPc;
+    this.newProcesses.push(newProc);
+  }
+
+  // lld — long load (no IDX_MOD)
+  opLld(proc, types, args, ownerIdx) {
+    const val = this.getArgValue(proc, types[0], args[0], false);
+    const regIdx = args[1] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = val;
+      proc.carry = (val === 0) ? 1 : 0;
+    }
+  }
+
+  // lldi — long load index (no IDX_MOD)
+  opLldi(proc, types, args, ownerIdx) {
+    const v1 = this.getArgValue(proc, types[0], args[0], false);
+    const v2 = this.getArgValue(proc, types[1], args[1], false);
+    const addr = memMod(proc.pc + v1 + v2);
+    const val = this.read4(addr);
+    const regIdx = args[2] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      proc.reg[regIdx] = val;
+      proc.carry = (val === 0) ? 1 : 0;
+    }
+  }
+
+  // lfork — long fork (no IDX_MOD)
+  opLfork(proc, val) {
+    const newPc = memMod(proc.pc + val);
+    const newProc = proc.clone();
+    newProc.pc = newPc;
+    this.newProcesses.push(newProc);
+  }
+
+  // aff — print ASCII char
+  opAff(proc, args) {
+    const regIdx = args[0] - 1;
+    if (regIdx >= 0 && regIdx < REG_NUMBER) {
+      const ch = proc.reg[regIdx] & 0xFF;
+      if (ch >= 32 && ch < 127) {
+        this.affOutput += String.fromCharCode(ch);
+      }
+    }
+  }
+
+  // ── CYCLE MANAGEMENT ──
+
+  updateCycles() {
+    this.cycles++;
+    if (this.cycles > 0 && (this.cycles - this.diffToDie) % this.cycleToDie === 0) {
+      this.killZombies();
+      this.nchecks++;
+      if (this.nlives >= NBR_LIVE || this.nchecks >= MAX_CHECKS) {
+        this.cycleToDie -= CYCLE_DELTA;
+        if (this.cycleToDie < 0) this.cycleToDie = 0;
+        this.nchecks = 0;
+      }
+      this.nlives = 0;
+      this.diffToDie = this.cycles;
+    }
+  }
+
+  killZombies() {
+    this.processes = this.processes.filter(p => {
+      if (p.liveCount === 0) return false;
+      p.liveCount = 0;
+      return true;
+    });
+
+    // Reset scrb periodically
+    if (this.cycles % 200 === 0) {
+      this.scrb.fill(0);
+    }
+  }
+
+  // ── MAIN RUN LOOP ──
+
+  runStep() {
+    if (this.processes.length === 0 || this.cycleToDie <= 0) {
+      this.announceWinner();
+      return false;
+    }
+
+    // Check dump
+    if (this.dumpCycle >= 0 && this.cycles >= this.dumpCycle) {
+      this.dumpArena();
+      return false;
+    }
+
+    this.processOperations();
+    this.updateCycles();
+
+    return true;
+  }
+
+  announceWinner() {
+    if (this.winner) return;
+    // Find player with most recent live
+    let best = null;
+    let bestCycle = -1;
+    for (const p of this.players) {
+      if (p.lastLive > bestCycle) {
+        bestCycle = p.lastLive;
+        best = p;
+      }
+    }
+    if (best) {
+      this.winner = best;
+    } else if (this.players.length > 0) {
+      this.winner = this.players[0];
+    }
+  }
+
+  dumpArena() {
+    let output = '';
+    for (let i = 0; i < MEM_SIZE; i += 64) {
+      let line = '';
+      for (let j = 0; j < 64; j++) {
+        line += this.arena[i + j].toString(16).padStart(2, '0');
+        if (j < 63) line += ' ';
+      }
+      output += line + '\n';
+    }
+    return output;
+  }
+
+  hexDump(startAddr, length) {
+    let output = '';
+    for (let i = 0; i < length; i += 32) {
+      const addr = memMod(startAddr + i);
+      const hex = [];
+      for (let j = 0; j < 32 && (i + j) < length; j++) {
+        hex.push(this.arena[memMod(addr + j)].toString(16).padStart(2, '0'));
+      }
+      output += '0x' + addr.toString(16).padStart(4, '0') + ' | ' + hex.join(' ') + '\n';
+    }
+    return output;
+  }
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               .COR FILE PARSER                              ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+function parseCorFile(buffer) {
+  const view = new DataView(buffer);
+  if (buffer.byteLength < 2192) {
+    throw new Error('Fichier .cor trop petit (min 2192 octets)');
+  }
+  const magic = view.getUint32(0, false); // big-endian
+  if (magic !== COREWAR_EXEC_MAGIC) {
+    throw new Error('Magic number invalide: 0x' + magic.toString(16) + ' (attendu 0x00EA83F3)');
+  }
+
+  // Read name (128 bytes at offset 4)
+  let name = '';
+  for (let i = 4; i < 132; i++) {
+    const ch = view.getUint8(i);
+    if (ch === 0) break;
+    name += String.fromCharCode(ch);
+  }
+
+  // Read comment (2048 bytes at offset 140)
+  let comment = '';
+  for (let i = 140; i < 2188; i++) {
+    const ch = view.getUint8(i);
+    if (ch === 0) break;
+    comment += String.fromCharCode(ch);
+  }
+
+  // Read program size (4 bytes at offset 136, big-endian)
+  const progSize = view.getUint32(136, false);
+  if (progSize > CHAMP_MAX_SIZE) {
+    throw new Error('Code trop grand: ' + progSize + ' octets (max ' + CHAMP_MAX_SIZE + ')');
+  }
+
+  // Read bytecode
+  const code = new Uint8Array(progSize);
+  for (let i = 0; i < progSize; i++) {
+    code[i] = view.getUint8(2192 + i);
+  }
+
+  return { name, comment, code };
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               ASSEMBLER (SIMPLE)                            ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+class Assembler {
+  constructor() {
+    this.name = '';
+    this.comment = '';
+    this.labels = {};
+    this.instructions = [];
+    this.output = [];
+  }
+
+  assemble(source) {
+    this.name = '';
+    this.comment = '';
+    this.labels = {};
+    this.instructions = [];
+    this.output = [];
+
+    const lines = source.split('\n');
+    let currentLabel = '__main';
+    let inName = false, inComment = false;
+    let nameStr = '', commentStr = '';
+
+    // ── PASS 1: Parse labels & instructions ──
+    for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+      let line = lines[lineNum].trim();
+      // Remove comments
+      const hashIdx = line.indexOf('#');
+      if (hashIdx >= 0) line = line.substring(0, hashIdx).trim();
+      if (line === '') continue;
+
+      // Handle .name
+      if (line.startsWith('.name')) {
+        const m = line.match(/\.name\s+"([^"]*)"/);
+        if (m) this.name = m[1];
+        continue;
+      }
+      if (line.startsWith('.comment')) {
+        const m = line.match(/\.comment\s+"([^"]*)"/);
+        if (m) this.comment = m[1];
+        continue;
+      }
+
+      // Handle label
+      if (line.match(/^[a-z_][a-z_0-9]*:/)) {
+        const colonIdx = line.indexOf(':');
+        currentLabel = line.substring(0, colonIdx);
+        line = line.substring(colonIdx + 1).trim();
+        if (line === '') continue;
+      }
+
+      // Parse instruction
+      const parts = line.split(/\s+/);
+      const opName = parts[0].toLowerCase();
+      const opIndex = OP_TABLE.findIndex(op => op.name === opName);
+      if (opIndex === -1) {
+        throw new Error(`Ligne ${lineNum + 1}: Instruction inconnue "${opName}"`);
+      }
+
+      const argStr = parts.slice(1).join('').split(',');
+      const args = argStr.map(a => this.parseArg(a.trim(), lineNum));
+      this.instructions.push({ opIndex, args, label: currentLabel, line: lineNum + 1 });
+    }
+
+    // ── PASS 2: Calculate byte positions & resolve labels ──
+    let bytePos = 0;
+    const labelPositions = {};
+
+    // First, calculate sizes
+    for (const instr of this.instructions) {
+      if (!(instr.label in labelPositions)) {
+        labelPositions[instr.label] = bytePos;
+      }
+      const op = OP_TABLE[instr.opIndex];
+      let size = 1; // opcode
+      if (op.has_acb) size += 1;
+      for (let i = 0; i < op.args.split(',').length; i++) {
+        const a = instr.args[i];
+        if (a.type === 'reg') size += 1;
+        else if (a.type === 'dir') size += op.dir_size;
+        else if (a.type === 'ind') size += 2;
+      }
+      instr.bytePos = bytePos;
+      instr.size = size;
+      bytePos += size;
+    }
+
+    // ── PASS 3: Generate bytecode ──
+    for (const instr of this.instructions) {
+      const op = OP_TABLE[instr.opIndex];
+      this.output.push(op.opcode);
+
+      // ACB
+      if (op.has_acb) {
+        let acb = 0;
+        for (let i = 0; i < op.args.split(',').length; i++) {
+          const a = instr.args[i];
+          let bits = 0;
+          if (a.type === 'reg') bits = ARG_REG;
+          else if (a.type === 'dir') bits = ARG_DIR;
+          else if (a.type === 'ind') bits = ARG_IND;
+          acb |= (bits << (6 - i * 2));
+        }
+        this.output.push(acb);
+      }
+
+      // Arguments
+      const argTypes = op.args.split(',');
+      for (let i = 0; i < argTypes.length; i++) {
+        const a = instr.args[i];
+        if (a.type === 'reg') {
+          this.output.push(a.value & 0xFF);
+        } else if (a.type === 'dir') {
+          let val = a.value;
+          if (a.label) {
+            val = (labelPositions[a.label] || 0) - instr.bytePos;
+          }
+          if (op.dir_size === 4) {
+            this.output.push((val >>> 24) & 0xFF, (val >>> 16) & 0xFF, (val >>> 8) & 0xFF, val & 0xFF);
+          } else {
+            val = val & 0xFFFF;
+            this.output.push((val >>> 8) & 0xFF, val & 0xFF);
+          }
+        } else if (a.type === 'ind') {
+          let val = a.value;
+          if (a.label) {
+            val = (labelPositions[a.label] || 0) - instr.bytePos;
+          }
+          val = val & 0xFFFF;
+          this.output.push((val >>> 8) & 0xFF, val & 0xFF);
+        }
+      }
+    }
+
+    return {
+      name: this.name || 'unknown',
+      comment: this.comment || '',
+      code: new Uint8Array(this.output)
+    };
+  }
+
+  parseArg(s, lineNum) {
+    s = s.trim();
+    if (s.startsWith('%:')) {
+      // Direct label reference
+      return { type: 'dir', value: 0, label: s.substring(2) };
+    }
+    if (s.startsWith('%')) {
+      // Direct value
+      const val = parseInt(s.substring(1), 10);
+      if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Valeur directe invalide "${s}"`);
+      return { type: 'dir', value: val };
+    }
+    if (s.startsWith(':')) {
+      // Indirect label reference
+      return { type: 'ind', value: 0, label: s.substring(1) };
+    }
+    if (s.startsWith('r')) {
+      const num = parseInt(s.substring(1), 10);
+      if (num < 1 || num > 16) throw new Error(`Ligne ${lineNum + 1}: Registre invalide "${s}" (r1-r16)`);
+      return { type: 'reg', value: num };
+    }
+    // Indirect value
+    const val = parseInt(s, 10);
+    if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Argument invalide "${s}"`);
+    return { type: 'ind', value: val };
+  }
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               SAMPLE CHAMPIONS                              ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const SAMPLES = {
+  live: `.name "live"
+.comment "Just lives forever"
+
+loop:
+    live %1
+    ld %0, r1
+    zjmp %:loop`,
+
+  zork: `.name "zork"
+.comment "I'M ALIVE"
+
+loop:
+    live %1
+    ld %0, r1
+    zjmp %:loop`,
+
+  forker: `.name "forker"
+.comment "Fork bomb"
+
+loop:
+    fork %:loop
+    live %1
+    ld %0, r1
+    zjmp %:loop`,
+
+  stimp: `.name "stimp"
+.comment "Overwrite memory"
+
+start:
+    sti r1, %0, %0
+    ld %0, r1
+    live %1
+    zjmp %:start`
+};
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               ARENA VISUALIZER (CANVAS)                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+const PLAYER_COLORS = ['#0e7490', '#1d4ed8', '#dc2626', '#16a34a']; // dark
+const PLAYER_COLORS_BRIGHT = ['#22d3ee', '#60a5fa', '#f87171', '#4ade80']; // bright
+const EMPTY_COLOR = '#111827';
+const EMPTY_SCRB_COLOR = '#1e293b';
+
+class ArenaVisualizer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.cellSize = 8; // 512 / 64 = 8
+  }
+
+  render(vm) {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+
+    // Clear
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+
+    // Build process PC set for highlighting
+    const pcSet = new Set();
+    const irSet = new Set();
+    for (const proc of vm.processes) {
+      pcSet.add(proc.pc);
+      if (proc.ir >= 0) irSet.add(proc.pc);
+    }
+
+    // Draw arena cells
+    for (let i = 0; i < MEM_SIZE; i++) {
+      const col = i % 64;
+      const row = Math.floor(i / 64);
+      const x = col * cs;
+      const y = row * cs;
+
+      const ownerIdx = vm.owner[i];
+      const byte = vm.arena[i];
+      const isScrb = vm.scrb[i] > 0;
+      const isPc = pcSet.has(i);
+      const isIr = irSet.has(i);
+
+      if (ownerIdx > 0 && ownerIdx <= 4) {
+        const baseColor = isScrb ? PLAYER_COLORS_BRIGHT[ownerIdx - 1] : PLAYER_COLORS[ownerIdx - 1];
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(x, y, cs, cs);
+
+        // Brightness based on byte value
+        const brightness = byte / 255;
+        if (isScrb && brightness < 0.3) {
+          ctx.fillStyle = PLAYER_COLORS_BRIGHT[ownerIdx - 1];
+          ctx.globalAlpha = 0.3;
+          ctx.fillRect(x, y, cs, cs);
+          ctx.globalAlpha = 1.0;
+        }
+      } else if (byte !== 0) {
+        ctx.fillStyle = isScrb ? EMPTY_SCRB_COLOR : '#1a1a2e';
+        ctx.fillRect(x, y, cs, cs);
+      } else if (isScrb) {
+        ctx.fillStyle = EMPTY_SCRB_COLOR;
+        ctx.fillRect(x, y, cs, cs);
+      }
+
+      // Process indicator
+      if (isPc) {
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.9;
+        ctx.fillRect(x + cs/2 - 1, y + cs/2 - 1, 3, 3);
+        ctx.globalAlpha = 1.0;
+      }
+
+      // IR indicator (active instruction)
+      if (isIr) {
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1);
+      }
+    }
+
+    // Draw grid lines (subtle)
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 64; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * cs, 0);
+      ctx.lineTo(i * cs, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, i * cs);
+      ctx.lineTo(w, i * cs);
+      ctx.stroke();
+    }
+  }
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               TERMINAL HANDLER (xterm.js)                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let term, fitAddon, vm, viz;
+let running = false;
+let runInterval = null;
+let speed = 50; // ms per cycle
+let loadedChampions = []; // {name, comment, code}
+let commandHistory = [];
+let historyIndex = -1;
+let currentLine = '';
+
+function initTerminal() {
+  term = new Terminal({
+    theme: {
+      background: '#0a0e17',
+      foreground: '#e2e8f0',
+      cursor: '#06b6d4',
+      cursorAccent: '#0a0e17',
+      selectionBackground: '#06b6d4',
+      black: '#1e293b',
+      red: '#ef4444',
+      green: '#22c55e',
+      yellow: '#eab308',
+      blue: '#3b82f6',
+      magenta: '#a855f7',
+      cyan: '#06b6d4',
+      white: '#e2e8f0',
+      brightBlack: '#475569',
+      brightRed: '#f87171',
+      brightGreen: '#4ade80',
+      brightYellow: '#facc15',
+      brightBlue: '#60a5fa',
+      brightMagenta: '#c084fc',
+      brightCyan: '#22d3ee',
+      brightWhite: '#f1f5f9'
+    },
+    fontFamily: "'Courier New', 'Fira Code', monospace",
+    fontSize: 14,
+    lineHeight: 1.2,
+    cursorBlink: true,
+    scrollback: 5000,
+  });
+
+  fitAddon = new FitAddon.FitAddon();
+  term.loadAddon(fitAddon);
+  term.open(document.getElementById('term-wrap'));
+  fitAddon.fit();
+
+  // Resize handler
+  window.addEventListener('resize', () => { fitAddon.fit(); });
+
+  // Welcome message
+  term.writeln('\x1b[1;36m╔══════════════════════════════════════════════════════════╗\x1b[0m');
+  term.writeln('\x1b[1;36m║\x1b[0m  \x1b[1;33mCorewar VM Shell\x1b[0m — Exécutez des champions en direct  \x1b[1;36m║\x1b[0m');
+  term.writeln('\x1b[1;36m╚══════════════════════════════════════════════════════════╝\x1b[0m');
+  term.writeln('');
+  term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour la liste des commandes.');
+  term.writeln('');
+  prompt();
+
+  // Input handler
+  let lineBuf = '';
+  term.onData(data => {
+    const code = data.charCodeAt(0);
+    if (data === '\r') { // Enter
+      term.writeln('');
+      processCommand(lineBuf.trim());
+      commandHistory.push(lineBuf);
+      historyIndex = commandHistory.length;
+      lineBuf = '';
+    } else if (code === 127 || data === '\x7f') { // Backspace
+      if (lineBuf.length > 0) {
+        lineBuf = lineBuf.slice(0, -1);
+        term.write('\b \b');
+      }
+    } else if (data === '\x1b[A') { // Up arrow
+      if (historyIndex > 0) {
+        historyIndex--;
+        // Clear current line
+        while (lineBuf.length > 0) { term.write('\b \b'); lineBuf = ''; }
+        lineBuf = commandHistory[historyIndex];
+        term.write(lineBuf);
+      }
+    } else if (data === '\x1b[B') { // Down arrow
+      if (historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        while (lineBuf.length > 0) { term.write('\b \b'); lineBuf = ''; }
+        lineBuf = commandHistory[historyIndex];
+        term.write(lineBuf);
+      } else {
+        historyIndex = commandHistory.length;
+        while (lineBuf.length > 0) { term.write('\b \b'); lineBuf = ''; }
+      }
+    } else if (data === '\x03') { // Ctrl+C
+      term.writeln('^C');
+      lineBuf = '';
+      prompt();
+    } else if (code >= 32 && code < 127) { // Printable
+      lineBuf += data;
+      term.write(data);
+    }
+  });
+}
+
+function prompt() {
+  term.write('\x1b[1;36mcorewar> \x1b[0m');
+}
+
+function termPrint(text, color) {
+  if (color) term.writeln(`\x1b[${color}m${text}\x1b[0m`);
+  else term.writeln(text);
+}
+
+function processCommand(cmd) {
+  if (cmd === '') { prompt(); return; }
+  const parts = cmd.split(/\s+/);
+  const command = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  switch (command) {
+    case 'help':
+      cmdHelp();
+      break;
+    case 'load':
+      // Trigger file picker
+      document.getElementById('file-cor').click();
+      prompt();
+      break;
+    case 'sample':
+      cmdLoadSample(args);
+      break;
+    case 'asm':
+      cmdAsm();
+      break;
+    case 'asmload':
+      cmdAsmLoad();
+      break;
+    case 'run':
+      cmdRunWithArgs(args);
+      break;
+    case 'step':
+      cmdStepN(args);
+      break;
+    case 'pause':
+      cmdPause();
+      break;
+    case 'reset':
+      cmdReset();
+      break;
+    case 'status':
+      cmdStatus();
+      break;
+    case 'arena':
+      cmdArena(args);
+      break;
+    case 'dump':
+      cmdDump(args);
+      break;
+    case 'players':
+      cmdPlayers();
+      break;
+    case 'procs':
+      cmdProcs();
+      break;
+    case 'clear':
+      term.clear();
+      prompt();
+      break;
+    case 'speed':
+      if (args[0]) {
+        const s = parseInt(args[0]);
+        if (s >= 1 && s <= 100) {
+          speed = 101 - s; // invert: higher = faster
+          document.getElementById('speed-slider').value = s;
+          termPrint(`Vitesse: ${s}/100`, '1;32');
+        } else {
+          termPrint('Usage: speed <1-100>', '1;31');
+        }
+      } else {
+        const s = 101 - speed;
+        termPrint(`Vitesse: ${s}/100`, '1;33');
+      }
+      prompt();
+      break;
+    default:
+      termPrint(`Commande inconnue: ${command}. Tapez "help" pour l'aide.`, '1;31');
+      prompt();
+  }
+}
+
+// ── COMMANDS ──
+
+function cmdHelp() {
+  term.writeln('');
+  termPrint('╔══════════════════════════════════════════════════════════╗', '1;36');
+  termPrint('║               COMMANDES DU SHELL COREWAR                ║', '1;36');
+  termPrint('╚══════════════════════════════════════════════════════════╝', '1;36');
+  term.writeln('');
+  termPrint('  help                    Afficher cette aide', '');
+  termPrint('  load                    Charger un fichier .cor', '1;33');
+  termPrint('  sample <nom>            Charger un champion exemple', '1;33');
+  termPrint('  asm                     Assembler le code de l\'éditeur', '1;33');
+  termPrint('  asmload                 Assembler + charger le champion', '1;33');
+  termPrint('  run [-v] [--dump N]     Lancer la VM', '1;32');
+  termPrint('  step [N]                Exécuter N cycles (défaut: 1)', '1;32');
+  termPrint('  pause                   Mettre en pause', '1;33');
+  termPrint('  reset                   Réinitialiser la VM', '1;33');
+  termPrint('  status                  Afficher l\'état de la VM', '');
+  termPrint('  arena [addr] [len]      Afficher l\'arène en hex', '');
+  termPrint('  dump N                  Dump mémoire au cycle N', '');
+  termPrint('  players                 Liste des champions', '');
+  termPrint('  procs                   Liste des processus', '');
+  termPrint('  speed [1-100]           Régler la vitesse', '');
+  termPrint('  clear                   Effacer le terminal', '');
+  term.writeln('');
+  termPrint('Champions exemples: live, zork, forker, stimp', '1;34');
+  term.writeln('');
+  prompt();
+}
+
+function cmdLoadSample(args) {
+  const name = args[0];
+  if (!name || !SAMPLES[name]) {
+    termPrint('Exemples disponibles: live, zork, forker, stimp', '1;33');
+    termPrint('Usage: sample <nom>', '1;33');
+    prompt();
+    return;
+  }
+  const source = SAMPLES[name];
+  document.getElementById('asm-editor').value = source;
+  try {
+    const asm = new Assembler();
+    const result = asm.assemble(source);
+    if (loadedChampions.length >= 4) {
+      termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
+      prompt();
+      return;
+    }
+    loadedChampions.push(result);
+    termPrint(`✓ Champion "${result.name}" chargé (${result.code.length} octets)`, '1;32');
+    updatePlayerList();
+  } catch (e) {
+    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+  }
+  prompt();
+}
+
+function cmdAsm() {
+  const source = document.getElementById('asm-editor').value;
+  try {
+    const asm = new Assembler();
+    const result = asm.assemble(source);
+    termPrint(`✓ Assemblage réussi: "${result.name}" (${result.code.length} octets)`, '1;32');
+    // Show hex
+    let hex = '';
+    for (let i = 0; i < result.code.length; i++) {
+      hex += result.code[i].toString(16).padStart(2, '0') + ' ';
+      if ((i + 1) % 16 === 0) hex += '\n       ';
+    }
+    termPrint('Bytecode: ' + hex.trim(), '1;34');
+  } catch (e) {
+    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+  }
+  prompt();
+}
+
+function cmdAsmLoad() {
+  const source = document.getElementById('asm-editor').value;
+  try {
+    const asm = new Assembler();
+    const result = asm.assemble(source);
+    if (loadedChampions.length >= 4) {
+      termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
+      prompt();
+      return;
+    }
+    loadedChampions.push(result);
+    termPrint(`✓ Champion "${result.name}" assemblé et chargé (${result.code.length} octets)`, '1;32');
+    updatePlayerList();
+  } catch (e) {
+    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+  }
+  prompt();
+}
+
+function cmdRunWithArgs(args) {
+  let verbose = false;
+  let dumpCycle = -1;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '-v') verbose = true;
+    if (args[i] === '--dump' && args[i+1]) { dumpCycle = parseInt(args[i+1]); i++; }
+  }
+
+  if (loadedChampions.length === 0) {
+    termPrint('Aucun champion chargé. Utilisez "load", "sample" ou "asmload".', '1;31');
+    prompt();
+    return;
+  }
+
+  if (vm && vm.winner) {
+    termPrint('La VM a déjà un gagnant. Tapez "reset" pour recommencer.', '1;33');
+    prompt();
+    return;
+  }
+
+  if (!vm || vm.processes.length === 0) {
+    initVm(verbose, dumpCycle);
+  }
+
+  vm.verbose = verbose;
+  vm.dumpCycle = dumpCycle;
+
+  if (running) {
+    termPrint('VM déjà en cours d\'exécution.', '1;33');
+    prompt();
+    return;
+  }
+
+  running = true;
+  document.getElementById('btn-run').classList.add('active');
+  termPrint('▶ VM en cours d\'exécution... (tapez "pause" pour arrêter)', '1;32');
+
+  runInterval = setInterval(() => {
+    const ok = vm.runStep();
+    updateInfo();
+    viz.render(vm);
+    if (vm.verbose && vm.liveAnnouncements.length > 0) {
+      for (const a of vm.liveAnnouncements) {
+        termPrint('  ' + a, '1;33');
+      }
+      vm.liveAnnouncements = [];
+    }
+    if (!ok) {
+      clearInterval(runInterval);
+      running = false;
+      document.getElementById('btn-run').classList.remove('active');
+      if (vm.winner) {
+        termPrint('');
+        termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
+        termPrint(`  Dernier live au cycle ${vm.winner.lastLive}`, '');
+      }
+      if (vm.dumpCycle >= 0 && vm.cycles >= vm.dumpCycle) {
+        termPrint('\nDump mémoire au cycle ' + vm.dumpCycle + ':', '1;34');
+        term.writeln(vm.dumpArena());
+      }
+    }
+  }, speed);
+  prompt();
+}
+
+function cmdStepN(args) {
+  let n = parseInt(args[0]) || 1;
+
+  if (loadedChampions.length === 0) {
+    termPrint('Aucun champion chargé.', '1;31');
+    prompt();
+    return;
+  }
+
+  if (!vm || vm.processes.length === 0) {
+    initVm(false, -1);
+  }
+
+  if (vm.winner) {
+    termPrint('La VM est terminée. Tapez "reset" pour recommencer.', '1;33');
+    prompt();
+    return;
+  }
+
+  for (let i = 0; i < n; i++) {
+    const ok = vm.runStep();
+    if (!ok) break;
+  }
+
+  updateInfo();
+  viz.render(vm);
+
+  termPrint(`Cycle ${vm.cycles} | ${vm.processes.length} processus | CTD=${vm.cycleToDie}`, '1;34');
+  if (vm.winner) {
+    termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
+  }
+  prompt();
+}
+
+function cmdPause() {
+  if (running) {
+    clearInterval(runInterval);
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+    termPrint('⏸ VM en pause', '1;33');
+  } else {
+    termPrint('La VM n\'est pas en cours d\'exécution.', '1;33');
+  }
+  prompt();
+}
+
+function cmdReset() {
+  if (running) {
+    clearInterval(runInterval);
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+  }
+  vm = new Vm();
+  // Reload champions if any
+  if (loadedChampions.length > 0) {
+    for (const ch of loadedChampions) {
+      vm.addPlayer(ch.name, ch.comment, ch.code);
+    }
+    vm.init();
+  }
+  updateInfo();
+  viz.render(vm);
+  termPrint('↺ VM réinitialisée', '1;32');
+  prompt();
+}
+
+function cmdStatus() {
+  if (!vm) {
+    termPrint('VM non initialisée. Chargez des champions d\'abord.', '1;31');
+    prompt();
+    return;
+  }
+  term.writeln('');
+  termPrint('─── Status VM ───', '1;36');
+  termPrint(`  Cycle:          ${vm.cycles}`, '');
+  termPrint(`  Cycle to die:   ${vm.cycleToDie}`, '');
+  termPrint(`  Processes:      ${vm.processes.length}`, '');
+  termPrint(`  Checks:         ${vm.nchecks}`, '');
+  termPrint(`  Lives:          ${vm.nlives}`, '');
+  termPrint(`  Champions:      ${vm.players.length}`, '');
+  if (vm.winner) {
+    termPrint(`  Gagnant:        ${vm.winner.nplayer} (${vm.winner.name})`, '1;33');
+  }
+  if (vm.affOutput) {
+    termPrint(`  Aff output:     "${vm.affOutput}"`, '1;35');
+  }
+  term.writeln('');
+  prompt();
+}
+
+function cmdArena(args) {
+  if (!vm) { termPrint('VM non initialisée.', '1;31'); prompt(); return; }
+  let start = parseInt(args[0]) || 0;
+  let len = parseInt(args[1]) || 128;
+  start = memMod(start);
+  term.writeln(vm.hexDump(start, len));
+  prompt();
+}
+
+function cmdDump(args) {
+  if (!args[0]) { termPrint('Usage: dump <cycle>', '1;31'); prompt(); return; }
+  if (!vm) { termPrint('VM non initialisée.', '1;31'); prompt(); return; }
+  const cycle = parseInt(args[0]);
+  vm.dumpCycle = cycle;
+  termPrint(`Dump programmé au cycle ${cycle}`, '1;34');
+  prompt();
+}
+
+function cmdPlayers() {
+  if (!vm || vm.players.length === 0) {
+    termPrint('Aucun champion chargé.', '1;31');
+    prompt();
+    return;
+  }
+  term.writeln('');
+  termPrint('─── Champions ───', '1;36');
+  for (let i = 0; i < vm.players.length; i++) {
+    const p = vm.players[i];
+    const color = ['1;36', '1;34', '1;31', '1;32'][i] || '';
+    termPrint(`  [${i+1}] ${p.nplayer} "${p.name}" — ${p.code.length} octets, lastLive=${p.lastLive}`, color);
+  }
+  term.writeln('');
+  prompt();
+}
+
+function cmdProcs() {
+  if (!vm || vm.processes.length === 0) {
+    termPrint('Aucun processus actif.', '1;31');
+    prompt();
+    return;
+  }
+  term.writeln('');
+  termPrint('─── Processus ───', '1;36');
+  const max = Math.min(vm.processes.length, 20);
+  for (let i = 0; i < max; i++) {
+    const p = vm.processes[i];
+    const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
+    const dur = p.ir >= 0 ? `dur=${p.duration}` : '';
+    termPrint(`  [${i}] PC=${p.pc} op=${op} ${dur} carry=${p.carry} owner=${p.owner}`, '');
+  }
+  if (vm.processes.length > 20) {
+    termPrint(`  ... et ${vm.processes.length - 20} autres`, '1;33');
+  }
+  term.writeln('');
+  prompt();
+}
+
+
+// ── BUTTON HANDLERS ──
+
+function cmdRun() { processCommand('run'); }
+function cmdStep() { processCommand('step'); }
+function cmdPause() { processCommand('pause'); }
+function cmdReset() { processCommand('reset'); }
+
+function setSpeed(val) {
+  speed = 101 - parseInt(val);
+  // If running, restart with new speed
+  if (running && vm) {
+    clearInterval(runInterval);
+    runInterval = setInterval(() => {
+      const ok = vm.runStep();
+      updateInfo();
+      viz.render(vm);
+      if (!ok) {
+        clearInterval(runInterval);
+        running = false;
+        document.getElementById('btn-run').classList.remove('active');
+        if (vm.winner) {
+          termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
+        }
+      }
+    }, speed);
+  }
+}
+
+function handleCorFiles(files) {
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const result = parseCorFile(e.target.result);
+        if (loadedChampions.length >= 4) {
+          termPrint('Maximum 4 champions atteint.', '1;31');
+          return;
+        }
+        loadedChampions.push(result);
+        termPrint(`✓ Fichier .cor chargé: "${result.name}" (${result.code.length} octets)`, '1;32');
+        updatePlayerList();
+        prompt();
+      } catch (err) {
+        termPrint('Erreur: ' + err.message, '1;31');
+        prompt();
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function loadSample() {
+  const sel = document.getElementById('sample-select');
+  const val = sel.value;
+  if (!val) return;
+  document.getElementById('asm-editor').value = SAMPLES[val];
+  sel.value = '';
+}
+
+
+// ── VM INITIALIZATION ──
+
+function initVm(verbose, dumpCycle) {
+  vm = new Vm();
+  vm.verbose = verbose;
+  vm.dumpCycle = dumpCycle;
+  for (const ch of loadedChampions) {
+    vm.addPlayer(ch.name, ch.comment, ch.code);
+  }
+  vm.init();
+
+  // Print loading info
+  termPrint('─── Chargement des champions ───', '1;36');
+  for (let i = 0; i < vm.players.length; i++) {
+    const p = vm.players[i];
+    const color = ['1;36', '1;34', '1;31', '1;32'][i] || '';
+    termPrint(`  Joueur ${p.nplayer}: "${p.name}" (${p.code.length} octets) @ 0x${p.pcAddress.toString(16).padStart(4,'0')}`, color);
+  }
+  termPrint(`  ${vm.processes.length} processus initialisés`, '');
+
+  updateInfo();
+  viz.render(vm);
+}
+
+function updateInfo() {
+  if (!vm) return;
+  document.getElementById('info-cycle').textContent = vm.cycles;
+  document.getElementById('info-ctd').textContent = vm.cycleToDie;
+  document.getElementById('info-procs').textContent = vm.processes.length;
+  document.getElementById('info-checks').textContent = vm.nchecks;
+  document.getElementById('info-lives').textContent = vm.nlives;
+  document.getElementById('info-winner').textContent = vm.winner ? `${vm.winner.nplayer} (${vm.winner.name})` : '—';
+  document.getElementById('cycle-display').textContent = `Cycle: ${vm.cycles}`;
+}
+
+function updatePlayerList() {
+  const el = document.getElementById('player-list');
+  if (loadedChampions.length === 0) {
+    el.innerHTML = '<span style="color:var(--text3);font-size:.8rem">Aucun champion chargé</span>';
+    return;
+  }
+  const colors = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
+  el.innerHTML = loadedChampions.map((ch, i) =>
+    `<div class="player-row">
+      <div class="player-dot" style="background:${colors[i]}"></div>
+      <span class="player-name">${ch.name} (${ch.code.length}o)</span>
+      <button class="ctrl-btn" style="font-size:.7rem;padding:2px 6px" onclick="removeChampion(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function removeChampion(idx) {
+  loadedChampions.splice(idx, 1);
+  updatePlayerList();
+  termPrint(`Champion retiré. ${loadedChampions.length} restant(s).`, '1;33');
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               MAIN INIT                                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+document.addEventListener('DOMContentLoaded', () => {
+  vm = new Vm();
+  const canvas = document.getElementById('arena-canvas');
+  viz = new ArenaVisualizer(canvas);
+  viz.render(vm);
+  initTerminal();
+
+  // Auto-load sample champions for quick start
+  // (user can remove them with reset)
+});
+</script>
+</body>
+</html>
