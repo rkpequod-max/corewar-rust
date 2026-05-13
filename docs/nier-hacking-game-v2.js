@@ -37,7 +37,7 @@
     /* ── State ── */
     let scene, camera, renderer, clock;
     let playerGroup, playerPos, playerAngle, playerHP;
-    let mazeGrid, wallMeshes, floorMesh;
+    let mazeGrid, wallMeshes = [], floorMesh = null;
     let enemies = [], playerBullets = [], enemyBullets = [], particles = [];
     let currentLevel = 0, score = 0, invulnTimer = 0, shootTimer = 0;
     let gameActive = false, gamePaused = false;
@@ -738,11 +738,16 @@
             <div class="overlay-title">${title}</div>
             <div class="overlay-sub">${sub}</div>
             ${score > 0 ? `<div class="overlay-score">SCORE: ${score}</div>` : ""}
-            <button class="overlay-btn">${btnText}</button>
+            <button class="overlay-btn" id="nier-overlay-btn">${btnText}</button>
         `;
         overlay.classList.remove("hidden");
-        const btn = overlay.querySelector(".overlay-btn");
-        btn.addEventListener("click", callback);
+        const btn = document.getElementById("nier-overlay-btn");
+        btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            callback();
+        });
+        btn.focus();
     }
 
     function hideOverlay() {
