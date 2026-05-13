@@ -213,6 +213,12 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
     </div>
     <div class="editor-section">
       <h3>Assembleur</h3>
+      <p style="font-size:.7rem;color:var(--text3);margin-bottom:6px;line-height:1.5">
+        Éditez du code <b style="color:var(--text2)">.s</b> ci-dessous, puis :
+        <b style="color:var(--green)">⚙ Assembler &amp; Charger</b> = compile + charge dans la VM (le plus courant) ;
+        <b style="color:var(--text2)">⚙ Assembler</b> = compile seulement (vérifie sans charger) ;
+        <b style="color:var(--text2)">📋 Exemple</b> = charge un code d'exemple dans l'éditeur.
+      </p>
       <textarea class="editor-area" id="asm-editor" spellcheck="false">.name "live"
 .comment "Just lives forever"
 
@@ -588,9 +594,15 @@ function initTerminal() {
 
   if (wasmReady) {
     term.writeln('\x1b[1;36m  \u27a1 Pour commencer :\x1b[0m');
-    term.writeln('    1. Chargez un champion : \x1b[1;33m📝 .s\x1b[0m (source assemblé auto), \x1b[1;33m📋 Exemple\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
+    term.writeln('    1. Chargez un champion : \x1b[1;33m📝 .s\x1b[0m (source assemblé auto) ou \x1b[1;33m📋 Exemple\x1b[0m + \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
     term.writeln('    2. Lancez le combat :    \x1b[1;32m▶ Run\x1b[0m ou tapez \x1b[1;32mrun\x1b[0m');
     term.writeln('    3. Observez l\'arène se remplir de couleurs !');
+    term.writeln('');
+    term.writeln('\x1b[1;36m  Zone assembleur (en bas à droite) :\x1b[0m');
+    term.writeln('    Éditez du code .s, puis cliquez un bouton :');
+    term.writeln('    \x1b[1;32m⚙ Assembler & Charger\x1b[0m = compile + charge (le plus courant)');
+    term.writeln('    \x1b[1;33m⚙ Assembler\x1b[0m         = compile seulement (vérifie sans charger)');
+    term.writeln('    \x1b[1;33m📋 Exemple\x1b[0m            = charge un code d\'exemple dans l\'éditeur');
     term.writeln('');
     term.writeln('\x1b[1;36m  Astuce :\x1b[0m Le bouton \x1b[1;33m📂 .cor\x1b[0m charge un binaire pré-compilé (avancé).');
     term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour toutes les commandes.');
