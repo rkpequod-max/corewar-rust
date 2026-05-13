@@ -1361,6 +1361,7 @@ function runTick() {
       const finalCycles = vm.cycles();
       termPrint(`Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné — dernier à avoir fait un live avant la fin des cycles.`, '1;33');
       term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
+      try { new Audio('da.wav').play(); } catch(e) {}
     }
   }
 }
