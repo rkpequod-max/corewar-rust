@@ -3,4 +3,4 @@ pub mod vm;
 #[cfg(feature = "visualizer")]
 pub mod visualizer;
 
-pub use vm::{Player, Process, Vm};
+pub use vm::{Player, Process, Vm, VmEvent};
