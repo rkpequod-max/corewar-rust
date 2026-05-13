@@ -1,4 +1,5 @@
 mod vm;
+#[cfg(feature = "visualizer")]
 mod visualizer;
 
 use clap::Parser;
@@ -67,6 +68,52 @@ fn main() {
         }
     }
 
-    // Run the VM
-    machine.run();
+    #[cfg(feature = "visualizer")]
+    {
+        // Use the ncurses-enabled run() method
+        machine.run();
+    }
+
+    #[cfg(not(feature = "visualizer"))]
+    {
+        // Headless mode: init and step
+        machine.load_champions();
+        machine.load_processes();
+
+        while machine.step() {
+            // Drain and print events
+            for event in machine.drain_events() {
+                match event {
+                    vm::VmEvent::PlayerAlive { nplayer, name, cycle } => {
+                        println!("A process shows that player {} ({}) is alive (cycle {})", nplayer, name, cycle);
+                    }
+                    vm::VmEvent::AffChar { ch } => {
+                        print!("{}", ch);
+                    }
+                    vm::VmEvent::Winner { nplayer, name } => {
+                        println!("Player {} ({}) won", nplayer, name);
+                    }
+                }
+            }
+        }
+
+        // Print any remaining events
+        for event in machine.drain_events() {
+            match event {
+                vm::VmEvent::PlayerAlive { nplayer, name, cycle } => {
+                    println!("A process shows that player {} ({}) is alive (cycle {})", nplayer, name, cycle);
+                }
+                vm::VmEvent::AffChar { ch } => {
+                    print!("{}", ch);
+                }
+                vm::VmEvent::Winner { nplayer, name } => {
+                    println!("Player {} ({}) won", nplayer, name);
+                }
+            }
+        }
+
+        if machine.dump_param > 0 {
+            machine.print_ram();
+        }
+    }
 }

@@ -3,6 +3,14 @@ use corewar_common::op_table::*;
 use corewar_common::types::*;
 use corewar_common::utils::*;
 
+/// Events emitted by the VM during execution, used by the WASM bridge
+#[derive(Debug, Clone)]
+pub enum VmEvent {
+    PlayerAlive { nplayer: i32, name: String, cycle: i32 },
+    AffChar { ch: char },
+    Winner { nplayer: i32, name: String },
+}
+
 #[derive(Debug, Clone)]
 pub struct Player {
     pub nplayer: i32,
@@ -53,6 +61,8 @@ pub struct Vm {
     pub cycles: i32,
     pub nchecks: i32,
     pub nlives: i32,
+    /// Events collected during execution (for WASM bridge / UI)
+    pub events: Vec<VmEvent>,
 }
 
 impl Vm {
@@ -76,6 +86,7 @@ impl Vm {
             cycles: 0,
             nchecks: 0,
             nlives: 0,
+            events: Vec::new(),
         }
     }
 
@@ -122,6 +133,99 @@ impl Vm {
         self.players.push(player);
         self.nplayers += 1;
         Ok(())
+    }
+
+    /// Load a champion from raw bytes (for WASM — no filesystem access)
+    pub fn load_player_bytes(&mut self, data: &[u8], filename: &str, nplayer: Option<i32>) -> Result<(), String> {
+        let header_size = Header::header_size();
+        if data.len() < header_size {
+            return Err(format!("{}: File too small", filename));
+        }
+
+        validate_magic(data).map_err(|e| format!("{}: {}", filename, e))?;
+
+        let header = Header::from_bytes(data).map_err(|e| format!("{}: {}", filename, e))?;
+
+        let code_size = data.len() - header_size;
+        if code_size > CHAMP_MAX_SIZE {
+            return Err(format!("{}: Champion too large ({} bytes)", filename, code_size));
+        }
+
+        let code = data[header_size..].to_vec();
+
+        let player_num = match nplayer {
+            Some(n) => n,
+            None => -(self.nplayers as i32) - 1,
+        };
+
+        let player = Player {
+            nplayer: player_num,
+            name: header.prog_name_str(),
+            comment: header.comment_str(),
+            code,
+            prog_size: code_size,
+            pc_address: 0,
+            nblive: 0,
+            last_live_cycle: 0,
+        };
+
+        self.players.push(player);
+        self.nplayers += 1;
+        Ok(())
+    }
+
+    /// Execute a single cycle. Returns false if the VM has finished (no processes or cycle_to_die <= 0).
+    /// Events are collected in self.events — drain them after calling step().
+    pub fn step(&mut self) -> bool {
+        if self.processes.is_empty() || self.cycle_to_die <= 0 {
+            // Announce winner
+            if self.winner_nplayer().is_some() {
+                let wp = self.winner_nplayer().unwrap();
+                let wn = self.winner_name().unwrap_or_default();
+                self.events.push(VmEvent::Winner { nplayer: wp, name: wn });
+            }
+            return false;
+        }
+
+        let check = self.cycles > 0
+            && (self.cycles - self.diff_to_die) % self.cycle_to_die == 0;
+
+        self.update_cycles();
+        self.process_operations();
+        self.kill_zombies(check);
+
+        // Check if we just killed all processes
+        if self.processes.is_empty() {
+            if let Some(wp) = self.winner_nplayer() {
+                let wn = self.winner_name().unwrap_or_default();
+                self.events.push(VmEvent::Winner { nplayer: wp, name: wn });
+            }
+            return false;
+        }
+
+        true
+    }
+
+    /// Get the winner's nplayer (last alive)
+    pub fn winner_nplayer(&self) -> Option<i32> {
+        if self.last_alive == 0 { return None; }
+        Some(self.last_alive)
+    }
+
+    /// Get the winner's name
+    pub fn winner_name(&self) -> Option<String> {
+        let n = self.last_alive;
+        for p in &self.players {
+            if p.nplayer == n {
+                return Some(p.name.clone());
+            }
+        }
+        None
+    }
+
+    /// Drain all collected events
+    pub fn drain_events(&mut self) -> Vec<VmEvent> {
+        self.events.drain(..).collect()
     }
 
     pub fn load_champions(&mut self) {
@@ -244,10 +348,11 @@ impl Vm {
         for i in 0..self.players.len() {
             if self.players[i].nplayer == live {
                 if !self.ncurses {
-                    println!(
-                        "A process shows that player {} ({}) is alive",
-                        self.players[i].nplayer, self.players[i].name
-                    );
+                    self.events.push(VmEvent::PlayerAlive {
+                        nplayer: self.players[i].nplayer,
+                        name: self.players[i].name.clone(),
+                        cycle: self.cycles,
+                    });
                 }
                 self.players[i].nblive += 1;
                 self.players[i].last_live_cycle = self.cycles;
@@ -533,10 +638,8 @@ impl Vm {
             if !self.ncurses {
                 let reg_num = self.arena[mem_mod(pc + 2)] as usize - 1;
                 let value = self.processes[process_idx].reg[reg_num] as u8;
-                if self.verbose {
-                    println!("0x{:02x} : {:03}({:03}) :\t{}", value, value, self.processes[process_idx].reg[reg_num], value as char);
-                } else {
-                    println!("{}", value as char);
+                if value >= 32 && value < 127 {
+                    self.events.push(VmEvent::AffChar { ch: value as char });
                 }
             }
         }

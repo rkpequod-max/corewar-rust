@@ -4,5 +4,6 @@ members = [
     "corewar-asm",
     "corewar-vm",
     "corewar-disasm",
+    "corewar-wasm",
 ]
 resolver = "2"

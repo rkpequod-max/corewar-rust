@@ -238,23 +238,32 @@ loop:
   </div>
 </div>
 
-<script>
+<script type="module">
 // ╔══════════════════════════════════════════════════════════════╗
-// ║               COREWAR VM — JAVASCRIPT IMPLEMENTATION        ║
+// ║     COREWAR SHELL — WASM BACKEND (Real Rust VM)             ║
+// ║                                                              ║
+// ║  The VM logic runs in WebAssembly, compiled from the SAME    ║
+// ║  Rust code as the CLI binary. Zero reimplementation.         ║
+// ║  The JS code below is only the UI (terminal, canvas, etc.)   ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-// ── CONSTANTS ──
-const MEM_SIZE = 4096;
-const IDX_MOD = 512;
-const CHAMP_MAX_SIZE = 2048;
-const REG_NUMBER = 16;
-const CYCLE_TO_DIE_INIT = 1536;
-const CYCLE_DELTA = 50;
-const NBR_LIVE = 21;
-const MAX_CHECKS = 10;
+import init, { WasmVm, mem_size, cycle_to_die_init, cycle_delta, nbr_live, max_checks, reg_number, op_name, op_cycle } from './wasm/corewar_wasm.js';
+
+let wasmReady = false;
+let vm = null; // WasmVm instance
+let wasmInitError = null;
+
+// ── CONSTANTS (from WASM, initialized after load) ──
+let MEM_SIZE = 4096;
+let CHAMP_MAX_SIZE = 2048;
+let CYCLE_TO_DIE_INIT = 1536;
+let CYCLE_DELTA_VAL = 50;
+let NBR_LIVE_VAL = 21;
+let MAX_CHECKS_VAL = 10;
+let REG_NUMBER_VAL = 16;
 const COREWAR_EXEC_MAGIC = 0x00EA83F3;
 
-// ── OP TABLE ──
+// ── OP TABLE (for assembler only — VM uses WASM) ──
 const OP_TABLE = [
   {name:'live',  opcode:1,  cycles:10,  has_acb:false, dir_size:4, args:'d',                  desc:'Declare player alive'},
   {name:'ld',    opcode:2,  cycles:5,   has_acb:true,  dir_size:4, args:'di,r',               desc:'Load into register'},
@@ -279,713 +288,10 @@ const ARG_REG = 1, ARG_DIR = 2, ARG_IND = 3;
 
 // ── UTILITY ──
 function memMod(n) { return ((n % MEM_SIZE) + MEM_SIZE) % MEM_SIZE; }
-function idxMod(n) { return ((n % IDX_MOD) + IDX_MOD) % IDX_MOD; }
-function toU32(v) { return v >>> 0; }
-function toI32(v) { return v | 0; }
-function signExtend16(v) { return (v & 0x8000) ? (v | 0xFFFF0000) : v; }
-
-// ── PROCESS CLASS ──
-class Process {
-  constructor(pc, owner) {
-    this.reg = new Int32Array(REG_NUMBER);
-    this.pc = pc;
-    this.carry = 0;
-    this.ir = -1; // instruction register (-1 = none)
-    this.duration = 0;
-    this.liveCount = 0;
-    this.owner = owner; // player number (negative)
-  }
-  clone() {
-    const p = new Process(this.pc, this.owner);
-    p.reg.set(this.reg);
-    p.carry = this.carry;
-    p.ir = -1;
-    p.duration = 0;
-    p.liveCount = 0;
-    return p;
-  }
-}
-
-// ── PLAYER CLASS ──
-class Player {
-  constructor(nplayer, name, comment, code) {
-    this.nplayer = nplayer;
-    this.name = name;
-    this.comment = comment;
-    this.code = code;
-    this.pcAddress = 0;
-    this.lastLive = 0;
-    this.livesThisPeriod = 0;
-  }
-}
-
-// ── VM CLASS ──
-class Vm {
-  constructor() {
-    this.arena = new Uint8Array(MEM_SIZE);
-    this.owner = new Uint8Array(MEM_SIZE);
-    this.scrb = new Uint8Array(MEM_SIZE);
-    this.processes = [];
-    this.newProcesses = [];
-    this.players = [];
-    this.cycles = 0;
-    this.cycleToDie = CYCLE_TO_DIE_INIT;
-    this.nchecks = 0;
-    this.nlives = 0;
-    this.diffToDie = 0;
-    this.running = false;
-    this.winner = null;
-    this.dumpCycle = -1;
-    this.verbose = false;
-    this.affOutput = '';
-    this.liveAnnouncements = [];
-  }
-
-  reset() {
-    this.arena.fill(0);
-    this.owner.fill(0);
-    this.scrb.fill(0);
-    this.processes = [];
-    this.newProcesses = [];
-    this.cycles = 0;
-    this.cycleToDie = CYCLE_TO_DIE_INIT;
-    this.nchecks = 0;
-    this.nlives = 0;
-    this.diffToDie = 0;
-    this.running = false;
-    this.winner = null;
-    this.dumpCycle = -1;
-    this.affOutput = '';
-    this.liveAnnouncements = [];
-    // Reload players' code
-    if (this.players.length > 0) {
-      this.loadChampions();
-      this.loadProcesses();
-    }
-  }
-
-  addPlayer(name, comment, code) {
-    const n = -(this.players.length + 1);
-    const p = new Player(n, name, comment, code);
-    this.players.push(p);
-    return p;
-  }
-
-  loadChampions() {
-    const n = this.players.length;
-    if (n === 0) return;
-    const space = Math.floor(MEM_SIZE / n);
-    for (let i = 0; i < n; i++) {
-      const p = this.players[i];
-      const start = i * space;
-      p.pcAddress = start;
-      for (let j = 0; j < p.code.length && j < CHAMP_MAX_SIZE; j++) {
-        this.arena[memMod(start + j)] = p.code[j];
-        this.owner[memMod(start + j)] = i + 1; // owner 1-4
-        this.scrb[memMod(start + j)] = 1;
-      }
-    }
-  }
-
-  loadProcesses() {
-    this.processes = [];
-    for (let i = 0; i < this.players.length; i++) {
-      const p = this.players[i];
-      const proc = new Process(p.pcAddress, p.nplayer);
-      proc.reg[0] = p.nplayer;
-      this.processes.push(proc);
-    }
-  }
-
-  init() {
-    this.arena.fill(0);
-    this.owner.fill(0);
-    this.scrb.fill(0);
-    this.processes = [];
-    this.newProcesses = [];
-    this.cycles = 0;
-    this.cycleToDie = CYCLE_TO_DIE_INIT;
-    this.nchecks = 0;
-    this.nlives = 0;
-    this.diffToDie = 0;
-    this.winner = null;
-    this.affOutput = '';
-    this.liveAnnouncements = [];
-    this.loadChampions();
-    this.loadProcesses();
-  }
-
-  // Read 4 bytes big-endian from arena
-  read4(addr) {
-    addr = memMod(addr);
-    return (this.arena[addr] << 24) | (this.arena[memMod(addr+1)] << 16) |
-           (this.arena[memMod(addr+2)] << 8) | this.arena[memMod(addr+3)];
-  }
-
-  // Write 4 bytes big-endian to arena
-  write4(addr, val, ownerIdx) {
-    addr = memMod(addr);
-    val = val | 0;
-    this.arena[addr] = (val >>> 24) & 0xFF; this.owner[addr] = ownerIdx; this.scrb[addr] = 1;
-    const a1 = memMod(addr+1);
-    this.arena[a1] = (val >>> 16) & 0xFF; this.owner[a1] = ownerIdx; this.scrb[a1] = 1;
-    const a2 = memMod(addr+2);
-    this.arena[a2] = (val >>> 8) & 0xFF; this.owner[a2] = ownerIdx; this.scrb[a2] = 1;
-    const a3 = memMod(addr+3);
-    this.arena[a3] = val & 0xFF; this.owner[a3] = ownerIdx; this.scrb[a3] = 1;
-  }
-
-  // Read 2 bytes big-endian from arena
-  read2(addr) {
-    addr = memMod(addr);
-    return (this.arena[addr] << 8) | this.arena[memMod(addr+1)];
-  }
-
-  // Parse ACB byte into [arg1_type, arg2_type, arg3_type]
-  parseAcb(acb) {
-    return [
-      (acb >> 6) & 0x03,
-      (acb >> 4) & 0x03,
-      (acb >> 2) & 0x03
-    ];
-  }
-
-  // Get the size of an argument based on its type and the op's dir_size
-  argSize(type, dirSize) {
-    if (type === ARG_REG) return 1;
-    if (type === ARG_DIR) return dirSize;
-    if (type === ARG_IND) return 2;
-    return 0;
-  }
-
-  // Read an argument value from arena
-  readArg(type, addr, dirSize) {
-    if (type === ARG_REG) return this.arena[memMod(addr)];
-    if (type === ARG_DIR) {
-      if (dirSize === 4) return this.read4(addr);
-      return signExtend16(this.read2(addr));
-    }
-    if (type === ARG_IND) return signExtend16(this.read2(addr));
-    return 0;
-  }
-
-  // Validate argument types against op specification
-  validateArgs(opIndex, types) {
-    const op = OP_TABLE[opIndex];
-    const validTypes = op.args.split(',');
-    for (let i = 0; i < validTypes.length; i++) {
-      const v = validTypes[i];
-      const t = types[i];
-      if (t === ARG_REG && !v.includes('r')) return false;
-      if (t === ARG_DIR && !v.includes('d')) return false;
-      if (t === ARG_IND && !v.includes('i')) return false;
-      if (t === 0) return false;
-    }
-    // Extra args should be 0
-    for (let i = validTypes.length; i < 3; i++) {
-      if (types[i] !== 0) return false;
-    }
-    return true;
-  }
-
-  // Calculate instruction size (opcode + optional ACB + args)
-  instrSize(opIndex, types) {
-    const op = OP_TABLE[opIndex];
-    let size = 1; // opcode
-    if (op.has_acb) size += 1;
-    const validTypes = op.args.split(',');
-    for (let i = 0; i < validTypes.length; i++) {
-      size += this.argSize(types[i], op.dir_size);
-    }
-    return size;
-  }
-
-  // Fetch arguments for an instruction
-  fetchArgs(proc, opIndex, types) {
-    const op = OP_TABLE[opIndex];
-    let addr = memMod(proc.pc + (op.has_acb ? 2 : 1));
-    const args = [];
-    const addrs = [];
-    for (let i = 0; i < types.length; i++) {
-      if (i >= op.args.split(',').length) break;
-      const t = types[i];
-      const sz = this.argSize(t, op.dir_size);
-      addrs.push(addr);
-      args.push(this.readArg(t, addr, op.dir_size));
-      addr = memMod(addr + sz);
-    }
-    return { args, addrs, totalRead: addr };
-  }
-
-  // Get effective value for an argument (register content, direct, indirect with IDX_MOD)
-  getArgValue(proc, type, rawVal, applyIdxMod) {
-    if (type === ARG_REG) {
-      const idx = rawVal - 1;
-      if (idx < 0 || idx >= REG_NUMBER) return 0;
-      return proc.reg[idx];
-    }
-    if (type === ARG_DIR) return rawVal;
-    if (type === ARG_IND) {
-      const addr = applyIdxMod ? idxMod(rawVal) : rawVal;
-      return this.read4(memMod(proc.pc + addr));
-    }
-    return 0;
-  }
-
-  // ── EXECUTE ONE CYCLE ──
-  processOperations() {
-    for (let pi = 0; pi < this.processes.length; pi++) {
-      const proc = this.processes[pi];
-
-      // If no instruction loaded, fetch one
-      if (proc.ir === -1) {
-        const opcode = this.arena[memMod(proc.pc)];
-        if (opcode >= 1 && opcode <= 16) {
-          proc.ir = opcode - 1;
-          proc.duration = OP_TABLE[opcode - 1].cycles - 1;
-          continue; // Don't execute yet
-        } else {
-          // Invalid opcode, skip
-          proc.pc = memMod(proc.pc + 1);
-          continue;
-        }
-      }
-
-      // Decrement duration
-      if (proc.duration > 0) {
-        proc.duration--;
-        continue;
-      }
-
-      // Execute the instruction
-      const opIndex = proc.ir;
-      const op = OP_TABLE[opIndex];
-
-      if (op.has_acb) {
-        const acbByte = this.arena[memMod(proc.pc + 1)];
-        const types = this.parseAcb(acbByte);
-
-        if (!this.validateArgs(opIndex, types)) {
-          // Invalid args, skip instruction
-          const size = this.instrSize(opIndex, types);
-          proc.pc = memMod(proc.pc + size);
-          proc.ir = -1;
-          continue;
-        }
-
-        const { args, addrs } = this.fetchArgs(proc, opIndex, types);
-        this.executeOp(proc, opIndex, types, args, addrs);
-      } else {
-        // No ACB — single direct argument
-        const addr = memMod(proc.pc + 1);
-        let val;
-        if (op.dir_size === 4) {
-          val = this.read4(addr);
-        } else {
-          val = signExtend16(this.read2(addr));
-        }
-        this.executeOpNoAcb(proc, opIndex, val);
-      }
-
-      proc.ir = -1;
-    }
-
-    // Insert new processes (forks) at head
-    if (this.newProcesses.length > 0) {
-      this.processes = this.newProcesses.concat(this.processes);
-      this.newProcesses = [];
-    }
-  }
-
-  // Execute instruction WITH ACB
-  executeOp(proc, opIndex, types, args, addrs) {
-    const op = OP_TABLE[opIndex];
-    const ownerIdx = this.getOwnerIdx(proc.owner);
-
-    switch (opIndex) {
-      case 0: this.opLive(proc, args, ownerIdx); break;
-      case 1: this.opLd(proc, types, args, ownerIdx); break;
-      case 2: this.opSt(proc, types, args, ownerIdx); break;
-      case 3: this.opAdd(proc, args, ownerIdx); break;
-      case 4: this.opSub(proc, args, ownerIdx); break;
-      case 5: this.opAnd(proc, types, args, ownerIdx); break;
-      case 6: this.opOr(proc, types, args, ownerIdx); break;
-      case 7: this.opXor(proc, types, args, ownerIdx); break;
-      case 9: this.opLdi(proc, types, args, ownerIdx); break;
-      case 10: this.opSti(proc, types, args, ownerIdx); break;
-      case 12: this.opLld(proc, types, args, ownerIdx); break;
-      case 13: this.opLldi(proc, types, args, ownerIdx); break;
-      case 15: this.opAff(proc, args); break;
-      default: break;
-    }
-
-    // Advance PC past the instruction
-    const size = this.instrSize(opIndex, types);
-    proc.pc = memMod(proc.pc + size);
-  }
-
-  // Execute instruction WITHOUT ACB (live, zjmp, fork, lfork)
-  executeOpNoAcb(proc, opIndex, val) {
-    const op = OP_TABLE[opIndex];
-    const ownerIdx = this.getOwnerIdx(proc.owner);
-
-    switch (opIndex) {
-      case 0: // live — same as ACB path but called differently
-        this.opLiveDirect(proc, val, ownerIdx);
-        break;
-      case 8: this.opZjmp(proc, val); return; // zjmp modifies PC directly
-      case 11: this.opFork(proc, val); break;
-      case 14: this.opLfork(proc, val); break;
-    }
-
-    // Advance PC (1 opcode + dir_size)
-    proc.pc = memMod(proc.pc + 1 + op.dir_size);
-  }
-
-  getOwnerIdx(nplayer) {
-    for (let i = 0; i < this.players.length; i++) {
-      if (this.players[i].nplayer === nplayer) return i + 1;
-    }
-    return 0;
-  }
-
-  // ── OPCODES ──
-
-  // live (ACB version)
-  opLive(proc, args, ownerIdx) {
-    const val = args[0];
-    this.nlives++;
-    proc.liveCount++;
-    // Check if val matches a player number
-    for (const p of this.players) {
-      if (val === p.nplayer) {
-        p.livesThisPeriod++;
-        p.lastLive = this.cycles;
-        if (this.verbose) {
-          this.liveAnnouncements.push(`Un processus montre que le joueur ${p.nplayer} (${p.name}) est en vie`);
-        }
-      }
-    }
-  }
-
-  // live (no-ACB version)
-  opLiveDirect(proc, val, ownerIdx) {
-    this.nlives++;
-    proc.liveCount++;
-    for (const p of this.players) {
-      if (val === p.nplayer) {
-        p.livesThisPeriod++;
-        p.lastLive = this.cycles;
-        if (this.verbose) {
-          this.liveAnnouncements.push(`Un processus montre que le joueur ${p.nplayer} (${p.name}) est en vie`);
-        }
-      }
-    }
-  }
-
-  // ld — load into register
-  opLd(proc, types, args, ownerIdx) {
-    const val = this.getArgValue(proc, types[0], args[0], true);
-    const regIdx = args[1] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = val;
-      proc.carry = (val === 0) ? 1 : 0;
-    }
-  }
-
-  // st — store register
-  opSt(proc, types, args, ownerIdx) {
-    const regIdx = args[0] - 1;
-    if (regIdx < 0 || regIdx >= REG_NUMBER) return;
-    const val = proc.reg[regIdx];
-    if (types[1] === ARG_REG) {
-      const dstIdx = args[1] - 1;
-      if (dstIdx >= 0 && dstIdx < REG_NUMBER) {
-        proc.reg[dstIdx] = val;
-      }
-    } else if (types[1] === ARG_IND) {
-      const addr = memMod(proc.pc + idxMod(args[1]));
-      this.write4(addr, val, ownerIdx);
-    }
-  }
-
-  // add
-  opAdd(proc, args, ownerIdx) {
-    const r1 = args[0] - 1, r2 = args[1] - 1, r3 = args[2] - 1;
-    if (r1 >= 0 && r1 < REG_NUMBER && r2 >= 0 && r2 < REG_NUMBER && r3 >= 0 && r3 < REG_NUMBER) {
-      proc.reg[r3] = proc.reg[r1] + proc.reg[r2];
-      proc.carry = (proc.reg[r3] === 0) ? 1 : 0;
-    }
-  }
-
-  // sub
-  opSub(proc, args, ownerIdx) {
-    const r1 = args[0] - 1, r2 = args[1] - 1, r3 = args[2] - 1;
-    if (r1 >= 0 && r1 < REG_NUMBER && r2 >= 0 && r2 < REG_NUMBER && r3 >= 0 && r3 < REG_NUMBER) {
-      proc.reg[r3] = proc.reg[r1] - proc.reg[r2];
-      proc.carry = (proc.reg[r3] === 0) ? 1 : 0;
-    }
-  }
-
-  // and
-  opAnd(proc, types, args, ownerIdx) {
-    const v1 = this.getArgValue(proc, types[0], args[0], true);
-    const v2 = this.getArgValue(proc, types[1], args[1], true);
-    const regIdx = args[2] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = v1 & v2;
-      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
-    }
-  }
-
-  // or
-  opOr(proc, types, args, ownerIdx) {
-    const v1 = this.getArgValue(proc, types[0], args[0], true);
-    const v2 = this.getArgValue(proc, types[1], args[1], true);
-    const regIdx = args[2] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = v1 | v2;
-      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
-    }
-  }
-
-  // xor
-  opXor(proc, types, args, ownerIdx) {
-    const v1 = this.getArgValue(proc, types[0], args[0], true);
-    const v2 = this.getArgValue(proc, types[1], args[1], true);
-    const regIdx = args[2] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = v1 ^ v2;
-      proc.carry = (proc.reg[regIdx] === 0) ? 1 : 0;
-    }
-  }
-
-  // zjmp — jump if carry
-  opZjmp(proc, val) {
-    if (proc.carry === 1) {
-      proc.pc = memMod(proc.pc + idxMod(val));
-    } else {
-      proc.pc = memMod(proc.pc + 1 + OP_TABLE[8].dir_size);
-    }
-  }
-
-  // ldi — load index
-  opLdi(proc, types, args, ownerIdx) {
-    const v1 = this.getArgValue(proc, types[0], args[0], true);
-    const v2 = this.getArgValue(proc, types[1], args[1], true);
-    const addr = memMod(proc.pc + idxMod(v1 + v2));
-    const val = this.read4(addr);
-    const regIdx = args[2] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = val;
-    }
-  }
-
-  // sti — store index
-  opSti(proc, types, args, ownerIdx) {
-    const regIdx = args[0] - 1;
-    if (regIdx < 0 || regIdx >= REG_NUMBER) return;
-    const val = proc.reg[regIdx];
-    const v2 = this.getArgValue(proc, types[1], args[1], true);
-    const v3 = this.getArgValue(proc, types[2], args[2], true);
-    const addr = memMod(proc.pc + idxMod(v2 + v3));
-    this.write4(addr, val, ownerIdx);
-  }
-
-  // fork
-  opFork(proc, val) {
-    const newPc = memMod(proc.pc + idxMod(val));
-    const newProc = proc.clone();
-    newProc.pc = newPc;
-    this.newProcesses.push(newProc);
-  }
-
-  // lld — long load (no IDX_MOD)
-  opLld(proc, types, args, ownerIdx) {
-    const val = this.getArgValue(proc, types[0], args[0], false);
-    const regIdx = args[1] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = val;
-      proc.carry = (val === 0) ? 1 : 0;
-    }
-  }
-
-  // lldi — long load index (no IDX_MOD)
-  opLldi(proc, types, args, ownerIdx) {
-    const v1 = this.getArgValue(proc, types[0], args[0], false);
-    const v2 = this.getArgValue(proc, types[1], args[1], false);
-    const addr = memMod(proc.pc + v1 + v2);
-    const val = this.read4(addr);
-    const regIdx = args[2] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      proc.reg[regIdx] = val;
-      proc.carry = (val === 0) ? 1 : 0;
-    }
-  }
-
-  // lfork — long fork (no IDX_MOD)
-  opLfork(proc, val) {
-    const newPc = memMod(proc.pc + val);
-    const newProc = proc.clone();
-    newProc.pc = newPc;
-    this.newProcesses.push(newProc);
-  }
-
-  // aff — print ASCII char
-  opAff(proc, args) {
-    const regIdx = args[0] - 1;
-    if (regIdx >= 0 && regIdx < REG_NUMBER) {
-      const ch = proc.reg[regIdx] & 0xFF;
-      if (ch >= 32 && ch < 127) {
-        this.affOutput += String.fromCharCode(ch);
-      }
-    }
-  }
-
-  // ── CYCLE MANAGEMENT ──
-
-  updateCycles() {
-    this.cycles++;
-    if (this.cycles > 0 && (this.cycles - this.diffToDie) % this.cycleToDie === 0) {
-      this.killZombies();
-      this.nchecks++;
-      if (this.nlives >= NBR_LIVE || this.nchecks >= MAX_CHECKS) {
-        this.cycleToDie -= CYCLE_DELTA;
-        if (this.cycleToDie < 0) this.cycleToDie = 0;
-        this.nchecks = 0;
-      }
-      this.nlives = 0;
-      this.diffToDie = this.cycles;
-    }
-  }
-
-  killZombies() {
-    this.processes = this.processes.filter(p => {
-      if (p.liveCount === 0) return false;
-      p.liveCount = 0;
-      return true;
-    });
-
-    // Reset scrb periodically
-    if (this.cycles % 200 === 0) {
-      this.scrb.fill(0);
-    }
-  }
-
-  // ── MAIN RUN LOOP ──
-
-  runStep() {
-    if (this.processes.length === 0 || this.cycleToDie <= 0) {
-      this.announceWinner();
-      return false;
-    }
-
-    // Check dump
-    if (this.dumpCycle >= 0 && this.cycles >= this.dumpCycle) {
-      this.dumpArena();
-      return false;
-    }
-
-    this.processOperations();
-    this.updateCycles();
-
-    return true;
-  }
-
-  announceWinner() {
-    if (this.winner) return;
-    // Find player with most recent live
-    let best = null;
-    let bestCycle = -1;
-    for (const p of this.players) {
-      if (p.lastLive > bestCycle) {
-        bestCycle = p.lastLive;
-        best = p;
-      }
-    }
-    if (best) {
-      this.winner = best;
-    } else if (this.players.length > 0) {
-      this.winner = this.players[0];
-    }
-  }
-
-  dumpArena() {
-    let output = '';
-    for (let i = 0; i < MEM_SIZE; i += 64) {
-      let line = '';
-      for (let j = 0; j < 64; j++) {
-        line += this.arena[i + j].toString(16).padStart(2, '0');
-        if (j < 63) line += ' ';
-      }
-      output += line + '\n';
-    }
-    return output;
-  }
-
-  hexDump(startAddr, length) {
-    let output = '';
-    for (let i = 0; i < length; i += 32) {
-      const addr = memMod(startAddr + i);
-      const hex = [];
-      for (let j = 0; j < 32 && (i + j) < length; j++) {
-        hex.push(this.arena[memMod(addr + j)].toString(16).padStart(2, '0'));
-      }
-      output += '0x' + addr.toString(16).padStart(4, '0') + ' | ' + hex.join(' ') + '\n';
-    }
-    return output;
-  }
-}
 
 
 // ╔══════════════════════════════════════════════════════════════╗
-// ║               .COR FILE PARSER                              ║
-// ╚══════════════════════════════════════════════════════════════╝
-
-function parseCorFile(buffer) {
-  const view = new DataView(buffer);
-  if (buffer.byteLength < 2192) {
-    throw new Error('Fichier .cor trop petit (min 2192 octets)');
-  }
-  const magic = view.getUint32(0, false); // big-endian
-  if (magic !== COREWAR_EXEC_MAGIC) {
-    throw new Error('Magic number invalide: 0x' + magic.toString(16) + ' (attendu 0x00EA83F3)');
-  }
-
-  // Read name (128 bytes at offset 4)
-  let name = '';
-  for (let i = 4; i < 132; i++) {
-    const ch = view.getUint8(i);
-    if (ch === 0) break;
-    name += String.fromCharCode(ch);
-  }
-
-  // Read comment (2048 bytes at offset 140)
-  let comment = '';
-  for (let i = 140; i < 2188; i++) {
-    const ch = view.getUint8(i);
-    if (ch === 0) break;
-    comment += String.fromCharCode(ch);
-  }
-
-  // Read program size (4 bytes at offset 136, big-endian)
-  const progSize = view.getUint32(136, false);
-  if (progSize > CHAMP_MAX_SIZE) {
-    throw new Error('Code trop grand: ' + progSize + ' octets (max ' + CHAMP_MAX_SIZE + ')');
-  }
-
-  // Read bytecode
-  const code = new Uint8Array(progSize);
-  for (let i = 0; i < progSize; i++) {
-    code[i] = view.getUint8(2192 + i);
-  }
-
-  return { name, comment, code };
-}
-
-
-// ╔══════════════════════════════════════════════════════════════╗
-// ║               ASSEMBLER (SIMPLE)                            ║
+// ║               ASSEMBLER (generates full .cor file)           ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 class Assembler {
@@ -1006,8 +312,6 @@ class Assembler {
 
     const lines = source.split('\n');
     let currentLabel = '__main';
-    let inName = false, inComment = false;
-    let nameStr = '', commentStr = '';
 
     // ── PASS 1: Parse labels & instructions ──
     for (let lineNum = 0; lineNum < lines.length; lineNum++) {
@@ -1054,7 +358,6 @@ class Assembler {
     let bytePos = 0;
     const labelPositions = {};
 
-    // First, calculate sizes
     for (const instr of this.instructions) {
       if (!(instr.label in labelPositions)) {
         labelPositions[instr.label] = bytePos;
@@ -1120,27 +423,68 @@ class Assembler {
       }
     }
 
-    return {
-      name: this.name || 'unknown',
-      comment: this.comment || '',
-      code: new Uint8Array(this.output)
-    };
+    // ── Generate full .cor file ──
+    const bytecode = new Uint8Array(this.output);
+    return this.buildCorFile(this.name || 'unknown', this.comment || '', bytecode);
+  }
+
+  // Build a full .cor file with header
+  buildCorFile(name, comment, bytecode) {
+    // .cor format:
+    // 4 bytes: magic (0x00EA83F3 big-endian)
+    // 128 bytes: prog_name (null-padded)
+    // 4 bytes: padding
+    // 4 bytes: prog_size (big-endian)
+    // 2048 bytes: comment (null-padded)
+    // 4 bytes: trailing padding
+    // N bytes: bytecode
+    const headerSize = 4 + 128 + 4 + 4 + 2048 + 4; // = 2192
+    const totalSize = headerSize + bytecode.length;
+    const buf = new ArrayBuffer(totalSize);
+    const view = new DataView(buf);
+    const arr = new Uint8Array(buf);
+
+    // Magic number
+    view.setUint32(0, COREWAR_EXEC_MAGIC, false); // big-endian
+
+    // Program name (128 bytes at offset 4)
+    const nameArr = new TextEncoder().encode(name);
+    for (let i = 0; i < 128; i++) {
+      arr[4 + i] = i < nameArr.length ? nameArr[i] : 0;
+    }
+
+    // Padding (4 bytes at offset 132)
+    view.setUint32(132, 0, false);
+
+    // Program size (4 bytes at offset 136, big-endian)
+    view.setUint32(136, bytecode.length, false);
+
+    // Comment (2048 bytes at offset 140)
+    const commentArr = new TextEncoder().encode(comment);
+    for (let i = 0; i < 2048; i++) {
+      arr[140 + i] = i < commentArr.length ? commentArr[i] : 0;
+    }
+
+    // Trailing padding (4 bytes at offset 2188)
+    view.setUint32(2188, 0, false);
+
+    // Bytecode (at offset 2192)
+    arr.set(bytecode, 2192);
+
+    return { name, comment, data: new Uint8Array(buf), codeSize: bytecode.length };
   }
 
   parseArg(s, lineNum) {
     s = s.trim();
     if (s.startsWith('%:')) {
-      // Direct label reference
       return { type: 'dir', value: 0, label: s.substring(2) };
     }
     if (s.startsWith('%')) {
-      // Direct value
       const val = parseInt(s.substring(1), 10);
       if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Valeur directe invalide "${s}"`);
       return { type: 'dir', value: val };
     }
     if (s.startsWith(':')) {
-      // Indirect label reference
       return { type: 'ind', value: 0, label: s.substring(1) };
     }
     if (s.startsWith('r')) {
@@ -1148,7 +492,6 @@ class Assembler {
       if (num < 1 || num > 16) throw new Error(`Ligne ${lineNum + 1}: Registre invalide "${s}" (r1-r16)`);
       return { type: 'reg', value: num };
     }
-    // Indirect value
     const val = parseInt(s, 10);
     if (isNaN(val)) throw new Error(`Ligne ${lineNum + 1}: Argument invalide "${s}"`);
     return { type: 'ind', value: val };
@@ -1212,14 +555,14 @@ class ArenaVisualizer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.cellW = 12; // width per hex cell ("xx " = ~12px at 7px font)
-    this.cellH = 8;  // height per row
+    this.cellW = 12;
+    this.cellH = 8;
     this.font = '7px monospace';
     this.ctx.font = this.font;
     this.ctx.textBaseline = 'top';
   }
 
-  render(vm) {
+  render(wasmVm) {
     const ctx = this.ctx;
     const cw = this.cellW;
     const ch = this.cellH;
@@ -1230,13 +573,25 @@ class ArenaVisualizer {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, w, h);
 
+    if (!wasmVm) return;
+
+    // Get arena data from WASM
+    const arena = wasmVm.get_arena();
+    const owner = wasmVm.get_owner();
+    const scrb = wasmVm.get_scrb();
+
     // Build process PC map for highlighting
     const pcMap = new Map(); // addr -> {ownerIdx, hasIr}
-    for (const proc of vm.processes) {
-      const existing = pcMap.get(proc.pc);
+    const procCount = wasmVm.process_count();
+    for (let i = 0; i < procCount; i++) {
+      const pc = wasmVm.process_pc(i);
+      const procOwner = wasmVm.process_owner(i);
+      const ir = wasmVm.process_ir(i);
+      const ownerIdx = this._procOwnerIdx(procOwner);
+      const existing = pcMap.get(pc);
       if (!existing) {
-        pcMap.set(proc.pc, { ownerIdx: this._procOwnerIdx(proc.owner), hasIr: proc.ir >= 0 });
-      } else if (proc.ir >= 0) {
+        pcMap.set(pc, { ownerIdx, hasIr: ir >= 0 });
+      } else if (ir >= 0) {
         existing.hasIr = true;
       }
     }
@@ -1251,9 +606,9 @@ class ArenaVisualizer {
       const x = col * cw;
       const y = row * ch;
 
-      const ownerIdx = vm.owner[i];
-      const byte = vm.arena[i];
-      const isScrb = vm.scrb[i] > 0;
+      const ownerIdx = owner[i];
+      const byte = arena[i];
+      const isScrb = scrb[i] > 0;
       const pcInfo = pcMap.get(i);
       const isPc = !!pcInfo;
       const isIr = pcInfo && pcInfo.hasIr;
@@ -1264,43 +619,33 @@ class ArenaVisualizer {
       let fg, bg = null;
 
       if (isIr && ownerIdx > 0) {
-        // Active instruction: reverse video — colored bg, black text
         fg = '#000';
         bg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
       } else if (isIr && ownerIdx === 0) {
-        // IR on empty cell: reverse video gray
         fg = '#000';
         bg = isScrb ? GRAY_BOLD : GRAY;
       } else if (isPc && ownerIdx > 0) {
-        // PC on owned cell: bright text
         fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
-        // Small marker underline
         bg = null;
       } else if (isPc && ownerIdx === 0) {
-        // PC on empty cell: black text on gray bg (ncurses CP_BLACK_ON_GRAY)
         fg = '#000';
         bg = GRAY;
       } else if (ownerIdx > 0) {
-        // Owned cell: player color text
         fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG_DIM[ownerIdx - 1];
         bg = null;
       } else {
-        // Empty cell: gray text
         fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#555555' : '#222222');
         bg = null;
       }
 
-      // Draw background if needed
       if (bg) {
         ctx.fillStyle = bg;
         ctx.fillRect(x, y, cw - 1, ch);
       }
 
-      // Draw hex text
       ctx.fillStyle = fg;
       ctx.fillText(hex, x + 1, y + 1);
 
-      // PC underline marker (for owned PCs without reverse video)
       if (isPc && !isIr && ownerIdx > 0) {
         ctx.fillStyle = fg;
         ctx.fillRect(x, y + ch - 2, cw - 1, 2);
@@ -1309,8 +654,10 @@ class ArenaVisualizer {
   }
 
   _procOwnerIdx(nplayer) {
-    for (let i = 0; i < vm.players.length; i++) {
-      if (vm.players[i].nplayer === nplayer) return i + 1;
+    if (!vm) return 0;
+    const pcount = vm.player_count();
+    for (let i = 0; i < pcount; i++) {
+      if (vm.player_nplayer(i) === nplayer) return i + 1;
     }
     return 0;
   }
@@ -1321,14 +668,14 @@ class ArenaVisualizer {
 // ║               TERMINAL HANDLER (xterm.js)                   ║
 // ╚══════════════════════════════════════════════════════════════╝
 
-let term, fitAddon, vm, viz;
+let term, fitAddon, viz;
 let running = false;
 let runInterval = null;
 let speed = 50; // ms per cycle
-let loadedChampions = []; // {name, comment, code}
+let loadedChampions = []; // {name, data: Uint8Array}
 let commandHistory = [];
 let historyIndex = -1;
-let currentLine = '';
+let vmInitialized = false; // whether vm.init() has been called
 
 function initTerminal() {
   term = new Terminal({
@@ -1372,10 +719,18 @@ function initTerminal() {
 
   // Welcome message
   term.writeln('\x1b[1;36m╔══════════════════════════════════════════════════════════╗\x1b[0m');
-  term.writeln('\x1b[1;36m║\x1b[0m  \x1b[1;33mCorewar VM Shell\x1b[0m — Exécutez des champions en direct  \x1b[1;36m║\x1b[0m');
+  term.writeln('\x1b[1;36m║\x1b[0m  \x1b[1;33mCorewar VM Shell\x1b[0m — WASM Backend (Rust VM)  \x1b[1;36m║\x1b[0m');
   term.writeln('\x1b[1;36m╚══════════════════════════════════════════════════════════╝\x1b[0m');
   term.writeln('');
-  term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour la liste des commandes.');
+
+  if (wasmReady) {
+    term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour la liste des commandes.');
+  } else if (wasmInitError) {
+    term.writeln('\x1b[1;31m⚠ Erreur de chargement WASM: ' + wasmInitError + '\x1b[0m');
+    term.writeln('\x1b[1;33mLe shell fonctionne en mode dégradé.\x1b[0m');
+  } else {
+    term.writeln('\x1b[1;33m⏳ Chargement du module WASM...\x1b[0m');
+  }
   term.writeln('');
   prompt();
 
@@ -1397,7 +752,6 @@ function initTerminal() {
     } else if (data === '\x1b[A') { // Up arrow
       if (historyIndex > 0) {
         historyIndex--;
-        // Clear current line
         while (lineBuf.length > 0) { term.write('\b \b'); lineBuf = ''; }
         lineBuf = commandHistory[historyIndex];
         term.write(lineBuf);
@@ -1432,6 +786,15 @@ function termPrint(text, color) {
   else term.writeln(text);
 }
 
+function checkWasm() {
+  if (!wasmReady) {
+    termPrint('Module WASM non chargé. Attendez le chargement ou vérifiez la console.', '1;31');
+    prompt();
+    return false;
+  }
+  return true;
+}
+
 function processCommand(cmd) {
   if (cmd === '') { prompt(); return; }
   const parts = cmd.split(/\s+/);
@@ -1443,7 +806,6 @@ function processCommand(cmd) {
       cmdHelp();
       break;
     case 'load':
-      // Trigger file picker
       document.getElementById('file-cor').click();
       prompt();
       break;
@@ -1491,7 +853,7 @@ function processCommand(cmd) {
       if (args[0]) {
         const s = parseInt(args[0]);
         if (s >= 1 && s <= 100) {
-          speed = 101 - s; // invert: higher = faster
+          speed = 101 - s;
           document.getElementById('speed-slider').value = s;
           termPrint(`Vitesse: ${s}/100`, '1;32');
         } else {
@@ -1542,6 +904,7 @@ function cmdHelp() {
 }
 
 function cmdLoadSample(args) {
+  if (!checkWasm()) return;
   const name = args[0];
   if (!name || !SAMPLES[name]) {
     termPrint('Exemples disponibles: live, zork, forker, stimp', '1;33');
@@ -1560,7 +923,7 @@ function cmdLoadSample(args) {
       return;
     }
     loadedChampions.push(result);
-    termPrint(`✓ Champion "${result.name}" chargé (${result.code.length} octets)`, '1;32');
+    termPrint(`✓ Champion "${result.name}" chargé (${result.codeSize} octets)`, '1;32');
     updatePlayerList();
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
@@ -1569,15 +932,17 @@ function cmdLoadSample(args) {
 }
 
 function cmdAsm() {
+  if (!checkWasm()) return;
   const source = document.getElementById('asm-editor').value;
   try {
     const asm = new Assembler();
     const result = asm.assemble(source);
-    termPrint(`✓ Assemblage réussi: "${result.name}" (${result.code.length} octets)`, '1;32');
-    // Show hex
+    termPrint(`✓ Assemblage réussi: "${result.name}" (${result.codeSize} octets)`, '1;32');
+    // Show hex of just the bytecode portion
     let hex = '';
-    for (let i = 0; i < result.code.length; i++) {
-      hex += result.code[i].toString(16).padStart(2, '0') + ' ';
+    const bytecode = result.data.slice(2192);
+    for (let i = 0; i < bytecode.length; i++) {
+      hex += bytecode[i].toString(16).padStart(2, '0') + ' ';
       if ((i + 1) % 16 === 0) hex += '\n       ';
     }
     termPrint('Bytecode: ' + hex.trim(), '1;34');
@@ -1588,6 +953,7 @@ function cmdAsm() {
 }
 
 function cmdAsmLoad() {
+  if (!checkWasm()) return;
   const source = document.getElementById('asm-editor').value;
   try {
     const asm = new Assembler();
@@ -1598,7 +964,7 @@ function cmdAsmLoad() {
       return;
     }
     loadedChampions.push(result);
-    termPrint(`✓ Champion "${result.name}" assemblé et chargé (${result.code.length} octets)`, '1;32');
+    termPrint(`✓ Champion "${result.name}" assemblé et chargé (${result.codeSize} octets)`, '1;32');
     updatePlayerList();
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
@@ -1606,12 +972,45 @@ function cmdAsmLoad() {
   prompt();
 }
 
+function initVmFromChampions(verbose) {
+  vm = new WasmVm();
+  vmInitialized = false;
+  let loadedCount = 0;
+  for (const ch of loadedChampions) {
+    try {
+      const result = vm.load_player_bytes(ch.data, ch.name);
+      loadedCount++;
+    } catch (e) {
+      termPrint(`⚠ Erreur chargement "${ch.name}": ${e}`, '1;31');
+    }
+  }
+  vm.init();
+  vmInitialized = true;
+  vm.set_verbose(verbose);
+
+  // Print loading info
+  termPrint('─── Chargement des champions ───', '1;36');
+  const pcount = vm.player_count();
+  for (let i = 0; i < pcount; i++) {
+    const pName = vm.player_name(i);
+    const nplayer = vm.player_nplayer(i);
+    const codeSize = vm.player_code_size(i);
+    const pcAddr = vm.player_pc_address(i);
+    const color = ['1;36', '1;34', '1;31', '1;32'][i] || '';
+    termPrint(`  Joueur ${nplayer}: "${pName}" (${codeSize} octets) @ 0x${pcAddr.toString(16).padStart(4,'0')}`, color);
+  }
+  termPrint(`  ${vm.process_count()} processus initialisés`, '');
+
+  updateInfo();
+  viz.render(vm);
+}
+
 function cmdRunWithArgs(args) {
+  if (!checkWasm()) return;
+
   let verbose = false;
-  let dumpCycle = -1;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '-v') verbose = true;
-    if (args[i] === '--dump' && args[i+1]) { dumpCycle = parseInt(args[i+1]); i++; }
   }
 
   if (loadedChampions.length === 0) {
@@ -1620,18 +1019,21 @@ function cmdRunWithArgs(args) {
     return;
   }
 
-  if (vm && vm.winner) {
-    termPrint('La VM a déjà un gagnant. Tapez "reset" pour recommencer.', '1;33');
-    prompt();
-    return;
+  if (vm && !vm.is_running() && vmInitialized && vm.process_count() > 0) {
+    // Check if game already ended
+    const winnerNplayer = vm.winner_nplayer();
+    if (winnerNplayer !== 0) {
+      termPrint('La VM a déjà un gagnant. Tapez "reset" pour recommencer.', '1;33');
+      prompt();
+      return;
+    }
   }
 
-  if (!vm || vm.processes.length === 0) {
-    initVm(verbose, dumpCycle);
+  if (!vm || !vmInitialized) {
+    initVmFromChampions(verbose);
+  } else {
+    vm.set_verbose(verbose);
   }
-
-  vm.verbose = verbose;
-  vm.dumpCycle = dumpCycle;
 
   if (running) {
     termPrint('VM déjà en cours d\'exécution.', '1;33');
@@ -1645,27 +1047,21 @@ function cmdRunWithArgs(args) {
   termPrint('▶ VM en cours d\'exécution... (tapez "pause" pour arrêter)', '1;32');
 
   runInterval = setInterval(() => {
-    const ok = vm.runStep();
+    const ok = vm.step();
+    // Drain events
+    drainAndPrintEvents();
     updateInfo();
     viz.render(vm);
-    if (vm.verbose && vm.liveAnnouncements.length > 0) {
-      for (const a of vm.liveAnnouncements) {
-        termPrint('  ' + a, '1;33');
-      }
-      vm.liveAnnouncements = [];
-    }
     if (!ok) {
       clearInterval(runInterval);
+      runInterval = null;
       running = false;
       document.getElementById('btn-run').classList.remove('active');
-      if (vm.winner) {
+      const winnerNplayer = vm.winner_nplayer();
+      if (winnerNplayer !== 0) {
+        const winnerName = vm.winner_name();
         termPrint('');
-        termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
-        termPrint(`  Dernier live au cycle ${vm.winner.lastLive}`, '');
-      }
-      if (vm.dumpCycle >= 0 && vm.cycles >= vm.dumpCycle) {
-        termPrint('\nDump mémoire au cycle ' + vm.dumpCycle + ':', '1;34');
-        term.writeln(vm.dumpArena());
+        termPrint(`🏆 Le joueur ${winnerNplayer} (${winnerName}) a gagné !`, '1;33');
       }
     }
   }, speed);
@@ -1673,6 +1069,7 @@ function cmdRunWithArgs(args) {
 }
 
 function cmdStepN(args) {
+  if (!checkWasm()) return;
   let n = parseInt(args[0]) || 1;
 
   if (loadedChampions.length === 0) {
@@ -1681,35 +1078,52 @@ function cmdStepN(args) {
     return;
   }
 
-  if (!vm || vm.processes.length === 0) {
-    initVm(false, -1);
+  if (!vm || !vmInitialized) {
+    initVmFromChampions(false);
   }
 
-  if (vm.winner) {
+  const winnerNplayer = vm.winner_nplayer();
+  if (winnerNplayer !== 0) {
     termPrint('La VM est terminée. Tapez "reset" pour recommencer.', '1;33');
     prompt();
     return;
   }
 
-  for (let i = 0; i < n; i++) {
-    const ok = vm.runStep();
-    if (!ok) break;
-  }
-
+  const ok = vm.step_n(n);
+  drainAndPrintEvents();
   updateInfo();
   viz.render(vm);
 
-  termPrint(`Cycle ${vm.cycles} | ${vm.processes.length} processus | CTD=${vm.cycleToDie}`, '1;34');
-  if (vm.winner) {
-    termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
+  const cycles = vm.cycles();
+  const procs = vm.process_count();
+  const ctd = vm.cycle_to_die();
+  termPrint(`Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
+
+  if (!ok) {
+    const wn = vm.winner_nplayer();
+    if (wn !== 0) {
+      termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné !`, '1;33');
+    }
   }
   prompt();
 }
 
-// cmdPause is defined below with button handlers — this is just the terminal command dispatch
-// (the actual implementation is at the bottom with the button handlers)
-
-/* cmdReset is defined below with button handlers — no duplicate */
+function drainAndPrintEvents() {
+  if (!vm) return;
+  try {
+    const eventsJson = vm.drain_events_json();
+    if (eventsJson && eventsJson !== '[]') {
+      const events = JSON.parse(eventsJson);
+      for (const ev of events) {
+        if (ev.type === 'alive') {
+          termPrint(`  Un processus montre que le joueur ${ev.nplayer} (${ev.name}) est en vie`, '1;33');
+        }
+      }
+    }
+  } catch (e) {
+    // ignore parse errors
+  }
+}
 
 function cmdStatus() {
   if (!vm) {
@@ -1719,17 +1133,15 @@ function cmdStatus() {
   }
   term.writeln('');
   termPrint('─── Status VM ───', '1;36');
-  termPrint(`  Cycle:          ${vm.cycles}`, '');
-  termPrint(`  Cycle to die:   ${vm.cycleToDie}`, '');
-  termPrint(`  Processes:      ${vm.processes.length}`, '');
-  termPrint(`  Checks:         ${vm.nchecks}`, '');
-  termPrint(`  Lives:          ${vm.nlives}`, '');
-  termPrint(`  Champions:      ${vm.players.length}`, '');
-  if (vm.winner) {
-    termPrint(`  Gagnant:        ${vm.winner.nplayer} (${vm.winner.name})`, '1;33');
-  }
-  if (vm.affOutput) {
-    termPrint(`  Aff output:     "${vm.affOutput}"`, '1;35');
+  termPrint(`  Cycle:          ${vm.cycles()}`, '');
+  termPrint(`  Cycle to die:   ${vm.cycle_to_die()}`, '');
+  termPrint(`  Processes:      ${vm.process_count()}`, '');
+  termPrint(`  Checks:         ${vm.nchecks()}`, '');
+  termPrint(`  Lives:          ${vm.nlives()}`, '');
+  termPrint(`  Champions:      ${vm.player_count()}`, '');
+  const winnerNplayer = vm.winner_nplayer();
+  if (winnerNplayer !== 0) {
+    termPrint(`  Gagnant:        ${winnerNplayer} (${vm.winner_name()})`, '1;33');
   }
   term.writeln('');
   prompt();
@@ -1740,7 +1152,18 @@ function cmdArena(args) {
   let start = parseInt(args[0]) || 0;
   let len = parseInt(args[1]) || 128;
   start = memMod(start);
-  term.writeln(vm.hexDump(start, len));
+
+  const arena = vm.get_arena();
+  let output = '';
+  for (let i = 0; i < len; i += 32) {
+    const addr = memMod(start + i);
+    const hex = [];
+    for (let j = 0; j < 32 && (i + j) < len; j++) {
+      hex.push(arena[memMod(addr + j)].toString(16).padStart(2, '0'));
+    }
+    output += '0x' + addr.toString(16).padStart(4, '0') + ' | ' + hex.join(' ') + '\n';
+  }
+  term.writeln(output);
   prompt();
 }
 
@@ -1748,52 +1171,59 @@ function cmdDump(args) {
   if (!args[0]) { termPrint('Usage: dump <cycle>', '1;31'); prompt(); return; }
   if (!vm) { termPrint('VM non initialisée.', '1;31'); prompt(); return; }
   const cycle = parseInt(args[0]);
-  vm.dumpCycle = cycle;
-  termPrint(`Dump programmé au cycle ${cycle}`, '1;34');
+  termPrint(`Dump programmé au cycle ${cycle} (utilisez step jusqu'au cycle)`, '1;34');
   prompt();
 }
 
 function cmdPlayers() {
-  if (!vm || vm.players.length === 0) {
+  if (!vm || vm.player_count() === 0) {
     termPrint('Aucun champion chargé.', '1;31');
     prompt();
     return;
   }
   term.writeln('');
   termPrint('─── Champions ───', '1;36');
-  for (let i = 0; i < vm.players.length; i++) {
-    const p = vm.players[i];
+  const pcount = vm.player_count();
+  for (let i = 0; i < pcount; i++) {
+    const pName = vm.player_name(i);
+    const nplayer = vm.player_nplayer(i);
+    const codeSize = vm.player_code_size(i);
+    const lastLive = vm.player_last_live(i);
     const color = ['1;36', '1;34', '1;31', '1;32'][i] || '';
-    termPrint(`  [${i+1}] ${p.nplayer} "${p.name}" — ${p.code.length} octets, lastLive=${p.lastLive}`, color);
+    termPrint(`  [${i+1}] ${nplayer} "${pName}" — ${codeSize} octets, lastLive=${lastLive}`, color);
   }
   term.writeln('');
   prompt();
 }
 
 function cmdProcs() {
-  if (!vm || vm.processes.length === 0) {
+  if (!vm || vm.process_count() === 0) {
     termPrint('Aucun processus actif.', '1;31');
     prompt();
     return;
   }
   term.writeln('');
   termPrint('─── Processus ───', '1;36');
-  const max = Math.min(vm.processes.length, 20);
+  const max = Math.min(vm.process_count(), 20);
   for (let i = 0; i < max; i++) {
-    const p = vm.processes[i];
-    const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
-    const dur = p.ir >= 0 ? `dur=${p.duration}` : '';
-    termPrint(`  [${i}] PC=${p.pc} op=${op} ${dur} carry=${p.carry} owner=${p.owner}`, '');
+    const pc = vm.process_pc(i);
+    const owner = vm.process_owner(i);
+    const carry = vm.process_carry(i);
+    const ir = vm.process_ir(i);
+    const dur = vm.process_duration(i);
+    const opName = ir >= 0 ? vm.process_op_name(i) : '---';
+    const durStr = ir >= 0 ? `dur=${dur}` : '';
+    termPrint(`  [${i}] PC=${pc} op=${opName} ${durStr} carry=${carry} owner=${owner}`, '');
   }
-  if (vm.processes.length > 20) {
-    termPrint(`  ... et ${vm.processes.length - 20} autres`, '1;33');
+  if (vm.process_count() > 20) {
+    termPrint(`  ... et ${vm.process_count() - 20} autres`, '1;33');
   }
   term.writeln('');
   prompt();
 }
 
 
-// ── BUTTON HANDLERS (direct, no processCommand to avoid recursion) ──
+// ── BUTTON HANDLERS (attached to window for onclick) ──
 
 function cmdRun() { cmdRunWithArgs([]); }
 function cmdStep() { cmdStepN([]); }
@@ -1819,15 +1249,24 @@ function cmdReset() {
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.remove('active');
   }
-  vm = new Vm();
-  if (loadedChampions.length > 0) {
+  if (wasmReady && loadedChampions.length > 0) {
+    vm = new WasmVm();
+    vmInitialized = false;
     for (const ch of loadedChampions) {
-      vm.addPlayer(ch.name, ch.comment, ch.code);
+      try {
+        vm.load_player_bytes(ch.data, ch.name);
+      } catch (e) {
+        termPrint(`⚠ Erreur chargement "${ch.name}": ${e}`, '1;31');
+      }
     }
     vm.init();
+    vmInitialized = true;
+  } else {
+    vm = wasmReady ? new WasmVm() : null;
+    vmInitialized = false;
   }
   updateInfo();
-  viz.render(vm);
+  if (viz && vm) viz.render(vm);
   termPrint('↺ VM réinitialisée', '1;32');
   prompt();
 }
@@ -1838,15 +1277,18 @@ function setSpeed(val) {
   if (running && vm) {
     clearInterval(runInterval);
     runInterval = setInterval(() => {
-      const ok = vm.runStep();
+      const ok = vm.step();
+      drainAndPrintEvents();
       updateInfo();
       viz.render(vm);
       if (!ok) {
         clearInterval(runInterval);
+        runInterval = null;
         running = false;
         document.getElementById('btn-run').classList.remove('active');
-        if (vm.winner) {
-          termPrint(`🏆 Le joueur ${vm.winner.nplayer} (${vm.winner.name}) a gagné !`, '1;33');
+        const winnerNplayer = vm.winner_nplayer();
+        if (winnerNplayer !== 0) {
+          termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné !`, '1;33');
         }
       }
     }, speed);
@@ -1870,7 +1312,6 @@ function toggleArenaEnlarge() {
     btn.classList.remove('active');
     btn.textContent = '⬒ Agrandir';
   }
-  // Refit terminal after layout change
   setTimeout(() => { if (fitAddon) fitAddon.fit(); }, 50);
 }
 
@@ -1885,17 +1326,14 @@ function toggleArenaFullscreen() {
   const overlay = document.getElementById('arena-fs-overlay');
   if (arenaFsActive) {
     overlay.classList.add('active');
-    // Initialize fullscreen visualizer
     const fsCanvas = document.getElementById('arena-fs-canvas');
     if (!fsViz) {
       fsViz = new ArenaVisualizer(fsCanvas);
     }
     resizeFsCanvas();
-    fsViz.render(vm);
+    if (fsViz) fsViz.render(vm);
     updateFsInfo();
-    // Start render loop for fullscreen
     startFsRenderLoop();
-    // Sync speed slider
     document.getElementById('fs-speed-slider').value = 101 - speed;
   } else {
     overlay.classList.remove('active');
@@ -1907,15 +1345,11 @@ function resizeFsCanvas() {
   const wrap = document.getElementById('arena-fs-canvas-wrap');
   const canvas = document.getElementById('arena-fs-canvas');
   if (!wrap || !canvas) return;
-  // Calculate optimal canvas size based on available space
   const availW = wrap.clientWidth - 8;
   const availH = wrap.clientHeight - 8;
-  // Arena is 64 cols x 64 rows. Cell ratio ~1.5:1 (width:height) for hex "xx "
   const cols = 64, rows = 64;
-  // Try to fit: cellW * cols <= availW, cellH * rows <= availH
   const cellWFromW = Math.floor(availW / cols);
   const cellHFromH = Math.floor(availH / rows);
-  // Use the smaller constraint to fit both, with aspect ratio ~1.5
   let cellW, cellH;
   if (cellWFromW * rows * 0.55 <= availH) {
     cellW = cellWFromW;
@@ -1924,7 +1358,6 @@ function resizeFsCanvas() {
     cellH = cellHFromH;
     cellW = Math.max(1, Math.floor(cellH / 0.55));
   }
-  // Ensure minimum sizes
   cellW = Math.max(cellW, 4);
   cellH = Math.max(cellH, 3);
   const cw = cellW * cols;
@@ -1965,25 +1398,26 @@ function stopFsRenderLoop() {
 function updateFsInfo() {
   if (!vm) return;
   const el = (id) => document.getElementById(id);
-  el('fs-cycle').textContent = vm.cycles;
-  el('fs-ctd').textContent = vm.cycleToDie;
-  el('fs-delta').textContent = CYCLE_DELTA;
-  el('fs-procs').textContent = vm.processes.length;
-  el('fs-checks').textContent = vm.nchecks + ' / ' + MAX_CHECKS;
-  el('fs-lives').textContent = vm.nlives + ' / ' + NBR_LIVE;
+  el('fs-cycle').textContent = vm.cycles();
+  el('fs-ctd').textContent = vm.cycle_to_die();
+  el('fs-delta').textContent = CYCLE_DELTA_VAL;
+  el('fs-procs').textContent = vm.process_count();
+  el('fs-checks').textContent = vm.nchecks() + ' / ' + MAX_CHECKS_VAL;
+  el('fs-lives').textContent = vm.nlives() + ' / ' + NBR_LIVE_VAL;
   el('fs-speed').textContent = (101 - speed) + '/100';
-  el('fs-cycle-display').textContent = 'Cycle: ' + vm.cycles;
+  el('fs-cycle-display').textContent = 'Cycle: ' + vm.cycles();
 
   const statusVal = el('fs-status-val');
   const statusEl = el('fs-status');
-  if (vm.winner) {
-    const txt = vm.winner.nplayer + ' (' + vm.winner.name + ') won!';
+  const winnerNplayer = vm.winner_nplayer();
+  if (winnerNplayer !== 0) {
+    const txt = winnerNplayer + ' (' + vm.winner_name() + ') won!';
     if (statusVal) { statusVal.textContent = txt; statusVal.style.color = 'var(--yellow)'; }
     if (statusEl) { statusEl.textContent = txt; statusEl.style.color = 'var(--yellow)'; }
   } else if (running) {
     if (statusVal) { statusVal.textContent = '** RUNNING **'; statusVal.style.color = 'var(--green)'; }
     if (statusEl) { statusEl.textContent = '** RUNNING **'; statusEl.style.color = 'var(--green)'; }
-  } else if (vm.processes.length > 0) {
+  } else if (vm.process_count() > 0) {
     if (statusVal) { statusVal.textContent = '** PAUSED **'; statusVal.style.color = 'var(--yellow)'; }
     if (statusEl) { statusEl.textContent = '** PAUSED **'; statusEl.style.color = 'var(--yellow)'; }
   } else {
@@ -1994,45 +1428,52 @@ function updateFsInfo() {
   // Player list
   const playerListEl = el('fs-player-list');
   if (playerListEl) {
-    if (vm.players.length === 0) {
+    const pcount = vm.player_count();
+    if (pcount === 0) {
       playerListEl.innerHTML = '<span style="color:var(--text3);font-size:.72rem">Aucun</span>';
     } else {
-      playerListEl.innerHTML = vm.players.map((p, i) => {
+      let html = '';
+      for (let i = 0; i < pcount; i++) {
+        const pName = vm.player_name(i);
         const c = PLAYER_FG[i] || GRAY;
-        return `<div class="player-row" style="gap:6px;padding:2px 0">
+        html += `<div class="player-row" style="gap:6px;padding:2px 0">
           <div class="player-dot" style="background:${c}"></div>
           <span style="color:${c};font-weight:700;font-size:.72rem">P${i+1}</span>
-          <span class="player-name" style="font-size:.72rem">${p.name}</span>
+          <span class="player-name" style="font-size:.72rem">${pName}</span>
         </div>`;
-      }).join('');
+      }
+      playerListEl.innerHTML = html;
     }
   }
 
   // Process list
   const procListEl = el('fs-proc-list');
   const procCountEl = el('fs-proc-count');
-  if (procCountEl) procCountEl.textContent = '(' + vm.processes.length + ')';
+  const procCount = vm.process_count();
+  if (procCountEl) procCountEl.textContent = '(' + procCount + ')';
   if (procListEl) {
-    if (vm.processes.length === 0) {
+    if (procCount === 0) {
       procListEl.innerHTML = '<span style="color:var(--text3)">Aucun processus</span>';
     } else {
-      const max = Math.min(vm.processes.length, 30);
+      const max = Math.min(procCount, 30);
       let html = '';
       for (let i = 0; i < max; i++) {
-        const p = vm.processes[i];
-        const carry = p.carry ? '*' : ' ';
-        const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
-        const ownerColor = getPlayerColor(p.owner);
+        const pc = vm.process_pc(i);
+        const owner = vm.process_owner(i);
+        const carry = vm.process_carry(i);
+        const ir = vm.process_ir(i);
+        const opName = ir >= 0 ? vm.process_op_name(i) : '---';
+        const ownerColor = getPlayerColor(owner);
         html += '<div style="display:flex;gap:4px">';
-        html += '<span style="color:var(--text3)">' + carry + '</span>';
+        html += '<span style="color:var(--text3)">' + (carry ? '*' : ' ') + '</span>';
         html += '<span style="color:' + ownerColor + '">P' + i + '</span>';
         html += '<span style="color:var(--text3)">PC:</span>';
-        html += '<span style="color:var(--cyan)">' + p.pc.toString(16).padStart(4,'0') + '</span>';
-        html += '<span style="color:var(--green)">' + op + '</span>';
+        html += '<span style="color:var(--cyan)">' + pc.toString(16).padStart(4,'0') + '</span>';
+        html += '<span style="color:var(--green)">' + opName + '</span>';
         html += '</div>';
       }
-      if (vm.processes.length > 30) {
-        html += '<div style="color:var(--text3)">... +' + (vm.processes.length - 30) + ' more</div>';
+      if (procCount > 30) {
+        html += '<div style="color:var(--text3)">... +' + (procCount - 30) + ' more</div>';
       }
       procListEl.innerHTML = html;
     }
@@ -2055,17 +1496,31 @@ window.addEventListener('resize', function() {
 });
 
 function handleCorFiles(files) {
+  if (!checkWasm()) return;
   for (const file of files) {
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
-        const result = parseCorFile(e.target.result);
+        const data = new Uint8Array(e.target.result);
         if (loadedChampions.length >= 4) {
           termPrint('Maximum 4 champions atteint.', '1;31');
+          prompt();
           return;
         }
-        loadedChampions.push(result);
-        termPrint(`✓ Fichier .cor chargé: "${result.name}" (${result.code.length} octets)`, '1;32');
+        // Extract name from .cor header for display
+        let name = file.name.replace(/\.cor$/i, '');
+        if (data.length >= 132) {
+          let headerName = '';
+          for (let i = 4; i < 132; i++) {
+            if (data[i] === 0) break;
+            headerName += String.fromCharCode(data[i]);
+          }
+          if (headerName) name = headerName;
+        }
+        loadedChampions.push({ name, data });
+        // Report bytecode size (after the 2192-byte header)
+        const codeSize = data.length > 2192 ? data.length - 2192 : 0;
+        termPrint(`✓ Fichier .cor chargé: "${name}" (${codeSize} octets de bytecode)`, '1;32');
         updatePlayerList();
         prompt();
       } catch (err) {
@@ -2086,86 +1541,62 @@ function loadSample() {
 }
 
 
-// ── VM INITIALIZATION ──
-
-function initVm(verbose, dumpCycle) {
-  vm = new Vm();
-  vm.verbose = verbose;
-  vm.dumpCycle = dumpCycle;
-  for (const ch of loadedChampions) {
-    vm.addPlayer(ch.name, ch.comment, ch.code);
-  }
-  vm.init();
-
-  // Print loading info
-  termPrint('─── Chargement des champions ───', '1;36');
-  for (let i = 0; i < vm.players.length; i++) {
-    const p = vm.players[i];
-    const color = ['1;36', '1;34', '1;31', '1;32'][i] || '';
-    termPrint(`  Joueur ${p.nplayer}: "${p.name}" (${p.code.length} octets) @ 0x${p.pcAddress.toString(16).padStart(4,'0')}`, color);
-  }
-  termPrint(`  ${vm.processes.length} processus initialisés`, '');
-
-  updateInfo();
-  viz.render(vm);
-}
+// ── VM INFO UPDATES ──
 
 function updateInfo() {
   if (!vm) return;
-  document.getElementById('info-cycle').textContent = vm.cycles;
-  document.getElementById('info-ctd').textContent = vm.cycleToDie;
-  document.getElementById('info-delta').textContent = CYCLE_DELTA;
-  document.getElementById('info-procs').textContent = vm.processes.length;
-  document.getElementById('info-checks').textContent = vm.nchecks + ' / ' + MAX_CHECKS;
-  document.getElementById('info-lives').textContent = vm.nlives + ' / ' + NBR_LIVE;
+  document.getElementById('info-cycle').textContent = vm.cycles();
+  document.getElementById('info-ctd').textContent = vm.cycle_to_die();
+  document.getElementById('info-delta').textContent = CYCLE_DELTA_VAL;
+  document.getElementById('info-procs').textContent = vm.process_count();
+  document.getElementById('info-checks').textContent = vm.nchecks() + ' / ' + MAX_CHECKS_VAL;
+  document.getElementById('info-lives').textContent = vm.nlives() + ' / ' + NBR_LIVE_VAL;
   const speedVal = 101 - speed;
   document.getElementById('info-speed').textContent = speedVal + '/100';
   const statusEl = document.getElementById('info-status');
-  if (vm.winner) {
-    statusEl.textContent = vm.winner.nplayer + ' (' + vm.winner.name + ') won!';
+  const winnerNplayer = vm.winner_nplayer();
+  if (winnerNplayer !== 0) {
+    statusEl.textContent = winnerNplayer + ' (' + vm.winner_name() + ') won!';
     statusEl.style.color = 'var(--yellow)';
   } else if (running) {
     statusEl.textContent = '** RUNNING **';
     statusEl.style.color = 'var(--green)';
-  } else if (vm.processes.length > 0) {
+  } else if (vm.process_count() > 0) {
     statusEl.textContent = '** PAUSED **';
     statusEl.style.color = 'var(--yellow)';
   } else {
     statusEl.textContent = '—';
     statusEl.style.color = 'var(--text3)';
   }
-  document.getElementById('cycle-display').textContent = 'Cycle: ' + vm.cycles;
+  document.getElementById('cycle-display').textContent = 'Cycle: ' + vm.cycles();
 
   // Update process list (ncurses-style)
   const procEl = document.getElementById('proc-list');
-  const procCount = document.getElementById('proc-count');
-  procCount.textContent = '(' + vm.processes.length + ')';
-  if (vm.processes.length === 0) {
+  const procCountEl = document.getElementById('proc-count');
+  const procCount = vm.process_count();
+  procCountEl.textContent = '(' + procCount + ')';
+  if (procCount === 0) {
     procEl.innerHTML = '<span style="color:var(--text3)">Aucun processus</span>';
   } else {
-    const max = Math.min(vm.processes.length, 50);
+    const max = Math.min(procCount, 50);
     let html = '';
     for (let i = 0; i < max; i++) {
-      const p = vm.processes[i];
-      const carry = p.carry ? '*' : ' ';
-      const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
-      const ownerColor = getPlayerColor(p.owner);
-      // Register map: x=nonzero, .=zero
-      let regMap = '';
-      for (let r = 0; r < REG_NUMBER; r++) {
-        regMap += p.reg[r] !== 0 ? 'x' : '.';
-      }
+      const pc = vm.process_pc(i);
+      const owner = vm.process_owner(i);
+      const carry = vm.process_carry(i);
+      const ir = vm.process_ir(i);
+      const opName = ir >= 0 ? vm.process_op_name(i) : '---';
+      const ownerColor = getPlayerColor(owner);
       html += '<div style="display:flex;gap:4px">';
-      html += '<span style="color:var(--text3)">' + carry + '</span>';
+      html += '<span style="color:var(--text3)">' + (carry ? '*' : ' ') + '</span>';
       html += '<span style="color:' + ownerColor + '">P' + i + '</span>';
       html += '<span style="color:var(--text3)">PC:</span>';
-      html += '<span style="color:var(--cyan)">' + p.pc.toString(16).padStart(4,'0') + '</span>';
-      html += '<span style="color:var(--green)">' + op + '</span>';
-      html += '<span style="color:var(--text3);font-size:.6rem">' + regMap + '</span>';
+      html += '<span style="color:var(--cyan)">' + pc.toString(16).padStart(4,'0') + '</span>';
+      html += '<span style="color:var(--green)">' + opName + '</span>';
       html += '</div>';
     }
-    if (vm.processes.length > 50) {
-      html += '<div style="color:var(--text3)">... +' + (vm.processes.length - 50) + ' more</div>';
+    if (procCount > 50) {
+      html += '<div style="color:var(--text3)">... +' + (procCount - 50) + ' more</div>';
     }
     procEl.innerHTML = html;
   }
@@ -2174,8 +1605,10 @@ function updateInfo() {
 }
 
 function getPlayerColor(nplayer) {
-  for (let i = 0; i < vm.players.length; i++) {
-    if (vm.players[i].nplayer === nplayer) return PLAYER_FG[i];
+  if (!vm) return GRAY;
+  const pcount = vm.player_count();
+  for (let i = 0; i < pcount; i++) {
+    if (vm.player_nplayer(i) === nplayer) return PLAYER_FG[i] || GRAY;
   }
   return GRAY;
 }
@@ -2188,9 +1621,12 @@ function updatePlayerList() {
   }
   const colors = PLAYER_FG;
   el.innerHTML = loadedChampions.map((ch, i) => {
-    const player = vm && vm.players[i];
-    const lastLive = player ? player.lastLive : '-';
-    const lives = player ? player.livesThisPeriod : '-';
+    let lastLive = '-';
+    let lives = '-';
+    if (vm && vmInitialized && i < vm.player_count()) {
+      lastLive = vm.player_last_live(i);
+      lives = vm.player_lives(i);
+    }
     return `<div class="player-row" style="gap:8px;padding:4px 0">
       <div class="player-dot" style="background:${colors[i]}"></div>
       <span style="color:${colors[i]};font-weight:700;font-size:.75rem">P${i+1}</span>
@@ -2209,18 +1645,87 @@ function removeChampion(idx) {
 
 
 // ╔══════════════════════════════════════════════════════════════╗
+// ║               ATTACH HANDLERS TO WINDOW                     ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// Module scope doesn't create globals, so attach to window for onclick
+window.cmdRun = cmdRun;
+window.cmdStep = cmdStep;
+window.cmdPause = cmdPause;
+window.cmdReset = cmdReset;
+window.cmdAsm = cmdAsm;
+window.cmdAsmLoad = cmdAsmLoad;
+window.setSpeed = setSpeed;
+window.toggleArenaEnlarge = toggleArenaEnlarge;
+window.toggleArenaFullscreen = toggleArenaFullscreen;
+window.handleCorFiles = handleCorFiles;
+window.loadSample = loadSample;
+window.removeChampion = removeChampion;
+
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║               WASM INITIALIZATION                           ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+async function initWasm() {
+  try {
+    await init(); // Initialize the WASM module
+    wasmReady = true;
+
+    // Read constants from WASM
+    MEM_SIZE = mem_size();
+    CYCLE_TO_DIE_INIT = cycle_to_die_init();
+    CYCLE_DELTA_VAL = cycle_delta();
+    NBR_LIVE_VAL = nbr_live();
+    MAX_CHECKS_VAL = max_checks();
+    REG_NUMBER_VAL = reg_number();
+
+    // Update default values in the info panel
+    document.getElementById('info-ctd').textContent = CYCLE_TO_DIE_INIT;
+    document.getElementById('info-delta').textContent = CYCLE_DELTA_VAL;
+    document.getElementById('fs-ctd').textContent = CYCLE_TO_DIE_INIT;
+    document.getElementById('fs-delta').textContent = CYCLE_DELTA_VAL;
+    document.getElementById('info-checks').textContent = '0 / ' + MAX_CHECKS_VAL;
+    document.getElementById('info-lives').textContent = '0 / ' + NBR_LIVE_VAL;
+    document.getElementById('fs-checks').textContent = '0 / ' + MAX_CHECKS_VAL;
+    document.getElementById('fs-lives').textContent = '0 / ' + NBR_LIVE_VAL;
+
+    // Create a default VM instance
+    vm = new WasmVm();
+
+    if (term) {
+      termPrint('✓ Module WASM chargé avec succès !', '1;32');
+      termPrint(`  MEM_SIZE=${MEM_SIZE} CTD=${CYCLE_TO_DIE_INIT} DELTA=${CYCLE_DELTA_VAL} NBR_LIVE=${NBR_LIVE_VAL} MAX_CHECKS=${MAX_CHECKS_VAL}`, '1;34');
+      prompt();
+    }
+  } catch (e) {
+    wasmInitError = e.message || String(e);
+    console.error('WASM init failed:', e);
+    if (term) {
+      termPrint('⚠ Erreur de chargement WASM: ' + wasmInitError, '1;31');
+      termPrint('Le shell ne peut pas fonctionner sans le module WASM.', '1;31');
+      termPrint('Assurez-vous que ./wasm/corewar_wasm.js et corewar_wasm_bg.wasm sont accessibles.', '1;33');
+      prompt();
+    }
+  }
+}
+
+
+// ╔══════════════════════════════════════════════════════════════╗
 // ║               MAIN INIT                                     ║
 // ╚══════════════════════════════════════════════════════════════╝
 
 document.addEventListener('DOMContentLoaded', () => {
-  vm = new Vm();
   const canvas = document.getElementById('arena-canvas');
   viz = new ArenaVisualizer(canvas);
-  viz.render(vm);
+  viz.render(null); // blank canvas
+
   initTerminal();
 
-  // Auto-load sample champions for quick start
-  // (user can remove them with reset)
+  // Initialize WASM
+  initWasm().then(() => {
+    viz.render(vm);
+  });
 });
 </script>
 </body>
