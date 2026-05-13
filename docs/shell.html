@@ -46,6 +46,19 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .arena-section h3{font-size:.85rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
 .arena-canvas-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
 .arena-canvas-wrap canvas{display:block;width:100%;height:auto}
+/* ── ARENA FULLSCREEN ── */
+.arena-fullscreen-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:var(--bg);flex-direction:row}
+.arena-fullscreen-overlay.active{display:flex}
+.arena-fs-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.arena-fs-toolbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--surface);border-bottom:1px solid var(--border);height:44px}
+.arena-fs-toolbar .nav-logo{font-size:1.1rem;font-weight:800;color:var(--cyan);text-decoration:none;letter-spacing:1px}
+.arena-fs-toolbar .nav-logo span{color:var(--text2);font-weight:400}
+.arena-fs-canvas-wrap{flex:1;min-height:0;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:4px}
+.arena-fs-canvas-wrap canvas{display:block}
+.arena-fs-controls{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--surface2);border-top:1px solid var(--border);height:44px}
+.arena-fs-sidebar{width:280px;min-width:220px;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.arena-fs-sidebar .info-section{padding:8px 10px}
+.arena-fs-sidebar .info-section h3{font-size:.72rem;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
 /* ── INFO PANEL ── */
 .info-section{padding:10px 12px}
 .info-section h3{font-size:.82rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
@@ -104,6 +117,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       <button class="ctrl-btn" id="btn-step" onclick="cmdStep()">⏭ Step</button>
       <button class="ctrl-btn" id="btn-pause" onclick="cmdPause()">⏸ Pause</button>
       <button class="ctrl-btn" id="btn-reset" onclick="cmdReset()">↺ Reset</button>
+      <button class="ctrl-btn" id="btn-fs" onclick="toggleArenaFullscreen()">⛶ Arena</button>
       <div class="ctrl-sep"></div>
       <div class="file-input-wrap">
         <button class="ctrl-btn">📂 Load .cor</button>
@@ -164,6 +178,57 @@ loop:
         </select>
         <button class="asm-btn" onclick="loadSample()">Charger</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARENA FULLSCREEN OVERLAY -->
+<div class="arena-fullscreen-overlay" id="arena-fs-overlay">
+  <div class="arena-fs-main">
+    <div class="arena-fs-toolbar">
+      <span class="nav-logo">CW<span> Arena</span></span>
+      <div style="flex:1"></div>
+      <span class="cycle-display" id="fs-cycle-display">Cycle: 0</span>
+      <div class="ctrl-sep"></div>
+      <button class="ctrl-btn" onclick="cmdRun()">▶ Run</button>
+      <button class="ctrl-btn" onclick="cmdStep()">⏭ Step</button>
+      <button class="ctrl-btn" onclick="cmdPause()">⏸ Pause</button>
+      <button class="ctrl-btn" onclick="cmdReset()">↺ Reset</button>
+      <div class="ctrl-sep"></div>
+      <span class="ctrl-label">Speed</span>
+      <input type="range" class="speed-slider" id="fs-speed-slider" min="1" max="100" value="50" oninput="setSpeed(this.value);document.getElementById('speed-slider').value=this.value">
+      <div class="ctrl-sep"></div>
+      <button class="ctrl-btn" id="btn-exit-fs" onclick="toggleArenaFullscreen()" style="border-color:var(--red);color:var(--red)">✕ Fermer</button>
+    </div>
+    <div class="arena-fs-canvas-wrap" id="arena-fs-canvas-wrap">
+      <canvas id="arena-fs-canvas" width="1024" height="680"></canvas>
+    </div>
+    <div class="arena-fs-controls">
+      <span id="fs-status" style="font-size:.78rem;color:var(--text3)">—</span>
+      <div style="flex:1"></div>
+      <span style="font-size:.72rem;color:var(--text3)">ESC pour fermer</span>
+    </div>
+  </div>
+  <div class="arena-fs-sidebar">
+    <div class="info-section" style="padding:6px 10px">
+      <div class="info-grid" id="fs-info-grid" style="font-size:.72rem">
+        <span class="lbl">Cycle</span><span class="val" id="fs-cycle">0</span>
+        <span class="lbl">CYCLE_TO_DIE</span><span class="val" id="fs-ctd">1536</span>
+        <span class="lbl">CYCLE_DELTA</span><span class="val" id="fs-delta">50</span>
+        <span class="lbl">Processes</span><span class="val" id="fs-procs">0</span>
+        <span class="lbl">Checks</span><span class="val" id="fs-checks">0 / 10</span>
+        <span class="lbl">Lives</span><span class="val" id="fs-lives">0</span>
+        <span class="lbl">Speed</span><span class="val" id="fs-speed">50</span>
+        <span class="lbl">Status</span><span class="val" id="fs-status-val" style="color:var(--text3)">—</span>
+      </div>
+    </div>
+    <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
+      <h3 style="font-size:.72rem;margin-bottom:4px">Joueurs</h3>
+      <div id="fs-player-list"><span style="color:var(--text3);font-size:.72rem">Aucun</span></div>
+    </div>
+    <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
+      <h3 style="font-size:.72rem;margin-bottom:4px">Processus <span id="fs-proc-count" style="color:var(--text3)">(0)</span></h3>
+      <div id="fs-proc-list" style="max-height:200px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.65rem;color:var(--text2);line-height:1.6"></div>
     </div>
   </div>
 </div>
@@ -1464,6 +1529,8 @@ function cmdHelp() {
   termPrint('  speed [1-100]           Régler la vitesse', '');
   termPrint('  clear                   Effacer le terminal', '');
   term.writeln('');
+  termPrint('Bouton ⛶ Arena = agrandir l\'arène (ESC pour fermer)', '1;36');
+  term.writeln('');
   termPrint('Champions exemples: live, zork, forker, stimp', '1;34');
   term.writeln('');
   prompt();
@@ -1634,17 +1701,8 @@ function cmdStepN(args) {
   prompt();
 }
 
-function cmdPause() {
-  if (running) {
-    clearInterval(runInterval);
-    running = false;
-    document.getElementById('btn-run').classList.remove('active');
-    termPrint('⏸ VM en pause', '1;33');
-  } else {
-    termPrint('La VM n\'est pas en cours d\'exécution.', '1;33');
-  }
-  prompt();
-}
+// cmdPause is defined below with button handlers — this is just the terminal command dispatch
+// (the actual implementation is at the bottom with the button handlers)
 
 function cmdReset() {
   if (running) {
@@ -1755,10 +1813,11 @@ function cmdStep() { cmdStepN([]); }
 function cmdPause() {
   if (running) {
     clearInterval(runInterval);
+    runInterval = null;
     running = false;
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.add('active');
-    termPrint('⏸ VM en pause', '1;33');
+    termPrint('\u23f8 VM en pause', '1;33');
     updateInfo();
   } else {
     termPrint('La VM n\'est pas en cours d\'exécution.', '1;33');
@@ -1768,6 +1827,7 @@ function cmdPause() {
 function cmdReset() {
   if (running) {
     clearInterval(runInterval);
+    runInterval = null;
     running = false;
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.remove('active');
@@ -1805,6 +1865,186 @@ function setSpeed(val) {
     }, speed);
   }
 }
+
+// ── ARENA FULLSCREEN MODE ──
+
+let arenaFsActive = false;
+let fsViz = null;
+let fsRafId = null;
+
+function toggleArenaFullscreen() {
+  arenaFsActive = !arenaFsActive;
+  const overlay = document.getElementById('arena-fs-overlay');
+  if (arenaFsActive) {
+    overlay.classList.add('active');
+    // Initialize fullscreen visualizer
+    const fsCanvas = document.getElementById('arena-fs-canvas');
+    if (!fsViz) {
+      fsViz = new ArenaVisualizer(fsCanvas);
+    }
+    resizeFsCanvas();
+    fsViz.render(vm);
+    updateFsInfo();
+    // Start render loop for fullscreen
+    startFsRenderLoop();
+    // Sync speed slider
+    document.getElementById('fs-speed-slider').value = 101 - speed;
+  } else {
+    overlay.classList.remove('active');
+    stopFsRenderLoop();
+  }
+}
+
+function resizeFsCanvas() {
+  const wrap = document.getElementById('arena-fs-canvas-wrap');
+  const canvas = document.getElementById('arena-fs-canvas');
+  if (!wrap || !canvas) return;
+  // Calculate optimal canvas size based on available space
+  const availW = wrap.clientWidth - 8;
+  const availH = wrap.clientHeight - 8;
+  // Arena is 64 cols x 64 rows. Cell ratio ~1.5:1 (width:height) for hex "xx "
+  const cols = 64, rows = 64;
+  // Try to fit: cellW * cols <= availW, cellH * rows <= availH
+  const cellWFromW = Math.floor(availW / cols);
+  const cellHFromH = Math.floor(availH / rows);
+  // Use the smaller constraint to fit both, with aspect ratio ~1.5
+  let cellW, cellH;
+  if (cellWFromW * rows * 0.55 <= availH) {
+    cellW = cellWFromW;
+    cellH = Math.max(1, Math.floor(cellW * 0.55));
+  } else {
+    cellH = cellHFromH;
+    cellW = Math.max(1, Math.floor(cellH / 0.55));
+  }
+  // Ensure minimum sizes
+  cellW = Math.max(cellW, 4);
+  cellH = Math.max(cellH, 3);
+  const cw = cellW * cols;
+  const ch = cellH * rows;
+  canvas.width = cw;
+  canvas.height = ch;
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+  if (fsViz) {
+    fsViz.cellW = cellW;
+    fsViz.cellH = cellH;
+    fsViz.font = Math.max(4, Math.floor(cellH * 0.85)) + 'px monospace';
+    fsViz.ctx.font = fsViz.font;
+    fsViz.render(vm);
+  }
+}
+
+function startFsRenderLoop() {
+  stopFsRenderLoop();
+  function loop() {
+    if (!arenaFsActive) return;
+    if (fsViz && vm) {
+      fsViz.render(vm);
+    }
+    updateFsInfo();
+    fsRafId = requestAnimationFrame(loop);
+  }
+  fsRafId = requestAnimationFrame(loop);
+}
+
+function stopFsRenderLoop() {
+  if (fsRafId) {
+    cancelAnimationFrame(fsRafId);
+    fsRafId = null;
+  }
+}
+
+function updateFsInfo() {
+  if (!vm) return;
+  const el = (id) => document.getElementById(id);
+  el('fs-cycle').textContent = vm.cycles;
+  el('fs-ctd').textContent = vm.cycleToDie;
+  el('fs-delta').textContent = CYCLE_DELTA;
+  el('fs-procs').textContent = vm.processes.length;
+  el('fs-checks').textContent = vm.nchecks + ' / ' + MAX_CHECKS;
+  el('fs-lives').textContent = vm.nlives + ' / ' + NBR_LIVE;
+  el('fs-speed').textContent = (101 - speed) + '/100';
+  el('fs-cycle-display').textContent = 'Cycle: ' + vm.cycles;
+
+  const statusVal = el('fs-status-val');
+  const statusEl = el('fs-status');
+  if (vm.winner) {
+    const txt = vm.winner.nplayer + ' (' + vm.winner.name + ') won!';
+    if (statusVal) { statusVal.textContent = txt; statusVal.style.color = 'var(--yellow)'; }
+    if (statusEl) { statusEl.textContent = txt; statusEl.style.color = 'var(--yellow)'; }
+  } else if (running) {
+    if (statusVal) { statusVal.textContent = '** RUNNING **'; statusVal.style.color = 'var(--green)'; }
+    if (statusEl) { statusEl.textContent = '** RUNNING **'; statusEl.style.color = 'var(--green)'; }
+  } else if (vm.processes.length > 0) {
+    if (statusVal) { statusVal.textContent = '** PAUSED **'; statusVal.style.color = 'var(--yellow)'; }
+    if (statusEl) { statusEl.textContent = '** PAUSED **'; statusEl.style.color = 'var(--yellow)'; }
+  } else {
+    if (statusVal) { statusVal.textContent = '—'; statusVal.style.color = 'var(--text3)'; }
+    if (statusEl) { statusEl.textContent = '—'; statusEl.style.color = 'var(--text3)'; }
+  }
+
+  // Player list
+  const playerListEl = el('fs-player-list');
+  if (playerListEl) {
+    if (vm.players.length === 0) {
+      playerListEl.innerHTML = '<span style="color:var(--text3);font-size:.72rem">Aucun</span>';
+    } else {
+      playerListEl.innerHTML = vm.players.map((p, i) => {
+        const c = PLAYER_FG[i] || GRAY;
+        return `<div class="player-row" style="gap:6px;padding:2px 0">
+          <div class="player-dot" style="background:${c}"></div>
+          <span style="color:${c};font-weight:700;font-size:.72rem">P${i+1}</span>
+          <span class="player-name" style="font-size:.72rem">${p.name}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Process list
+  const procListEl = el('fs-proc-list');
+  const procCountEl = el('fs-proc-count');
+  if (procCountEl) procCountEl.textContent = '(' + vm.processes.length + ')';
+  if (procListEl) {
+    if (vm.processes.length === 0) {
+      procListEl.innerHTML = '<span style="color:var(--text3)">Aucun processus</span>';
+    } else {
+      const max = Math.min(vm.processes.length, 30);
+      let html = '';
+      for (let i = 0; i < max; i++) {
+        const p = vm.processes[i];
+        const carry = p.carry ? '*' : ' ';
+        const op = p.ir >= 0 ? OP_TABLE[p.ir].name : '---';
+        const ownerColor = getPlayerColor(p.owner);
+        html += '<div style="display:flex;gap:4px">';
+        html += '<span style="color:var(--text3)">' + carry + '</span>';
+        html += '<span style="color:' + ownerColor + '">P' + i + '</span>';
+        html += '<span style="color:var(--text3)">PC:</span>';
+        html += '<span style="color:var(--cyan)">' + p.pc.toString(16).padStart(4,'0') + '</span>';
+        html += '<span style="color:var(--green)">' + op + '</span>';
+        html += '</div>';
+      }
+      if (vm.processes.length > 30) {
+        html += '<div style="color:var(--text3)">... +' + (vm.processes.length - 30) + ' more</div>';
+      }
+      procListEl.innerHTML = html;
+    }
+  }
+}
+
+// ESC key to close fullscreen
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && arenaFsActive) {
+    toggleArenaFullscreen();
+    e.preventDefault();
+  }
+});
+
+// Resize handler for fullscreen canvas
+window.addEventListener('resize', function() {
+  if (arenaFsActive) {
+    resizeFsCanvas();
+  }
+});
 
 function handleCorFiles(files) {
   for (const file of files) {
@@ -1921,6 +2161,8 @@ function updateInfo() {
     }
     procEl.innerHTML = html;
   }
+  // Also update fullscreen sidebar if active
+  if (arenaFsActive) updateFsInfo();
 }
 
 function getPlayerColor(nplayer) {
