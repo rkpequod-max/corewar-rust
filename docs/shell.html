@@ -98,6 +98,38 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .tooltip{position:relative}
 .tooltip::after{content:attr(data-tip);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);padding:3px 8px;background:#000;color:var(--text);font-size:.7rem;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:.15s}
 .tooltip:hover::after{opacity:1}
+/* ── BUTTON VARIANT COLORS ── */
+.ctrl-btn.run{border-color:rgba(34,197,94,.5);color:var(--green)}
+.ctrl-btn.run:hover{border-color:var(--green);background:rgba(34,197,94,.15)}
+.ctrl-btn.run:active{background:var(--green);color:#000}
+.ctrl-btn.pause{border-color:rgba(234,179,8,.5);color:var(--yellow)}
+.ctrl-btn.pause:hover{border-color:var(--yellow);background:rgba(234,179,8,.15)}
+.ctrl-btn.pause:active{background:var(--yellow);color:#000}
+.ctrl-btn.step{border-color:rgba(59,130,246,.5);color:var(--blue)}
+.ctrl-btn.step:hover{border-color:var(--blue);background:rgba(59,130,246,.15)}
+.ctrl-btn.step:active{background:var(--blue);color:#000}
+.ctrl-btn.reset{border-color:rgba(239,68,68,.5);color:var(--red)}
+.ctrl-btn.reset:hover{border-color:var(--red);background:rgba(239,68,68,.15)}
+.ctrl-btn.reset:active{background:var(--red);color:#000}
+.ctrl-btn.view{border-color:rgba(168,85,247,.5);color:var(--purple)}
+.ctrl-btn.view:hover{border-color:var(--purple);background:rgba(168,85,247,.15)}
+.ctrl-btn.view:active{background:var(--purple);color:#000}
+.ctrl-btn.load{border-color:rgba(249,115,22,.5);color:var(--orange)}
+.ctrl-btn.load:hover{border-color:var(--orange);background:rgba(249,115,22,.15)}
+.ctrl-btn.load:active{background:var(--orange);color:#000}
+/* Active state overrides variant colors */
+.ctrl-btn.active.run,.ctrl-btn.active.pause,.ctrl-btn.active.step,.ctrl-btn.active.reset,.ctrl-btn.active.view,.ctrl-btn.active.load{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+/* ── CTRL GROUP ── */
+.ctrl-group{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border-radius:6px;padding:3px 4px;position:relative}
+.ctrl-group-label{position:absolute;top:-10px;left:6px;font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;white-space:nowrap;line-height:1}
+/* ── BIGGER CLICK TARGETS ── */
+.ctrl-btn{padding:6px 14px}
+/* ── ASSEMBLER PRIMARY BUTTON ── */
+.asm-btn.primary{background:var(--green);color:#000;font-weight:600;border-color:var(--green)}
+.asm-btn.primary:hover{background:#16a34a;border-color:#16a34a}
+/* ── IMPROVED TOOLTIP FOR BUTTONS ── */
+.ctrl-btn.tooltip{overflow:visible}
+.ctrl-btn.tooltip::after{bottom:calc(100% + 6px);z-index:10;border:1px solid var(--border)}
 </style>
 </head>
 <body>
@@ -117,21 +149,34 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   <div class="left">
     <div class="term-wrap" id="term-wrap"></div>
     <div class="ctrl-bar">
-      <button class="ctrl-btn" id="btn-run" onclick="cmdRun()">▶ Run</button>
-      <button class="ctrl-btn" id="btn-step" onclick="cmdStep()">⏭ Step</button>
-      <button class="ctrl-btn" id="btn-pause" onclick="cmdPause()">⏸ Pause</button>
-      <button class="ctrl-btn" id="btn-reset" onclick="cmdReset()">↺ Reset</button>
-      <button class="ctrl-btn" id="btn-enlarge" onclick="toggleArenaEnlarge()">⬒ Agrandir</button>
-      <button class="ctrl-btn" id="btn-fs" onclick="toggleArenaFullscreen()">⛶ Plein écran</button>
-      <div class="ctrl-sep"></div>
-      <div class="file-input-wrap">
-        <button class="ctrl-btn">📂 Load .cor</button>
-        <input type="file" id="file-cor" accept=".cor" multiple onchange="handleCorFiles(this.files)">
+      <!-- Execution group -->
+      <div class="ctrl-group">
+        <span class="ctrl-group-label">Exécution</span>
+        <button class="ctrl-btn run tooltip" id="btn-run" onclick="cmdRun()" data-tip="Espace">▶ Run</button>
+        <button class="ctrl-btn step tooltip" id="btn-step" onclick="cmdStep()" data-tip="S">⏭ Step</button>
+        <button class="ctrl-btn pause tooltip" id="btn-pause" onclick="cmdPause()" data-tip="P">⏸ Pause</button>
+        <button class="ctrl-btn reset tooltip" id="btn-reset" onclick="cmdReset()" data-tip="R">↺ Reset</button>
       </div>
-      <div class="ctrl-sep"></div>
-      <span class="ctrl-label">Speed</span>
-      <input type="range" class="speed-slider" id="speed-slider" min="1" max="100" value="50" oninput="setSpeed(this.value)">
-      <div class="ctrl-sep"></div>
+      <!-- View group -->
+      <div class="ctrl-group">
+        <span class="ctrl-group-label">Vue</span>
+        <button class="ctrl-btn view" id="btn-enlarge" onclick="toggleArenaEnlarge()">⬒ Agrandir</button>
+        <button class="ctrl-btn view" id="btn-fs" onclick="toggleArenaFullscreen()">⛶ Plein écran</button>
+      </div>
+      <!-- File group -->
+      <div class="ctrl-group">
+        <span class="ctrl-group-label">Charger</span>
+        <div class="file-input-wrap">
+          <button class="ctrl-btn load">📂 .cor</button>
+          <input type="file" id="file-cor" accept=".cor" multiple onchange="handleCorFiles(this.files)">
+        </div>
+      </div>
+      <!-- Speed -->
+      <div class="ctrl-group">
+        <span class="ctrl-group-label">Vitesse</span>
+        <input type="range" class="speed-slider" id="speed-slider" min="1" max="100" value="50" oninput="setSpeed(this.value)">
+      </div>
+      <!-- Cycle display (pushed right) -->
       <span class="cycle-display" id="cycle-display">Cycle: 0</span>
     </div>
   </div>
@@ -173,7 +218,7 @@ loop:
     zjmp %:loop</textarea>
       <div class="editor-actions">
         <button class="asm-btn" onclick="cmdAsm()">⚙ Assembler</button>
-        <button class="asm-btn" onclick="cmdAsmLoad()">⚙ Assembler &amp; Charger</button>
+        <button class="asm-btn primary tooltip" onclick="cmdAsmLoad()" data-tip="Assemble et charge le champion dans la VM">⚙ Assembler &amp; Charger</button>
         <select id="sample-select" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem">
           <option value="">— Exemples —</option>
           <option value="live">live (basique)</option>
@@ -195,10 +240,10 @@ loop:
       <div style="flex:1"></div>
       <span class="cycle-display" id="fs-cycle-display">Cycle: 0</span>
       <div class="ctrl-sep"></div>
-      <button class="ctrl-btn" onclick="cmdRun()">▶ Run</button>
-      <button class="ctrl-btn" onclick="cmdStep()">⏭ Step</button>
-      <button class="ctrl-btn" onclick="cmdPause()">⏸ Pause</button>
-      <button class="ctrl-btn" onclick="cmdReset()">↺ Reset</button>
+      <button class="ctrl-btn run" onclick="cmdRun()">▶ Run</button>
+      <button class="ctrl-btn step" onclick="cmdStep()">⏭ Step</button>
+      <button class="ctrl-btn pause" onclick="cmdPause()">⏸ Pause</button>
+      <button class="ctrl-btn reset" onclick="cmdReset()">↺ Reset</button>
       <div class="ctrl-sep"></div>
       <span class="ctrl-label">Speed</span>
       <input type="range" class="speed-slider" id="fs-speed-slider" min="1" max="100" value="50" oninput="setSpeed(this.value);document.getElementById('speed-slider').value=this.value">
@@ -479,6 +524,18 @@ let commandHistory = [];
 let historyIndex = -1;
 let vmInitialized = false; // whether vm.init() has been called
 
+// ── CONTEXTUAL TIPS ──
+let tipsEnabled = true;
+let tipShownCount = {};
+function printTip(tipId, message) {
+  if (!tipsEnabled) return;
+  tipShownCount[tipId] = (tipShownCount[tipId] || 0) + 1;
+  // Show tip for the first 3 occurrences, then stop
+  if (tipShownCount[tipId] <= 3) {
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + message);
+  }
+}
+
 function initTerminal() {
   term = new Terminal({
     theme: {
@@ -526,7 +583,12 @@ function initTerminal() {
   term.writeln('');
 
   if (wasmReady) {
-    term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour la liste des commandes.');
+    term.writeln('\x1b[1;36m  \u27a1 Pour commencer :\x1b[0m');
+    term.writeln('    1. Chargez un champion : \x1b[1;33m📂 .cor\x1b[0m ou \x1b[1;33msample live\x1b[0m');
+    term.writeln('    2. Lancez le combat :    \x1b[1;32m▶ Run\x1b[0m ou \x1b[1;32mrun\x1b[0m');
+    term.writeln('    3. Observez l\'arène se remplir de couleurs !');
+    term.writeln('');
+    term.writeln('Tapez \x1b[1;32mhelp\x1b[0m pour toutes les commandes.');
   } else if (wasmInitError) {
     term.writeln('\x1b[1;31m⚠ Erreur de chargement WASM: ' + wasmInitError + '\x1b[0m');
     term.writeln('\x1b[1;33mLe shell fonctionne en mode dégradé.\x1b[0m');
@@ -726,6 +788,16 @@ function cmdLoadSample(args) {
     loadedChampions.push(result);
     termPrint(`✓ Champion "${result.name}" chargé (${result.codeSize} octets)`, '1;32');
     updatePlayerList();
+    const count = loadedChampions.length;
+    const colorNames = ['cyan', 'bleu', 'rouge', 'vert'];
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Joueur ' + count + ' (' + colorNames[count-1] + ') prêt.');
+    if (count < 2) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m pour un combat solo.');
+    } else if (count < 4) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Lancez le combat avec \x1b[1;32m▶ Run\x1b[0m, ou chargez encore un champion (max 4).');
+    } else {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez le combat avec \x1b[1;32m▶ Run\x1b[0m.');
+    }
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
   }
@@ -738,6 +810,7 @@ function cmdAsm() {
   try {
     const result = wasmAssemble(source);
     termPrint(`✓ Assemblage réussi: "${result.name}" (${result.codeSize} octets)`, '1;32');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Pour charger ce champion dans la VM, utilisez \x1b[1;32m⚙ Assembler & Charger\x1b[0m ou \x1b[1;33masmload\x1b[0m.');
     // Show hex of just the bytecode portion
     let hex = '';
     const bytecode = result.data.slice(2192);
@@ -765,6 +838,14 @@ function cmdAsmLoad() {
     loadedChampions.push(result);
     termPrint(`✓ Champion "${result.name}" assemblé et chargé (${result.codeSize} octets)`, '1;32');
     updatePlayerList();
+    const count = loadedChampions.length;
+    if (count === 1) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Premier champion prêt ! Chargez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m.');
+    } else if (count < 4) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + count + ' champions chargés. Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat.');
+    } else {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
+    }
   } catch (e) {
     termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
   }
@@ -813,7 +894,9 @@ function cmdRunWithArgs(args) {
   }
 
   if (loadedChampions.length === 0) {
-    termPrint('Aucun champion chargé. Utilisez "load", "sample" ou "asmload".', '1;31');
+    termPrint('Aucun champion chargé.', '1;31');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion d\'abord :');
+    term.writeln('       \x1b[1;33m📂 .cor\x1b[0m (fichier), \x1b[1;33msample live\x1b[0m (exemple), ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m (éditeur)');
     prompt();
     return;
   }
@@ -843,7 +926,9 @@ function cmdRunWithArgs(args) {
   running = true;
   document.getElementById('btn-run').classList.add('active');
   document.getElementById('btn-pause').classList.remove('active');
-  termPrint('▶ VM en cours d\'exécution... (tapez "pause" pour arrêter)', '1;32');
+  const champCount = loadedChampions.length;
+  termPrint('▶ Combat en cours ! — ' + champCount + ' champion' + (champCount > 1 ? 's' : '') + ', vitesse ' + (101-speed) + '/100', '1;32');
+  printTip('run', 'L\'arène à droite montre la mémoire en temps réel. Chaque couleur = un joueur. ⏸ Pause pour analyser.');
 
   runInterval = setInterval(() => {
     const ok = vm.step();
@@ -859,8 +944,10 @@ function cmdRunWithArgs(args) {
       const winnerNplayer = vm.winner_nplayer();
       if (winnerNplayer !== 0) {
         const winnerName = vm.winner_name();
+        const finalCycles = vm.cycles();
         termPrint('');
-        termPrint(`🏆 Le joueur ${winnerNplayer} (${winnerName}) a gagné !`, '1;33');
+        termPrint(`🏆 Le joueur ${winnerNplayer} (${winnerName}) a gagné en ${finalCycles} cycles !`, '1;33');
+        term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou changez de champion et relancez.');
       }
     }
   }, speed);
@@ -873,6 +960,7 @@ function cmdStepN(args) {
 
   if (loadedChampions.length === 0) {
     termPrint('Aucun champion chargé.', '1;31');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion : \x1b[1;33msample live\x1b[0m, \x1b[1;33m📂 .cor\x1b[0m, ou \x1b[1;33m⚙ Assembler & Charger\x1b[0m');
     prompt();
     return;
   }
@@ -883,7 +971,8 @@ function cmdStepN(args) {
 
   const winnerNplayer = vm.winner_nplayer();
   if (winnerNplayer !== 0) {
-    termPrint('La VM est terminée. Tapez "reset" pour recommencer.', '1;33');
+    termPrint('La VM est terminée.', '1;33');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Tapez \x1b[1;31mreset\x1b[0m ou \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
     prompt();
     return;
   }
@@ -897,11 +986,13 @@ function cmdStepN(args) {
   const procs = vm.process_count();
   const ctd = vm.cycle_to_die();
   termPrint(`Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
+  printTip('step', 'Tapez step N pour avancer de N cycles d\'un coup. ▶ Run pour lancer en continu.');
 
   if (!ok) {
     const wn = vm.winner_nplayer();
     if (wn !== 0) {
-      termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné !`, '1;33');
+      termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou changez de champion.');
     }
   }
   prompt();
@@ -1033,10 +1124,15 @@ function cmdPause() {
     running = false;
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.add('active');
-    termPrint('\u23f8 VM en pause', '1;33');
+    const cycles = vm ? vm.cycles() : 0;
+    const procs = vm ? vm.process_count() : 0;
+    const ctd = vm ? vm.cycle_to_die() : 0;
+    termPrint(`⏸ Pause — Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;33');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;32m▶ Run\x1b[0m pour reprendre, \x1b[1;34mstatus\x1b[0m pour le détail, \x1b[1;34mprocs\x1b[0m pour les processus.');
     updateInfo();
   } else {
     termPrint('La VM n\'est pas en cours d\'exécution.', '1;33');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Lancez d\'abord le combat avec \x1b[1;32m▶ Run\x1b[0m.');
   }
   prompt();
 }
@@ -1066,7 +1162,8 @@ function cmdReset() {
   }
   updateInfo();
   if (viz && vm) viz.render(vm);
-  termPrint('↺ VM réinitialisée', '1;32');
+  termPrint('↺ VM réinitialisée — champions déchargés.', '1;32');
+  term.writeln('\x1b[1;36m  \u27a1\x1b[0m Modifiez votre code dans l\'assembleur, ou rechargez des champions avec \x1b[1;33m📂 .cor\x1b[0m / \x1b[1;33msample\x1b[0m.');
   prompt();
 }
 
@@ -1087,7 +1184,9 @@ function setSpeed(val) {
         document.getElementById('btn-run').classList.remove('active');
         const winnerNplayer = vm.winner_nplayer();
         if (winnerNplayer !== 0) {
-          termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné !`, '1;33');
+          const finalCycles = vm.cycles();
+          termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné en ${finalCycles} cycles !`, '1;33');
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
         }
       }
     }, speed);
@@ -1321,6 +1420,14 @@ function handleCorFiles(files) {
         const codeSize = data.length > 2192 ? data.length - 2192 : 0;
         termPrint(`✓ Fichier .cor chargé: "${name}" (${codeSize} octets de bytecode)`, '1;32');
         updatePlayerList();
+        const count = loadedChampions.length;
+        if (count === 1) {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m Premier champion prêt ! Ajoutez un adversaire ou lancez \x1b[1;32m▶ Run\x1b[0m.');
+        } else if (count < 4) {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m ' + count + ' champions chargés. Lancez \x1b[1;32m▶ Run\x1b[0m pour le combat.');
+        } else {
+          term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
+        }
         prompt();
       } catch (err) {
         termPrint('Erreur: ' + err.message, '1;31');
@@ -1495,6 +1602,7 @@ async function initWasm() {
     if (term) {
       termPrint('✓ Module WASM chargé avec succès !', '1;32');
       termPrint(`  MEM_SIZE=${MEM_SIZE} CTD=${CYCLE_TO_DIE_INIT} DELTA=${CYCLE_DELTA_VAL} NBR_LIVE=${NBR_LIVE_VAL} MAX_CHECKS=${MAX_CHECKS_VAL}`, '1;34');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un champion pour commencer (\x1b[1;33msample live\x1b[0m ou \x1b[1;33m📂 .cor\x1b[0m)');
       prompt();
     }
   } catch (e) {
