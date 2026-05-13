@@ -152,7 +152,7 @@
         clearMaze();
         /* Floor */
         const fg = new THREE.PlaneGeometry(MAZE_W*CELL+2, MAZE_H*CELL+2);
-        const fm = new THREE.MeshBasicMaterial({color:0xD8D8D8});
+        const fm = new THREE.MeshBasicMaterial({color:C_BG});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(MAZE_W*CELL/2, -0.01, MAZE_H*CELL/2);
