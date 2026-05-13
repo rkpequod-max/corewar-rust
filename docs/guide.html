@@ -33,7 +33,25 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.7;
+            overflow-x: hidden;
         }
+
+        /* Matrix canvas */
+        #matrix-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none; opacity: 0.05;
+        }
+
+        /* Noise texture */
+        body::before {
+            content: '';
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.5;
+        }
+
         /* Scanline overlay */
         body::after {
             content: '';
@@ -47,6 +65,17 @@
             );
             pointer-events: none;
             z-index: 9999;
+        }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         /* Nav */
         nav {
@@ -66,6 +95,12 @@
             padding:6px 12px; border-radius:4px; white-space:nowrap;
             transition: all 0.15s; letter-spacing:0.5px;
         }
+        nav a { position: relative; }
+        nav a::after {
+            content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 1px;
+            background: var(--cyan); transition: all 0.25s; transform: translateX(-50%);
+        }
+        nav a:hover::after { width: 60%; }
         nav a:hover, nav a.active { color:var(--cyan); background:rgba(0,229,229,0.06); }
         .spacer { height:56px; }
 
@@ -82,17 +117,48 @@
                         radial-gradient(ellipse at 70% 50%, rgba(102,102,255,0.06) 0%, transparent 50%);
         }
         .hero h1 { font-family:var(--mono); font-size:clamp(2rem,5vw,3.2rem); font-weight:900; position:relative;
-            color:var(--text); }
+            color:var(--text); display:inline-block; }
         .hero h1 .accent { color:var(--cyan); }
+        .hero h1::before,
+        .hero h1::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; pointer-events: none;
+        }
+        .hero h1::before {
+            color: var(--cyan);
+            animation: glitch1 4s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+        }
+        .hero h1::after {
+            color: var(--red);
+            animation: glitch2 4s infinite;
+            clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+        }
+        @keyframes glitch1 {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-3px, -1px); }
+            94% { transform: translate(3px, 1px); }
+            96% { transform: translate(-2px, 0); }
+        }
+        @keyframes glitch2 {
+            0%, 90%, 100% { transform: translate(0); }
+            91% { transform: translate(3px, 1px); }
+            93% { transform: translate(-3px, -1px); }
+            95% { transform: translate(2px, 0); }
+        }
         .hero .sub { font-family:var(--mono); font-size:clamp(0.85rem,1.5vw,1.05rem); color:var(--text-muted); max-width:700px; margin:16px auto 0; position:relative; line-height:1.8; }
         .hero .badges { margin-top:20px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; position:relative; }
-        .badge { font-family:var(--mono); display:inline-block; padding:4px 14px; border-radius:3px; font-size:0.72rem; font-weight:600; border:1px solid var(--border); background:var(--card); letter-spacing:0.5px; }
+        .badge { font-family:var(--mono); display:inline-block; padding:4px 14px; border-radius:3px; font-size:0.72rem; font-weight:600; border:1px solid var(--border); background:var(--card); letter-spacing:0.5px; animation: badgePulse 3s ease-in-out infinite; }
+        @keyframes badgePulse {
+            0%, 100% { box-shadow: none; }
+            50% { box-shadow: 0 0 12px rgba(0,229,229,0.15); }
+        }
         .badge-c { color:#4fc3f7; border-color:#4fc3f744; }
         .badge-r { color:#f74c00; border-color:#f74c0044; }
         .badge-42 { color:var(--green); border-color:#00cc0044; }
 
         /* Sections */
-        .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+        .container { max-width:1100px; margin:0 auto; padding:0 20px; position:relative; z-index:1; }
         section { padding:60px 0; border-bottom:1px solid var(--border); }
         section:last-child { border-bottom:none; }
         h2 { font-family:var(--mono); font-size:1.6rem; margin-bottom:24px; display:flex; align-items:center; gap:12px; }
@@ -111,7 +177,7 @@
             background:var(--card); border:1px solid var(--border); border-radius:12px;
             padding:24px; text-align:center; transition:border-color 0.3s;
         }
-        .intro-card:hover { border-color:var(--cyan); }
+        .intro-card:hover { border-color:var(--cyan); transform:translateY(-4px); box-shadow:0 0 20px rgba(0,229,229,0.1); }
         .intro-card .icon { font-size:2.2rem; margin-bottom:10px; }
         .intro-card .title { font-weight:700; font-size:1.1rem; margin-bottom:6px; }
         .intro-card .desc { font-size:0.85rem; color:var(--text-muted); }
@@ -703,6 +769,9 @@
 </head>
 <body>
 
+<!-- Matrix Canvas -->
+<canvas id="matrix-canvas"></canvas>
+
 <!-- Nav -->
 <nav>
     <a href="index.html" class="logo" style="text-decoration:none">CW<span>.rs</span></a>
@@ -723,7 +792,7 @@
 
 <!-- Hero -->
 <div class="hero">
-    <h1>Corewar<span class="accent">.</span>rs — Guide</h1>
+    <h1 data-text="Corewar.rs — Guide">Corewar<span class="accent">.</span>rs — Guide</h1>
     <p class="sub">Comment resoudre le projet Corewar de l'ecole 42 : machine virtuelle, assembleur, champion. Avec des implementations concrètes en C et en Rust.</p>
     <div class="badges">
         <span class="badge badge-42">Projet 42</span>
@@ -736,7 +805,7 @@
 </div>
 
 <!-- Section 1: Introduction -->
-<section id="intro">
+<section id="intro" class="reveal">
 <div class="container">
     <h2><span class="num">01</span> Qu'est-ce que le Corewar ?</h2>
     <p>Le <strong>Corewar</strong> est un jeu dans lequel des programmes — appelés <strong>champions</strong> — s'affrontent à l'intérieur d'une <strong>machine virtuelle</strong>. Chaque champion est un bytecode qui s'exécute dans un espace mémoire partagé : l'<strong>arène</strong>. Le but est d'être le <strong>dernier processus en vie</strong>.</p>
@@ -776,7 +845,7 @@
 </section>
 
 <!-- Section 2: Architecture -->
-<section id="architecture">
+<section id="architecture" class="reveal">
 <div class="container">
     <h2><span class="num">02</span> Architecture globale</h2>
     <p>Le projet est structuré autour de composants bien séparés. Voici la correspondance entre les fichiers C et les crates Rust :</p>
@@ -824,7 +893,7 @@
 </section>
 
 <!-- Section 3: Arena -->
-<section id="arena">
+<section id="arena" class="reveal">
 <div class="container">
     <h2><span class="num">03</span> L'Arène — Mémoire circulaire</h2>
 
@@ -1447,7 +1516,7 @@
 
 
 <!-- Section 4: Process -->
-<section id="process">
+<section id="process" class="reveal">
 <div class="container">
     <h2><span class="num">04</span> Le Processus</h2>
     <p>Chaque champion démarre avec un processus. Un processus est une unité d'exécution autonome qui possède ses propres registres, un PC (Program Counter), un flag carry, et un compteur de cycles restants avant exécution.</p>
@@ -1559,7 +1628,7 @@
 </section>
 
 <!-- Section 5: Lifecycle -->
-<section id="lifecycle">
+<section id="lifecycle" class="reveal">
 <div class="container">
     <h2><span class="num">05</span> Cycle de vie d'une instruction</h2>
     <p>Chaque instruction passe par 4 phases. La notion clé est que les instructions <strong>consomment toujours leurs cycles</strong> : même si l'instruction est invalide, les cycles sont déduits. Une instruction ne s'exécute qu'à la <strong>fin de son dernier cycle</strong>.</p>
@@ -1647,7 +1716,7 @@
 </section>
 
 <!-- Section 6: Instructions -->
-<section id="instructions">
+<section id="instructions" class="reveal">
 <div class="container">
     <h2><span class="num">06</span> Les 16 instructions</h2>
     <p>Chaque instruction a un opcode (1-16), un nombre de cycles, des types de paramètres acceptés, et parfois des règles spéciales. Le tableau ci-dessous résume tout :</p>
@@ -1739,7 +1808,7 @@
 </section>
 
 <!-- Section 7: Encoding -->
-<section id="encoding">
+<section id="encoding" class="reveal">
 <div class="container">
     <h2><span class="num">07</span> Encodage — Du .s au .cor</h2>
     <p>La compilation transforme un fichier assembleur lisible en bytecode exécutable par la VM. Voici le format d'une instruction encodée :</p>
@@ -1839,7 +1908,7 @@ live: live  %1
 </section>
 
 <!-- Section 8: Assembler -->
-<section id="assembler">
+<section id="assembler" class="reveal">
 <div class="container">
     <h2><span class="num">08</span> L'Assembleur — Pipeline complet</h2>
     <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
@@ -1920,7 +1989,7 @@ live: live  %1
 </section>
 
 <!-- Section 9: C vs Rust -->
-<section id="c-vs-rust">
+<section id="c-vs-rust" class="reveal">
 <div class="container">
     <h2><span class="num">09</span> C vs Rust — Comparaison d'implémentation</h2>
     <p>Le même projet implémenté en C et en Rust illustre les différences fondamentales entre les deux langages. Voici les choix architecturaux et leurs conséquences :</p>
@@ -2553,5 +2622,62 @@ function setEndianView(mode, btn) {
     }
 }
 </script>
+</body>
+</html>
+
+<script>
+/* ═══════════════════════════════════════
+   MATRIX RAIN CANVAS
+   ═══════════════════════════════════════ */
+(function() {
+    const canvas = document.getElementById('matrix-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let w, h, columns, drops;
+    const chars = '0123456789ABCDEF@#$%&*<>[]{}|/\\~^';
+    const fontSize = 14;
+
+    function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+        columns = Math.floor(w / fontSize);
+        drops = new Array(columns).fill(0).map(() => Math.random() * -100);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    function draw() {
+        ctx.fillStyle = 'rgba(5, 8, 12, 0.12)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.font = fontSize + 'px JetBrains Mono, monospace';
+        for (let i = 0; i < columns; i++) {
+            const char = chars[Math.floor(Math.random() * chars.length)];
+            const x = i * fontSize;
+            const y = drops[i] * fontSize;
+            const alpha = 0.6 + Math.random() * 0.4;
+            ctx.fillStyle = 'rgba(0, 229, 229, ' + alpha + ')';
+            ctx.fillText(char, x, y);
+            if (y > h && Math.random() > 0.975) { drops[i] = 0; }
+            drops[i] += 0.5 + Math.random() * 0.5;
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+/* ═══════════════════════════════════════
+   SCROLL REVEAL
+   ═══════════════════════════════════════ */
+(function() {
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) { entry.target.classList.add('visible'); }
+        });
+    }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
+    reveals.forEach(el => observer.observe(el));
+})();
+</script>
+
 </body>
 </html>
