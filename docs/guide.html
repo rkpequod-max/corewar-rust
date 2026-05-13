@@ -34,6 +34,7 @@
             --sans: 'Inter', system-ui, -apple-system, sans-serif;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: var(--sans);
             background: var(--bg);
@@ -870,6 +871,237 @@
     .warning-box .wb-title { color:var(--orange); font-weight:700; font-size:0.9rem; margin-bottom:6px; }
     .warning-box .wb-content { color:var(--text-muted); font-size:0.85rem; line-height:1.7; }
 
+    /* ===== PHASE 1: UX Improvements ===== */
+
+    /* Progress bar */
+    #progress-bar {
+        position: fixed; top: 0; left: 0; height: 2px; width: 0%;
+        background: linear-gradient(90deg, var(--ray), var(--electric));
+        z-index: 9999; transition: width 0.1s linear;
+        box-shadow: 0 0 8px rgba(0,255,136,0.5);
+    }
+
+    /* Sidebar */
+    #sidebar {
+        position: fixed; top: 56px; left: 0; width: 240px; height: calc(100vh - 56px);
+        background: rgba(3,5,8,0.95); border-right: 1px solid var(--border);
+        overflow-y: auto; z-index: 50; padding: 16px 0;
+        transition: transform 0.3s ease;
+        scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #sidebar .sb-section { margin-bottom: 4px; }
+    #sidebar .sb-link {
+        display: block; padding: 6px 16px 6px 20px; font-family: var(--mono);
+        font-size: 0.72rem; color: var(--text-muted); text-decoration: none;
+        border-left: 2px solid transparent; transition: all 0.15s;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #sidebar .sb-link:hover { color: var(--text); background: rgba(0,255,136,0.03); }
+    #sidebar .sb-link.active { color: var(--ray); border-left-color: var(--ray); background: rgba(0,255,136,0.05); }
+    #sidebar .sb-link.sb-sub { padding-left: 36px; font-size: 0.68rem; }
+    #sidebar .sb-title {
+        padding: 10px 16px 4px; font-family: var(--mono); font-size: 0.68rem;
+        color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+        opacity: 0.5;
+    }
+    .container { max-width: 860px; margin-left: 256px; }
+
+    /* Copy button */
+    .copy-btn {
+        position: absolute; top: 6px; right: 6px; padding: 4px 10px;
+        border-radius: 4px; border: 1px solid var(--border);
+        background: var(--card); color: var(--text-muted); font-size: 0.7rem;
+        font-family: var(--mono); cursor: pointer; opacity: 0;
+        transition: all 0.2s; z-index: 5;
+    }
+    .code-wrapper:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { border-color: var(--ray); color: var(--ray); }
+    .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+    /* Back to top */
+    #back-to-top {
+        position: fixed; bottom: 24px; right: 24px; width: 40px; height: 40px;
+        border-radius: 50%; border: 1px solid var(--border); background: var(--card);
+        color: var(--text-muted); font-size: 1.1rem; cursor: pointer;
+        opacity: 0; transform: translateY(10px); transition: all 0.3s;
+        z-index: 90; display: flex; align-items: center; justify-content: center;
+    }
+    #back-to-top.visible { opacity: 1; transform: translateY(0); }
+    #back-to-top:hover { border-color: var(--ray); color: var(--ray);
+        box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+
+    /* Search modal */
+    #search-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(3,5,8,0.85); z-index: 10000; display: none;
+        align-items: flex-start; justify-content: center; padding-top: 120px;
+    }
+    #search-overlay.open { display: flex; }
+    #search-box {
+        width: 90%; max-width: 600px; background: var(--card);
+        border: 1px solid var(--border); border-radius: 12px;
+        overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    #search-input {
+        width: 100%; padding: 16px 20px; background: transparent;
+        border: none; color: var(--text); font-family: var(--mono);
+        font-size: 1rem; outline: none;
+    }
+    #search-input::placeholder { color: var(--text-muted); }
+    #search-results {
+        max-height: 400px; overflow-y: auto; border-top: 1px solid var(--border);
+    }
+    .search-result {
+        padding: 10px 20px; cursor: pointer; border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+    }
+    .search-result:hover { background: rgba(0,255,136,0.05); }
+    .search-result .sr-section { font-size: 0.7rem; color: var(--ray); font-family: var(--mono); }
+    .search-result .sr-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+    .search-result mark { background: rgba(0,255,136,0.2); color: var(--ray); border-radius: 2px; padding: 0 2px; }
+    .search-hint {
+        padding: 12px 20px; font-size: 0.75rem; color: var(--text-muted);
+        text-align: center; border-top: 1px solid var(--border);
+    }
+    .search-hint kbd {
+        background: var(--card2); border: 1px solid var(--border);
+        border-radius: 3px; padding: 1px 6px; font-family: var(--mono);
+        font-size: 0.7rem;
+    }
+
+    /* Mobile hamburger */
+    #menu-toggle {
+        display: none; background: none; border: none; color: var(--text-muted);
+        font-size: 1.3rem; cursor: pointer; padding: 4px 8px;
+    }
+    @media(max-width: 1100px) {
+        #sidebar { transform: translateX(-100%); }
+        #sidebar.open { transform: translateX(0); }
+        #menu-toggle { display: block; }
+        .container { max-width: 100%; margin-left: 0; }
+    }
+    @media(max-width: 700px) {
+        #sidebar { width: 200px; }
+    }
+
+    /* Print styles */
+    @media print {
+        #sidebar, #progress-bar, #back-to-top, #search-overlay,
+        #starfield, #scan-lines, #film-grain, nav, .hero-scan,
+        .copy-btn, #menu-toggle { display: none !important; }
+        body { background: white; color: black; }
+        body::before, body::after { display: none; }
+        .hero { padding: 40px 20px; }
+        .hero h1 { color: black; }
+        .hero h1 .accent { color: #006633; text-shadow: none; }
+        section { border-bottom: 1px solid #ccc; page-break-inside: avoid; }
+        .code-wrapper { border: 1px solid #ccc; }
+        pre { background: #f5f5f5; }
+        .intro-card, .layer-card, .process-card { border: 1px solid #ccc; }
+        .container { margin-left: 0; max-width: 100%; }
+    }
+
+    /* Quiz */
+    .quiz-box {
+        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        padding: 24px; margin: 32px 0 0; position: relative;
+    }
+    .quiz-box::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(135deg, rgba(0,255,136,0.02) 0%, transparent 40%);
+        pointer-events: none; border-radius: 12px;
+    }
+    .quiz-title {
+        font-family: var(--mono); font-size: 0.85rem; color: var(--ray);
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .quiz-q {
+        margin-bottom: 16px; padding: 12px; background: var(--card2);
+        border-radius: 8px; border: 1px solid var(--border);
+    }
+    .quiz-q .qq-text {
+        font-size: 0.9rem; color: var(--text); margin-bottom: 10px; font-weight: 500;
+    }
+    .quiz-q .qq-options {
+        display: flex; flex-direction: column; gap: 6px;
+    }
+    .quiz-opt {
+        padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
+        background: var(--card2); color: var(--text-muted); font-size: 0.82rem;
+        cursor: pointer; transition: all 0.2s; text-align: left; font-family: var(--mono);
+    }
+    .quiz-opt:hover { border-color: var(--ray); color: var(--text); }
+    .quiz-opt.correct { border-color: var(--green); color: var(--green); background: #1a2a1a; }
+    .quiz-opt.wrong { border-color: var(--red); color: var(--red); background: #2a1a1a; }
+    .quiz-opt.disabled { pointer-events: none; opacity: 0.7; }
+    .quiz-q .qq-explain {
+        margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);
+        display: none; line-height: 1.6; padding: 8px; border-radius: 6px;
+        background: rgba(0,255,136,0.03); border-left: 2px solid var(--ray);
+    }
+    .quiz-q .qq-explain.visible { display: block; }
+    .quiz-score {
+        text-align: center; font-family: var(--mono); font-size: 0.85rem;
+        color: var(--text-muted); margin-top: 12px;
+    }
+
+    /* Filterable table */
+    .filter-bar {
+        display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0;
+    }
+    .filter-btn {
+        padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+        background: var(--card); color: var(--text-muted); font-family: var(--mono);
+        font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--ray); color: var(--text); }
+    .filter-btn.active { background: var(--ray); color: #000; border-color: var(--ray); font-weight: 500; }
+    .op-table tr.filtered-out { display: none; }
+
+    /* Cycle to die animation */
+    .ctd-visual {
+        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        padding: 24px; margin: 24px 0;
+    }
+    .ctd-bar-container {
+        position: relative; height: 40px; background: var(--card2);
+        border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
+        margin: 16px 0;
+    }
+    .ctd-bar {
+        height: 100%; border-radius: 7px; transition: width 0.5s ease, background 0.5s ease;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
+        min-width: 60px;
+    }
+    .ctd-bar.ctd-green { background: linear-gradient(90deg, #1a5a3a, #2a7a4a); color: var(--green); }
+    .ctd-bar.ctd-yellow { background: linear-gradient(90deg, #3a3a1a, #5a5a2a); color: var(--yellow); }
+    .ctd-bar.ctd-orange { background: linear-gradient(90deg, #3a2a1a, #5a4a2a); color: var(--orange); }
+    .ctd-bar.ctd-red { background: linear-gradient(90deg, #3a1a1a, #5a2a2a); color: var(--red); }
+    .ctd-stats {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0;
+    }
+    @media(max-width:600px) { .ctd-stats { grid-template-columns: repeat(2, 1fr); } }
+    .ctd-stat {
+        background: var(--card2); border: 1px solid var(--border); border-radius: 8px;
+        padding: 10px; text-align: center;
+    }
+    .ctd-stat .cs-label { font-size: 0.7rem; color: var(--text-muted); font-family: var(--mono); }
+    .ctd-stat .cs-value { font-size: 1.1rem; font-weight: 700; font-family: var(--mono); margin-top: 2px; }
+    .ctd-controls {
+        display: flex; gap: 8px; justify-content: center; margin-top: 12px;
+    }
+    .ctd-log {
+        max-height: 150px; overflow-y: auto; margin-top: 12px; font-family: var(--mono);
+        font-size: 0.72rem; color: var(--text-muted); line-height: 1.6;
+        padding: 8px; background: var(--card2); border-radius: 6px; border: 1px solid var(--border);
+    }
+    .ctd-log .log-accel { color: var(--orange); }
+    .ctd-log .log-check { color: var(--text-muted); }
+    .ctd-log .log-death { color: var(--red); font-weight: 700; }
+
     </style>
 </head>
 <body>
@@ -883,21 +1115,63 @@
 
 <!-- Nav -->
 <nav>
+    <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
     <a href="index.html" class="logo" style="text-decoration:none">CW<span>.rs</span></a>
     <div class="links">
         <a href="shell.html">Shell</a>
         <a href="#intro">Introduction</a>
-        <a href="#architecture">Architecture</a>
         <a href="#arena">Arene</a>
         <a href="#process">Processus</a>
-        <a href="#lifecycle">Cycle de vie</a>
         <a href="#instructions">Instructions</a>
         <a href="#encoding">Encodage</a>
-        <a href="#assembler">Assembleur</a>
         <a href="#c-vs-rust">C vs Rust</a>
+        <a href="#erreurs">Pièges</a>
+        <a href="#strategie">Stratégie</a>
     </div>
+    <div style="flex:1"></div>
+    <button onclick="openSearch()" style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--ray)';this.style.color='var(--ray)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">⌘K Rechercher</button>
 </nav>
 <div class="spacer"></div>
+
+<!-- Progress bar -->
+<div id="progress-bar"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+    <div class="sb-title">Guide Corewar</div>
+    <div class="sb-section">
+        <a href="#intro" class="sb-link" data-section="intro">01 — Qu'est-ce que le Corewar ?</a>
+        <a href="#architecture" class="sb-link" data-section="architecture">02 — Architecture globale</a>
+        <a href="#arena" class="sb-link" data-section="arena">03 — L'Arène</a>
+        <a href="#arena-layers" class="sb-link sb-sub" data-section="arena">Les 3 couches</a>
+        <a href="#arena-wrap" class="sb-link sb-sub" data-section="arena">Wrap-around</a>
+        <a href="#arena-memod" class="sb-link sb-sub" data-section="arena">mem_mod()</a>
+        <a href="#arena-endian" class="sb-link sb-sub" data-section="arena">Big Endian</a>
+        <a href="#arena-champ" class="sb-link sb-sub" data-section="arena">Chargement</a>
+        <a href="#process" class="sb-link" data-section="process">04 — Le Processus</a>
+        <a href="#lifecycle" class="sb-link" data-section="lifecycle">05 — Cycle de vie</a>
+        <a href="#instructions" class="sb-link" data-section="instructions">06 — Les 16 instructions</a>
+        <a href="#encoding" class="sb-link" data-section="encoding">07 — Encodage</a>
+        <a href="#assembler" class="sb-link" data-section="assembler">08 — L'Assembleur</a>
+        <a href="#c-vs-rust" class="sb-link" data-section="c-vs-rust">09 — C vs Rust</a>
+        <a href="#syntaxe" class="sb-link" data-section="syntaxe">10 — Syntaxe du .s</a>
+        <a href="#erreurs" class="sb-link" data-section="erreurs">11 — Pièges & Erreurs</a>
+        <a href="#cli" class="sb-link" data-section="cli">12 — Ligne de commande</a>
+        <a href="#strategie" class="sb-link" data-section="strategie">13 — Stratégie champion</a>
+    </div>
+</aside>
+
+<!-- Search overlay -->
+<div id="search-overlay" onclick="if(event.target===this)closeSearch()">
+    <div id="search-box">
+        <input id="search-input" type="text" placeholder="Rechercher dans le guide..." oninput="doSearch(this.value)" autocomplete="off">
+        <div id="search-results"></div>
+        <div class="search-hint"><kbd>Esc</kbd> pour fermer · <kbd>↑</kbd><kbd>↓</kbd> naviguer · <kbd>Enter</kbd> aller</div>
+    </div>
+</div>
+
+<!-- Back to top -->
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <!-- Hero -->
 <div class="hero">
@@ -975,6 +1249,7 @@
     <h3>Constantes fondamentales</h3>
     <p>Ces constantes définissent les règles du jeu. Elles sont identiques en C et en Rust :</p>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Constantes</span>
             <div class="code-tabs">
@@ -1075,7 +1350,7 @@
     </div>
 
     <!-- 3. Enhanced 3-layer stack grid -->
-    <h3>Les 3 couches alignées — Vue détaillée</h3>
+    <h3 id="arena-layers">Les 3 couches alignées — Vue détaillée</h3>
     <p>Ce diagramme montre comment les 3 tableaux sont <strong>alignés adresse par adresse</strong>. Chaque colonne représente une adresse, chaque ligne un des 3 tableaux. Quand un processus écrit à une adresse, les 3 tableaux sont mis à jour <strong>simultanément</strong> : la valeur dans <code>arena[]</code>, le numéro du joueur dans <code>owner[]</code>, et le flag de surbrillance dans <code>scrb[]</code>.</p>
 
     <div class="layer-stack-container">
@@ -1170,6 +1445,7 @@
     </div>
 
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">store_at()</span>
             <div class="code-tabs">
@@ -1206,7 +1482,7 @@
     </div>
 
     <!-- 5. Wrap-around store_at() example -->
-    <h3>store_at() en bordure — Le wrap-around en écriture</h3>
+    <h3 id="arena-wrap">store_at() en bordure — Le wrap-around en écriture</h3>
     <p>Que se passe-t-il quand <code>store_at()</code> écrit à une adresse proche de la bordure ? Prenons l'exemple de l'écriture de <code>0x11223344</code> à l'adresse 1. Le processus écrit d'abord à @1 (0x44), puis décrémente : @0 (0x33), puis @-1 → <code>mem_mod(-1)</code> = @4095 (0x22), puis @-2 → <code>mem_mod(-2)</code> = @4094 (0x11). L'écriture <strong>traverse la couture de l'anneau</strong> !</p>
 
     <div class="wrap-store-container">
@@ -1305,7 +1581,7 @@
     </div>
 
     <!-- 6. Better champion loading visualization -->
-    <h3>Chargement des champions — Espacement interactif</h3>
+    <h3 id="arena-champ">Chargement des champions — Espacement interactif</h3>
     <p>Au lancement de la VM, les champions sont placés dans l'arène à des <strong>intervalles réguliers</strong>. La formule est simple : <code>space = MEM_SIZE / nb_joueurs</code>. Chaque champion est copié à l'adresse <code>i × space</code>, et le tableau <code>owner[]</code> est rempli avec son numéro pour chaque octet de son code. Le processus initial de chaque champion a son PC positionné au début de son code, et son registre <code>r1</code> contient le numéro (négatif) du joueur.</p>
 
     <div class="champ-load-container">
@@ -1325,6 +1601,7 @@
     </div>
 
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">load_champions()</span>
             <div class="code-tabs">
@@ -1365,7 +1642,7 @@
     </div>
 
     <!-- 7. mem_mod() with interactive calculator -->
-    <h3>Adressage circulaire — mem_mod()</h3>
+    <h3 id="arena-memod">Adressage circulaire — mem_mod()</h3>
     <p>Tout accès mémoire dans la VM passe par la fonction <code>mem_mod()</code>. Elle prend n'importe quel entier (positif ou négatif) et le ramène dans l'intervalle [0, 4095]. C'est grâce à elle que l'arène est circulaire : un processus à l'adresse 4095 qui avance de 3 arrive à l'adresse 2, et un processus à l'adresse 0 qui recule de 1 arrive à l'adresse 4095. Le comportement est identique à un modulo mathématique (euclidien), pas au modulo C qui peut être négatif.</p>
 
     <div class="diagram-box">
@@ -1418,6 +1695,7 @@
     </div>
 
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">mem_mod()</span>
             <div class="code-tabs">
@@ -1499,7 +1777,7 @@
     </div>
 
     <!-- 8. Deeper Big Endian explanation with interactive toggle -->
-    <h3>Big Endian — Pourquoi c'est important</h3>
+    <h3 id="arena-endian">Big Endian — Pourquoi c'est important</h3>
     <p>La VM Corewar est <strong>Big Endian</strong> : l'octet de poids fort (le plus significatif) est stocké à l'adresse la plus basse. C'est l'inverse de l'architecture x86 (Little Endian) que votre ordinateur utilise. La lecture multi-octets est <strong>toujours circulaire</strong> : chaque octet successif est lu via <code>mem_mod()</code>, donc une lecture de 4 octets démarrant à l'adresse 4094 lira les octets aux adresses 4094, 4095, 0, 1 — traversant la « couture » de l'anneau sans problème.</p>
 
     <p><strong>Pourquoi Big Endian ?</strong> C'est le standard pour les <strong>machines virtuelles</strong> et les <strong>protocoles réseau</strong> (c'est pourquoi on l'appelle aussi « network byte order »). Le choix du Big Endian garantit que tous les champions voient les données de la même manière, indépendamment de l'architecture matérielle de la machine qui exécute la VM. C'est un choix de <strong>portabilité</strong> et de <strong>prévisibilité</strong>.</p>
@@ -1545,6 +1823,7 @@
     </div>
 
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Lecture Big Endian (circulaire)</span>
             <div class="code-tabs">
@@ -1586,6 +1865,7 @@
     <h3>Structure de données — Arène</h3>
     <p>Dans l'implémentation C, les trois tableaux sont regroupés dans un <code>struct t_arena</code> imbriqué dans <code>t_vm</code>, accessible via <code>vm->ram.arena[i]</code>. En Rust, les tableaux sont des champs directs de la structure <code>Vm</code>, ce qui simplifie l'accès en <code>vm.arena[i]</code>. La structure Rust contient aussi les processus, les joueurs et les compteurs de cycles directement — pas de liste chaînée, mais des <code>Vec</code> et un buffer <code>new_processes</code> pour les forks en attente.</p>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Arène</span>
             <div class="code-tabs">
@@ -1619,6 +1899,38 @@
     <span class="kw">pub</span> cycles: <span class="ty">i32</span>,
     <span class="cm">// ... (compteurs, config visualiseur)</span>
 }</code></pre>
+    </div>
+
+    <div class="quiz-box">
+        <div class="quiz-title">🎯 Quiz — L'Arène</div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Que vaut mem_mod(-1) ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">-1</button>
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">4095</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">0</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">4096</button>
+            </div>
+            <div class="qq-explain">En C, -1 % 4096 = -1, puis on ajoute MEM_SIZE : -1 + 4096 = 4095. C'est l'adresse du dernier octet de l'arène, juste avant l'adresse 0. La circularité !</div>
+        </div>
+        <div class="quiz-q" data-answer="2">
+            <div class="qq-text">Combien de tableaux composent l'arène ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">1 (arena[])</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">2 (arena[] + owner[])</button>
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">3 (arena[] + owner[] + scrb[])</button>
+            </div>
+            <div class="qq-explain">L'arène est composée de 3 tableaux superposés : arena[] pour le bytecode, owner[] pour le propriétaire de chaque case, et scrb[] pour la surbrillance d'écriture récente.</div>
+        </div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Si store_at() écrit 0xAABBCCDD à l'adresse 100, quel octet se trouve à l'adresse 100 ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">0xDD (poids faible)</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">0xAA (poids fort)</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">0xBB</button>
+            </div>
+            <div class="qq-explain">store_at() écrit en Big Endian en décrémentant l'adresse. L'octet de poids faible (0xDD) va à l'adresse de départ (100), puis 0xCC à 99, 0xBB à 98, 0xAA à 97 (poids fort à l'adresse la plus basse).</div>
+        </div>
     </div>
 
 </div>
@@ -1662,6 +1974,7 @@
 
     <h3>Structure Process</h3>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Process</span>
             <div class="code-tabs">
@@ -1699,6 +2012,7 @@
     <h3>Fork — Créer de nouveaux processus</h3>
     <p>Les instructions <code>fork</code> et <code>lfork</code> créent un <strong>nouveau processus</strong> qui hérite de tous les registres et du carry du parent. Seul le PC diffère : il est positionné à <code>PC + (param % IDX_MOD)</code> pour <code>fork</code>, ou <code>PC + param</code> (sans modulo) pour <code>lfork</code>.</p>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">fork vs lfork</span>
             <div class="code-tabs">
@@ -1734,6 +2048,29 @@
     <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">3</span>) % <span class="mac">MEM_SIZE</span>;
 }</code></pre>
     </div>
+
+    <div class="quiz-box">
+        <div class="quiz-title">🎯 Quiz — Le Processus</div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Que contient le registre r1 au démarrage d'un processus ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">Le numéro du joueur (négatif)</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">0</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">1</button>
+            </div>
+            <div class="qq-explain">r1 contient le numéro du joueur en négatif (par exemple -1 pour le joueur 1). C'est la seule valeur initialisée — tous les autres registres commencent à 0.</div>
+        </div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Que se passe-t-il quand un fork crée un nouveau processus ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">Le nouveau processus a des registres vides</button>
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">Il hérite de tous les registres et du carry du parent</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">Seul r1 est copié</button>
+            </div>
+            <div class="qq-explain">Le processus fils hérite de TOUS les registres (r1-r16) et du flag carry du parent. Seul le PC diffère — il est positionné à l'adresse calculée par le paramètre de fork.</div>
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -1776,6 +2113,7 @@
 
     <h3>La boucle principale</h3>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Boucle principale</span>
             <div class="code-tabs">
@@ -1822,6 +2160,47 @@
             <p><strong>5.</strong> Le gagnant est le dernier joueur à avoir été rapporté comme "en vie" par l'instruction <code>live</code>.</p>
         </div>
     </div>
+
+    <h3 id="ctd-anim">Animation — Évolution de CYCLE_TO_DIE</h3>
+    <p>Visualisez comment <code>CYCLE_TO_DIE</code> diminue au fil de la partie. À chaque vérification, si le nombre de <code>live</code> est suffisant (≥ 21) ou après 10 checks sans assez de lives, la valeur est réduite de <code>CYCLE_DELTA</code> (50). La partie s'accélère progressivement jusqu'à ce que <code>CYCLE_TO_DIE</code> atteigne 0.</p>
+
+    <div class="ctd-visual">
+        <h4 style="text-align:center;color:var(--cyan);margin-bottom:16px">Simulation de l'évolution de CYCLE_TO_DIE</h4>
+        <div class="ctd-stats">
+            <div class="ctd-stat">
+                <div class="cs-label">Cycle actuel</div>
+                <div class="cs-value" id="ctdCycle" style="color:var(--cyan)">0</div>
+            </div>
+            <div class="ctd-stat">
+                <div class="cs-label">CYCLE_TO_DIE</div>
+                <div class="cs-value" id="ctdValue" style="color:var(--green)">1536</div>
+            </div>
+            <div class="ctd-stat">
+                <div class="cs-label">Vérifications</div>
+                <div class="cs-value" id="ctdChecks" style="color:var(--yellow)">0</div>
+            </div>
+            <div class="ctd-stat">
+                <div class="cs-label">Processus vivants</div>
+                <div class="cs-value" id="ctdProcs" style="color:var(--purple)">4</div>
+            </div>
+        </div>
+        <div class="ctd-bar-container">
+            <div class="ctd-bar ctd-green" id="ctdBar" style="width:100%">1536</div>
+        </div>
+        <div class="ctd-controls">
+            <button class="anim-btn" id="ctdPlayBtn" onclick="ctdPlay()">
+                <span class="anim-icon">▶</span> Simuler
+            </button>
+            <button class="anim-btn" onclick="ctdReset()">
+                <span class="anim-icon">↺</span> Reset
+            </button>
+            <button class="anim-btn" onclick="ctdStep()">
+                <span class="anim-icon">⏭</span> Step
+            </button>
+        </div>
+        <div class="ctd-log" id="ctdLog"></div>
+    </div>
+
 </div>
 </section>
 
@@ -1831,6 +2210,16 @@
     <h2><span class="num">06</span> Les 16 instructions</h2>
     <p>Chaque instruction a un opcode (1-16), un nombre de cycles, des types de paramètres acceptés, et parfois des règles spéciales. Le tableau ci-dessous résume tout :</p>
 
+    <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all" onclick="filterInstructions(this)">Toutes</button>
+        <button class="filter-btn" data-filter="carry" onclick="filterInstructions(this)">Modifient carry</button>
+        <button class="filter-btn" data-filter="idx" onclick="filterInstructions(this)">Utilisent IDX_MOD</button>
+        <button class="filter-btn" data-filter="ocp" onclick="filterInstructions(this)">Ont un OCP</button>
+        <button class="filter-btn" data-filter="no-ocp" onclick="filterInstructions(this)">Sans OCP</button>
+        <button class="filter-btn" data-filter="write" onclick="filterInstructions(this)">Écrivent mémoire</button>
+        <button class="filter-btn" data-filter="fork" onclick="filterInstructions(this)">Fork/Fork-like</button>
+    </div>
+
     <table class="op-table">
         <thead>
             <tr>
@@ -1839,22 +2228,22 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>1</td><td>live</td><td>%dir</td><td>10</td><td><span class="pill pill-no">non</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>2</td><td>ld</td><td>%dir|ind, r</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>3</td><td>st</td><td>r, r|ind</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>4</td><td>add</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>5</td><td>sub</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>6</td><td>and</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>7</td><td>or</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>8</td><td>xor</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>9</td><td>zjmp</td><td>%dir</td><td>20</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td>lit</td></tr>
-            <tr><td>10</td><td>ldi</td><td>r|d|i, d|r, r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>11</td><td>sti</td><td>r, r|d|i, d|r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>12</td><td>fork</td><td>%dir</td><td>800</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>13</td><td>lld</td><td>%dir|ind, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>14</td><td>lldi</td><td>r|d|i, d|r, r</td><td>50</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
-            <tr><td>15</td><td>lfork</td><td>%dir</td><td>1000</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-no">non</span></td></tr>
-            <tr><td>16</td><td>aff</td><td>r</td><td>2</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="no-ocp write"><td>1</td><td>live</td><td>%dir</td><td>10</td><td><span class="pill pill-no">non</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="carry idx ocp"><td>2</td><td>ld</td><td>%dir|ind, r</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="idx ocp write"><td>3</td><td>st</td><td>r, r|ind</td><td>5</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="carry ocp"><td>4</td><td>add</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="carry ocp"><td>5</td><td>sub</td><td>r, r, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="carry idx ocp"><td>6</td><td>and</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="carry idx ocp"><td>7</td><td>or</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="carry idx ocp"><td>8</td><td>xor</td><td>r|d|i, r|d|i, r</td><td>6</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-idx">ind</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="idx no-ocp"><td>9</td><td>zjmp</td><td>%dir</td><td>20</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td>lit</td></tr>
+            <tr data-cats="idx ocp"><td>10</td><td>ldi</td><td>r|d|i, d|r, r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="idx ocp write"><td>11</td><td>sti</td><td>r, r|d|i, d|r</td><td>25</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="idx no-ocp fork"><td>12</td><td>fork</td><td>%dir</td><td>800</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-idx">oui</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="carry ocp"><td>13</td><td>lld</td><td>%dir|ind, r</td><td>10</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="carry ocp"><td>14</td><td>lldi</td><td>r|d|i, d|r, r</td><td>50</td><td><span class="pill pill-yes">oui</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-carry">oui</span></td></tr>
+            <tr data-cats="no-ocp fork"><td>15</td><td>lfork</td><td>%dir</td><td>1000</td><td><span class="pill pill-no">non</span></td><td>2</td><td><span class="pill pill-no">NON</span></td><td><span class="pill pill-no">non</span></td></tr>
+            <tr data-cats="ocp"><td>16</td><td>aff</td><td>r</td><td>2</td><td><span class="pill pill-yes">oui</span></td><td>4</td><td><span class="pill pill-no">non</span></td><td><span class="pill pill-no">non</span></td></tr>
         </tbody>
     </table>
 
@@ -1867,7 +2256,7 @@
     <div class="collapse-body">
         <div class="collapse-body-inner">
             <p>Prend un paramètre direct de 4 octets. Incrémente <code>live_count</code> du processus et <code>nlives</code> global. Si le numéro correspond à un joueur, celui-ci est déclaré "en vie". Le PC avance de 5 (1 opcode + 4 octets). <strong>Pas d'OCP</strong>.</p>
-            <div class="code-wrapper"><div class="code-header"><span class="lang">live</span></div>
+            <div class="code-wrapper"><button class="copy-btn" onclick="copyCode(this)">Copier</button><div class="code-header"><span class="lang">live</span></div>
             <pre style="display:block"><code><span class="cm">// C</span>
 <span class="kw">void</span> <span class="fn">op_live</span>(t_vm *vm, t_list *process) {
     P->live_count++;
@@ -1886,7 +2275,7 @@
     <div class="collapse-body">
         <div class="collapse-body-inner">
             <p>Prend un index direct de 2 octets. <strong>Pas d'OCP</strong>. Si le carry est à 1, le PC saute à <code>PC + (param % IDX_MOD)</code>. Sinon, le PC avance de 3 (1 opcode + 2 octets). C'est l'instruction de contrôle de flux principale, utilisée pour les boucles et les conditions.</p>
-            <div class="code-wrapper"><div class="code-header"><span class="lang">zjmp</span></div>
+            <div class="code-wrapper"><button class="copy-btn" onclick="copyCode(this)">Copier</button><div class="code-header"><span class="lang">zjmp</span></div>
             <pre style="display:block"><code><span class="cm">// C</span>
 <span class="kw">void</span> <span class="fn">op_zjmp</span>(t_vm *vm, t_list *process) {
     <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>) % <span class="mac">IDX_MOD</span>;
@@ -1914,6 +2303,194 @@
             <p><code>ld</code> charge une valeur dans un registre. Si le paramètre est indirect, l'adresse est modulo <code>IDX_MOD</code>. <code>lld</code> (long load) fait la même chose <strong>sans IDX_MOD</strong>, ce qui permet d'accéder à n'importe quelle adresse dans l'arène. Les deux modifient le carry : <code>carry = 1</code> si le résultat est 0, sinon <code>carry = 0</code>.</p>
         </div>
     </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">st</code> — Stockage registre → mémoire</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend un registre en premier paramètre et un registre ou un indirect en second. Copie la valeur du registre source vers la destination. Si le second paramètre est indirect, l'adresse est modulo <code>IDX_MOD</code> et l'écriture se fait via <code>store_at</code> (4 octets). <strong>Piège</strong> : on ne peut pas stocker dans un direct (<code>%</code>), seulement dans un registre ou une adresse indirecte.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">st</span><div class="code-tabs"><button class="code-tab active" onclick="showCode(this,'c-st')">C</button><button class="code-tab" onclick="showCode(this,'r-st')">Rust</button></div></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre id="c-st" class="active"><code><span class="cm">// C</span>
+<span class="kw">void</span> <span class="fn">op_st</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> val = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>];
+    <span class="kw">if</span> (is_reg(P->ocp, <span class="num">1</span>))
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">3</span>) - <span class="num">1</span>] = val;
+    <span class="kw">else</span>
+        <span class="fn">store_at</span>(vm, process, val, P->pc + (<span class="fn">get_ind</span>(vm, P->pc + <span class="num">3</span>) % <span class="mac">IDX_MOD</span>));
+}</code></pre>
+            <pre id="r-st"><code><span class="cm">// Rust</span>
+<span class="kw">fn</span> <span class="fn">op_st</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
+    <span class="kw">let</span> val = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">0</span>);
+    <span class="kw">if</span> arg_is_reg(<span class="num">1</span>) {
+        <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">1</span>, val);
+    } <span class="kw">else</span> {
+        <span class="kw">let</span> addr = <span class="kw">self</span>.<span class="fn">read_ind</span>(idx, <span class="num">1</span>) % <span class="mac">IDX_MOD</span>;
+        <span class="kw">self</span>.<span class="fn">store_at</span>(idx, val, addr);
+    }
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">add</code> / <code style="color:var(--cyan)">sub</code> — Addition et soustraction</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p><code>add</code> prend 3 registres : <code>r1 + r2 → r3</code>. <code>sub</code> fait la soustraction : <code>r1 - r2 → r3</code>. Les deux modifient le carry : <code>carry = 1</code> si le résultat est 0, sinon <code>carry = 0</code>. <strong>Piège</strong> : les 3 paramètres DOIVENT être des registres. Un direct ou indirect invalidera l'instruction.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">add / sub</span><div class="code-tabs"><button class="code-tab active" onclick="showCode(this,'c-add')">C</button><button class="code-tab" onclick="showCode(this,'r-add')">Rust</button></div></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre id="c-add" class="active"><code><span class="cm">// add</span>
+<span class="kw">void</span> <span class="fn">op_add</span>(t_vm *vm, t_list *process) {
+    P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">4</span>) - <span class="num">1</span>] =
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>] +
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">3</span>) - <span class="num">1</span>];
+    P->carry = (P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">4</span>) - <span class="num">1</span>] == <span class="num">0</span>);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">5</span>);
+}
+<span class="cm">// sub : identique mais avec '-'</span></code></pre>
+            <pre id="r-add"><code><span class="cm">// Rust — add</span>
+<span class="kw">fn</span> <span class="fn">op_add</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
+    <span class="kw">let</span> result = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">0</span>).<span class="fn">wrapping_add</span>(<span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">1</span>));
+    <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">2</span>, result);
+    <span class="kw">self</span>.processes[idx].carry = <span class="kw">if</span> result == <span class="num">0</span> { <span class="num">1</span> } <span class="kw">else</span> { <span class="num">0</span> };
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">and</code> / <code style="color:var(--cyan)">or</code> / <code style="color:var(--cyan)">xor</code> — Opérations logiques bit à bit</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Les trois opérations logiques prennent 3 paramètres : les deux premiers peuvent être registre, direct ou indirect, le troisième doit être un registre. Elles appliquent l'opération bit à bit et stockent le résultat. Les paramètres indirects sont modulo <code>IDX_MOD</code>. Le carry est mis à 1 si le résultat est 0.</p>
+            <p><code>and</code> (ET bit à bit) : chaque bit du résultat vaut 1 si les deux bits correspondants valent 1. Utile pour masquer des valeurs. <code>or</code> (OU bit à bit) : chaque bit vaut 1 si au moins un des deux bits correspondants vaut 1. <code>xor</code> (OU exclusif) : chaque bit vaut 1 si exactement un des deux bits correspondants vaut 1. C'est l'opération la plus utilisée pour mettre le carry à 0 (faire <code>xor r1, r1, r2</code> où r1 == r2 donne 0 → carry = 1).</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">and / or / xor</span></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre style="display:block"><code><span class="cm">// C — and (or et xor sont identiques, seul l'opérateur change)</span>
+<span class="kw">void</span> <span class="fn">op_and</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">0</span>); <span class="cm">// premier paramètre</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>); <span class="cm">// deuxième paramètre</span>
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = a & b;  <span class="cm">// & pour and, | pour or, ^ pour xor</span>
+    P->carry = (P->reg[...] == <span class="num">0</span>);
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">ldi</code> — Chargement indexé</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend 3 paramètres : les deux premiers peuvent être registre, direct ou indirect, le troisième est un registre. Additionne les deux premiers, utilise le résultat comme adresse (modulo <code>IDX_MOD</code>), lit 4 octets à cette adresse (relative au PC), et les stocke dans le registre destination. <strong>Ne modifie pas le carry</strong>. La taille du direct est de 2 octets (pas 4). <strong>Piège</strong> : l'adresse lue est <strong>relative au PC</strong>, pas absolue.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">ldi</span></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre style="display:block"><code><span class="cm">// C — ldi</span>
+<span class="kw">void</span> <span class="fn">op_ldi</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> a = <span class="fn">get_arg_idx</span>(vm, P, <span class="num">0</span>); <span class="cm">// modulo IDX_MOD si indirect</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>);
+    <span class="ty">int</span> addr = <span class="fn">mem_mod</span>(P->pc + ((a + b) % <span class="mac">IDX_MOD</span>));
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">4</span>);
+    <span class="cm">// Pas de modification du carry !</span>
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">lldi</code> — Chargement indexé long (sans IDX_MOD)</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Identique à <code>ldi</code> mais <strong>sans IDX_MOD</strong> sur l'adresse résultante. Permet d'accéder à n'importe quelle adresse dans l'arène (0-4095). Contrairement à <code>ldi</code>, <code>lldi</code> <strong>modifie le carry</strong> : <code>carry = 1</code> si la valeur lue est 0. La différence <code>ldi</code>/<code>lldi</code> est la même que <code>ld</code>/<code>lld</code> : la version "long" ignore la restriction d'adressage.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">lldi</span></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre style="display:block"><code><span class="cm">// C — lldi (identique à ldi mais SANS IDX_MOD)</span>
+<span class="kw">void</span> <span class="fn">op_lldi</span>(t_vm *vm, t_list *process) {
+    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">0</span>);  <span class="cm">// PAS de modulo IDX_MOD</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>);
+    <span class="ty">int</span> addr = <span class="fn">mem_mod</span>(P->pc + a + b); <span class="cm">// Adresse complète</span>
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">4</span>);
+    P->carry = (P->reg[...] == <span class="num">0</span>); <span class="cm">// Modifie le carry !</span>
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">fork</code> — Créer un processus (avec IDX_MOD)</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Crée un nouveau processus qui hérite de tous les registres et du carry du parent. Le PC du nouveau processus est positionné à <code>PC + (param % IDX_MOD)</code>. Prend un paramètre direct de 2 octets. <strong>Pas d'OCP</strong>. Le processus original avance son PC de 3. Le nouveau processus est ajouté à la fin de la liste (C) ou dans le buffer <code>new_processes</code> (Rust) et sera inséré au prochain cycle.</p>
+            <p><strong>Piège</strong> : le paramètre est modulo <code>IDX_MOD</code> (512), ce qui limite le fork à une distance de ±512 par rapport au PC. Pour fork n'importe où, utiliser <code>lfork</code>.</p>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">lfork</code> — Long fork (sans IDX_MOD)</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Identique à <code>fork</code> mais <strong>sans IDX_MOD</strong>. Le nouveau processus est créé à <code>PC + param</code> (sans modulo). Cela permet de forker à n'importe quelle adresse dans l'arène. Le paramètre direct fait 2 octets (signé), donc on peut fork de -32768 à +32767. <strong>Pas d'OCP</strong>. Coûte 1000 cycles — c'est l'instruction la plus chère.</p>
+        </div>
+    </div>
+
+    <div class="collapse-header" onclick="toggleCollapse(this)">
+        <span class="title"><code style="color:var(--cyan)">aff</code> — Afficher un caractère</span>
+        <span class="chevron">▶</span>
+    </div>
+    <div class="collapse-body">
+        <div class="collapse-body-inner">
+            <p>Prend un registre en paramètre. Affiche le caractère dont le code ASCII est la valeur du registre modulo 256. En mode ncurses, le caractère s'affiche dans une zone dédiée. <strong>OCP présent</strong>. Ne modifie pas le carry. L'avance du PC est de 3 (1 opcode + 1 OCP + 1 registre). C'est l'instruction la plus rapide (2 cycles) avec <code>live</code> (10 cycles) — mais <code>aff</code> est rarement utilisée en combat, plutôt pour le debug.</p>
+            <div class="code-wrapper"><div class="code-header"><span class="lang">aff</span></div>
+            <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+            <pre style="display:block"><code><span class="cm">// C</span>
+<span class="kw">void</span> <span class="fn">op_aff</span>(t_vm *vm, t_list *process) {
+    <span class="ty">char</span> c = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>] % <span class="num">256</span>;
+    <span class="fn">write</span>(<span class="num">1</span>, &c, <span class="num">1</span>); <span class="cm">// Affiche le caractère</span>
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+}</code></pre></div>
+        </div>
+    </div>
+
+    <div class="quiz-box">
+        <div class="quiz-title">🎯 Quiz — Les instructions</div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Que fait zjmp si carry = 0 ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">Il saute à l'adresse du paramètre</button>
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">Il ne saute pas, le PC avance de 3</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">Il met carry à 1</button>
+            </div>
+            <div class="qq-explain">zjmp ne saute QUE si carry = 1. Si carry = 0, le PC avance simplement de 3 (1 opcode + 2 octets de paramètre) et l'instruction ne fait rien d'autre.</div>
+        </div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Combien d'octets écrit st en mémoire ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">1 octet</button>
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">4 octets (via store_at)</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">2 octets</button>
+            </div>
+            <div class="qq-explain">st écrit toujours 4 octets via store_at(), même si le registre source contient une petite valeur. Toutes les écritures mémoire en Corewar font 4 octets — il n'y a pas d'écriture sur 1 octet.</div>
+        </div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Quelle est la différence entre fork et lfork ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">fork applique IDX_MOD, lfork non</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">lfork est plus rapide</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">lfork crée 2 processus au lieu d'1</button>
+            </div>
+            <div class="qq-explain">fork applique IDX_MOD au paramètre (limitant le saut à ±512), tandis que lfork n'applique pas cette restriction, permettant de forker à n'importe quelle adresse. lfork coûte aussi plus de cycles (1000 vs 800).</div>
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -1957,6 +2534,7 @@
     <h3>Exemple complet de compilation</h3>
     <p>Voici le champion "zork" du sujet, avec chaque instruction décodée :</p>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header"><span class="lang">zork.s → bytecode</span></div>
         <pre style="display:block"><code><span class="cm"># Source assembleur</span>
 .name <span class="str">"zork"</span>
@@ -1975,6 +2553,7 @@ live: live  %1
 
     <h3>Calcul de l'OCP en code</h3>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">OCP (ACB)</span>
             <div class="code-tabs">
@@ -2057,6 +2636,7 @@ live: live  %1
     <h3>Résolution des labels</h3>
     <p>Un label référencé par <code>%:label</code> est résolu en calculant la <strong>différence de position</strong> entre l'instruction qui référence et l'instruction cible :</p>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">Label resolution</span>
             <div class="code-tabs">
@@ -2179,6 +2759,7 @@ live: live  %1
 
     <h3>Kill zombies — La différence algorithmique</h3>
     <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
             <span class="lang">kill_zombies</span>
             <div class="code-tabs">
@@ -2211,6 +2792,487 @@ live: live  %1
     }
 }</code></pre>
     </div>
+</div>
+</section>
+
+<!-- Section 10: Syntaxe du .s -->
+<section id="syntaxe" class="reveal">
+<div class="container">
+    <h2><span class="num">10</span> Syntaxe du fichier <code>.s</code></h2>
+    <p>Le fichier <code>.s</code> est le code source en assembleur Corewar. Il suit une syntaxe stricte que l'assembleur doit parser et valider. Voici la référence complète de tout ce que vous pouvez écrire dans un fichier <code>.s</code>.</p>
+
+    <h3>Structure d'un fichier .s</h3>
+    <p>Un fichier <code>.s</code> commence toujours par les directives <code>.name</code> et <code>.comment</code>, suivies du code assembleur. L'ordre est obligatoire : d'abord le nom, puis le commentaire, puis les instructions. Voici un squelette minimal :</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Structure .s</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># Ceci est un commentaire</span>
+.name <span class="str">"zork"</span>           <span class="cm"># Obligatoire — nom du champion (max 128 chars)</span>
+.comment <span class="str">"I'm alive"</span>   <span class="cm"># Obligatoire — description (max 2048 chars)</span>
+
+<span class="cm"># Le code commence ici</span>
+l2:  sti   r1, %:live, %1
+     and   r1, %0, r1
+live: live  %1
+     zjmp  %:live</code></pre>
+    </div>
+
+    <h3>Les directives</h3>
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Directive</th><th>Syntaxe</th><th>Limite</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>.name</code></td><td><code>.name "texte"</code></td><td>128 caractères</td><td>Nom du champion affiché par la VM. Obligatoire.</td></tr>
+                <tr><td><code>.comment</code></td><td><code>.comment "texte"</code></td><td>2048 caractères</td><td>Description du champion. Obligatoire.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Erreurs fréquentes sur les directives</div>
+        <div class="wb-content">
+            Les guillemets sont obligatoires autour du nom et du commentaire. Oublier les guillemets provoque une erreur de parsing. Le nom ne peut pas contenir de guillemet interne. Si le nom dépasse 128 caractères ou le commentaire 2048, l'assembleur doit afficher une erreur.
+        </div>
+    </div>
+
+    <h3>Les labels</h3>
+    <p>Un label est un marqueur de position dans le code. Il permet de référencer une adresse sans connaître sa valeur numérique. Un label se définit avec <code>nom:</code> (deux-points obligatoires) et se référence avec <code>%:nom</code> (paramètre direct) ou <code>:nom</code> (paramètre indirect).</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Labels — Définition et référence</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># Définition</span>
+<span class="mac">loop:</span>          <span class="cm"># Label "loop" défini à cette adresse</span>
+      live  %1
+      sti   r1, %:loop, %1    <span class="cm"># Référence directe → %:loop</span>
+      zjmp  %:loop             <span class="cm"># Saut vers le label "loop"</span>
+
+<span class="cm"># Un label peut aussi être sur la même ligne qu'une instruction</span>
+<span class="mac">end:</span>  live  %0               <span class="cm"># Label "end" + instruction live</span></code></pre>
+    </div>
+
+    <h4>Règles de nommage des labels</h4>
+    <p>Les caractères autorisés dans un label sont : les lettres minuscules et majuscules (<code>a-z</code>, <code>A-Z</code>), les chiffres (<code>0-9</code>), et le tiret bas (<code>_</code>). Un label ne peut pas commencer par un chiffre. Le label <code>r1</code> est ambigu avec le nom de registre — la plupart des implémentations l'interdisent.</p>
+
+    <h3>Les types de paramètres</h3>
+    <p>Chaque instruction attend des paramètres d'un certain type. Voici les 3 types possibles :</p>
+
+    <div class="encoding-demo">
+        <div class="encoding-row">
+            <div><div class="enc-token enc-reg">r1 … r16</div><div class="endian-label">Registre</div></div>
+            <div style="color:var(--text-muted);font-size:0.85rem;max-width:200px">Valeur stockée dans un des 16 registres du processus. Codé sur 1 octet.</div>
+        </div>
+        <div class="encoding-row">
+            <div><div class="enc-token enc-dir">%42 ou %:label</div><div class="endian-label">Direct</div></div>
+            <div style="color:var(--text-muted);font-size:0.85rem;max-width:200px">Valeur immédiate. 4 octets (sauf si <code>dir_size=2</code>). Le <code>%</code> est obligatoire.</div>
+        </div>
+        <div class="encoding-row">
+            <div><div class="enc-token enc-ind">4 ou :label</div><div class="endian-label">Indirect</div></div>
+            <div style="color:var(--text-muted);font-size:0.85rem;max-width:200px">Adresse relative au PC. Codé sur 2 octets. Pas de préfixe <code>%</code>.</div>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">💡 Direct vs Indirect — Le piège du %</div>
+        <div class="ib-content">
+            Le préfixe <code>%</code> fait toute la différence : <code>%42</code> est la <strong>valeur 42</strong> (direct), tandis que <code>42</code> seul est l'<strong>adresse relative 42</strong> (indirect). En notation binaire de l'OCP : direct = <code>10</code>, indirect = <code>11</code>. Oublier le <code>%</code> change complètement le comportement de l'instruction !
+        </div>
+    </div>
+
+    <h3>Séparateurs et commentaires</h3>
+    <p>Les règles de formatage sont simples mais strictes :</p>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li>Les paramètres d'une instruction sont séparés par <strong>des virgules</strong> : <code>sti r1, %:live, %1</code></li>
+        <li>Les commentaires commencent par <code>#</code> et vont jusqu'en fin de ligne</li>
+        <li>Les labels se terminent par <code>:</code> et peuvent être seuls sur une ligne ou suivis d'une instruction</li>
+        <li>Les lignes vides et les espaces sont ignorés</li>
+        <li>Un label peut apparaître <strong>avant</strong> sa référence (forward reference) : l'assembleur fait deux passes</li>
+    </ul>
+
+    <h3>Taille des instructions en mémoire</h3>
+    <p>Chaque instruction occupe un nombre variable d'octets selon ses paramètres. La formule est : <strong>1 (opcode) + 1 (OCP, si applicable) + taille des paramètres</strong>. Voici la taille de chaque type de paramètre :</p>
+
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Type</th><th>Taille</th><th>Remarque</th></tr></thead>
+            <tbody>
+                <tr><td>Registre (<code>r</code>)</td><td>1 octet</td><td>Valeur 1-16</td></tr>
+                <tr><td>Direct (<code>%</code>) — dir_size=4</td><td>4 octets</td><td>live, ld, st, add, sub, and, or, xor, lld, aff</td></tr>
+                <tr><td>Direct (<code>%</code>) — dir_size=2</td><td>2 octets</td><td>zjmp, ldi, sti, fork, lldi, lfork</td></tr>
+                <tr><td>Indirect</td><td>2 octets</td><td>Toujours 2 octets</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Exemple de calcul de taille</h3>
+    <p>Pour <code>sti r1, %:live, %1</code> : opcode (1) + OCP (1) + r1 (1) + %:live direct/2 (2) + %1 direct/2 (2) = <strong>7 octets</strong>. Pour <code>live %1</code> : opcode (1) + %1 direct/4 (4) = <strong>5 octets</strong> (pas d'OCP).</p>
+
+</div>
+</section>
+
+<!-- Section 11: Erreurs courantes & Pièges -->
+<section id="erreurs" class="reveal">
+<div class="container">
+    <h2><span class="num">11</span> Pièges & Erreurs courantes</h2>
+    <p>Le projet Corewar regorge de subtilités qui peuvent faire perdre des heures de debug. Voici les pièges les plus fréquents, classés par catégorie, avec pour chacun l'erreur, l'explication et la correction.</p>
+
+    <h3>Pièges sur les instructions</h3>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>sti</code> ajoute +3 à l'adresse</div>
+        <div class="wb-content">
+            Quand <code>sti</code> calcule l'adresse de stockage, il fait <code>addr = (p2 + p3) % IDX_MOD</code>. Mais <code>store_at</code> écrit 4 octets en décrémentant, donc le poids faible va à l'adresse de départ et les octets suivants aux adresses précédentes. C'est pourquoi dans le code C, on fait <code>store_at(vm, process, val, PC + (p2 + p3) % IDX_MOD + 3)</code>. Le <strong>+3</strong> est essentiel : sans lui, l'écriture se ferait 3 octets trop tôt et écraserait les adresses précédentes.
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>zjmp</code> ne saute QUE si carry = 1</div>
+        <div class="wb-content">
+            Beaucoup d'étudiants oublient que <code>zjmp</code> ne fait un saut que si le carry est à 1. Si carry = 0, le PC avance simplement de 3 (1 opcode + 2 octets de paramètre) et l'instruction ne fait rien d'autre. Pour mettre le carry à 1, il faut qu'une opération précédente ait donné un résultat de 0 (par exemple <code>and r1, r1, r2</code> si r1 == r2, ou <code>sub r1, r1, r2</code> si r1 == r2).
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>st</code> écrit 4 octets, pas 1</div>
+        <div class="wb-content">
+            L'instruction <code>st r1, 42</code> (stockage indirect) écrit la valeur de r1 sur <strong>4 octets</strong> via <code>store_at</code>, pas sur 1 octet. Cela signifie que les 4 adresses consécutives à partir de l'adresse calculée seront écrasées. Si vous vouliez écrire un seul octet, ce n'est pas possible directement en Corewar — toutes les écritures mémoire font 4 octets.
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Un opcode invalide fait avancer le PC de 1</div>
+        <div class="wb-content">
+            Si le processus lit un octet qui n'est pas un opcode valide (0, ou > 16), il n'initialise pas <code>ir</code> et avance simplement le PC de 1. Mais attention : <strong>aucun cycle n'est consommé</strong> pour les opcodes invalides (duration reste à 0). Le processus essaiera de lire l'octet suivant au cycle suivant. Cela signifie qu'un champion peut "traverser" une zone de données sans être bloqué.
+        </div>
+    </div>
+
+    <h3>Pièges sur l'encodage</h3>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ OCP invalide → instruction ignorée mais PC avance</div>
+        <div class="wb-content">
+            Quand la VM valide l'OCP et trouve que les types de paramètres ne correspondent pas à ce qu'attend l'opcode, l'instruction est ignorée. Mais le PC avance quand même du nombre d'octets que l'instruction aurait occupé si elle était valide. C'est-à-dire que la VM calcule la taille théorique de l'instruction à partir de l'OCP (même invalide) et avance le PC d'autant. Ne pas faire cela causerait un décalage mémoire.
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Les valeurs direct de taille 2 sont signées</div>
+        <div class="wb-content">
+            Pour les instructions <code>zjmp</code>, <code>ldi</code>, <code>sti</code>, <code>fork</code>, <code>lldi</code>, <code>lfork</code>, le paramètre direct est codé sur 2 octets et est <strong>signé</strong>. Cela signifie que <code>0xFFFB</code> est interprété comme <code>-5</code>, pas <code>65531</code>. Dans le code C, il faut utiliser un cast <code>(int16_t)</code> pour interpréter correctement la valeur. Oublier le signe est une source majeure de bugs.
+        </div>
+    </div>
+
+    <h3>Pièges sur la mémoire</h3>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>mem_mod</code> avec des nombres négatifs</div>
+        <div class="wb-content">
+            En C, l'opérateur <code>%</code> sur un entier négatif donne un résultat négatif (ou nul). Par exemple, <code>-1 % 4096</code> vaut <code>-1</code> en C, pas <code>4095</code>. C'est pourquoi <code>mem_mod</code> doit ajouter <code>MEM_SIZE</code> si le résultat est négatif. En Rust, <code>rem_euclid()</code> gère cela correctement. Oublier cette correction en C est un bug classique qui fait planter la VM avec un segfault (accès hors limites du tableau).
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ L'adresse de <code>ldi</code>/<code>sti</code> est relative au PC</div>
+        <div class="wb-content">
+            L'adresse calculée par <code>ldi</code> et <code>sti</code> est <strong>relative au PC</strong> du processus, pas absolue. Si le PC est à l'adresse 100 et que la somme des paramètres est 50, on lit à l'adresse <code>mem_mod(100 + 50)</code> = 150, pas à l'adresse 50. C'est un piège car dans le fichier <code>.s</code>, on écrit <code>sti r1, %10, %5</code> qui donne une adresse relative, pas absolue.
+        </div>
+    </div>
+
+    <h3>Pièges sur les forks</h3>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>fork</code> vs <code>lfork</code> — IDX_MOD ou pas ?</div>
+        <div class="wb-content">
+            <code>fork</code> applique <code>IDX_MOD</code> au paramètre, limitant le saut à ±512. <code>lfork</code> n'applique <strong>pas</strong> IDX_MOD, permettant de fork n'importe où. La confusion entre les deux est fréquente. Si votre champion a besoin de fork loin dans l'arène, <code>fork</code> ne le permettra pas — utilisez <code>lfork</code>.
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Le nouveau processus hérite du carry et de TOUS les registres</div>
+        <div class="wb-content">
+            Quand un fork crée un nouveau processus, celui-ci hérite de <strong>tous les registres</strong> du parent (y compris r1 qui contient le numéro du joueur) et du <strong>flag carry</strong>. Seul le PC diffère. Cela signifie que le processus fils peut immédiatement utiliser les registres du parent sans les recharger.
+        </div>
+    </div>
+
+    <h3>Pièges sur le cycle de vie</h3>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Les cycles sont TOUJOURS consommés, même pour les instructions invalides</div>
+        <div class="wb-content">
+            Quand un opcode valide est lu, le processus attend le nombre de cycles de l'instruction avant de l'exécuter. Si l'instruction s'avère invalide (mauvais OCP, mauvais registre), les cycles ont <strong>déjà été consommés</strong>. Le PC avance mais l'instruction n'a aucun effet. Il n'y a pas de "remboursement" de cycles.
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <div class="wb-title">⚠️ <code>live</code> ne sauve pas le processus — il signale un joueur en vie</div>
+        <div class="wb-content">
+            L'instruction <code>live %N</code> signale que le joueur numéro <code>N</code> est en vie. Elle ne <strong>sauve pas</strong> le processus qui l'exécute. Un processus est sauvé si <strong>n'importe quel</strong> processus du même joueur fait un <code>live</code> avant la vérification de <code>CYCLE_TO_DIE</code>. Le paramètre est le numéro du joueur (négatif dans le sujet original : <code>live %-1</code> pour le joueur 1).
+        </div>
+    </div>
+
+    <div class="quiz-box">
+        <div class="quiz-title">🎯 Quiz — Pièges & Erreurs</div>
+        <div class="quiz-q" data-answer="1">
+            <div class="qq-text">Pourquoi sti ajoute-t-il +3 à l'adresse calculée ?</div>
+            <div class="qq-options">
+                <button class="quiz-opt" data-correct="1" onclick="checkQuiz(this)">Parce que store_at écrit en décrémentant, il faut compenser</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">C'est un offset de sécurité</button>
+                <button class="quiz-opt" data-correct="0" onclick="checkQuiz(this)">Pour aligner sur 4 octets</button>
+            </div>
+            <div class="qq-explain">store_at() écrit le poids faible à l'adresse de départ puis décrémente. Si on veut que les 4 octets soient à partir de l'adresse calculée, il faut démarrer l'écriture 3 adresses plus loin pour que le décrément place les octets aux bonnes positions.</div>
+        </div>
+    </div>
+
+</div>
+</section>
+
+<!-- Section 12: Ligne de commande -->
+<section id="cli" class="reveal">
+<div class="container">
+    <h2><span class="num">12</span> Ligne de commande</h2>
+    <p>Voici comment compiler et exécuter les différentes parties du projet. Les commandes sont données pour les implémentations C et Rust.</p>
+
+    <h3>Assembleur — Compiler un champion</h3>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Compilation .s → .cor</span><div class="code-tabs"><button class="code-tab active" onclick="showCode(this,'cli-asm-c')">C</button><button class="code-tab" onclick="showCode(this,'cli-asm-r')">Rust</button></div></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre id="cli-asm-c" class="active"><code><span class="cm"># Compiler l'assembleur C</span>
+make -C assembler
+
+<span class="cm"># Utiliser l'assembleur</span>
+./assembler/champion.s          <span class="cm"># → champion.cor</span>
+./assembler/pony.s              <span class="cm"># → pony.cor</span></code></pre>
+        <pre id="cli-asm-r"><code><span class="cm"># Compiler l'assembleur Rust</span>
+cargo build --release -p corewar-asm
+
+<span class="cm"># Utiliser l'assembleur</span>
+./target/release/corewar-asm champion.s   <span class="cm"># → champion.cor</span>
+./target/release/corewar-asm pony.s       <span class="cm"># → pony.cor</span></code></pre>
+    </div>
+
+    <h3>Machine Virtuelle — Lancer une partie</h3>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Exécution corewar</span><div class="code-tabs"><button class="code-tab active" onclick="showCode(this,'cli-vm-c')">C</button><button class="code-tab" onclick="showCode(this,'cli-vm-r')">Rust</button></div></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre id="cli-vm-c" class="active"><code><span class="cm"># Lancer une partie avec 2 champions</span>
+./corewar champion1.cor champion2.cor
+
+<span class="cm"># Forcer le numéro d'un joueur</span>
+./corewar -n 1 champion1.cor -n 2 champion2.cor
+
+<span class="cm"># Mode affichage ncurses (visuel)</span>
+./corewar -d champion1.cor champion2.cor
+
+<span class="cm"># Afficher la mémoire après N cycles (dump)</span>
+./corewar -dump 1000 champion1.cor champion2.cor
+
+<span class="cm"># Jusqu'à 4 champions</span>
+./corewar champ1.cor champ2.cor champ3.cor champ4.cor</code></pre>
+        <pre id="cli-vm-r"><code><span class="cm"># Compiler la VM Rust</span>
+cargo build --release -p corewar-vm
+
+<span class="cm"># Lancer une partie</span>
+./target/release/corewar-vm champion1.cor champion2.cor
+
+<span class="cm"># Avec options</span>
+./target/release/corewar-vm -n 1 champ1.cor -n 2 champ2.cor
+
+<span class="cm"># Dump mémoire</span>
+./target/release/corewar-vm --dump 1000 champ1.cor champ2.cor</code></pre>
+    </div>
+
+    <h3>Désassembleur — Décoder un .cor</h3>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Désassemblage .cor → .s</span><div class="code-tabs"><button class="code-tab active" onclick="showCode(this,'cli-dis-c')">C</button><button class="code-tab" onclick="showCode(this,'cli-dis-r')">Rust</button></div></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre id="cli-dis-c" class="active"><code><span class="cm"># Désassembler un champion compilé</span>
+./disassembler champion.cor     <span class="cm"># → affiche le code source</span></code></pre>
+        <pre id="cli-dis-r"><code><span class="cm"># Désassembler en Rust</span>
+cargo run --release -p corewar-disasm champion.cor</code></pre>
+    </div>
+
+    <h3>Options de la VM</h3>
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Option</th><th>Paramètre</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>-n N</code></td><td>Numéro du joueur</td><td>Force le numéro du prochain champion (1-4). Si absent, numérotation automatique.</td></tr>
+                <tr><td><code>-dump N</code></td><td>Nombre de cycles</td><td>Dump la mémoire après N cycles et quitte. Utile pour le debug.</td></tr>
+                <tr><td><code>-d</code></td><td>—</td><td>Active le mode visuel ncurses. Affiche l'arène, les processus, les informations en temps réel.</td></tr>
+                <tr><td><code>--stealth</code></td><td>—</td><td>Mode furtif : le champion n'apparaît pas dans le visuel ncurses (s'il est implémenté).</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">💡 Astuce : chaîner asm + VM en une commande</div>
+        <div class="ib-content">
+            Vous pouvez compiler et lancer en une seule ligne : <code>./corewar $(./assembler/champion.s && echo champion.cor) other.cor</code>. Ou en Rust : <code>cargo run -p corewar-vm -- $(cargo run -p corewar-asm -- champion.s 2>/dev/null && echo champion.cor) other.cor</code>. Cela accélère considérablement le cycle de développement.
+        </div>
+    </div>
+
+</div>
+</section>
+
+<!-- Section 13: Stratégie de champion -->
+<section id="strategie" class="reveal">
+<div class="container">
+    <h2><span class="num">13</span> Stratégie — Écrire un champion gagnant</h2>
+    <p>Comprendre la mécanique du Corewar est une chose, écrire un champion qui gagne en est une autre. Cette section présente les stratégies classiques, les patterns de code récurrents, et des exemples concrets de champions commentés.</p>
+
+    <h3>Les 3 grands archétypes</h3>
+    <div class="arena-three-layers">
+        <div class="layer-card">
+            <div class="layer-icon" style="color:var(--cyan)">🛡️</div>
+            <div class="layer-title">Le Survivant</div>
+            <div class="layer-desc">Stratégie défensive : faire des <code>live</code> en boucle et éviter les conflits. Simple mais vulnérable aux bombers. Le champion "zork" du sujet est un survivant basique.</div>
+        </div>
+        <div class="layer-card">
+            <div class="layer-icon" style="color:var(--pink)">💣</div>
+            <div class="layer-title">Le Bomber</div>
+            <div class="layer-desc">Stratégie agressive : écrire des <code>live %0</code> (ou d'autres opcodes invalides) à travers toute la mémoire pour écraser le code adverse. Utilise <code>sti</code> + <code>zjmp</code> pour avancer.</div>
+        </div>
+        <div class="layer-card">
+            <div class="layer-icon" style="color:var(--violet)">🧬</div>
+            <div class="layer-title">Le Forker</div>
+            <div class="layer-desc">Stratégie d'expansion : créer de multiples processus via <code>fork</code> pour occuper l'arène. Plus difficile à tuer car il y a plusieurs processus, mais consomme plus de cycles.</div>
+        </div>
+    </div>
+
+    <h3>Champion 1 : Le survivant minimal</h3>
+    <p>Le champion le plus simple possible : une boucle infinie de <code>live</code>. Il ne fait rien d'autre que signaler qu'il est en vie. C'est la base de tout champion.</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">survivor.s — Le survivant minimal</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># survivor.s — Le champion le plus simple possible</span>
+.name <span class="str">"survivor"</span>
+.comment <span class="str">"Just stay alive"</span>
+
+<span class="mac">loop:</span>
+      live  %1           <span class="cm"># Signale que le joueur 1 est en vie</span>
+      zjmp  %:loop       <span class="cm"># Saut en arrière vers "loop" (carry=1 après live)</span></code></pre>
+    </div>
+
+    <p><strong>Comment ça marche</strong> : <code>live %1</code> signale le joueur 1 et met le carry à… non, <code>live</code> ne modifie pas le carry ! Ce champion a un problème : après <code>live</code>, le carry n'est pas garanti à 1, donc <code>zjmp</code> peut ne pas sauter. Voici la version corrigée :</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">survivor_v2.s — Version corrigée</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># survivor_v2.s — Survivant avec carry garanti</span>
+.name <span class="str">"survivor"</span>
+.comment <span class="str">"Stay alive with carry control"</span>
+
+<span class="mac">loop:</span>
+      live  %1           <span class="cm"># Signale le joueur 1</span>
+      and   r1, r1, r1   <span class="cm"># r1 = r1 & r1 → ne change pas r1, mais carry = 0 si r1 = 0</span>
+      zjmp  %:loop       <span class="cm"># Saute si carry = 1 (r1 != 0, ce qui est le cas car r1 = -1)</span></code></pre>
+    </div>
+
+    <p>Pourquoi <code>and r1, r1, r1</code> fonctionne : le registre <code>r1</code> contient le numéro du joueur (négatif, donc non nul). L'opération <code>r1 & r1 = r1</code> ne change pas la valeur mais met le carry à 0 si le résultat est 0. Comme r1 = -1 (ou un autre nombre négatif), le résultat n'est pas 0, donc carry = 0… Attendez, c'est l'inverse ! <code>and</code> met carry à 1 si le résultat est 0. Il faut donc une autre approche :</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">survivor_v3.s — Version robuste</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># survivor_v3.s — Survivant robuste avec xor pour carry</span>
+.name <span class="str">"survivor"</span>
+.comment <span class="str">"Stay alive — guaranteed loop"</span>
+
+<span class="mac">loop:</span>
+      live  %1           <span class="cm"># Signale le joueur 1</span>
+      ld    %0, r2       <span class="cm"># Charge 0 dans r2 → carry = 1 (résultat = 0)</span>
+      zjmp  %:loop       <span class="cm"># Saute car carry = 1 ✓</span></code></pre>
+    </div>
+
+    <p>Cette version est fiable : <code>ld %0, r2</code> charge la valeur 0 dans r2, ce qui met le carry à 1 (car le résultat est 0). Ensuite <code>zjmp</code> saute car carry = 1. La boucle est garantie.</p>
+
+    <h3>Champion 2 : Le bomber basique</h3>
+    <p>Un bomber écrit des données dans l'arène pour écraser le code adverse. Le pattern classique : écrire <code>live %0</code> (opcode 0x01 suivi de 0x00 0x00 0x00) à des adresses régulières, avancer le pointeur, et boucler.</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">bomber.s — Le bomber basique</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># bomber.s — Écrase la mémoire adverse</span>
+.name <span class="str">"bomber"</span>
+.comment <span class="str">"Death from above"</span>
+
+<span class="mac">loop:</span>
+      sti   r1, %:bomb, %0    <span class="cm"># Écrit r1 (numéro du joueur, négatif) à l'adresse bomb</span>
+      add   r2, %1, r2        <span class="cm"># Avance le pointeur de bomb de 1 (r2 commence à 0)</span>
+<span class="cm"># Problem: on ne peut pas modifier un label dynamiquement.</span>
+<span class="cm"># Voici la vraie approche :</span></code></pre>
+    </div>
+
+    <p>Le bomber ci-dessus a un problème conceptuel : on ne peut pas modifier dynamiquement un label en assembleur Corewar. La vraie technique de bombing utilise <code>sti</code> avec un registre comme compteur qui s'incrémente :</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">bomber_v2.s — Bomber fonctionnel</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># bomber_v2.s — Bomber avec compteur</span>
+.name <span class="str">"bomber"</span>
+.comment <span class="str">"Carpet bombing"</span>
+
+<span class="cm"># r1 = numéro du joueur (négatif)</span>
+<span class="cm"># r2 = offset de bombing (commence à une distance)</span>
+
+      ld    %0, r2         <span class="cm"># r2 = 0 (carry = 1)</span>
+<span class="mac">loop:</span>
+      live  %1             <span class="cm"># Stay alive !</span>
+      sti   r1, r2, %50   <span class="cm"># Écrit r1 à l'adresse PC + r2 + 50</span>
+      add   r2, %50, r2   <span class="cm"># Avance r2 de 50 (spacing entre les bombes)</span>
+      ld    %0, r3         <span class="cm"># Met carry à 1 pour zjmp</span>
+      zjmp  %:loop         <span class="cm"># Boucle infinie</span></code></pre>
+    </div>
+
+    <p><strong>Explication ligne par ligne</strong> : <code>ld %0, r2</code> initialise le compteur à 0 et met carry=1. Dans la boucle, <code>live %1</code> signale le joueur. <code>sti r1, r2, %50</code> écrit la valeur de r1 (le numéro du joueur négatif, qui servira de "poison") à l'adresse PC+r2+50. <code>add r2, %50, r2</code> avance le compteur de 50 pour la prochaine bombe. <code>ld %0, r3</code> remet carry à 1, puis <code>zjmp</code> boucle.</p>
+
+    <h3>Champion 3 : Le forker</h3>
+    <p>Un forker crée des processus supplémentaires pour occuper l'arène. Plus il y a de processus, plus le champion est résistant — mais aussi plus il consomme de cycles par tour.</p>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">forker.s — Fork bomb basique</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># forker.s — Crée des processus partout</span>
+.name <span class="str">"forker"</span>
+.comment <span class="str">"Multiply and conquer"</span>
+
+<span class="mac">loop:</span>
+      live  %1             <span class="cm"># Stay alive</span>
+      fork  %:loop         <span class="cm"># Crée un nouveau processus à "loop"</span>
+      ld    %0, r2         <span class="cm"># carry = 1</span>
+      zjmp  %:loop         <span class="cm"># Boucle</span></code></pre>
+    </div>
+
+    <p><strong>Attention</strong> : ce forker est une "fork bomb" — il crée des processus de manière exponentielle. Chaque cycle, le nombre de processus double. Au bout de quelques milliers de cycles, la VM ralentit considérablement car elle doit exécuter des milliers de processus. La plupart des sujets imposent une limite (pas plus de processus qu'un certain seuil), ou bien la diminution de <code>CYCLE_TO_DIE</code> finit par tuer les processus excédentaires.</p>
+
+    <h3>Conseils stratégiques</h3>
+
+    <div class="intro-grid">
+        <div class="intro-card">
+            <div class="icon">🎯</div>
+            <div class="title">Toujours faire des live</div>
+            <div class="desc">C'est la règle #1. Un champion qui ne fait pas de <code>live</code> meurt. Mettez un <code>live %N</code> dans chaque boucle, où N est votre numéro de joueur.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">📏</div>
+            <div class="title">Optimisez la taille du code</div>
+            <div class="desc">Un champion plus petit tient dans un espace plus restreint et est plus dur à écraser. Minimisez le nombre d'instructions et utilisez les registres plutôt que la mémoire.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">🔄</div>
+            <div class="title">Maîtrisez le carry</div>
+            <div class="desc">Le carry est votre seul outil de contrôle de flux. Apprenez à le mettre à 0 ou 1 à volonté : <code>and rX, rX, rX</code> (0→carry=1, non-0→carry=0), <code>ld %0, rY</code> (carry=1).</div>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">💡 La méta-stratégie : combiner les archétypes</div>
+        <div class="ib-content">
+            Les meilleurs champions combinent les trois archétypes : un processus principal qui fait des <code>live</code> (survie), des processus bombers qui écrasent le code adverse (attaque), et des forks pour créer des processus de remplacement si les bombers se font tuer (résilience). Le pattern classique est : fork → le parent continue à bomber, l'enfant fait des live.
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -2748,6 +3810,264 @@ function setEndianView(mode, btn) {
     }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
     reveals.forEach(el => observer.observe(el));
 })();
+
+/* ═══════════════════════════════════════
+   PHASE 1: UX Improvements
+   ═══════════════════════════════════════ */
+
+// Progress bar
+window.addEventListener('scroll', function() {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    const bar = document.getElementById('progress-bar');
+    if (bar) bar.style.width = pct + '%';
+
+    // Back to top visibility
+    const btt = document.getElementById('back-to-top');
+    if (btt) btt.classList.toggle('visible', window.scrollY > 400);
+
+    // Sidebar scrollspy
+    updateSidebarActive();
+}, { passive: true });
+
+// Sidebar scrollspy
+function updateSidebarActive() {
+    const links = document.querySelectorAll('#sidebar .sb-link');
+    let current = '';
+    document.querySelectorAll('section[id]').forEach(s => {
+        if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    // Also check for h3 ids within sections
+    document.querySelectorAll('h3[id]').forEach(h => {
+        if (window.scrollY >= h.offsetTop - 120) current = h.id;
+    });
+    links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+    });
+}
+
+// Mobile sidebar toggle
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Close sidebar on link click (mobile)
+document.querySelectorAll('#sidebar .sb-link').forEach(l => {
+    l.addEventListener('click', () => {
+        if (window.innerWidth <= 1100) {
+            document.getElementById('sidebar').classList.remove('open');
+        }
+    });
+});
+
+// Copy code
+function copyCode(btn) {
+    const wrapper = btn.closest('.code-wrapper');
+    const pre = wrapper.querySelector('pre.active') || wrapper.querySelector('pre[style*="block"]') || wrapper.querySelector('pre');
+    if (!pre) return;
+    const text = pre.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✓ Copié';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
+    });
+}
+
+// Search
+const searchData = [];
+function buildSearchIndex() {
+    document.querySelectorAll('section[id]').forEach(section => {
+        const h2 = section.querySelector('h2');
+        const sectionName = h2 ? h2.textContent.trim() : section.id;
+        section.querySelectorAll('p, li, h3, h4, code, .collapse-header .title').forEach(el => {
+            const text = el.textContent.trim();
+            if (text.length > 10) {
+                searchData.push({ text: text.substring(0, 200), section: sectionName, id: section.id, el: el });
+            }
+        });
+    });
+}
+buildSearchIndex();
+
+let searchSelectedIdx = -1;
+
+function openSearch() {
+    document.getElementById('search-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('search-input').focus(), 100);
+}
+
+function closeSearch() {
+    document.getElementById('search-overlay').classList.remove('open');
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+    searchSelectedIdx = -1;
+}
+
+function doSearch(query) {
+    const results = document.getElementById('search-results');
+    if (query.length < 2) { results.innerHTML = ''; return; }
+    const q = query.toLowerCase();
+    const matches = searchData.filter(d => d.text.toLowerCase().includes(q)).slice(0, 15);
+    searchSelectedIdx = -1;
+
+    if (matches.length === 0) {
+        results.innerHTML = '<div class="search-hint">Aucun résultat pour "' + query + '"</div>';
+        return;
+    }
+
+    results.innerHTML = matches.map((m, i) => {
+        const highlighted = m.text.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<mark>$1</mark>');
+        return '<div class="search-result" data-idx="' + i + '" data-section="' + m.id + '" onclick="goToSearchResult(\'' + m.id + '\')">' +
+            '<div class="sr-section">' + m.section + '</div>' +
+            '<div class="sr-text">' + highlighted.substring(0, 150) + '…</div></div>';
+    }).join('');
+}
+
+function goToSearchResult(sectionId) {
+    closeSearch();
+    const el = document.getElementById(sectionId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Keyboard shortcuts for search
+document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+    if (e.key === 'Escape') closeSearch();
+
+    if (document.getElementById('search-overlay').classList.contains('open')) {
+        const items = document.querySelectorAll('.search-result');
+        if (e.key === 'ArrowDown') { e.preventDefault(); searchSelectedIdx = Math.min(searchSelectedIdx + 1, items.length - 1); highlightSearchItem(items); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); searchSelectedIdx = Math.max(searchSelectedIdx - 1, 0); highlightSearchItem(items); }
+        if (e.key === 'Enter' && searchSelectedIdx >= 0 && items[searchSelectedIdx]) {
+            const section = items[searchSelectedIdx].dataset.section;
+            goToSearchResult(section);
+        }
+    }
+});
+
+function highlightSearchItem(items) {
+    items.forEach((it, i) => it.style.background = i === searchSelectedIdx ? 'rgba(0,255,136,0.1)' : '');
+    if (items[searchSelectedIdx]) items[searchSelectedIdx].scrollIntoView({ block: 'nearest' });
+}
+
+// Quiz
+function checkQuiz(btn) {
+    const question = btn.closest('.quiz-q');
+    const options = question.querySelectorAll('.quiz-opt');
+    const explain = question.querySelector('.qq-explain');
+    const isCorrect = btn.dataset.correct === '1';
+
+    options.forEach(opt => {
+        opt.classList.add('disabled');
+        if (opt.dataset.correct === '1') opt.classList.add('correct');
+    });
+
+    if (!isCorrect) btn.classList.add('wrong');
+    if (explain) explain.style.display = 'block';
+}
+
+// Filterable instruction table
+function filterInstructions(btn) {
+    const filter = btn.dataset.filter;
+    const bar = btn.closest('.filter-bar');
+    bar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const table = document.querySelector('.op-table');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        if (filter === 'all') {
+            row.classList.remove('filtered-out');
+        } else {
+            const cats = row.dataset.cats || '';
+            row.classList.toggle('filtered-out', !cats.includes(filter));
+        }
+    });
+}
+
+// CYCLE_TO_DIE animation
+let ctdState = { ctd: 1536, checks: 0, maxChecks: 0, nlives: 25, cycle: 0, running: false, timer: null, procs: 4 };
+
+function ctdReset() {
+    if (ctdState.timer) clearInterval(ctdState.timer);
+    ctdState = { ctd: 1536, checks: 0, maxChecks: 0, nlives: 25, cycle: 0, running: false, timer: null, procs: 4 };
+    document.getElementById('ctdLog').innerHTML = '';
+    ctdRender();
+}
+
+function ctdRender() {
+    const bar = document.getElementById('ctdBar');
+    const pct = Math.max(0, (ctdState.ctd / 1536) * 100);
+    bar.style.width = Math.max(4, pct) + '%';
+    bar.textContent = ctdState.ctd;
+    bar.className = 'ctd-bar ' + (pct > 60 ? 'ctd-green' : pct > 35 ? 'ctd-yellow' : pct > 15 ? 'ctd-orange' : 'ctd-red');
+
+    document.getElementById('ctdCycle').textContent = ctdState.cycle;
+    document.getElementById('ctdValue').textContent = ctdState.ctd;
+    document.getElementById('ctdChecks').textContent = ctdState.maxChecks;
+    document.getElementById('ctdProcs').textContent = ctdState.procs;
+}
+
+function ctdStep() {
+    const log = document.getElementById('ctdLog');
+    ctdState.cycle += ctdState.ctd;
+    ctdState.checks++;
+    ctdState.maxChecks++;
+
+    // Simulate: random chance of enough lives (decreases as game progresses)
+    const enoughLives = Math.random() < 0.6;
+    const nlives = enoughLives ? 21 + Math.floor(Math.random() * 10) : Math.floor(Math.random() * 15);
+
+    if (enoughLives || ctdState.checks >= 10) {
+        const oldCtd = ctdState.ctd;
+        ctdState.ctd = Math.max(0, ctdState.ctd - 50);
+        const reason = enoughLives ? '<span class="log-accel">⚡ nlives=' + nlives + ' ≥ 21 → CYCLE_DELTA (-50)</span>' : '<span class="log-accel">⏰ MAX_CHECKS (10) atteint → -50 forcé</span>';
+        log.innerHTML += '<div class="log-check">Check #' + ctdState.maxChecks + ' @cycle ' + ctdState.cycle + ' — ' + reason + ' → CTD: ' + oldCtd + ' → ' + ctdState.ctd + '</div>';
+        ctdState.checks = 0;
+
+        // Simulate process death
+        if (Math.random() < 0.3 && ctdState.procs > 1) ctdState.procs--;
+    } else {
+        log.innerHTML += '<div class="log-check">Check #' + ctdState.maxChecks + ' @cycle ' + ctdState.cycle + ' — nlives=' + nlives + ' < 21, checks consécutifs: ' + ctdState.checks + '/10</div>';
+    }
+
+    if (ctdState.ctd <= 0) {
+        ctdState.ctd = 0;
+        log.innerHTML += '<div class="log-death">💀 CYCLE_TO_DIE = 0 — Tous les processus sont tués. Fin de partie !</div>';
+        if (ctdState.timer) { clearInterval(ctdState.timer); ctdState.running = false; }
+        document.getElementById('ctdPlayBtn').innerHTML = '<span class="anim-icon">▶</span> Simuler';
+    }
+
+    log.scrollTop = log.scrollHeight;
+    ctdRender();
+}
+
+function ctdPlay() {
+    const btn = document.getElementById('ctdPlayBtn');
+    if (ctdState.running) {
+        clearInterval(ctdState.timer);
+        ctdState.running = false;
+        btn.innerHTML = '<span class="anim-icon">▶</span> Simuler';
+    } else {
+        if (ctdState.ctd <= 0) ctdReset();
+        ctdState.running = true;
+        btn.innerHTML = '<span class="anim-icon">⏸</span> Pause';
+        ctdState.timer = setInterval(() => {
+            if (ctdState.ctd <= 0) {
+                clearInterval(ctdState.timer);
+                ctdState.running = false;
+                btn.innerHTML = '<span class="anim-icon">▶</span> Simuler';
+                return;
+            }
+            ctdStep();
+        }, 600);
+    }
+}
+
+// Initialize CYCLE_TO_DIE animation
+ctdRender();
 </script>
 
 </body>
