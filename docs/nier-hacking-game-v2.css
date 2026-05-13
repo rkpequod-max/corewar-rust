@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   NIER AUTOMATA HACKING GAME – STYLES v4
+   NIER AUTOMATA HACKING GAME – STYLES v5
    Faithful recreation of NieR:Automata hacking minigame
    ═══════════════════════════════════════════════════════ */
 
@@ -74,6 +74,8 @@
     display:block; width:100%; max-width:960px; height:auto;
     background:#E6E6E6; cursor:crosshair;
     border-left:1px solid #333; border-right:1px solid #333;
+    /* Smooth canvas transform reset for glitch */
+    transition: transform 0.05s ease-out;
 }
 
 /* Scanlines — subtle CRT */
@@ -86,7 +88,7 @@
     z-index:2;
 }
 
-/* Damage flash */
+/* Damage flash — stronger red pulse */
 #nh-flash {
     position:absolute; inset:0;
     background:#FF0000; opacity:0;
@@ -303,7 +305,7 @@
 #nier-hack-wrapper:-webkit-full-screen h2 { display:none; }
 
 /* ═══════════════════════════════
-   GLITCH OVERLAY
+   GLITCH OVERLAY — canvas distortion + chromatic aberration
    ═══════════════════════════════ */
 #nh-glitch {
     position: absolute; inset: 0;
@@ -312,7 +314,7 @@
 }
 
 /* ═══════════════════════════════
-   LEVEL TRANSITION
+   LEVEL TRANSITION — cinematic white flash + scan line sweep
    ═══════════════════════════════ */
 #nh-transition {
     position: absolute; inset: 0;
@@ -322,56 +324,41 @@
     background: #FFF;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s;
+    overflow: hidden;
     font-family: 'Courier New', monospace;
 }
 
 /* ═══════════════════════════════
-   POD 042 DIALOGUE
+   POD 042 DIALOGUE — typing effect, red accent border
    ═══════════════════════════════ */
 #nh-pod {
     position: absolute;
-    top: 42px; left: 10px; right: 10px;
+    top: 6px; left: 10px; right: 10px;
     z-index: 8;
     pointer-events: none;
     font-family: 'Courier New', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.05em;
-    color: #888;
-    background: rgba(10,10,10,0.85);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: #AAA;
+    background: rgba(10,10,10,0.88);
     border: 1px solid #333;
+    border-left: 2px solid #C4362B;
     border-radius: 2px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     opacity: 0;
     transition: opacity 0.3s;
-    line-height: 1.5;
+    line-height: 1.6;
+}
+
+/* Pod typing cursor blink */
+@keyframes nhCursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 /* ═══════════════════════════════
-   GAME OVER — Nier style
+   GAME OVER — dramatic Nier style
    ═══════════════════════════════ */
-.nier-overlay .nh-go-line {
-    font-family: 'Courier New', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    color: #C4362B;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-.nier-overlay .nh-go-title {
-    font-family: 'Courier New', monospace;
-    font-size: 2.2rem;
-    letter-spacing: 0.15em;
-    color: #FFF;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-}
-.nier-overlay .nh-go-sub {
-    font-family: 'Courier New', monospace;
-    font-size: 0.7rem;
-    color: #444;
-    letter-spacing: 0.1em;
-}
 
 /* ═══════════════════════════════
    RESPONSIVE

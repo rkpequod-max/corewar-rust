@@ -368,37 +368,61 @@
             if(canvasWrap) canvasWrap.appendChild(ov);
             else return;
         }
-        if(glitchIntensity <= 0){ ov.innerHTML = ""; ov.style.opacity = "0"; return; }
+        if(glitchIntensity <= 0){
+            ov.innerHTML = ""; ov.style.opacity = "0";
+            // Reset canvas transform
+            canvas.style.transform = "";
+            return;
+        }
         ov.style.opacity = "1";
         const g = glitchIntensity;
-        // Random horizontal slices with RGB offset
+
+        // Distort the canvas itself — horizontal skew + shift
+        if(Math.random() < 0.4 * g){
+            const skewX = (Math.random() - 0.5) * 3 * g;
+            const shiftX = (Math.random() - 0.5) * 8 * g;
+            canvas.style.transform = `skewX(${skewX}deg) translateX(${shiftX}px)`;
+        } else {
+            canvas.style.transform = "";
+        }
+
         let html = "";
-        const slices = 3 + Math.floor(g * 8);
+        // Dark horizontal tear slices — visible on light background
+        const slices = 4 + Math.floor(g * 10);
         for(let i = 0; i < slices; i++){
             const top = Math.random() * 100;
-            const height = 2 + Math.random() * 15 * g;
-            const shiftX = (Math.random() - 0.5) * 30 * g;
-            const r = Math.random() < 0.3 ? `rgba(255,0,0,${0.15*g})` : "transparent";
-            const b = Math.random() < 0.3 ? `rgba(0,100,255,${0.15*g})` : "transparent";
-            html += `<div style="position:absolute;top:${top}%;left:0;right:0;height:${height}px;transform:translateX(${shiftX}px);background:linear-gradient(90deg,${r},transparent 20%,transparent 80%,${b});mix-blend-mode:screen;"></div>`;
+            const height = 1 + Math.random() * 20 * g;
+            const shiftX = (Math.random() - 0.5) * 50 * g;
+            // Use dark slices + chromatic aberration
+            const r = Math.random() < 0.35 ? `rgba(255,0,0,${0.25*g})` : "transparent";
+            const b = Math.random() < 0.35 ? `rgba(0,80,255,${0.25*g})` : "transparent";
+            const dark = `rgba(0,0,0,${(0.03 + Math.random()*0.08)*g})`;
+            html += `<div style="position:absolute;top:${top}%;left:0;right:0;height:${height}px;transform:translateX(${shiftX}px);background:linear-gradient(90deg,${r},transparent 15%,${dark} 40%,${dark} 60%,transparent 85%,${b});"></div>`;
         }
-        // Scanline distortion overlay
-        html += `<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,${0.08*g}) 2px,rgba(0,0,0,${0.08*g}) 4px);"></div>`;
+        // Chromatic aberration bars — red and blue offset blocks
+        for(let i = 0; i < Math.floor(2 + g*3); i++){
+            const top = Math.random() * 100;
+            const height = 3 + Math.random() * 30 * g;
+            const side = Math.random() < 0.5;
+            html += `<div style="position:absolute;top:${top}%;${side?'left:0':'right:0'};width:${10+Math.random()*40*g}%;height:${height}px;background:${side?'rgba(255,0,0,0.08)':'rgba(0,80,255,0.08)'};"></div>`;
+        }
+        // Heavy scanline overlay
+        html += `<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,${0.12*g}) 2px,rgba(0,0,0,${0.12*g}) 4px);"></div>`;
         ov.innerHTML = html;
     }
 
     /* ── DEATH PARTICLES ── */
     function spawnDeathBurst(x, z, color, count){
         for(let i = 0; i < count; i++){
-            const size = 0.08 + Math.random() * 0.12;
+            const size = 0.12 + Math.random() * 0.22;
             const geo = new THREE.BoxGeometry(size, size, size);
             const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
             const m = new THREE.Mesh(geo, mat);
             m.position.set(x, 0.1 + Math.random() * 0.3, z);
             scene.add(m);
             const angle = Math.random() * Math.PI * 2;
-            const speed = 2 + Math.random() * 6;
-            particles.push({mesh:m, mat, vx:Math.sin(angle)*speed, vy:1+Math.random()*3, vz:Math.cos(angle)*speed, life:0.5+Math.random()*0.6, ml:1.1, rotSpeed:(Math.random()-0.5)*10});
+            const speed = 3 + Math.random() * 8;
+            particles.push({mesh:m, mat, vx:Math.sin(angle)*speed, vy:1.5+Math.random()*4, vz:Math.cos(angle)*speed, life:0.6+Math.random()*0.8, ml:1.4, rotSpeed:(Math.random()-0.5)*12});
         }
     }
 
@@ -410,27 +434,51 @@
         let el = document.getElementById("nh-transition");
         if(!el){
             el = document.createElement("div"); el.id = "nh-transition";
-            el.style.cssText = "position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#FFF;opacity:0;pointer-events:none;transition:opacity 0.15s;font-family:'Courier New',monospace;";
+            el.style.cssText = "position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#FFF;opacity:0;pointer-events:none;overflow:hidden;font-family:'Courier New',monospace;";
             const canvasWrap = canvas.parentElement;
             if(canvasWrap) canvasWrap.appendChild(el);
         }
-        el.innerHTML = `<div style="font-size:0.65rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:8px;">HACKING COMPLETE</div><div style="font-size:1.8rem;letter-spacing:0.3em;color:#000;text-transform:uppercase;">${name}</div><div style="margin-top:16px;width:60px;height:1px;background:#C4362B;"></div>`;
-        // Phase 1: flash white
+        // Content appears with staggered animations
+        el.innerHTML = `<div style="font-size:0.6rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:nhTransIn 0.3s 0.3s ease-out forwards;">HACKING COMPLETE</div><div style="font-size:2rem;letter-spacing:0.35em;color:#000;text-transform:uppercase;font-weight:bold;opacity:0;animation:nhTransIn 0.3s 0.5s ease-out forwards;">${name} CLEARED</div><div style="margin-top:18px;width:80px;height:2px;background:#C4362B;opacity:0;animation:nhTransIn 0.3s 0.7s ease-out forwards;"></div><div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;margin-top:12px;opacity:0;animation:nhTransIn 0.3s 0.9s ease-out forwards;">INITIALIZING NEXT SECTOR...</div><style>@keyframes nhTransIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}</style>`;
+        // Scan line sweep element
+        let scanLine = el.querySelector('.nh-scan-line');
+        if(!scanLine){
+            scanLine = document.createElement('div');
+            scanLine.className = 'nh-scan-line';
+            scanLine.style.cssText = 'position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(196,54,43,0.6),rgba(196,54,43,0.9),rgba(196,54,43,0.6),transparent);box-shadow:0 0 15px rgba(196,54,43,0.4),0 0 30px rgba(196,54,43,0.2);z-index:1;pointer-events:none;';
+            el.appendChild(scanLine);
+        }
+        // Phase 1: flash white + start scan line
         el.style.opacity = "1"; el.style.pointerEvents = "auto";
-        // Phase 2: scan line sweep
+        scanLine.style.top = '-3px';
+        scanLine.style.transition = 'top 1.2s ease-in-out';
+        // Trigger scan line sweep
+        requestAnimationFrame(function(){
+            requestAnimationFrame(function(){
+                scanLine.style.top = '100%';
+            });
+        });
+        // Phase 2: fade out after scan completes
         setTimeout(function(){
-            el.style.transition = "opacity 0.4s";
+            el.style.transition = "opacity 0.5s";
             el.style.opacity = "0";
             setTimeout(function(){
                 el.style.pointerEvents = "none";
                 el.style.transition = "opacity 0.15s";
+                scanLine.style.top = '-3px';
+                scanLine.style.transition = 'none';
                 transitioning = false;
                 callback();
-            }, 400);
-        }, 1200);
+            }, 500);
+        }, 1600);
     }
 
     /* ── POD 042 DIALOGUE ── */
+    let podTypingIdx = 0;
+    let podFullMsg = '';
+    let podTypingTimer = 0;
+    const POD_TYPE_SPEED = 0.03; // seconds per character
+
     function podSay(msg, duration){
         podQueue.push({msg, duration: duration || 3});
         if(!podTimer && podQueue.length === 1) showNextPod();
@@ -439,14 +487,18 @@
         if(podQueue.length === 0){ hidePod(); return; }
         const {msg, duration} = podQueue[0];
         podTimer = duration;
+        podFullMsg = msg;
+        podTypingIdx = 0;
+        podTypingTimer = 0;
         if(!podEl){
             podEl = document.createElement("div"); podEl.id = "nh-pod";
-            podEl.style.cssText = "position:absolute;top:42px;left:10px;right:10px;z-index:8;pointer-events:none;font-family:'Courier New',monospace;font-size:0.65rem;letter-spacing:0.05em;color:#888;background:rgba(10,10,10,0.85);border:1px solid #333;border-radius:2px;padding:6px 10px;opacity:0;transition:opacity 0.3s;line-height:1.5;";
+            podEl.style.cssText = "position:absolute;top:6px;left:10px;right:10px;z-index:8;pointer-events:none;font-family:'Courier New',monospace;font-size:0.68rem;letter-spacing:0.06em;color:#AAA;background:rgba(10,10,10,0.88);border:1px solid #333;border-left:2px solid #C4362B;border-radius:2px;padding:8px 12px;opacity:0;transition:opacity 0.3s;line-height:1.6;";
             const canvasWrap = canvas ? canvas.parentElement : null;
             if(canvasWrap) canvasWrap.appendChild(podEl);
             else return;
         }
-        podEl.innerHTML = `<span style="color:#C4362B;font-weight:bold;">Pod 042 :</span> ${msg}`;
+        // Start with just the label, text will be typed out
+        podEl.innerHTML = `<span style="color:#C4362B;font-weight:bold;">Pod 042 :</span> <span class="nh-pod-text"></span><span class="nh-pod-cursor" style="display:inline-block;width:6px;height:12px;background:#C4362B;margin-left:2px;vertical-align:middle;animation:nhCursorBlink 0.6s step-end infinite;"></span>`;
         podEl.style.opacity = "1";
     }
     function hidePod(){
@@ -455,6 +507,20 @@
     function updPod(dt){
         if(podTimer > 0){
             podTimer -= dt;
+            // Typing effect
+            if(podTypingIdx < podFullMsg.length){
+                podTypingTimer += dt;
+                while(podTypingTimer >= POD_TYPE_SPEED && podTypingIdx < podFullMsg.length){
+                    podTypingTimer -= POD_TYPE_SPEED;
+                    podTypingIdx++;
+                }
+                const textEl = podEl ? podEl.querySelector('.nh-pod-text') : null;
+                if(textEl) textEl.textContent = podFullMsg.substring(0, podTypingIdx);
+            } else {
+                // Typing complete — remove cursor
+                const cursor = podEl ? podEl.querySelector('.nh-pod-cursor') : null;
+                if(cursor) cursor.style.display = 'none';
+            }
             if(podTimer <= 0){
                 podTimer = 0;
                 podQueue.shift();
@@ -527,9 +593,12 @@
                     if(e.mesh.userData.core){e.mesh.userData.core.material.color.setHex(0xFFFFFF);setTimeout(()=>{if(e.mesh.userData.core)e.mesh.userData.core.material.color.setHex(C_ENEMY);},60);}
                     if(e.hp<=0){
                         // Death burst — big explosion of particles
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, 15); // orange
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFFFFFF, 12);  // white
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 6);   // red
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, 20); // orange
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0x1A1A1A, 15); // dark (visible on light bg)
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 8);  // red
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFFCC00, 6);  // yellow sparks
+                        // Brief screen flash for kill
+                        flashScreen();
                         scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});
                         score+=e.type==="core"?500:200;enemies.splice(j,1);
                         // Pod commentary on kills
@@ -551,7 +620,7 @@
                 playerHP-=10;invulnT=INVULN_T;
                 spawnP(playerPos.x,playerPos.z,C_EBULLET,5);
                 flashScreen(); shake(0.3);
-                triggerGlitch(0.8, 0.3); // glitch on damage
+                triggerGlitch(0.7, 0.4); // glitch on damage
                 scene.remove(b.mesh);eBullets.splice(i,1);
                 if(playerHP<=0){playerHP=0;gameOver();return;}
                 // Low HP pod warning
@@ -627,18 +696,28 @@
     }
     function gameOver(){
         active=false;
-        flashScreen();shake(0.5);
-        triggerGlitch(1.0, 0.5);
-        // Show glitched game over after short delay
+        flashScreen();shake(0.6);
+        triggerGlitch(1.0, 1.2);  // Longer, more intense glitch
+        // Show glitched game over after dramatic delay
         setTimeout(function(){
             showGameOverNier();
-        }, 400);
+        }, 600);
     }
     function showGameOverNier(){
         if(!overlay) return;
         overlay.classList.remove("hidden");overlay.style.pointerEvents="auto";
-        overlay.style.background="rgba(10,10,10,0.95)";
-        overlay.innerHTML = `<div class="nh-go-line" style="opacity:0;animation:nh-go-flicker 0.1s 0.2s forwards;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.3em;color:#C4362B;text-transform:uppercase;margin-bottom:12px;">This cannot continue</div><div class="nh-go-title" style="opacity:0;animation:nh-go-flicker 0.1s 0.5s forwards, nh-go-glitch 0.3s 0.6s;font-family:'Courier New',monospace;font-size:2.2rem;letter-spacing:0.15em;color:#FFF;text-transform:uppercase;margin-bottom:20px;">CONNECTION LOST</div><div class="nh-go-sub" style="opacity:0;animation:nh-go-flicker 0.1s 0.8s forwards;font-family:'Courier New',monospace;font-size:0.7rem;color:#444;letter-spacing:0.1em;">Signal terminated — hack failed</div><div style="margin-top:16px;opacity:0;animation:nh-go-flicker 0.1s 1.1s forwards;"><div style="font-family:'Courier New',monospace;font-size:0.8rem;color:#C4362B;letter-spacing:0.15em;margin-bottom:6px;">SCORE: ${score}</div></div><button class="nh-ov-btn" style="opacity:0;animation:nh-go-flicker 0.1s 1.4s forwards;margin-top:20px;" onclick="window._nhBtn()">RETRY</button><style>@keyframes nh-go-flicker{0%{opacity:0;transform:translateX(-3px)}30%{opacity:1;transform:translateX(2px)}60%{opacity:0.5;transform:translateX(-1px)}100%{opacity:1;transform:translateX(0)}}@keyframes nh-go-glitch{0%{text-shadow:-2px 0 rgba(255,0,0,0.7),2px 0 rgba(0,100,255,0.7)}50%{text-shadow:2px 0 rgba(255,0,0,0.7),-2px 0 rgba(0,100,255,0.7)}100%{text-shadow:none}}</style>`;
+        overlay.style.background="rgba(10,10,10,0.96)";
+        overlay.innerHTML = `
+        <div style="opacity:0;animation:nhGoFlicker 0.15s 0.3s forwards;font-family:'Courier New',monospace;font-size:0.75rem;letter-spacing:0.4em;color:#C4362B;text-transform:uppercase;margin-bottom:16px;">This cannot continue</div>
+        <div style="opacity:0;animation:nhGoFlicker 0.15s 0.7s forwards, nhGoGlitch 0.4s 0.9s;font-family:'Courier New',monospace;font-size:2.8rem;letter-spacing:0.2em;color:#FFF;text-transform:uppercase;margin-bottom:24px;">CONNECTION LOST</div>
+        <div style="width:60px;height:1px;background:linear-gradient(90deg,#C4362B,transparent);margin:0 auto 24px;opacity:0;animation:nhGoFlicker 0.15s 1.0s forwards;"></div>
+        <div style="opacity:0;animation:nhGoFlicker 0.15s 1.2s forwards;font-family:'Courier New',monospace;font-size:0.7rem;color:#555;letter-spacing:0.1em;">Signal terminated — hack failed</div>
+        <div style="margin-top:20px;opacity:0;animation:nhGoFlicker 0.15s 1.5s forwards;"><div style="font-family:'Courier New',monospace;font-size:0.9rem;color:#C4362B;letter-spacing:0.2em;">SCORE: ${score}</div></div>
+        <button class="nh-ov-btn" style="opacity:0;animation:nhGoFlicker 0.15s 1.8s forwards;margin-top:28px;" onclick="window._nhBtn()">RETRY</button>
+        <style>
+        @keyframes nhGoFlicker{0%{opacity:0;transform:translateX(-5px)}25%{opacity:1;transform:translateX(3px)}50%{opacity:0.4;transform:translateX(-2px)}75%{opacity:0.9;transform:translateX(1px)}100%{opacity:1;transform:translateX(0)}}
+        @keyframes nhGoGlitch{0%{text-shadow:-3px 0 rgba(255,0,0,0.8),3px 0 rgba(0,80,255,0.8);transform:skewX(-2deg)}25%{text-shadow:3px 0 rgba(255,0,0,0.8),-3px 0 rgba(0,80,255,0.8);transform:skewX(1deg)}50%{text-shadow:-2px 0 rgba(255,0,0,0.6),2px 0 rgba(0,80,255,0.6);transform:skewX(-0.5deg)}100%{text-shadow:none;transform:skewX(0)}}
+        </style>`;
         window._nhBtn=function(){overlay.style.background="";try{startLvl();}catch(e){console.error("[NH]",e);}};
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
@@ -783,7 +862,7 @@
             }
             curLvl=0;score=0;mouseDown=false;paused=false;pauseWasActive=false;transitioning=false;
             hidePauseMenu();
-            podQueue=[];podTimer=0;hidePod();
+            podQueue=[];podTimer=0;podFullMsg='';podTypingIdx=0;podTypingTimer=0;hidePod();
             showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();});
             // Initial pod dialogue
             setTimeout(function(){ podSay("Hacking module engaged. Destroy all enemy cores.", 3.5); }, 500);
