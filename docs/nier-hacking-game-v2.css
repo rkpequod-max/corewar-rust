@@ -66,6 +66,24 @@
     font-size: 0.9rem;
 }
 
+/* ── Fullscreen button ── */
+#nh-fullscreen {
+    background: none;
+    border: 1px solid #4A4A4A;
+    color: #D4CFC6;
+    font-size: 1rem;
+    padding: 2px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    line-height: 1;
+}
+#nh-fullscreen:hover {
+    background: #C4362B;
+    border-color: #C4362B;
+    color: #F5F0E8;
+}
+
 /* ── Health bar ── */
 .health-bar-outer {
     display: inline-block;
@@ -87,12 +105,6 @@
 }
 
 /* ── Canvas container ── */
-#nier-hack-wrapper .canvas-wrap {
-    position: relative;
-    line-height: 0;
-    border-left: 1px solid #3A3A3A;
-    border-right: 1px solid #3A3A3A;
-}
 #nier-hack-canvas {
     display: block;
     width: 100%;
@@ -100,6 +112,8 @@
     height: auto;
     background: #E0E0E0;
     cursor: crosshair;
+    border-left: 1px solid #3A3A3A;
+    border-right: 1px solid #3A3A3A;
 }
 
 /* ── Scanlines overlay ── */
@@ -129,6 +143,7 @@
     font-family: 'Courier New', monospace;
     z-index: 10;
     transition: opacity 0.4s;
+    pointer-events: auto;
 }
 .nier-overlay.hidden {
     opacity: 0;
@@ -154,6 +169,8 @@
     letter-spacing: 0.1em;
     cursor: pointer;
     transition: all 0.2s;
+    z-index: 20;
+    position: relative;
 }
 .nier-overlay .overlay-btn:hover {
     background: #C4362B;
@@ -188,6 +205,38 @@
     color: #D4CFC6;
     font-size: 0.7rem;
     margin: 0 2px;
+}
+
+/* ── Fullscreen mode ── */
+#nier-hack-wrapper:fullscreen,
+#nier-hack-wrapper:-webkit-full-screen {
+    max-width: none;
+    background: #1A1A1A;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
+}
+#nier-hack-wrapper:fullscreen #nier-hack-hud,
+#nier-hack-wrapper:-webkit-full-screen #nier-hack-hud {
+    border-radius: 0;
+}
+#nier-hack-wrapper:fullscreen #nier-hack-controls,
+#nier-hack-wrapper:-webkit-full-screen #nier-hack-controls {
+    border-radius: 0;
+}
+#nier-hack-wrapper:fullscreen #nier-hack-canvas,
+#nier-hack-wrapper:-webkit-full-screen #nier-hack-canvas {
+    max-width: none;
+    border: none;
+    flex: 1;
+    width: 100%;
+}
+#nier-hack-wrapper:fullscreen .section-label,
+#nier-hack-wrapper:fullscreen h2,
+#nier-hack-wrapper:-webkit-full-screen .section-label,
+#nier-hack-wrapper:-webkit-full-screen h2 {
+    display: none;
 }
 
 /* ── Responsive ── */
