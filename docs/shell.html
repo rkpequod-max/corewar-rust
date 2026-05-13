@@ -167,6 +167,77 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 /* ── INFO SECTION GLOW LINE ── */
 .info-section{position:relative}
 .info-section::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,rgba(6,182,212,0.3),transparent);opacity:0.5}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+}
+.theme-toggle:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+}
+[data-theme="nier"] .theme-toggle {
+    border-color: #D4CFC6;
+    color: #6B6560;
+}
+[data-theme="nier"] .theme-toggle:hover {
+    border-color: #C4362B;
+    color: #C4362B;
+}
+
+/* ── NIER AUTOMATA LIGHT THEME ── */
+[data-theme="nier"] {
+    --bg: #F5F0E8;
+    --surface: #FFFFFF;
+    --surface2: #F8F5EF;
+    --border: #D4CFC6;
+    --cyan: #C4362B;
+    --blue: #3A6EA5;
+    --red: #C4362B;
+    --green: #4A7C59;
+    --yellow: #B8860B;
+    --purple: #7B5EA7;
+    --orange: #C47025;
+    --pink: #A83232;
+    --electric: #3A6EA5;
+    --violet: #7B5EA7;
+    --text: #1A1A1A;
+    --text2: #5A554E;
+    --text3: #8A847C;
+    --p1: #3A6EA5;
+    --p2: #C4362B;
+    --p3: #4A7C59;
+    --p4: #B8860B;
+}
+[data-theme="nier"] .nav { background: rgba(245,240,232,0.92); border-bottom-color: rgba(212,207,198,0.8); }
+[data-theme="nier"] .nav-logo { color: #C4362B; }
+[data-theme="nier"] .nav-links a { color: #6B6560; }
+[data-theme="nier"] .nav-links a:hover { color: #C4362B; background: rgba(196,54,43,0.06); }
+[data-theme="nier"] .ctrl-bar { background: #F8F5EF; border-top-color: #D4CFC6; }
+[data-theme="nier"] .ctrl-btn { background: #FFFFFF; border-color: #D4CFC6; color: #1A1A1A; }
+[data-theme="nier"] .ctrl-btn:hover { border-color: #C4362B; color: #C4362B; }
+[data-theme="nier"] .ctrl-btn.active { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
+[data-theme="nier"] .left { border-right-color: #D4CFC6; }
+[data-theme="nier"] .right { background: #FFFFFF; }
+[data-theme="nier"] .arena-canvas-wrap { background: #F5F0E8; border-color: #D4CFC6; }
+[data-theme="nier"] .info-section h3 { color: #6B6560; }
+[data-theme="nier"] #film-grain { display: none; }
+[data-theme="nier"] body::after { background: radial-gradient(ellipse at center, transparent 50%, rgba(245,240,232,0.7) 100%); }
+[data-theme="nier"] .arena-fs-toolbar { background: #FFFFFF; border-bottom-color: #D4CFC6; }
+[data-theme="nier"] .arena-fs-controls { background: #F8F5EF; border-top-color: #D4CFC6; }
+[data-theme="nier"] .arena-fs-sidebar { background: #FFFFFF; border-left-color: #D4CFC6; }
 </style>
 </head>
 <body>
@@ -183,6 +254,7 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
     <a href="index.html">Accueil</a>
     <a href="https://github.com/rkpequod-max/corewar-rust" target="_blank">GitHub</a>
   </div>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata">☀</button>
 </nav>
 
 <!-- MAIN -->
@@ -1982,6 +2054,48 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+</script>
+
+<script>
+// ── Nier Automata Theme Toggle ──
+(function() {
+    const stored = localStorage.getItem('cw-theme');
+    if (stored === 'nier') {
+        document.documentElement.setAttribute('data-theme', 'nier');
+        updateToggleIcon();
+    }
+
+    window.toggleTheme = function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        if (current === 'nier') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('cw-theme', 'rayon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'nier');
+            localStorage.setItem('cw-theme', 'nier');
+        }
+        updateToggleIcon();
+    };
+
+    function updateToggleIcon() {
+        const isNier = document.documentElement.getAttribute('data-theme') === 'nier';
+        document.querySelectorAll('.theme-toggle').forEach(function(btn) {
+            btn.textContent = isNier ? '☽' : '☀';
+            btn.title = isNier ? 'Thème Rayon Vert' : 'Thème Nier Automata';
+        });
+    }
+
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'cw-theme') {
+            if (e.newValue === 'nier') {
+                document.documentElement.setAttribute('data-theme', 'nier');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            updateToggleIcon();
+        }
+    });
+})();
 </script>
 </body>
 </html>

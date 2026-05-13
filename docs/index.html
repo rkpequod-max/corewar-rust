@@ -926,6 +926,118 @@
             95% { opacity: 1; }
             100% { top: 100%; opacity: 0; }
         }
+        /* ══ THEME TOGGLE BUTTON ══ */
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            border-radius: 6px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: var(--mono);
+            line-height: 1;
+        }
+        .theme-toggle:hover {
+            border-color: var(--ray);
+            color: var(--ray);
+        }
+        [data-theme="nier"] .theme-toggle {
+            border-color: #D4CFC6;
+            color: #6B6560;
+        }
+        [data-theme="nier"] .theme-toggle:hover {
+            border-color: #C4362B;
+            color: #C4362B;
+        }
+
+        /* ══ NIER AUTOMATA LIGHT THEME ══ */
+        [data-theme="nier"] {
+            --bg: #F5F0E8;
+            --bg2: #EDE8DF;
+            --card: #FFFFFF;
+            --card2: #F8F5EF;
+            --border: #D4CFC6;
+            --border-light: #C8C2B8;
+            --text: #1A1A1A;
+            --text-dim: #6B6560;
+            --ray: #C4362B;
+            --ray-dim: rgba(196,54,43,0.10);
+            --ray-glow: rgba(196,54,43,0.30);
+            --pink: #A83232;
+            --pink-dim: rgba(168,50,50,0.08);
+            --pink-glow: rgba(168,50,50,0.20);
+            --electric: #3A6EA5;
+            --electric-dim: rgba(58,110,165,0.08);
+            --electric-glow: rgba(58,110,165,0.25);
+            --violet: #7B5EA7;
+            --blue: #3A6EA5;
+            --blue-deep: #2C4F7C;
+            --red: #C4362B;
+            --green: #4A7C59;
+            --yellow: #B8860B;
+            --purple: #7B5EA7;
+            --orange: #C47025;
+            --ivory: #1A1A1A;
+            --code-bg: #F0ECE4;
+            --accent: var(--ray);
+        }
+        [data-theme="nier"] body { background: #F5F0E8; }
+        [data-theme="nier"] body::before {
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(196,54,43,0.03) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 25%, rgba(58,110,165,0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 85%, rgba(196,54,43,0.02) 0%, transparent 45%);
+        }
+        [data-theme="nier"] body::after {
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(245,240,232,0.7) 100%);
+        }
+        [data-theme="nier"] #starfield { display: none; }
+        [data-theme="nier"] #film-grain { display: none; }
+        [data-theme="nier"] #scan-lines { display: none; }
+        [data-theme="nier"] nav {
+            background: rgba(245,240,232,0.92);
+            border-bottom-color: rgba(212,207,198,0.8);
+        }
+        [data-theme="nier"] nav .logo { color: #C4362B; text-shadow: none; }
+        [data-theme="nier"] nav a { color: #6B6560; }
+        [data-theme="nier"] nav a:hover { color: #C4362B; background: rgba(196,54,43,0.06); }
+        [data-theme="nier"] .hero::before {
+            background:
+                radial-gradient(ellipse at 25% 50%, rgba(196,54,43,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 75% 30%, rgba(58,110,165,0.03) 0%, transparent 50%);
+        }
+        [data-theme="nier"] .hero::after {
+            background: linear-gradient(180deg,transparent 0%,rgba(196,54,43,0.02) 20%,rgba(196,54,43,0.06) 40%,rgba(196,54,43,0.10) 50%,rgba(196,54,43,0.06) 60%,rgba(196,54,43,0.02) 80%,transparent 100%);
+        }
+        [data-theme="nier"] .hero h1 { color: #1A1A1A; }
+        [data-theme="nier"] .hero h1 .accent { color: #C4362B; text-shadow: 0 0 20px rgba(196,54,43,0.3); }
+        [data-theme="nier"] .hero-scan {
+            background: linear-gradient(90deg, transparent 0%, rgba(196,54,43,0.15) 30%, rgba(58,110,165,0.2) 50%, rgba(196,54,43,0.15) 70%, transparent 100%);
+        }
+        [data-theme="nier"] .badge { border-color: #D4CFC6; background: #FFFFFF; }
+        [data-theme="nier"] .badge-c { color: #3A6EA5; border-color: rgba(58,110,165,0.3); }
+        [data-theme="nier"] .badge-r { color: #C4362B; border-color: rgba(196,54,43,0.3); }
+        [data-theme="nier"] .badge-42 { color: #4A7C59; border-color: rgba(74,124,89,0.3); }
+        [data-theme="nier"] .cta-primary { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
+        [data-theme="nier"] .cta-primary:hover { background: #A02E24; }
+        [data-theme="nier"] .cta-ghost { border-color: #1A1A1A; color: #1A1A1A; }
+        [data-theme="nier"] .cta-ghost:hover { background: #1A1A1A; color: #F5F0E8; }
+        [data-theme="nier"] .terminal-window { background: #1A1A1A; border-color: #3A3A3A; }
+        [data-theme="nier"] .terminal-bar { background: #2A2A2A; }
+        [data-theme="nier"] .terminal-body { color: #D4CFC6; }
+        [data-theme="nier"] .terminal-body .cmd { color: #C4362B; }
+        [data-theme="nier"] .terminal-body .flag { color: #3A6EA5; }
+        [data-theme="nier"] .terminal-body .out { color: #D4CFC6; }
+        [data-theme="nier"] .feature-card { background: #FFFFFF; border-color: #D4CFC6; }
+        [data-theme="nier"] .feature-card:hover { border-color: rgba(196,54,43,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+        [data-theme="nier"] .feature-card .fc-icon { color: #C4362B; }
+        [data-theme="nier"] .stat-val { color: #C4362B; }
+        [data-theme="nier"] footer { color: #8A847C; border-top-color: #D4CFC6; }
     </style>
 </head>
 <body>
@@ -957,6 +1069,7 @@
         <a href="guide.html">Guide</a>
         <a href="https://github.com/rkpequod-max/corewar-rust" target="_blank">GitHub</a>
     </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata">☀</button>
 </nav>
 <div class="spacer"></div>
 
@@ -1254,6 +1367,46 @@
     }, { threshold: 0.1 });
 
     document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+})();
+
+// ── Nier Automata Theme Toggle ──
+(function() {
+    const stored = localStorage.getItem('cw-theme');
+    if (stored === 'nier') {
+        document.documentElement.setAttribute('data-theme', 'nier');
+        updateToggleIcon();
+    }
+
+    window.toggleTheme = function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        if (current === 'nier') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('cw-theme', 'rayon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'nier');
+            localStorage.setItem('cw-theme', 'nier');
+        }
+        updateToggleIcon();
+    };
+
+    function updateToggleIcon() {
+        const isNier = document.documentElement.getAttribute('data-theme') === 'nier';
+        document.querySelectorAll('.theme-toggle').forEach(function(btn) {
+            btn.textContent = isNier ? '☽' : '☀';
+            btn.title = isNier ? 'Thème Rayon Vert' : 'Thème Nier Automata';
+        });
+    }
+
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'cw-theme') {
+            if (e.newValue === 'nier') {
+                document.documentElement.setAttribute('data-theme', 'nier');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            updateToggleIcon();
+        }
+    });
 })();
 </script>
 </body>
