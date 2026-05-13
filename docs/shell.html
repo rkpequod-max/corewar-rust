@@ -217,7 +217,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
         Éditez du code <b style="color:var(--text2)">.s</b> ci-dessous, puis :
         <b style="color:var(--green)">⚙ Assembler &amp; Charger</b> = compile + charge dans la VM (le plus courant) ;
         <b style="color:var(--text2)">⚙ Assembler</b> = compile seulement (vérifie sans charger) ;
-        <b style="color:var(--text2)">📋 Exemple</b> = charge un code d'exemple dans l'éditeur.
+        <b style="color:var(--text2)">📋 Exemple</b> = sélectionnez dans la liste puis charge (raccourci : cliquez juste sur la liste).
       </p>
       <textarea class="editor-area" id="asm-editor" spellcheck="false">.name "live"
 .comment "Just lives forever"
@@ -229,14 +229,14 @@ loop:
       <div class="editor-actions">
         <button class="asm-btn tooltip" onclick="cmdAsm()" data-tip="Compile le code .s en bytecode (sans le charger dans la VM)">⚙ Assembler</button>
         <button class="asm-btn primary tooltip" onclick="cmdAsmLoad()" data-tip="Compile le code .s ET charge le champion dans la VM">⚙ Assembler &amp; Charger</button>
-        <select id="sample-select" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem">
+        <select id="sample-select" onchange="onSampleSelect(this.value)" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:.78rem">
           <option value="">— Exemples —</option>
           <option value="live">live (basique)</option>
           <option value="zork">zork (classique)</option>
           <option value="forker">forker (fork bomb)</option>
           <option value="stimp">stimp (attaquant)</option>
         </select>
-        <button class="asm-btn tooltip" onclick="loadSample()" data-tip="Charge l'exemple dans l'éditeur (à assembler ensuite)">📋 Exemple</button>
+        <button class="asm-btn tooltip" onclick="loadSample()" data-tip="Charge l'exemple sélectionné dans l'éditeur, puis assemble et charge">📋 Exemple</button>
       </div>
     </div>
   </div>
@@ -1462,15 +1462,57 @@ function handleCorFiles(files) {
   }
 }
 
+function onSampleSelect(val) {
+  if (!val) return;
+  // Immediately load the selected example into the editor
+  document.getElementById('asm-editor').value = SAMPLES[val];
+  if (term) {
+    termPrint('📋 Exemple "' + val + '" chargé dans l\'éditeur.', '1;34');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger, ou \x1b[1;33m📋 Exemple\x1b[0m pour charger directement.');
+    prompt();
+  }
+}
+
 function loadSample() {
   const sel = document.getElementById('sample-select');
   const val = sel.value;
-  if (!val) return;
-  document.getElementById('asm-editor').value = SAMPLES[val];
-  sel.value = '';
-  termPrint('📋 Exemple "' + val + '" chargé dans l\'éditeur.', '1;34');
-  term.writeln('\x1b[1;36m  \u27a1\x1b[0m Cliquez sur \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour compiler et charger ce champion dans la VM.');
-  term.writeln('  Ou \x1b[1;33m⚙ Assembler\x1b[0m pour vérifier la compilation sans charger.');
+  if (!val) {
+    if (term) {
+      termPrint('Sélectionnez d\'abord un exemple dans la liste déroulante, ou tapez "sample live".', '1;33');
+      prompt();
+    }
+    return;
+  }
+  // Load into editor + assemble + load into VM in one click
+  const source = SAMPLES[val];
+  document.getElementById('asm-editor').value = source;
+  sel.value = ''; // reset dropdown
+
+  if (!checkWasm()) return;
+  try {
+    const result = wasmAssemble(source);
+    if (loadedChampions.length >= 4) {
+      termPrint('Maximum 4 champions atteint. Tapez "reset" d\'abord.', '1;31');
+      prompt();
+      return;
+    }
+    loadedChampions.push(result);
+    termPrint(`✓ Exemple "${result.name}" chargé dans l'éditeur, assemblé et chargé (${result.codeSize} octets)`, '1;32');
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Le code est dans l\'éditeur — modifiez-le et \x1b[1;32m⚙ Assembler & Charger\x1b[0m pour recompiler.');
+    updatePlayerList();
+    const count = loadedChampions.length;
+    const colorNames = ['cyan', 'bleu', 'rouge', 'vert'];
+    term.writeln('\x1b[1;36m  \u27a1\x1b[0m Joueur ' + count + ' (' + colorNames[count-1] + ') prêt.');
+    if (count < 2) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Chargez un adversaire avec \x1b[1;33m📝 .s\x1b[0m / \x1b[1;33msample <nom>\x1b[0m, ou lancez \x1b[1;32m▶ Run\x1b[0m.');
+    } else if (count < 4) {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m Lancez le combat avec \x1b[1;32m▶ Run\x1b[0m, ou chargez encore un champion (max 4).');
+    } else {
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m 4 champions prêts ! Lancez \x1b[1;32m▶ Run\x1b[0m.');
+    }
+  } catch (e) {
+    termPrint('Erreur d\'assemblage: ' + e.message, '1;31');
+  }
   prompt();
 }
 
@@ -1638,6 +1680,7 @@ window.toggleArenaFullscreen = toggleArenaFullscreen;
 window.handleCorFiles = handleCorFiles;
 window.handleSFiles = handleSFiles;
 window.loadSample = loadSample;
+window.onSampleSelect = onSampleSelect;
 window.removeChampion = removeChampion;
 
 
