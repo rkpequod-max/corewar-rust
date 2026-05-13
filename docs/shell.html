@@ -69,10 +69,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .player-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .player-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .player-lives{font-family:'Courier New',monospace;color:var(--text2)}
-/* ── WINNER BANNER ── */
-.winner-banner{display:none;padding:8px 12px;border-radius:6px;margin:4px 10px;text-align:center;font-weight:700;font-size:.85rem;animation:win-pulse 1.5s ease-in-out infinite}
-.winner-banner.active{display:block}
-@keyframes win-pulse{0%,100%{opacity:1}50%{opacity:.7}}
 /* ── EVENT LOG ── */
 .event-log{max-height:80px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.65rem;color:var(--text2);line-height:1.6;padding:2px 0}
 .event-log .ev-alive{color:var(--green)}
@@ -222,9 +218,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       <h3 style="font-size:.72rem;margin-bottom:4px">Processus <span id="proc-count" style="color:var(--text3)">(0)</span></h3>
       <div id="proc-list" style="max-height:120px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.68rem;color:var(--text2);line-height:1.6"></div>
     </div>
-    <!-- Winner banner -->
-    <div class="winner-banner" id="winner-banner" style="background:rgba(234,179,8,.15);border:1px solid var(--yellow);color:var(--yellow)"></div>
-
     <!-- Event log -->
     <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
       <h3 style="font-size:.72rem;margin-bottom:4px">Événements</h3>
@@ -1308,9 +1301,7 @@ function cmdReset() {
   // Clear event log
   eventLogEntries = [];
   updateEventLog();
-  // Hide winner banner
-  const winnerBanner = document.getElementById('winner-banner');
-  if (winnerBanner) winnerBanner.classList.remove('active');
+
   if (wasmReady && loadedChampions.length > 0) {
     vm = new WasmVm();
     vmInitialized = false;
@@ -1368,8 +1359,8 @@ function runTick() {
     const winnerNplayer = vm.winner_nplayer();
     if (winnerNplayer !== 0) {
       const finalCycles = vm.cycles();
-      termPrint(`🏆 Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné en ${finalCycles} cycles !`, '1;33');
-      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer, ou modifiez votre code .s et rechargez.');
+      termPrint(`Le joueur ${winnerNplayer} (${vm.winner_name()}) a gagné — dernier à avoir fait un live avant la fin des cycles.`, '1;33');
+      term.writeln('\x1b[1;36m  \u27a1\x1b[0m \x1b[1;31m↺ Reset\x1b[0m pour recommencer.');
     }
   }
 }
@@ -1745,14 +1736,7 @@ function updateInfo() {
   }
   document.getElementById('cycle-display').textContent = 'Cycle: ' + vm.cycles();
 
-  // Update winner banner
-  const winnerBanner = document.getElementById('winner-banner');
-  if (winnerNplayer !== 0) {
-    winnerBanner.textContent = '🏆 Joueur ' + winnerNplayer + ' (' + vm.winner_name() + ') a gagné en ' + vm.cycles() + ' cycles !';
-    winnerBanner.classList.add('active');
-  } else {
-    winnerBanner.classList.remove('active');
-  }
+
 
   // Update process list (ncurses-style)
   const procEl = document.getElementById('proc-list');
