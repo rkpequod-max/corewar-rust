@@ -472,11 +472,25 @@ class ArenaVisualizer {
     this.cellW = Math.floor(this.logW / cols);
     this.cellH = Math.floor(this.logH / rows);
     // Ensure minimum cell size
-    this.cellW = Math.max(8, this.cellW);
-    this.cellH = Math.max(8, this.cellH);
-    // Font should be ~55-65% of cell height for good readability
-    const fontSize = Math.max(7, Math.floor(this.cellH * 0.6));
-    this.font = fontSize + 'px "Courier New", monospace';
+    this.cellW = Math.max(4, this.cellW);
+    this.cellH = Math.max(4, this.cellH);
+    // Determine rendering mode based on cell size
+    // Threshold: cellW >= 16 means we can fit "ff" text with spacing
+    this.textMode = this.cellW >= 16 && this.cellH >= 12;
+    if (this.textMode) {
+      // In text mode, reserve 2px gap on the right and bottom for visual separation
+      this.gapW = 2;
+      this.gapH = 2;
+      const innerW = this.cellW - this.gapW;
+      const innerH = this.cellH - this.gapH;
+      const fontSize = Math.max(7, Math.floor(Math.min(innerW * 0.5, innerH * 0.65)));
+      this.font = fontSize + 'px "Courier New", monospace';
+    } else {
+      // Block mode: 1px gap for subtle grid
+      this.gapW = 1;
+      this.gapH = 1;
+      this.font = null;
+    }
   }
 
   // Call when the canvas container changes size
@@ -489,12 +503,16 @@ class ArenaVisualizer {
     const ctx = this.ctx;
     const cw = this.cellW;
     const ch = this.cellH;
+    const gapW = this.gapW || 0;
+    const gapH = this.gapH || 0;
+    const innerW = cw - gapW;
+    const innerH = ch - gapH;
 
     // Reset transform to dpr scale
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    // Clear entire logical area
-    ctx.fillStyle = '#000';
+    // Clear entire logical area to black (this also fills the gaps)
+    ctx.fillStyle = '#0a0a0a';
     ctx.fillRect(0, 0, this.logW, this.logH);
 
     if (!wasmVm) return;
@@ -520,20 +538,29 @@ class ArenaVisualizer {
       }
     }
 
-    ctx.font = this.font;
-    ctx.textBaseline = 'top';
-    ctx.imageSmoothingEnabled = false;
-
     const cols = 64;
-    const textXoffset = Math.max(1, Math.floor(cw * 0.08));
-    const textYoffset = Math.max(1, Math.floor(ch * 0.15));
+    const textMode = this.textMode;
 
-    // Draw arena — ncurses style: hex text on black background
+    if (textMode) {
+      ctx.font = this.font;
+      ctx.textBaseline = 'top';
+      ctx.imageSmoothingEnabled = false;
+    }
+
+    // Pre-compute colors for each owner state (avoid string creation in hot loop)
+    // ownerIdx: 0=unowned, 1-4=player
+    // Color slots: [bg, fg] for each state
+    const BG_BLACK = '#000';
+    const CELL_GAP = '#0a0a0a';
+
     for (let i = 0; i < MEM_SIZE; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const x = col * cw;
       const y = row * ch;
+      // Inner area (excluding gap)
+      const ix = x;
+      const iy = y;
 
       const ownerIdx = owner[i];
       const byte = arena[i];
@@ -542,45 +569,89 @@ class ArenaVisualizer {
       const isPc = !!pcInfo;
       const isIr = pcInfo && pcInfo.hasIr;
 
-      const hex = byte.toString(16).padStart(2, '0');
-
-      // Determine colors — match ncurses visualizer
-      let fg, bg = null;
+      // Determine cell background and foreground colors
+      let bg, fg;
 
       if (isIr && ownerIdx > 0) {
-        fg = '#000';
+        // IR executing: inverted (colored bg, black text)
         bg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
+        fg = '#000';
       } else if (isIr && ownerIdx === 0) {
-        fg = '#000';
         bg = isScrb ? GRAY_BOLD : GRAY;
-      } else if (isPc && ownerIdx > 0) {
-        fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
-        bg = null;
-      } else if (isPc && ownerIdx === 0) {
         fg = '#000';
+      } else if (isPc && ownerIdx === 0) {
+        // PC on unowned: gray background (ncurses: black on gray)
         bg = GRAY;
+        fg = '#000';
       } else if (ownerIdx > 0) {
+        // Owned cell: player color on black
+        bg = null; // black background
         fg = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG_DIM[ownerIdx - 1];
-        bg = null;
       } else {
-        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#555555' : '#1a1a1a');
+        // Unowned: gray tones on black
         bg = null;
+        fg = isScrb ? GRAY_BOLD : (byte !== 0 ? '#444' : '#111');
       }
 
-      // Draw background highlight
-      if (bg) {
-        ctx.fillStyle = bg;
-        ctx.fillRect(x, y, cw, ch);
+      // ── BLOCK MODE (small cells): colored rectangles ──
+      if (!textMode) {
+        // Choose block fill color
+        let blockColor;
+        if (isIr) {
+          // IR (executing): bright inverted block
+          blockColor = ownerIdx > 0
+            ? (isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1])
+            : (isScrb ? GRAY_BOLD : GRAY);
+        } else if (isPc && ownerIdx === 0) {
+          // PC on unowned: gray block
+          blockColor = GRAY;
+        } else if (ownerIdx > 0) {
+          // Owned: full player color (brighter than dim text)
+          blockColor = isScrb ? PLAYER_FG_BOLD[ownerIdx - 1] : PLAYER_FG[ownerIdx - 1];
+        } else if (byte !== 0) {
+          // Non-zero unowned
+          blockColor = isScrb ? '#555' : '#252525';
+        } else {
+          // Zero: near-black
+          blockColor = '#0e0e0e';
+        }
+
+        ctx.fillStyle = blockColor;
+        ctx.fillRect(ix, iy, innerW, innerH);
+
+        // PC indicator: white dot in center
+        if (isPc && !isIr) {
+          ctx.fillStyle = ownerIdx > 0 ? '#fff' : '#000';
+          const dotSize = Math.max(2, Math.floor(Math.min(innerW, innerH) * 0.35));
+          const dx = ix + Math.floor((innerW - dotSize) / 2);
+          const dy = iy + Math.floor((innerH - dotSize) / 2);
+          ctx.fillRect(dx, dy, dotSize, dotSize);
+        }
       }
+      // ── TEXT MODE (large cells): hex text with spacing ──
+      else {
+        const hex = byte.toString(16).padStart(2, '0');
 
-      // Draw hex text
-      ctx.fillStyle = fg;
-      ctx.fillText(hex, x + textXoffset, y + textYoffset);
+        // Draw cell background
+        if (bg) {
+          ctx.fillStyle = bg;
+          ctx.fillRect(ix, iy, innerW, innerH);
+        } else {
+          ctx.fillStyle = BG_BLACK;
+          ctx.fillRect(ix, iy, innerW, innerH);
+        }
 
-      // Draw PC underline indicator (ncurses: bold/reverse for owned PC)
-      if (isPc && !isIr && ownerIdx > 0) {
+        // Draw hex text (centered in inner area)
         ctx.fillStyle = fg;
-        ctx.fillRect(x, y + ch - 2, cw, 2);
+        const textX = ix + Math.floor((innerW - ctx.measureText(hex).width) / 2);
+        const textY = iy + Math.floor((innerH - parseInt(this.font)) / 2);
+        ctx.fillText(hex, textX, textY);
+
+        // PC underline indicator
+        if (isPc && !isIr && ownerIdx > 0) {
+          ctx.fillStyle = fg;
+          ctx.fillRect(ix, iy + innerH - 2, innerW, 2);
+        }
       }
     }
   }
