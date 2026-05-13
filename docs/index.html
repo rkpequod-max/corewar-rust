@@ -1135,27 +1135,28 @@
         <div class="section-label">nier:automata</div>
         <h2><span class="accent">|</span> Hacking Game</h2>
 
-        <!-- HUD -->
+        <!-- HUD — Nier terminal style -->
         <div id="nier-hack-hud">
-            <div class="hud-left">
-                <span><span class="hud-label">HP </span><span class="hud-value health" id="nh-health">100%</span></span>
-                <span><span class="health-bar-outer"><span class="health-bar-inner" id="nh-health-bar" style="width:100%"></span></span></span>
+            <div class="nh-left">
+                <span><span class="nh-label">HP </span><span class="nh-value hp" id="nh-health">100%</span></span>
+                <span><span class="nh-bar-outer"><span class="nh-bar-inner" id="nh-bar" style="width:100%"></span></span></span>
             </div>
-            <div class="hud-center">
-                <span class="sector-name" id="nh-level-name">SECTOR A</span>
+            <div class="nh-center">
+                <span class="nh-sector" id="nh-level-name">SECTOR A</span>
             </div>
-            <div class="hud-right">
-                <span><span class="hud-label">SCORE </span><span class="hud-value score" id="nh-score">0</span></span>
-                <span><span class="hud-label">LVL </span><span class="hud-value" id="nh-level">1 / 8</span></span>
-                <span><span class="hud-label">ENM </span><span class="hud-value" id="nh-enemies">0</span></span>
+            <div class="nh-right">
+                <span><span class="nh-label">SCORE </span><span class="nh-value sc" id="nh-score">0</span></span>
+                <span><span class="nh-label">LVL </span><span class="nh-value" id="nh-level">1/8</span></span>
+                <span><span class="nh-label">ENM </span><span class="nh-value" id="nh-enemies">0</span></span>
                 <button id="nh-fullscreen" title="Plein écran (F)">⤒</button>
             </div>
         </div>
 
-        <!-- Canvas container (relative for overlay) -->
+        <!-- Canvas container -->
         <div style="position:relative;">
             <canvas id="nier-hack-canvas" width="960" height="540"></canvas>
             <div id="nier-hack-scanlines"></div>
+            <div id="nh-flash"></div>
             <div id="nier-hack-overlay" class="nier-overlay hidden"></div>
         </div>
 
