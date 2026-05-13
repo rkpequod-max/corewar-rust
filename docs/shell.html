@@ -108,6 +108,9 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .ctrl-btn.step{border-color:rgba(59,130,246,.5);color:var(--blue)}
 .ctrl-btn.step:hover{border-color:var(--blue);background:rgba(59,130,246,.15)}
 .ctrl-btn.step:active{background:var(--blue);color:#000}
+.ctrl-btn.prev{border-color:rgba(168,85,247,.5);color:var(--purple)}
+.ctrl-btn.prev:hover{border-color:var(--purple);background:rgba(168,85,247,.15)}
+.ctrl-btn.prev:active{background:var(--purple);color:#000}
 .ctrl-btn.reset{border-color:rgba(239,68,68,.5);color:var(--red)}
 .ctrl-btn.reset:hover{border-color:var(--red);background:rgba(239,68,68,.15)}
 .ctrl-btn.reset:active{background:var(--red);color:#000}
@@ -118,7 +121,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .ctrl-btn.load:hover{border-color:var(--orange);background:rgba(249,115,22,.15)}
 .ctrl-btn.load:active{background:var(--orange);color:#000}
 /* Active state overrides variant colors */
-.ctrl-btn.active.run,.ctrl-btn.active.pause,.ctrl-btn.active.step,.ctrl-btn.active.reset,.ctrl-btn.active.view,.ctrl-btn.active.load{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+.ctrl-btn.active.run,.ctrl-btn.active.pause,.ctrl-btn.active.step,.ctrl-btn.active.reset,.ctrl-btn.active.view,.ctrl-btn.active.load,.ctrl-btn.active.prev{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
 /* ── CTRL GROUP ── */
 .ctrl-group{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border-radius:6px;padding:3px 4px;position:relative}
 .ctrl-group-label{position:absolute;top:-10px;left:6px;font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;white-space:nowrap;line-height:1}
@@ -153,7 +156,8 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       <div class="ctrl-group">
         <span class="ctrl-group-label">Exécution</span>
         <button class="ctrl-btn run tooltip" id="btn-run" onclick="cmdRun()" data-tip="Espace">▶ Run</button>
-        <button class="ctrl-btn step tooltip" id="btn-step" data-tip="S">⏭ Step</button>
+        <button class="ctrl-btn prev tooltip" id="btn-prev" onclick="cmdCyclePrev()" data-tip="-">◀ Cycle préc.</button>
+        <button class="ctrl-btn step tooltip" id="btn-next" onclick="cmdCycleNext()" data-tip="+">Cycle suiv. ▶</button>
         <button class="ctrl-btn pause tooltip" id="btn-pause" onclick="cmdPause()" data-tip="P">⏸ Pause</button>
         <button class="ctrl-btn reset tooltip" id="btn-reset" onclick="cmdReset()" data-tip="R">↺ Reset</button>
       </div>
@@ -254,7 +258,8 @@ loop:
       <span class="cycle-display" id="fs-cycle-display">Cycle: 0</span>
       <div class="ctrl-sep"></div>
       <button class="ctrl-btn run" onclick="cmdRun()">▶ Run</button>
-      <button class="ctrl-btn step" id="fs-btn-step">⏭ Step</button>
+      <button class="ctrl-btn prev" onclick="cmdCyclePrev()">◀ Cycle préc.</button>
+      <button class="ctrl-btn step" onclick="cmdCycleNext()">Cycle suiv. ▶</button>
       <button class="ctrl-btn pause" onclick="cmdPause()">⏸ Pause</button>
       <button class="ctrl-btn reset" onclick="cmdReset()">↺ Reset</button>
       <div class="ctrl-sep"></div>
@@ -623,29 +628,32 @@ let loadedChampions = []; // {name, data: Uint8Array}
 let commandHistory = [];
 let historyIndex = -1;
 let vmInitialized = false; // whether vm.init() has been called
+let snapshotHistory = []; // Array of WasmVm snapshots for "cycle précédent"
+const MAX_SNAPSHOTS = 200; // limit memory usage
 
 // ── SPEED SYSTEM ──
-// Slider 1-100: left=slow, right=fast
+// Slider 1-100: left=slow, right=fast — LINEAR
+// Speed increases continuously from left to right.
 // At low speed: 1 step per tick, long delay between ticks
-// At high speed: multiple steps per tick (batch), short delay
-// Max speed = 3x the old max (30 steps per tick vs ~10 effective)
+// At high speed: many steps per tick (batch), short delay
+// Max speed = 3x the old max (30 steps per tick at val=100)
 function getSpeedConfig() {
   const val = speedSliderVal;
-  if (val <= 20) {
-    // Very slow: 1 step, 200ms down to 80ms
-    const delay = Math.round(200 - (val - 1) * 120 / 19);
-    return { steps: 1, delay: Math.max(80, delay) };
-  } else if (val <= 50) {
-    // Medium: 1 step, 80ms down to 16ms
-    const delay = Math.round(80 - (val - 20) * 64 / 30);
-    return { steps: 1, delay: Math.max(16, delay) };
-  } else if (val <= 75) {
-    // Fast: 1-10 steps per 16ms tick
-    const steps = Math.max(1, Math.round(1 + (val - 50) * 9 / 25));
-    return { steps, delay: 16 };
+  if (val <= 30) {
+    // Slow: 1 step, delay decreases linearly from 300ms to 50ms
+    const delay = Math.round(300 - (val - 1) * 250 / 29);
+    return { steps: 1, delay: Math.max(50, delay) };
+  } else if (val <= 60) {
+    // Medium: 1 step, delay decreases from 50ms to 8ms
+    const delay = Math.round(50 - (val - 30) * 42 / 30);
+    return { steps: 1, delay: Math.max(8, delay) };
+  } else if (val <= 85) {
+    // Fast: steps increase 1→15, delay 8ms
+    const steps = Math.max(1, Math.round(1 + (val - 60) * 14 / 25));
+    return { steps, delay: 8 };
   } else {
-    // Very fast: 10-30 steps per 1ms tick (3x old max)
-    const steps = Math.max(10, Math.round(10 + (val - 75) * 20 / 25));
+    // Very fast: steps increase 15→90, delay 1ms (3x old max)
+    const steps = Math.max(15, Math.round(15 + (val - 85) * 75 / 15));
     return { steps, delay: 1 };
   }
 }
@@ -819,7 +827,7 @@ function processCommand(cmd) {
       cmdRunWithArgs(args);
       break;
     case 'step':
-      cmdStepN(args);
+      cmdCycleNext();
       break;
     case 'pause':
       cmdPause();
@@ -890,7 +898,8 @@ function cmdHelp() {
   term.writeln('');
   termPrint('  ── Exécution ──', '1;36');
   termPrint('  ▶ Run / run           Lancer la VM', '1;32');
-  termPrint('  ⏭ Step / step [N]     Exécuter N cycles (défaut: 1)', '1;32');
+  termPrint('  ◀ Cycle préc.        Revenir au cycle précédent (en pause)', '1;35');
+  termPrint('  Cycle suiv. ▶        Avancer d\'un cycle (en pause)', '1;34');
   termPrint('  ⏸ Pause / pause       Mettre en pause', '1;33');
   termPrint('  ↺ Reset / reset       Réinitialiser la VM', '1;33');
   term.writeln('');
@@ -1004,6 +1013,7 @@ function cmdAsmLoad() {
 function initVmFromChampions(verbose) {
   vm = new WasmVm();
   vmInitialized = false;
+  snapshotHistory = []; // Clear snapshot history for new VM
   let loadedCount = 0;
   for (const ch of loadedChampions) {
     try {
@@ -1087,9 +1097,8 @@ function cmdRunWithArgs(args) {
   prompt();
 }
 
-function cmdStepN(args) {
+function cmdCycleNext() {
   if (!checkWasm()) return;
-  const n = Math.max(1, parseInt(args[0]) || 1);
 
   // Ensure a champion is loaded
   if (!ensureChampionLoaded()) { prompt(); return; }
@@ -1128,12 +1137,22 @@ function cmdStepN(args) {
     return;
   }
 
-  // Execute N steps using vm.step() in a loop (more robust than vm.step_n)
+  // Save snapshot BEFORE stepping (for "cycle précédent")
+  try {
+    const snap = vm.snapshot();
+    snapshotHistory.push(snap);
+    if (snapshotHistory.length > MAX_SNAPSHOTS) {
+      snapshotHistory.shift(); // remove oldest
+    }
+  } catch (e) {
+    console.error('snapshot error:', e);
+    // Continue even if snapshot fails
+  }
+
+  // Execute 1 step
   let ok = true;
   try {
-    for (let i = 0; i < n && ok; i++) {
-      ok = vm.step();
-    }
+    ok = vm.step();
   } catch (e) {
     termPrint('Erreur d\'exécution step: ' + (e.message || e), '1;31');
     console.error('vm.step() error:', e);
@@ -1148,18 +1167,67 @@ function cmdStepN(args) {
     const cycles = vm.cycles();
     const procs = vm.process_count();
     const ctd = vm.cycle_to_die();
-    termPrint(`⏭ Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
+    termPrint(`Cycle suiv. ▶ Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
 
     if (!ok) {
       const wn = vm.winner_nplayer();
       if (wn !== 0) {
-        termPrint(`🏆 Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
+        termPrint(`Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
       } else {
         termPrint('La VM s\'est arrêtée (plus de processus).', '1;33');
       }
     }
   } catch (e) {
     console.error('post-step info error:', e);
+  }
+  prompt();
+}
+
+function cmdCyclePrev() {
+  if (!checkWasm()) return;
+
+  if (!vm || !vmInitialized) {
+    termPrint('VM non initialisée. Chargez des champions et lancez Run d\'abord.', '1;31');
+    prompt();
+    return;
+  }
+
+  // Pause if running
+  if (running) {
+    clearInterval(runInterval);
+    runInterval = null;
+    running = false;
+    document.getElementById('btn-run').classList.remove('active');
+  }
+
+  if (snapshotHistory.length === 0) {
+    termPrint('Aucun snapshot disponible. Avancez d\'au moins un cycle d\'abord.', '1;33');
+    prompt();
+    return;
+  }
+
+  // Pop the last snapshot and restore it
+  const snap = snapshotHistory.pop();
+  try {
+    vm.restore_from(snap);
+  } catch (e) {
+    termPrint('Erreur de restauration du snapshot: ' + (e.message || e), '1;31');
+    console.error('restore_from error:', e);
+    prompt();
+    return;
+  }
+
+  try { drainAndPrintEvents(); } catch (e) { /* ignore */ }
+  try { updateInfo(); } catch (e) { /* ignore */ }
+  try { viz.render(vm); } catch (e) { console.error('viz.render error:', e); }
+
+  try {
+    const cycles = vm.cycles();
+    const procs = vm.process_count();
+    const ctd = vm.cycle_to_die();
+    termPrint(`◀ Cycle préc. Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;35');
+  } catch (e) {
+    console.error('post-restore info error:', e);
   }
   prompt();
 }
@@ -1306,9 +1374,6 @@ function cmdProcs() {
 // ── BUTTON HANDLERS (attached to window for onclick) ──
 
 function cmdRun() { cmdRunWithArgs([]); }
-function cmdStep() {
-  cmdStepN([]);
-}
 function cmdPause() {
   if (running) {
     clearInterval(runInterval);
@@ -1336,6 +1401,8 @@ function cmdReset() {
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.remove('active');
   }
+  // Clear snapshot history
+  snapshotHistory = [];
   if (wasmReady && loadedChampions.length > 0) {
     vm = new WasmVm();
     vmInitialized = false;
@@ -1377,6 +1444,15 @@ function updateSpeedDisplay() {
 function runTick() {
   if (!vm || !running) return;
   const cfg = getSpeedConfig();
+
+  // Take a snapshot before this batch of steps (for cycle précédent)
+  // Only take one snapshot per tick, not per step (memory efficient)
+  if (snapshotHistory.length < MAX_SNAPSHOTS) {
+    try {
+      snapshotHistory.push(vm.snapshot());
+    } catch (e) { /* ignore snapshot errors during run */ }
+  }
+
   let ok = true;
   for (let i = 0; i < cfg.steps && ok; i++) {
     ok = vm.step();
@@ -1837,7 +1913,8 @@ function removeChampion(idx) {
 
 // Module scope doesn't create globals, so attach to window for onclick
 window.cmdRun = cmdRun;
-window.cmdStep = cmdStep;
+window.cmdCycleNext = cmdCycleNext;
+window.cmdCyclePrev = cmdCyclePrev;
 window.cmdPause = cmdPause;
 window.cmdReset = cmdReset;
 window.cmdAsm = cmdAsm;
@@ -1912,11 +1989,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initTerminal();
 
-  // Attach Step button handlers via addEventListener (robust in ES modules)
-  const btnStep = document.getElementById('btn-step');
-  const fsBtnStep = document.getElementById('fs-btn-step');
-  if (btnStep) btnStep.addEventListener('click', cmdStep);
-  if (fsBtnStep) fsBtnStep.addEventListener('click', cmdStep);
+  // Attach Cycle Next/Prev button handlers via addEventListener (robust in ES modules)
+  const btnNext = document.getElementById('btn-next');
+  const btnPrev = document.getElementById('btn-prev');
+  if (btnNext) btnNext.addEventListener('click', cmdCycleNext);
+  if (btnPrev) btnPrev.addEventListener('click', cmdCyclePrev);
 
   // Watch for canvas container resize (layout changes, enlarge mode, etc.)
   const canvasWrap = document.querySelector('.arena-canvas-wrap');

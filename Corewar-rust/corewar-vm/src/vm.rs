@@ -39,6 +39,7 @@ pub struct Process {
     pub optab: usize,
 }
 
+#[derive(Clone)]
 pub struct Vm {
     pub arena: [u8; MEM_SIZE],
     pub owner: [u8; MEM_SIZE],

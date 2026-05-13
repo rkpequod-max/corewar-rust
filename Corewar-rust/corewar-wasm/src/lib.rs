@@ -236,6 +236,21 @@ impl WasmVm {
     pub fn set_verbose(&mut self, v: bool) {
         self.vm.verbose = v;
     }
+
+    // ── Snapshot / Restore (for undo / "cycle précédent") ──
+
+    /// Create a snapshot of the current VM state.
+    /// Returns a new WasmVm containing a cloned copy of the internal Vm.
+    /// The snapshot can later be restored with restore_from().
+    pub fn snapshot(&self) -> WasmVm {
+        WasmVm { vm: self.vm.clone() }
+    }
+
+    /// Restore the VM state from a snapshot.
+    /// Replaces the current internal Vm with the one from the given snapshot.
+    pub fn restore_from(&mut self, snapshot: &WasmVm) {
+        self.vm = snapshot.vm.clone();
+    }
 }
 
 // ── Constants exposed to JS ──
