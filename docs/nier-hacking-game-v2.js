@@ -99,7 +99,7 @@
         try {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(C_BG);
-            scene.fog = new THREE.Fog(C_BG, 80, 200);
+            /* No fog — flat 2D look, no halo */
 
             /* Top-down camera */
             const aspect = 960/540;
