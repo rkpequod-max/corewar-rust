@@ -153,7 +153,7 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       <div class="ctrl-group">
         <span class="ctrl-group-label">Exécution</span>
         <button class="ctrl-btn run tooltip" id="btn-run" onclick="cmdRun()" data-tip="Espace">▶ Run</button>
-        <button class="ctrl-btn step tooltip" id="btn-step" onclick="cmdStep()" data-tip="S">⏭ Step</button>
+        <button class="ctrl-btn step tooltip" id="btn-step" data-tip="S">⏭ Step</button>
         <button class="ctrl-btn pause tooltip" id="btn-pause" onclick="cmdPause()" data-tip="P">⏸ Pause</button>
         <button class="ctrl-btn reset tooltip" id="btn-reset" onclick="cmdReset()" data-tip="R">↺ Reset</button>
       </div>
@@ -254,7 +254,7 @@ loop:
       <span class="cycle-display" id="fs-cycle-display">Cycle: 0</span>
       <div class="ctrl-sep"></div>
       <button class="ctrl-btn run" onclick="cmdRun()">▶ Run</button>
-      <button class="ctrl-btn step" onclick="cmdStep()">⏭ Step</button>
+      <button class="ctrl-btn step" id="fs-btn-step">⏭ Step</button>
       <button class="ctrl-btn pause" onclick="cmdPause()">⏸ Pause</button>
       <button class="ctrl-btn reset" onclick="cmdReset()">↺ Reset</button>
       <div class="ctrl-sep"></div>
@@ -1245,12 +1245,18 @@ function cmdProcs() {
 
 function cmdRun() { cmdRunWithArgs([]); }
 function cmdStep() {
+  // Visual feedback: flash active state
   const btn = document.getElementById('btn-step');
-  if (btn) {
-    btn.classList.add('active');
-    setTimeout(() => btn.classList.remove('active'), 150);
+  const fsBtn = document.getElementById('fs-btn-step');
+  if (btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 200); }
+  if (fsBtn) { fsBtn.classList.add('active'); setTimeout(() => fsBtn.classList.remove('active'), 200); }
+
+  try {
+    cmdStepN([]);
+  } catch (e) {
+    console.error('cmdStep error:', e);
+    if (term) termPrint('Step error: ' + (e.message || e), '1;31');
   }
-  cmdStepN([]);
 }
 function cmdPause() {
   if (running) {
@@ -1836,6 +1842,12 @@ document.addEventListener('DOMContentLoaded', () => {
   viz.render(null); // blank canvas
 
   initTerminal();
+
+  // Attach Step button handlers via addEventListener (robust in ES modules)
+  const btnStep = document.getElementById('btn-step');
+  const fsBtnStep = document.getElementById('fs-btn-step');
+  if (btnStep) btnStep.addEventListener('click', cmdStep);
+  if (fsBtnStep) fsBtnStep.addEventListener('click', cmdStep);
 
   // Watch for canvas container resize (layout changes, enlarge mode, etc.)
   const canvasWrap = document.querySelector('.arena-canvas-wrap');
