@@ -3047,6 +3047,7 @@
         <a href="#cli" class="sb-link" data-section="cli">12 — Ligne de commande</a>
         <a href="#strategie" class="sb-link" data-section="strategie">13 — Stratégie champion</a>
         <a href="#simulateur" class="sb-link" data-section="simulateur">14 — Simulateur VM</a>
+        <a href="#debug" class="sb-link" data-section="debug">15 — Guide de débogage</a>
     </div>
 </aside>
 
@@ -3122,6 +3123,43 @@
             <div class="flow-box vm">Arene 4096 octets</div>
         </div>
     </div>
+
+    <h3>Pourquoi ce projet ?</h3>
+    <p>Le Corewar a été inventé par <strong>D.G. Jones</strong> et <strong>A.K. Dewdney</strong> en 1984, popularisé par un article dans <em>Scientific American</em>. C'est un jeu de programmation qui enseigne des concepts fondamentaux : l'architecture de machine virtuelle, le langage assembleur, la compilation, la gestion mémoire et l'exécution concurrente. À l'école 42, c'est l'un des projets les plus difficiles car il exige de comprendre <strong>toutes les couches</strong> : de la syntaxe assembleur à l'exécution par la VM, en passant par l'encodage binaire et la résolution de symboles.</p>
+    <p>Les compétences acquises sont transversales : compréhension des ISA (Instruction Set Architectures), manipulation de données au niveau octet, tampons circulaires, endianness, ordonnancement de processus, et la notion de contrat entre un compilateur et un runtime.</p>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Prérequis et ordre de lecture</div>
+        <div class="ib-content">
+            L'ordre recommandé est : <strong>1 → 2 → 3 → 4 → 5 → 6 → 7 → 10 → 8 → 9 → 11 → 12 → 13 → 14</strong>. Les sections 7 (Encodage) et 10 (Syntaxe du .s) sont complémentaires et doivent être lues ensemble. La section 9 (C vs Rust) est optionnelle et comparative. Chaque section bâtit sur la précédente — les sections 3 (Arène) et 5 (Cycle de vie) sont les plus critiques à comprendre en profondeur.
+        </div>
+    </div>
+
+    <h3>Correspondance avec l'informatique réelle</h3>
+    <p>Les concepts du Corewar ne sont pas abstraits — ils correspondent directement à des mécanismes réels des processeurs et des systèmes d'exploitation :</p>
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Concept Corewar</th><th>Équivalent réel</th><th>Explication</th></tr></thead>
+            <tbody>
+                <tr><td><code>Arena</code></td><td>RAM (mémoire partagée)</td><td>Espace mémoire unique accessible par tous les processus</td></tr>
+                <tr><td><code>Process</code></td><td>Thread (unité d'exécution concurrente)</td><td>Chaque processus a son propre état mais partage la mémoire</td></tr>
+                <tr><td><code>PC</code></td><td>Instruction Pointer / registre RIP (x86)</td><td>Pointe vers la prochaine instruction à exécuter</td></tr>
+                <tr><td><code>Registres r1-r16</code></td><td>Registres généralistes CPU (rax, rbx...)</td><td>Stockage rapide pour les opérations en cours</td></tr>
+                <tr><td><code>Carry</code></td><td>CPU flag (ZF — Zero Flag en x86)</td><td>Indique si le résultat de la dernière opération est 0</td></tr>
+                <tr><td><code>OCP</code></td><td>Octet ModR/M en x86</td><td>Encode les types d'opérandes pour le décodage</td></tr>
+                <tr><td><code>IDX_MOD</code></td><td>Segmentation mémoire (limitation d'adressage)</td><td>Restreint l'espace d'adressage à ±512 (limitation de plage)</td></tr>
+                <tr><td><code>live</code></td><td>Heartbeat / watchdog timer</td><td>Signal périodique de survie — sans lui, le processus est tué</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Suite logique</div>
+        <div class="ib-content">
+            Maintenant que vous comprenez ce qu'est le Corewar, passez à la <a href="#architecture">section 2 — Architecture globale</a> pour voir comment les composants s'articulent, puis à la <a href="#arena">section 3 — L'Arène</a> pour comprendre le cœur du projet.
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -3171,6 +3209,31 @@
 <span class="kw">pub const</span> <span class="mac">MAX_CHECKS</span>: <span class="ty">i32</span> = <span class="num">10</span>;
 <span class="kw">pub const</span> <span class="mac">REG_NUMBER</span>: <span class="ty">usize</span> = <span class="num">16</span>;</code></pre>
     </div>
+
+    <h3>Flux de données complet</h3>
+    <p>Le pipeline complet, du fichier source au vainqueur :</p>
+    <div class="diagram-box">
+        <pre style="color:var(--text-muted);font-family:var(--mono);font-size:0.78rem;line-height:1.6">champion.s → [Lexer] → [Parser] → [Label Resolution] → [Codegen] → champion.cor
+                                                                               ↓
+champion.cor → [VM: load_champions()] → Arena (4096 bytes)
+                                               ↓
+                                    [VM: process_operations()]
+                                         ↙          ↘
+                                   Process 1      Process 2
+                                   (fetch/decode   (fetch/decode
+                                    /wait/exec)     /wait/exec)
+                                        ↘          ↙
+                                    kill_zombies() → [Winner]</pre>
+    </div>
+
+    <h3>op.h — Le contrat entre l'assembleur et la VM</h3>
+    <p>Le fichier <code>op.h</code> (ou le crate <code>corewar-common</code> en Rust) définit le <strong>jeu d'instructions</strong> : opcode, nom, types de paramètres acceptés, nombre de cycles, règles de carry, présence d'OCP, taille des directs. <strong>L'assembleur ET la VM doivent s'accorder sur cette spécification.</strong> Tout écart entre l'encodage de l'assembleur et le décodage de la VM provoquera des bugs silencieux — le champion sera compilé mais s'exécutera incorrectement.</p>
+    <p>En C, <code>op.h</code> est un fichier header littéralement partagé entre les deux projets. En Rust, le crate <code>corewar-common</code> joue le même rôle : il est importé à la fois par <code>corewar-asm</code> et par <code>corewar-vm</code>, garantissant que les deux utilisent la même définition des opcodes et des constantes.</p>
+
+    <h3>Graphe de dépendances</h3>
+    <p>Une propriété fondamentale de l'architecture : <strong>l'assembleur et la VM sont indépendants</strong>. L'assembleur dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de la VM. La VM dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de l'assembleur. Ils communiquent <strong>uniquement</strong> via le format de fichier <code>.cor</code>.</p>
+    <p>Cette séparation signifie que vous pouvez tester chaque composant indépendamment : compilez un champion avec votre assembleur, dumpz le bytecode, et vérifiez manuellement qu'il correspond à ce que vous attendez. De même, vous pouvez tester la VM avec un fichier <code>.cor</code> généré par un assembleur de référence.</p>
+
 </div>
 </section>
 
@@ -3830,6 +3893,13 @@
         </div>
     </div>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Suite logique</div>
+        <div class="ib-content">
+            L'arène est l'espace où tout se passe. Mais qui lit et écrit dans cette mémoire ? Les <a href="#process">processus</a> — passez à la section 4 pour comprendre leur anatomie, puis à la <a href="#lifecycle">section 5</a> pour voir comment ils exécutent les instructions cycle par cycle.
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -3946,6 +4016,35 @@
 }</code></pre>
     </div>
 
+    <h3>Ordre d'exécution des processus</h3>
+    <p>Les processus s'exécutent dans l'ordre où ils apparaissent dans la liste (FIFO en C, ordre du tableau en Rust). <strong>Tous les processus d'un même cycle sont traités avant de passer au cycle suivant.</strong></p>
+    <p>Les nouveaux processus créés par <code>fork</code> sont ajoutés à la fin de la liste (C) ou dans le buffer <code>new_processes</code> (Rust) et sont insérés <strong>après</strong> la fin du cycle en cours. Cela signifie qu'un processus forké ne s'exécute <strong>pas</strong> au cycle où il a été créé.</p>
+    <p>L'ordre d'exécution a des conséquences concrètes : si le processus A écrit à l'adresse X et le processus B lit à l'adresse X pendant le même cycle, le processus B verra l'<strong>ancienne</strong> valeur s'il est traité après A, ou la <strong>nouvelle</strong> valeur s'il est traité avant A (cela dépend de la phase d'exécution respective des deux processus).</p>
+
+    <h3>Le carry en pratique</h3>
+    <p>Le carry est un flag binaire (0 ou 1) qui détermine le comportement de <code>zjmp</code>. Voici un tableau de référence pour comprendre quelles instructions le modifient et comment :</p>
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Instruction</th><th>Condition</th><th>Carry après</th></tr></thead>
+            <tbody>
+                <tr><td><code>and r1, r2, r3</code></td><td>r1 &amp; r2 = 0</td><td>1</td></tr>
+                <tr><td><code>and r1, r2, r3</code></td><td>r1 &amp; r2 ≠ 0</td><td>0</td></tr>
+                <tr><td><code>or r1, r2, r3</code></td><td>r1 | r2 = 0</td><td>1</td></tr>
+                <tr><td><code>sub r1, r2, r3</code></td><td>r1 - r2 = 0</td><td>1</td></tr>
+                <tr><td><code>ld %0, r1</code></td><td>valeur chargée = 0</td><td>1</td></tr>
+                <tr><td><code>ld %42, r1</code></td><td>valeur chargée ≠ 0</td><td>0</td></tr>
+                <tr><td><code>live %1</code></td><td>N/A</td><td><strong>inchangé</strong></td></tr>
+                <tr><td><code>sti r1, %5, %3</code></td><td>N/A</td><td><strong>inchangé</strong></td></tr>
+                <tr><td><code>fork %:label</code></td><td>N/A</td><td><strong>inchangé</strong></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <p><strong>Point clé</strong> : les instructions qui <strong>ne modifient PAS</strong> le carry sont : <code>live</code>, <code>st</code>, <code>sti</code>, <code>ldi</code>, <code>fork</code>, <code>lfork</code>, <code>aff</code>. C'est crucial pour comprendre le comportement de <code>zjmp</code> — si le carry n'a pas été explicitement positionné avant un <code>zjmp</code>, sa valeur est imprévisible.</p>
+
+    <h3>Mort d'un processus</h3>
+    <p>Un processus meurt quand il n'a pas fait de <code>live</code> avant la vérification de <code>CYCLE_TO_DIE</code>. Quand un processus meurt, <strong>tout son état est perdu</strong> (registres, carry, PC). En C, le nœud de liste est libéré (<code>free()</code>). En Rust, le processus est retiré du <code>Vec</code> via <code>retain_mut</code>.</p>
+    <p><strong>Important</strong> : si <strong>tous</strong> les processus d'un joueur meurent, ce joueur peut <strong>encore gagner</strong> s'il a été le dernier joueur à être rapporté en vie par une instruction <code>live</code>. Un processus mort ne peut pas être ranimé — seul un <code>fork</code> depuis un processus vivant peut créer de nouveaux processus.</p>
+
     <div class="quiz-box">
         <div class="quiz-title">🎯 Quiz — Le Processus</div>
         <div class="quiz-q" data-answer="1">
@@ -4041,6 +4140,41 @@
     }
 }</code></pre>
     </div>
+
+    <h3>Trace concrète : le cycle de vie de <code>sti r1, %:live, %1</code></h3>
+    <p>Voyons exactement ce qui se passe cycle par cycle quand un processus exécute cette instruction :</p>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Trace cycle par cycle</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm">Cycle 100: FETCH — Le processus lit l'octet à PC → 0x0B (opcode de sti)</span>
+           → ir = 10 (index dans op_table), duration = 25 cycles
+           → Le PC ne bouge PAS encore
+
+<span class="cm">Cycle 101 à 124: WAIT — duration décrémente de 25 à 1</span>
+                  → Chaque cycle, duration--
+                  → Les autres processus continuent normalement
+
+<span class="cm">Cycle 125: EXECUTE — duration atteint 0</span>
+           → Lecture de l'OCP à PC+1 → 0x68 (r1, %dir, %dir) ✓ valide
+           → Lecture des paramètres : r1 (1 octet), %:live (2 octets), %1 (2 octets)
+           → Calcul : addr = PC + (offset_live % IDX_MOD) + 1
+           → store_at(vm, proc, r1_value, addr + 3)
+           → PC avance de 7 (1 opcode + 1 OCP + 1 + 2 + 2)
+           → ir = -1 (prêt pour la prochaine instruction)</code></pre>
+    </div>
+
+    <h3>Que se passe-t-il avec une instruction invalide ?</h3>
+    <p>Si le processus lit un octet qui n'est pas un opcode valide, le comportement est différent — aucun cycle n'est consommé :</p>
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Opcode invalide</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm">Cycle 200: FETCH — Le processus lit l'octet à PC → 0x42 (pas un opcode valide)</span>
+           → L'opcode n'existe pas (ni 0, ni > 16)
+           → PC avance de 1 seulement
+           → AUCUN cycle consommé (duration reste 0)
+           → Le processus tente de lire l'octet suivant au cycle suivant</code></pre>
+    </div>
+    <p>Ce comportement est important : un processus qui traverse une zone de données (des octets qui ne sont pas des instructions valides) avance rapidement — un octet par cycle, sans temps d'attente. C'est ce qui permet à un champion de "survivre" même si son code a été partiellement écrasé : les octets invalides sont simplement ignorés.</p>
 
     <h3>CYCLE_TO_DIE — Le mécanisme de survie</h3>
     <p>Tous les <code>CYCLE_TO_DIE</code> cycles, la VM vérifie que chaque processus a fait au moins un <code>live</code>. Ceux qui n'en ont pas fait sont <strong>tués</strong> (zombies). Ce mécanisme est ce qui fait que la partie finit par se terminer :</p>
@@ -4388,6 +4522,13 @@
         </div>
     </div>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Suite logique</div>
+        <div class="ib-content">
+            Vous connaissez maintenant les 16 instructions. Mais comment sont-elles encodées en bytecode ? Passez à la <a href="#encoding">section 7 — Encodage</a> pour comprendre le format .cor, puis à la <a href="#syntaxe">section 10 — Syntaxe du .s</a> pour la référence complète du langage assembleur.
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -4572,6 +4713,37 @@ live: live  %1
     <span class="ty">Ok</span>(())
 }</code></pre>
     </div>
+
+    <h3>Gestion des erreurs — Ce que l'assembleur doit rejeter</h3>
+    <p>Un assembleur robuste doit détecter et signaler toutes les erreurs possibles. Voici la liste exhaustive des erreurs que votre assembleur doit gérer, classées par phase du pipeline :</p>
+
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Phase</th><th>Erreur</th><th>Message attendu</th></tr></thead>
+            <tbody>
+                <tr><td>Lexer</td><td>Caractère illégal dans un label</td><td><code>Lexical error: invalid character '!' in label</code></td></tr>
+                <tr><td>Lexer</td><td>Guillemets non fermés dans .name/.comment</td><td><code>Lexical error: unclosed string</code></td></tr>
+                <tr><td>Parser</td><td>Opcode inconnu</td><td><code>Syntax error: unknown instruction "mov"</code></td></tr>
+                <tr><td>Parser</td><td>Mauvais nombre de paramètres</td><td><code>Syntax error: sti expects 3 parameters, got 2</code></td></tr>
+                <tr><td>Parser</td><td>Type de paramètre invalide</td><td><code>Semantic error: st: parameter 2 cannot be direct</code></td></tr>
+                <tr><td>Parser</td><td>Label référencé mais non défini</td><td><code>Semantic error: undefined label "end"</code></td></tr>
+                <tr><td>Parser</td><td>Registre hors limites (0 ou >16)</td><td><code>Semantic error: invalid register r0</code></td></tr>
+                <tr><td>Header</td><td>.name ou .comment manquant</td><td><code>Error: missing .name directive</code></td></tr>
+                <tr><td>Header</td><td>.name trop long (&gt;128)</td><td><code>Error: champion name too long (130 &gt; 128)</code></td></tr>
+                <tr><td>Codegen</td><td>Programme trop grand (&gt;MEM_SIZE)</td><td><code>Error: program too big (4210 &gt; 4096)</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p><strong>En C</strong>, les erreurs sont typiquement gérées par des codes de retour (<code>-1</code>) et des messages sur <code>stderr</code> via <code>ft_printf_fd(2, ...)</code>. <strong>En Rust</strong>, le système de <code>Result&lt;T, E&gt;</code> avec l'opérateur <code>?</code> garantit qu'aucune erreur ne peut être silencieusement ignorée — le programme ne compilera pas si un <code>Result</code> n'est pas traité.</p>
+
+    <h3>Les deux passes — Pourquoi c'est nécessaire</h3>
+    <p>L'assembleur fait obligatoirement <strong>deux passes</strong> sur le code source. La raison est fondamentale : un label peut être <strong>référencé avant sa définition</strong> (forward reference). Par exemple, dans <code>zjmp %:loop</code> suivi plus loin de <code>loop: live %1</code>, l'assembleur ne peut pas calculer l'offset de <code>%:loop</code> lors de la première rencontre — il doit d'abord connaître la position de toutes les instructions.</p>
+
+    <p><strong>Première passe</strong> (calcul des positions) : on parcourt toutes les instructions en calculant leur taille (opcode + OCP + paramètres) pour déterminer l'adresse de chaque label. On enregistre les positions dans une table des labels.</p>
+
+    <p><strong>Deuxième passe</strong> (génération du bytecode) : on reparcourt les instructions en remplaçant chaque référence à un label par son offset relatif (<code>label_pos - instruction_pos</code>), puis on encode chaque instruction en bytecode. Cette deux-passe est le même principe que les assembleurs réels (NASM, GAS) utilisent pour résoudre les symboles.</p>
+
 </div>
 </section>
 
@@ -4921,6 +5093,13 @@ live: live  %1
         </div>
     </div>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Suite logique</div>
+        <div class="ib-content">
+            Vous connaissez les pièges courants. Pour une méthodologie structurée de débogage, consultez la <a href="#debug">section 15 — Guide de débogage</a>. Pour écrire votre champion, passez à la <a href="#strategie">section 13 — Stratégie</a>.
+        </div>
+    </div>
+
 </div>
 </section>
 
@@ -5038,91 +5217,57 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
     </div>
 
     <h3>Champion 1 : Le survivant minimal</h3>
-    <p>Le champion le plus simple possible : une boucle infinie de <code>live</code>. Il ne fait rien d'autre que signaler qu'il est en vie. C'est la base de tout champion.</p>
+    <p>Le champion le plus simple possible : une boucle infinie de <code>live</code> avec un contrôle explicite du carry. Rappelez-vous : <code>live</code> ne modifie PAS le carry, et <code>zjmp</code> ne saute QUE si carry = 1. Il faut donc garantir que carry = 1 avant chaque <code>zjmp</code>.</p>
 
-    <div class="code-wrapper">
-        <div class="code-header"><span class="lang">survivor.s — Le survivant minimal</span></div>
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># survivor.s — Le champion le plus simple possible</span>
-.name <span class="str">"survivor"</span>
-.comment <span class="str">"Just stay alive"</span>
-
-<span class="mac">loop:</span>
-      live  %1           <span class="cm"># Signale que le joueur 1 est en vie</span>
-      zjmp  %:loop       <span class="cm"># Saut en arrière vers "loop" (carry=1 après live)</span></code></pre>
+    <div class="insight-box">
+        <div class="ib-title">💡 Rappel : le carry et les instructions</div>
+        <div class="ib-content">
+            Le carry est un flag binaire (0 ou 1) qui n'est modifié que par certaines instructions : <code>and</code>, <code>or</code>, <code>xor</code>, <code>sub</code>, <code>add</code>, <code>ld</code>, <code>lld</code>, <code>lldi</code>. Toutes les autres instructions (<code>live</code>, <code>st</code>, <code>sti</code>, <code>ldi</code>, <code>fork</code>, <code>lfork</code>, <code>aff</code>, <code>zjmp</code>) laissent le carry inchangé. La règle est simple : le carry passe à 1 si le résultat de l'opération est 0, sinon il passe à 0.
+        </div>
     </div>
 
-    <p><strong>Comment ça marche</strong> : <code>live %1</code> signale le joueur 1 et met le carry à… non, <code>live</code> ne modifie pas le carry ! Ce champion a un problème : après <code>live</code>, le carry n'est pas garanti à 1, donc <code>zjmp</code> peut ne pas sauter. Voici la version corrigée :</p>
-
     <div class="code-wrapper">
-        <div class="code-header"><span class="lang">survivor_v2.s — Version corrigée</span></div>
+        <div class="code-header"><span class="lang">survivor.s — Le survivant robuste</span></div>
         <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># survivor_v2.s — Survivant avec carry garanti</span>
-.name <span class="str">"survivor"</span>
-.comment <span class="str">"Stay alive with carry control"</span>
-
-<span class="mac">loop:</span>
-      live  %1           <span class="cm"># Signale le joueur 1</span>
-      and   r1, r1, r1   <span class="cm"># r1 = r1 & r1 → ne change pas r1, mais carry = 0 si r1 = 0</span>
-      zjmp  %:loop       <span class="cm"># Saute si carry = 1 (r1 != 0, ce qui est le cas car r1 = -1)</span></code></pre>
-    </div>
-
-    <p>Pourquoi <code>and r1, r1, r1</code> fonctionne : le registre <code>r1</code> contient le numéro du joueur (négatif, donc non nul). L'opération <code>r1 & r1 = r1</code> ne change pas la valeur mais met le carry à 0 si le résultat est 0. Comme r1 = -1 (ou un autre nombre négatif), le résultat n'est pas 0, donc carry = 0… Attendez, c'est l'inverse ! <code>and</code> met carry à 1 si le résultat est 0. Il faut donc une autre approche :</p>
-
-    <div class="code-wrapper">
-        <div class="code-header"><span class="lang">survivor_v3.s — Version robuste</span></div>
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># survivor_v3.s — Survivant robuste avec xor pour carry</span>
+        <pre style="display:block"><code><span class="cm"># survivor.s — Boucle de live avec carry garanti</span>
 .name <span class="str">"survivor"</span>
 .comment <span class="str">"Stay alive — guaranteed loop"</span>
 
 <span class="mac">loop:</span>
-      live  %1           <span class="cm"># Signale le joueur 1</span>
-      ld    %0, r2       <span class="cm"># Charge 0 dans r2 → carry = 1 (résultat = 0)</span>
-      zjmp  %:loop       <span class="cm"># Saute car carry = 1 ✓</span></code></pre>
+      live  %1           <span class="cm"># Signale que le joueur 1 est en vie</span>
+      ld    %0, r2       <span class="cm"># Charge 0 dans r2 → résultat = 0 → carry = 1</span>
+      zjmp  %:loop       <span class="cm"># Saute car carry = 1 ✓ (vers "loop")</span></code></pre>
     </div>
 
-    <p>Cette version est fiable : <code>ld %0, r2</code> charge la valeur 0 dans r2, ce qui met le carry à 1 (car le résultat est 0). Ensuite <code>zjmp</code> saute car carry = 1. La boucle est garantie.</p>
+    <p><strong>Analyse pas à pas :</strong> <code>live %1</code> signale que le joueur 1 est en vie — le carry n'est PAS modifié par cette instruction. Ensuite, <code>ld %0, r2</code> charge la valeur 0 dans le registre r2. Puisque le résultat est 0, le carry passe à 1. Enfin, <code>zjmp %:loop</code> saute vers le label "loop" car le carry est à 1. La boucle est garantie infiniment. Notez que <code>ld %0, r2</code> est la méthode la plus fiable pour forcer carry = 1 : la valeur 0 est connue à l'avance, et le résultat est toujours 0.</p>
 
-    <h3>Champion 2 : Le bomber basique</h3>
-    <p>Un bomber écrit des données dans l'arène pour écraser le code adverse. Le pattern classique : écrire <code>live %0</code> (opcode 0x01 suivi de 0x00 0x00 0x00) à des adresses régulières, avancer le pointeur, et boucler.</p>
-
-    <div class="code-wrapper">
-        <div class="code-header"><span class="lang">bomber.s — Le bomber basique</span></div>
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># bomber.s — Écrase la mémoire adverse</span>
-.name <span class="str">"bomber"</span>
-.comment <span class="str">"Death from above"</span>
-
-<span class="mac">loop:</span>
-      sti   r1, %:bomb, %0    <span class="cm"># Écrit r1 (numéro du joueur, négatif) à l'adresse bomb</span>
-      add   r2, %1, r2        <span class="cm"># Avance le pointeur de bomb de 1 (r2 commence à 0)</span>
-<span class="cm"># Problem: on ne peut pas modifier un label dynamiquement.</span>
-<span class="cm"># Voici la vraie approche :</span></code></pre>
+    <div class="warning-box">
+        <div class="wb-title">⚠️ Pourquoi ne pas utiliser <code>and r1, r1, r1</code> ?</div>
+        <div class="wb-content">
+            Une technique courante est <code>and r1, r1, r1</code> pour mettre le carry à 0 (car r1 ≠ 0 après le live). Mais c'est dangereux : si par accident r1 vaut 0, le carry passerait à 1 et le comportement serait inversé. La technique <code>ld %0, rX</code> est plus sûre car le résultat (0) est garanti, donc carry = 1 est garanti. En compétition, la fiabilité prime sur l'élégance.
+        </div>
     </div>
 
-    <p>Le bomber ci-dessus a un problème conceptuel : on ne peut pas modifier dynamiquement un label en assembleur Corewar. La vraie technique de bombing utilise <code>sti</code> avec un registre comme compteur qui s'incrémente :</p>
+    <h3>Champion 2 : Le bomber</h3>
+    <p>Un bomber écrit des données dans l'arène pour écraser le code adverse. La technique consiste à utiliser <code>sti</code> avec un registre comme compteur qui s'incrémente à chaque itération, balayant ainsi l'arène progressivement. On écrit généralement la valeur du registre r1 (numéro du joueur, négatif) car cette valeur, interprétée comme du code, forme un opcode invalide ou un live avec un mauvais numéro — ce qui "empoisonne" le code ennemi.</p>
 
     <div class="code-wrapper">
-        <div class="code-header"><span class="lang">bomber_v2.s — Bomber fonctionnel</span></div>
+        <div class="code-header"><span class="lang">bomber.s — Bomber avec compteur progressif</span></div>
         <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># bomber_v2.s — Bomber avec compteur</span>
+        <pre style="display:block"><code><span class="cm"># bomber.s — Écrase la mémoire adverse systématiquement</span>
 .name <span class="str">"bomber"</span>
 .comment <span class="str">"Carpet bombing"</span>
 
-<span class="cm"># r1 = numéro du joueur (négatif)</span>
-<span class="cm"># r2 = offset de bombing (commence à une distance)</span>
-
-      ld    %0, r2         <span class="cm"># r2 = 0 (carry = 1)</span>
+      ld    %0, r2         <span class="cm"># r2 = 0 (offset de bombing, carry = 1)</span>
 <span class="mac">loop:</span>
       live  %1             <span class="cm"># Stay alive !</span>
-      sti   r1, r2, %50   <span class="cm"># Écrit r1 à l'adresse PC + r2 + 50</span>
-      add   r2, %50, r2   <span class="cm"># Avance r2 de 50 (spacing entre les bombes)</span>
-      ld    %0, r3         <span class="cm"># Met carry à 1 pour zjmp</span>
+      sti   r1, r2, %50   <span class="cm"># Écrit r1 (poison) à l'adresse PC + r2 + 50</span>
+      add   r2, %50, r2   <span class="cm"># Avance r2 de 50 (espacement entre les bombes)</span>
+      ld    %0, r3         <span class="cm"># Remet carry à 1 pour le zjmp</span>
       zjmp  %:loop         <span class="cm"># Boucle infinie</span></code></pre>
     </div>
 
-    <p><strong>Explication ligne par ligne</strong> : <code>ld %0, r2</code> initialise le compteur à 0 et met carry=1. Dans la boucle, <code>live %1</code> signale le joueur. <code>sti r1, r2, %50</code> écrit la valeur de r1 (le numéro du joueur négatif, qui servira de "poison") à l'adresse PC+r2+50. <code>add r2, %50, r2</code> avance le compteur de 50 pour la prochaine bombe. <code>ld %0, r3</code> remet carry à 1, puis <code>zjmp</code> boucle.</p>
+    <p><strong>Analyse pas à pas :</strong> <code>ld %0, r2</code> initialise le compteur de bombing à 0 et met carry = 1. Dans la boucle : <code>live %1</code> signale le joueur. <code>sti r1, r2, %50</code> écrit la valeur de r1 à l'adresse <code>PC + (r2 + 50) % IDX_MOD</code> — c'est l'attaque. <code>add r2, %50, r2</code> avance le compteur de 50 pour la prochaine bombe (espacement réglable). <code>ld %0, r3</code> remet carry à 1. <code>zjmp %:loop</code> reboucle. Après plusieurs itérations, r2 dépasse IDX_MOD (512), et l'écriture "replie" vers le début grâce au modulo — le bomber balaye toute l'arène cycliquement.</p>
 
     <h3>Champion 3 : Le forker</h3>
     <p>Un forker crée des processus supplémentaires pour occuper l'arène. Plus il y a de processus, plus le champion est résistant — mais aussi plus il consomme de cycles par tour.</p>
@@ -5167,6 +5312,108 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
         <div class="ib-title">💡 La méta-stratégie : combiner les archétypes</div>
         <div class="ib-content">
             Les meilleurs champions combinent les trois archétypes : un processus principal qui fait des <code>live</code> (survie), des processus bombers qui écrasent le code adverse (attaque), et des forks pour créer des processus de remplacement si les bombers se font tuer (résilience). Le pattern classique est : fork → le parent continue à bomber, l'enfant fait des live.
+        </div>
+    </div>
+
+</div>
+</section>
+
+<!-- Section 15: Guide de débogage -->
+<section id="debug" class="reveal">
+<div class="container">
+    <h2><span class="num">15</span> Guide de débogage</h2>
+    <p>Le projet Corewar est truffé de subtilités qui rendent le débogage difficile. Un champion qui "ne marche pas" peut avoir des dizaines de causes possibles : mauvais encodage, mauvaise résolution de labels, oubli de <code>mem_mod()</code>, endianness inversé, carry non maîtrisé... Voici une méthodologie structurée pour diagnostiquer et corriger les problèmes.</p>
+
+    <h3>Méthodologie de débogage en 4 étapes</h3>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+            <div class="lc-content">
+                <div class="lc-title">Valider l'assembleur avec le désassembleur</div>
+                <div class="lc-desc">Compilez votre champion avec votre assembleur, puis désassemblez le <code>.cor</code> obtenu. Le code source reconstruit doit correspondre exactement à l'original. Si ce n'est pas le cas, le bug est dans l'assembleur. Testez avec le champion "zork" du sujet comme cas de référence.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title">Comparer le bytecode avec une référence</div>
+                <div class="lc-desc">Utilisez un assembleur de référence (celui d'un autre étudiant, ou celui fourni) pour compiler le même fichier <code>.s</code>. Comparez les deux fichiers <code>.cor</code> octet par octet avec <code>hexdump -C champion.cor | head -50</code> ou <code>cmp -l ref.cor votre.cor</code>. Toute différence indique un bug d'encodage.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Utiliser le dump mémoire de la VM</div>
+                <div class="lc-desc">Lancez la VM avec l'option <code>-dump N</code> pour afficher l'état de l'arène après N cycles. Vérifiez que les champions sont chargés aux bonnes adresses, que les instructions s'exécutent correctement, et que les écritures mémoire sont au bon endroit. Commencez avec un petit nombre de cycles (10, 50, 100) et augmentez progressivement.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Tracer l'exécution pas à pas</div>
+                <div class="lc-desc">Utilisez le simulateur interactif (section 14) ou le mode ncurses (<code>-d</code>) pour suivre l'exécution cycle par cycle. Vérifiez le PC, les registres, le carry, et l'OCP à chaque étape. Si le PC saute à une adresse inattendue, l'OCP est probablement mal décodé.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Erreurs les plus fréquentes par composant</h3>
+
+    <h4>Assembleur</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>MAGIC number incorrect</strong> : vérifiez que le header commence par <code>0x00EA83F3</code> en Big Endian</li>
+        <li><strong>PROG_SIZE faux</strong> : la taille dans le header doit être exactement le nombre d'octets de bytecode (sans le header)</li>
+        <li><strong>Labels non résolus</strong> : un label référencé mais pas défini provoque une erreur. Vérifiez l'orthographe et les caractères autorisés</li>
+        <li><strong>OCP manquant ou incorrect</strong> : les instructions avec OCP doivent avoir l'OCP calculé correctement (voir section 7)</li>
+        <li><strong>Offset de label inversé</strong> : l'offset est <code>label_pos - instruction_pos</code>, pas l'inverse. Un offset négatif est valide (saut en arrière)</li>
+    </ul>
+
+    <h4>Machine Virtuelle</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>Segfault à l'exécution</strong> : presque toujours un <code>mem_mod()</code> oublié. Vérifiez CHAQUE accès au tableau <code>arena[]</code></li>
+        <li><strong>Little Endian au lieu de Big Endian</strong> : en C, ne JAMAIS faire <code>*(int*)&amp;bytes</code> sur x86. Construire la valeur explicitement octet par octet</li>
+        <li><strong>Carry toujours à 0</strong> : vérifiez que <code>live</code> ne modifie PAS le carry, et que les instructions qui le modifient utilisent bien la règle "carry = (résultat == 0)"</li>
+        <li><strong>CYCLE_TO_DIE ne diminue pas</strong> : vérifiez que <code>nlives</code> est correctement incrémenté par chaque <code>live</code>, et remis à 0 après chaque vérification</li>
+        <li><strong>Processus zombies qui ne meurent pas</strong> : vérifiez que <code>live_count</code> est remis à 0 APRÈS la vérification, pas avant</li>
+    </ul>
+
+    <h4>Champion</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>zjmp ne saute jamais</strong> : le carry n'est pas à 1. Ajoutez <code>ld %0, rX</code> avant chaque <code>zjmp</code></li>
+        <li><strong>sti écrit au mauvais endroit</strong> : n'oubliez pas le <code>+3</code> dans l'adresse de store_at (voir section 11)</li>
+        <li><strong>Le champion meurt immédiatement</strong> : il ne fait pas de <code>live %N</code> où N est son numéro de joueur</li>
+        <li><strong>fork ne va pas assez loin</strong> : <code>fork</code> applique IDX_MOD (max ±512). Utilisez <code>lfork</code> pour les sauts longs</li>
+    </ul>
+
+    <h3>Outils de diagnostic</h3>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Commandes de diagnostic</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># Vérifier le header d'un fichier .cor</span>
+hexdump -C champion.cor | head -10
+
+<span class="cm"># Comparer deux fichiers .cor octet par octet</span>
+cmp -l reference.cor votre.cor
+
+<span class="cm"># Désassembler un champion</span>
+./disassembler champion.cor
+
+<span class="cm"># Dump la mémoire après 1000 cycles</span>
+./corewar -dump 1000 champion1.cor champion2.cor
+
+<span class="cm"># Lancer en mode visuel ncurses</span>
+./corewar -d champion1.cor champion2.cor
+
+<span class="cm"># Vérifier la taille du bytecode (sans le header de 2192 octets)</span>
+ls -l champion.cor   <span class="cm"># taille_fichier - 2192 = taille_bytecode</span>
+xxd -s 136 champion.cor | head -5  <span class="cm"># PROG_SIZE est à l'offset 136</span></code></pre>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">💡 La règle d'or du débogage Corewar</div>
+        <div class="ib-content">
+            Testez toujours avec le champion "zork" du sujet en premier. C'est le cas de référence : si votre VM ne gère pas zork correctement, aucune chance de gérer des champions plus complexes. Ensuite, testez avec un champion qui ne fait que <code>live</code> en boucle (voir section 13). Enfin, testez avec deux champions identiques pour vérifier que le chargement et l'exécution sont symétriques. Ne passez aux champions complexes que quand les cas simples fonctionnent parfaitement.
         </div>
     </div>
 
