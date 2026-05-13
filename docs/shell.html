@@ -69,6 +69,19 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .player-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .player-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .player-lives{font-family:'Courier New',monospace;color:var(--text2)}
+/* ── WINNER BANNER ── */
+.winner-banner{display:none;padding:8px 12px;border-radius:6px;margin:4px 10px;text-align:center;font-weight:700;font-size:.85rem;animation:win-pulse 1.5s ease-in-out infinite}
+.winner-banner.active{display:block}
+@keyframes win-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+/* ── EVENT LOG ── */
+.event-log{max-height:80px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.65rem;color:var(--text2);line-height:1.6;padding:2px 0}
+.event-log .ev-alive{color:var(--green)}
+.event-log .ev-winner{color:var(--yellow);font-weight:700}
+.event-log .ev-aff{color:var(--text3)}
+/* ── PLAYER DETAIL CARD ── */
+.player-detail{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;font-size:.68rem;padding:4px 0}
+.player-detail .dl{color:var(--text3);white-space:nowrap}
+.player-detail .dv{color:var(--text);font-family:'Courier New',monospace;text-align:right}
 /* ── CHAMPION EDITOR ── */
 .editor-section{padding:10px 12px;border-top:1px solid var(--border)}
 .editor-section h3{font-size:.82rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
@@ -105,23 +118,18 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
 .ctrl-btn.pause{border-color:rgba(234,179,8,.5);color:var(--yellow)}
 .ctrl-btn.pause:hover{border-color:var(--yellow);background:rgba(234,179,8,.15)}
 .ctrl-btn.pause:active{background:var(--yellow);color:#000}
-.ctrl-btn.step{border-color:rgba(59,130,246,.5);color:var(--blue)}
-.ctrl-btn.step:hover{border-color:var(--blue);background:rgba(59,130,246,.15)}
-.ctrl-btn.step:active{background:var(--blue);color:#000}
-.ctrl-btn.prev{border-color:rgba(168,85,247,.5);color:var(--purple)}
-.ctrl-btn.prev:hover{border-color:var(--purple);background:rgba(168,85,247,.15)}
-.ctrl-btn.prev:active{background:var(--purple);color:#000}
+
 .ctrl-btn.reset{border-color:rgba(239,68,68,.5);color:var(--red)}
 .ctrl-btn.reset:hover{border-color:var(--red);background:rgba(239,68,68,.15)}
 .ctrl-btn.reset:active{background:var(--red);color:#000}
-.ctrl-btn.view{border-color:rgba(168,85,247,.5);color:var(--purple)}
-.ctrl-btn.view:hover{border-color:var(--purple);background:rgba(168,85,247,.15)}
-.ctrl-btn.view:active{background:var(--purple);color:#000}
+.ctrl-btn.view{background:#000;color:#fff;border-color:#333}
+.ctrl-btn.view:hover{background:#1a1a1a;border-color:#555;color:#fff}
+.ctrl-btn.view:active{background:#333;color:#fff}
 .ctrl-btn.load{border-color:rgba(249,115,22,.5);color:var(--orange)}
 .ctrl-btn.load:hover{border-color:var(--orange);background:rgba(249,115,22,.15)}
 .ctrl-btn.load:active{background:var(--orange);color:#000}
 /* Active state overrides variant colors */
-.ctrl-btn.active.run,.ctrl-btn.active.pause,.ctrl-btn.active.step,.ctrl-btn.active.reset,.ctrl-btn.active.view,.ctrl-btn.active.load,.ctrl-btn.active.prev{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
+.ctrl-btn.active.run,.ctrl-btn.active.pause,.ctrl-btn.active.reset,.ctrl-btn.active.view,.ctrl-btn.active.load{background:var(--cyan);color:#000;border-color:var(--cyan);font-weight:600}
 /* ── CTRL GROUP ── */
 .ctrl-group{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.03);border-radius:6px;padding:3px 4px;position:relative}
 .ctrl-group-label{position:absolute;top:-10px;left:6px;font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;pointer-events:none;white-space:nowrap;line-height:1}
@@ -156,8 +164,6 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       <div class="ctrl-group">
         <span class="ctrl-group-label">Exécution</span>
         <button class="ctrl-btn run tooltip" id="btn-run" onclick="cmdRun()" data-tip="Espace">▶ Run</button>
-        <button class="ctrl-btn prev tooltip" id="btn-prev" onclick="cmdCyclePrev()" data-tip="-">◀ Cycle préc.</button>
-        <button class="ctrl-btn step tooltip" id="btn-next" onclick="cmdCycleNext()" data-tip="+">Cycle suiv. ▶</button>
         <button class="ctrl-btn pause tooltip" id="btn-pause" onclick="cmdPause()" data-tip="P">⏸ Pause</button>
         <button class="ctrl-btn reset tooltip" id="btn-reset" onclick="cmdReset()" data-tip="R">↺ Reset</button>
       </div>
@@ -209,11 +215,20 @@ html,body{height:100%;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
       </div>
     </div>
     <div class="info-section" style="padding:4px 10px">
+      <h3 style="font-size:.72rem;margin-bottom:4px">Joueurs</h3>
       <div id="player-list"><span style="color:var(--text3);font-size:.75rem">Aucun champion chargé</span></div>
     </div>
     <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
       <h3 style="font-size:.72rem;margin-bottom:4px">Processus <span id="proc-count" style="color:var(--text3)">(0)</span></h3>
       <div id="proc-list" style="max-height:120px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.68rem;color:var(--text2);line-height:1.6"></div>
+    </div>
+    <!-- Winner banner -->
+    <div class="winner-banner" id="winner-banner" style="background:rgba(234,179,8,.15);border:1px solid var(--yellow);color:var(--yellow)"></div>
+
+    <!-- Event log -->
+    <div class="info-section" style="padding:4px 10px;border-top:1px solid var(--border)">
+      <h3 style="font-size:.72rem;margin-bottom:4px">Événements</h3>
+      <div class="event-log" id="event-log"><span style="color:var(--text3)">Aucun événement</span></div>
     </div>
     <div class="editor-section">
       <h3>Assembleur</h3>
@@ -258,8 +273,6 @@ loop:
       <span class="cycle-display" id="fs-cycle-display">Cycle: 0</span>
       <div class="ctrl-sep"></div>
       <button class="ctrl-btn run" onclick="cmdRun()">▶ Run</button>
-      <button class="ctrl-btn prev" onclick="cmdCyclePrev()">◀ Cycle préc.</button>
-      <button class="ctrl-btn step" onclick="cmdCycleNext()">Cycle suiv. ▶</button>
       <button class="ctrl-btn pause" onclick="cmdPause()">⏸ Pause</button>
       <button class="ctrl-btn reset" onclick="cmdReset()">↺ Reset</button>
       <div class="ctrl-sep"></div>
@@ -628,8 +641,8 @@ let loadedChampions = []; // {name, data: Uint8Array}
 let commandHistory = [];
 let historyIndex = -1;
 let vmInitialized = false; // whether vm.init() has been called
-let snapshotHistory = []; // Array of WasmVm snapshots for "cycle précédent"
-const MAX_SNAPSHOTS = 200; // limit memory usage
+let eventLogEntries = []; // Recent events for the event log panel
+const MAX_EVENT_LOG = 50; // max events to keep
 
 // ── SPEED SYSTEM ──
 // Slider 1-100: left=slow, right=fast — LINEAR
@@ -640,8 +653,8 @@ const MAX_SNAPSHOTS = 200; // limit memory usage
 function getSpeedConfig() {
   const val = speedSliderVal;
   if (val <= 30) {
-    // Slow: 1 step, delay decreases linearly from 300ms to 50ms
-    const delay = Math.round(300 - (val - 1) * 250 / 29);
+    // Slow: 1 step, delay decreases linearly from 1200ms to 50ms (4x slower min)
+    const delay = Math.round(1200 - (val - 1) * 1150 / 29);
     return { steps: 1, delay: Math.max(50, delay) };
   } else if (val <= 60) {
     // Medium: 1 step, delay decreases from 50ms to 8ms
@@ -826,9 +839,6 @@ function processCommand(cmd) {
     case 'run':
       cmdRunWithArgs(args);
       break;
-    case 'step':
-      cmdCycleNext();
-      break;
     case 'pause':
       cmdPause();
       break;
@@ -898,8 +908,6 @@ function cmdHelp() {
   term.writeln('');
   termPrint('  ── Exécution ──', '1;36');
   termPrint('  ▶ Run / run           Lancer la VM', '1;32');
-  termPrint('  ◀ Cycle préc.        Revenir au cycle précédent (en pause)', '1;35');
-  termPrint('  Cycle suiv. ▶        Avancer d\'un cycle (en pause)', '1;34');
   termPrint('  ⏸ Pause / pause       Mettre en pause', '1;33');
   termPrint('  ↺ Reset / reset       Réinitialiser la VM', '1;33');
   term.writeln('');
@@ -1013,7 +1021,6 @@ function cmdAsmLoad() {
 function initVmFromChampions(verbose) {
   vm = new WasmVm();
   vmInitialized = false;
-  snapshotHistory = []; // Clear snapshot history for new VM
   let loadedCount = 0;
   for (const ch of loadedChampions) {
     try {
@@ -1097,140 +1104,7 @@ function cmdRunWithArgs(args) {
   prompt();
 }
 
-function cmdCycleNext() {
-  if (!checkWasm()) return;
 
-  // Ensure a champion is loaded
-  if (!ensureChampionLoaded()) { prompt(); return; }
-
-  // Pause the VM if currently running
-  if (running) {
-    clearInterval(runInterval);
-    runInterval = null;
-    running = false;
-    document.getElementById('btn-run').classList.remove('active');
-  }
-
-  // Initialize VM if needed
-  if (!vm || !vmInitialized) {
-    try {
-      initVmFromChampions(false);
-    } catch (e) {
-      termPrint('Erreur d\'initialisation de la VM: ' + (e.message || e), '1;31');
-      console.error('initVmFromChampions error:', e);
-      prompt();
-      return;
-    }
-  }
-
-  // Check if VM already finished
-  try {
-    if (vm.winner_nplayer() !== 0) {
-      termPrint('La VM est terminée. Tapez "reset" pour recommencer.', '1;33');
-      prompt();
-      return;
-    }
-  } catch (e) {
-    termPrint('Erreur VM: ' + (e.message || e), '1;31');
-    console.error('winner check error:', e);
-    prompt();
-    return;
-  }
-
-  // Save snapshot BEFORE stepping (for "cycle précédent")
-  try {
-    const snap = vm.snapshot();
-    snapshotHistory.push(snap);
-    if (snapshotHistory.length > MAX_SNAPSHOTS) {
-      snapshotHistory.shift(); // remove oldest
-    }
-  } catch (e) {
-    console.error('snapshot error:', e);
-    // Continue even if snapshot fails
-  }
-
-  // Execute 1 step
-  let ok = true;
-  try {
-    ok = vm.step();
-  } catch (e) {
-    termPrint('Erreur d\'exécution step: ' + (e.message || e), '1;31');
-    console.error('vm.step() error:', e);
-    ok = false;
-  }
-
-  try { drainAndPrintEvents(); } catch (e) { /* ignore */ }
-  try { updateInfo(); } catch (e) { /* ignore */ }
-  try { viz.render(vm); } catch (e) { console.error('viz.render error:', e); }
-
-  try {
-    const cycles = vm.cycles();
-    const procs = vm.process_count();
-    const ctd = vm.cycle_to_die();
-    termPrint(`Cycle suiv. ▶ Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;34');
-
-    if (!ok) {
-      const wn = vm.winner_nplayer();
-      if (wn !== 0) {
-        termPrint(`Le joueur ${wn} (${vm.winner_name()}) a gagné en ${cycles} cycles !`, '1;33');
-      } else {
-        termPrint('La VM s\'est arrêtée (plus de processus).', '1;33');
-      }
-    }
-  } catch (e) {
-    console.error('post-step info error:', e);
-  }
-  prompt();
-}
-
-function cmdCyclePrev() {
-  if (!checkWasm()) return;
-
-  if (!vm || !vmInitialized) {
-    termPrint('VM non initialisée. Chargez des champions et lancez Run d\'abord.', '1;31');
-    prompt();
-    return;
-  }
-
-  // Pause if running
-  if (running) {
-    clearInterval(runInterval);
-    runInterval = null;
-    running = false;
-    document.getElementById('btn-run').classList.remove('active');
-  }
-
-  if (snapshotHistory.length === 0) {
-    termPrint('Aucun snapshot disponible. Avancez d\'au moins un cycle d\'abord.', '1;33');
-    prompt();
-    return;
-  }
-
-  // Pop the last snapshot and restore it
-  const snap = snapshotHistory.pop();
-  try {
-    vm.restore_from(snap);
-  } catch (e) {
-    termPrint('Erreur de restauration du snapshot: ' + (e.message || e), '1;31');
-    console.error('restore_from error:', e);
-    prompt();
-    return;
-  }
-
-  try { drainAndPrintEvents(); } catch (e) { /* ignore */ }
-  try { updateInfo(); } catch (e) { /* ignore */ }
-  try { viz.render(vm); } catch (e) { console.error('viz.render error:', e); }
-
-  try {
-    const cycles = vm.cycles();
-    const procs = vm.process_count();
-    const ctd = vm.cycle_to_die();
-    termPrint(`◀ Cycle préc. Cycle ${cycles} | ${procs} processus | CTD=${ctd}`, '1;35');
-  } catch (e) {
-    console.error('post-restore info error:', e);
-  }
-  prompt();
-}
 
 // Ensures at least one champion is loaded (auto-loads editor content if needed)
 function ensureChampionLoaded() {
@@ -1265,12 +1139,42 @@ function drainAndPrintEvents() {
       for (const ev of events) {
         if (ev.type === 'alive') {
           termPrint(`  Un processus montre que le joueur ${ev.nplayer} (${ev.name}) est en vie`, '1;33');
+          eventLogEntries.push({ cycle: ev.cycle, type: 'alive', text: `Joueur ${ev.nplayer} (${ev.name}) est en vie` });
+        } else if (ev.type === 'winner') {
+          eventLogEntries.push({ cycle: ev.cycle, type: 'winner', text: `Joueur ${ev.nplayer} (${ev.name}) a gagné !` });
+        } else if (ev.type === 'aff') {
+          eventLogEntries.push({ cycle: vm.cycles(), type: 'aff', text: `aff: '${ev.ch}'` });
         }
       }
+      // Trim event log
+      if (eventLogEntries.length > MAX_EVENT_LOG) {
+        eventLogEntries = eventLogEntries.slice(-MAX_EVENT_LOG);
+      }
+      updateEventLog();
     }
   } catch (e) {
     // ignore parse errors
   }
+}
+
+function updateEventLog() {
+  const el = document.getElementById('event-log');
+  if (!el) return;
+  if (eventLogEntries.length === 0) {
+    el.innerHTML = '<span style="color:var(--text3)">Aucun événement</span>';
+    return;
+  }
+  let html = '';
+  // Show most recent events at the bottom
+  const start = Math.max(0, eventLogEntries.length - 15);
+  for (let i = start; i < eventLogEntries.length; i++) {
+    const ev = eventLogEntries[i];
+    const cls = ev.type === 'alive' ? 'ev-alive' : ev.type === 'winner' ? 'ev-winner' : 'ev-aff';
+    html += `<div class="${cls}">C${ev.cycle} ${ev.text}</div>`;
+  }
+  el.innerHTML = html;
+  // Auto-scroll to bottom
+  el.scrollTop = el.scrollHeight;
 }
 
 function cmdStatus() {
@@ -1401,8 +1305,12 @@ function cmdReset() {
     document.getElementById('btn-run').classList.remove('active');
     document.getElementById('btn-pause').classList.remove('active');
   }
-  // Clear snapshot history
-  snapshotHistory = [];
+  // Clear event log
+  eventLogEntries = [];
+  updateEventLog();
+  // Hide winner banner
+  const winnerBanner = document.getElementById('winner-banner');
+  if (winnerBanner) winnerBanner.classList.remove('active');
   if (wasmReady && loadedChampions.length > 0) {
     vm = new WasmVm();
     vmInitialized = false;
@@ -1444,14 +1352,6 @@ function updateSpeedDisplay() {
 function runTick() {
   if (!vm || !running) return;
   const cfg = getSpeedConfig();
-
-  // Take a snapshot before this batch of steps (for cycle précédent)
-  // Only take one snapshot per tick, not per step (memory efficient)
-  if (snapshotHistory.length < MAX_SNAPSHOTS) {
-    try {
-      snapshotHistory.push(vm.snapshot());
-    } catch (e) { /* ignore snapshot errors during run */ }
-  }
 
   let ok = true;
   for (let i = 0; i < cfg.steps && ok; i++) {
@@ -1604,7 +1504,7 @@ function updateFsInfo() {
     if (statusEl) { statusEl.textContent = '—'; statusEl.style.color = 'var(--text3)'; }
   }
 
-  // Player list
+  // Player list (detailed)
   const playerListEl = el('fs-player-list');
   if (playerListEl) {
     const pcount = vm.player_count();
@@ -1614,11 +1514,21 @@ function updateFsInfo() {
       let html = '';
       for (let i = 0; i < pcount; i++) {
         const pName = vm.player_name(i);
+        const nplayer = vm.player_nplayer(i);
+        const lastLive = vm.player_last_live(i);
+        const lives = vm.player_lives(i);
         const c = PLAYER_FG[i] || GRAY;
-        html += `<div class="player-row" style="gap:6px;padding:2px 0">
-          <div class="player-dot" style="background:${c}"></div>
-          <span style="color:${c};font-weight:700;font-size:.72rem">P${i+1}</span>
-          <span class="player-name" style="font-size:.72rem">${pName}</span>
+        html += `<div style="padding:2px 0;border-bottom:1px solid var(--border)">
+          <div class="player-row" style="gap:4px">
+            <div class="player-dot" style="background:${c}"></div>
+            <span style="color:${c};font-weight:700;font-size:.72rem">P${i+1}</span>
+            <span class="player-name" style="font-size:.72rem">${pName}</span>
+          </div>
+          <div style="margin-left:14px;font-size:.6rem;color:var(--text3);display:flex;gap:6px">
+            <span>n°${nplayer}</span>
+            <span>live:${lives}</span>
+            <span>dernier:${lastLive}</span>
+          </div>
         </div>`;
       }
       playerListEl.innerHTML = html;
@@ -1641,6 +1551,7 @@ function updateFsInfo() {
         const owner = vm.process_owner(i);
         const carry = vm.process_carry(i);
         const ir = vm.process_ir(i);
+        const dur = vm.process_duration(i);
         const opName = ir >= 0 ? vm.process_op_name(i) : '---';
         const ownerColor = getPlayerColor(owner);
         html += '<div style="display:flex;gap:4px">';
@@ -1649,6 +1560,7 @@ function updateFsInfo() {
         html += '<span style="color:var(--text3)">PC:</span>';
         html += '<span style="color:var(--cyan)">' + pc.toString(16).padStart(4,'0') + '</span>';
         html += '<span style="color:var(--green)">' + opName + '</span>';
+        if (ir >= 0) html += '<span style="color:var(--text3)">dur:' + dur + '</span>';
         html += '</div>';
       }
       if (procCount > 30) {
@@ -1833,6 +1745,15 @@ function updateInfo() {
   }
   document.getElementById('cycle-display').textContent = 'Cycle: ' + vm.cycles();
 
+  // Update winner banner
+  const winnerBanner = document.getElementById('winner-banner');
+  if (winnerNplayer !== 0) {
+    winnerBanner.textContent = '🏆 Joueur ' + winnerNplayer + ' (' + vm.winner_name() + ') a gagné en ' + vm.cycles() + ' cycles !';
+    winnerBanner.classList.add('active');
+  } else {
+    winnerBanner.classList.remove('active');
+  }
+
   // Update process list (ncurses-style)
   const procEl = document.getElementById('proc-list');
   const procCountEl = document.getElementById('proc-count');
@@ -1848,6 +1769,7 @@ function updateInfo() {
       const owner = vm.process_owner(i);
       const carry = vm.process_carry(i);
       const ir = vm.process_ir(i);
+      const dur = vm.process_duration(i);
       const opName = ir >= 0 ? vm.process_op_name(i) : '---';
       const ownerColor = getPlayerColor(owner);
       html += '<div style="display:flex;gap:4px">';
@@ -1856,6 +1778,7 @@ function updateInfo() {
       html += '<span style="color:var(--text3)">PC:</span>';
       html += '<span style="color:var(--cyan)">' + pc.toString(16).padStart(4,'0') + '</span>';
       html += '<span style="color:var(--green)">' + opName + '</span>';
+      if (ir >= 0) html += '<span style="color:var(--text3)">dur:' + dur + '</span>';
       html += '</div>';
     }
     if (procCount > 50) {
@@ -1886,16 +1809,37 @@ function updatePlayerList() {
   el.innerHTML = loadedChampions.map((ch, i) => {
     let lastLive = '-';
     let lives = '-';
+    let codeSize = ch.codeSize || '-';
+    let startAddr = '-';
+    let nplayer = '-';
+    let livePct = 0;
     if (vm && vmInitialized && i < vm.player_count()) {
       lastLive = vm.player_last_live(i);
       lives = vm.player_lives(i);
+      codeSize = vm.player_code_size(i);
+      startAddr = '0x' + vm.player_pc_address(i).toString(16).padStart(4, '0');
+      nplayer = vm.player_nplayer(i);
+      // Calculate live percentage based on total lives
+      const totalLives = vm.nlives();
+      if (totalLives > 0) livePct = Math.round(lives / totalLives * 100);
     }
-    return `<div class="player-row" style="gap:8px;padding:4px 0">
-      <div class="player-dot" style="background:${colors[i]}"></div>
-      <span style="color:${colors[i]};font-weight:700;font-size:.75rem">P${i+1}</span>
-      <span class="player-name" style="font-size:.75rem">${ch.name}</span>
-      <span style="color:var(--text3);font-family:'Courier New',monospace;font-size:.68rem">live:${lastLive}</span>
-      <button class="ctrl-btn" style="font-size:.65rem;padding:1px 5px" onclick="removeChampion(${i})">✕</button>
+    const liveBarColor = colors[i] || GRAY;
+    const liveBarWidth = Math.min(100, livePct);
+    return `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
+      <div class="player-row" style="gap:8px">
+        <div class="player-dot" style="background:${colors[i]}"></div>
+        <span style="color:${colors[i]};font-weight:700;font-size:.75rem">P${i+1}</span>
+        <span class="player-name" style="font-size:.75rem;font-weight:600">${ch.name}</span>
+        <span style="color:var(--text3);font-size:.65rem">n°${nplayer}</span>
+        <button class="ctrl-btn" style="font-size:.65rem;padding:1px 5px" onclick="removeChampion(${i})">✕</button>
+      </div>
+      <div class="player-detail" style="margin-left:18px">
+        <span class="dl">Code:</span><span class="dv">${codeSize} oct.</span>
+        <span class="dl">Départ:</span><span class="dv">${startAddr}</span>
+        <span class="dl">Dernier live:</span><span class="dv" style="color:${lastLive !== '-' ? 'var(--green)' : 'var(--text3)'}">${lastLive}</span>
+        <span class="dl">Lives:</span><span class="dv" style="color:${lives !== '-' && lives > 0 ? 'var(--yellow)' : 'var(--text3)'}">${lives}${livePct > 0 ? ' (' + livePct + '%)' : ''}</span>
+      </div>
+      ${livePct > 0 ? `<div style="margin-left:18px;margin-top:2px;height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div style="width:${liveBarWidth}%;height:100%;background:${liveBarColor};border-radius:2px"></div></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1913,8 +1857,6 @@ function removeChampion(idx) {
 
 // Module scope doesn't create globals, so attach to window for onclick
 window.cmdRun = cmdRun;
-window.cmdCycleNext = cmdCycleNext;
-window.cmdCyclePrev = cmdCyclePrev;
 window.cmdPause = cmdPause;
 window.cmdReset = cmdReset;
 window.cmdAsm = cmdAsm;
@@ -1988,12 +1930,6 @@ document.addEventListener('DOMContentLoaded', () => {
   viz.render(null); // blank canvas
 
   initTerminal();
-
-  // Attach Cycle Next/Prev button handlers via addEventListener (robust in ES modules)
-  const btnNext = document.getElementById('btn-next');
-  const btnPrev = document.getElementById('btn-prev');
-  if (btnNext) btnNext.addEventListener('click', cmdCycleNext);
-  if (btnPrev) btnPrev.addEventListener('click', cmdCyclePrev);
 
   // Watch for canvas container resize (layout changes, enlarge mode, etc.)
   const canvasWrap = document.querySelector('.arena-canvas-wrap');
