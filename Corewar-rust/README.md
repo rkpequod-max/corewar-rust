@@ -1,6 +1,6 @@
 # Corewar — Rust
 
-Traduction du projet Corewar (C) en Rust, avec visualiseur ncurses interactif. Workspace Cargo avec 4 crates :
+Traduction du projet Corewar (C) en Rust, avec visualiseur ncurses interactif et shell Web WASM. Workspace Cargo avec 5 crates :
 
 <p align="center">
   <img src="assets/corewar.png" alt="Corewar Visualizer" width="600">
@@ -16,6 +16,7 @@ Traduction du projet Corewar (C) en Rust, avec visualiseur ncurses interactif. W
 | `corewar-asm` | Assembleur — traduit les fichiers `.s` en bytecode `.cor` |
 | `corewar-vm` | Machine virtuelle — exécute les champions dans l'arène |
 | `corewar-disasm` | Désassembleur — traduit les `.cor` en `.s` |
+| `corewar-wasm` | Bridge WASM — compile la VM en WebAssembly pour le navigateur |
 
 ## Compilation
 
@@ -368,3 +369,308 @@ diff /tmp/zork_rt1.cor /tmp/zork_rt2.cor && echo "Roundtrip OK" || echo "Roundtr
 | kill_zombies O(N^2) | `vm.rs` | `Vec::remove(i)` dans une boucle remplace par `retain_mut` en O(N) |
 | Lexer sans espace | `lexer.rs` | `fork%:label` non reconnu car `%` n'etait pas un delimiteur d'opcode |
 | Code mort | `parser.rs`, `error.rs`, `lexer.rs` | Champ `mem_pos` et variantes `Syntax`/`Other` inutilises supprimes |
+
+---
+
+## Shell Web — WASM (WebAssembly)
+
+La page `docs/shell.html` offre un shell Corewar complet dans le navigateur, utilisant la **vraie VM Rust compilée en WebAssembly**. Cela signifie que le code qui exécute les champions dans le navigateur est **exactement le même** que le binaire CLI — il n'y a aucune réimplémentation JavaScript de la logique de la VM. Le WASM s'exécute entièrement côté client (dans le navigateur), il n'y a pas de backend ni de serveur.
+
+### Pourquoi WASM et pas JavaScript ?
+
+Une réimplémentation JavaScript de la VM Corewar serait :
+- **Incorrecte par nature** : les bugs de traduction seraient inévitables (arithmétique modulo, gestion des carry, encodage des opcodes, etc.)
+- **Inutile comme référence** : le but du projet est de fournir une implémentation de référence fiable pour aider d'autres à corriger leur projet
+- **Impossible à maintenir** : chaque modification du code Rust devrait être répliquée manuellement en JS
+
+En compilant la VM Rust en WASM, on obtient :
+- **Zéro réimplémentation** : le code est le même que le CLI, compilé vers une cible différente
+- **Fidélité garantie** : si le CLI produit un dump correct, le shell Web aussi
+- **Maintenance automatique** : toute modification du code Rust se répercute automatiquement dans le shell Web à la prochaine compilation WASM
+
+### Architecture de `corewar-wasm`
+
+Le crate `corewar-wasm` est un bridge mince qui enveloppe la VM Rust avec `wasm-bindgen` pour l'exposer au JavaScript du navigateur. Il ne contient **aucune logique de VM** — il se contente de traduire les types Rust en types JS et d'exposer les méthodes nécessaires.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Navigateur                            │
+│                                                          │
+│  shell.html (JS)                                        │
+│  ┌──────────────────┐  ┌──────────────────────────┐     │
+│  │  UI : terminal    │  │  UI : canvas arène       │     │
+│  │  (xterm.js)       │  │  (visualisation 64×64)   │     │
+│  └────────┬─────────┘  └────────────┬─────────────┘     │
+│           │                         │                    │
+│           └──────────┬──────────────┘                    │
+│                      │ appels WASM                       │
+│                      ▼                                   │
+│  ┌──────────────────────────────────────────────┐       │
+│  │  corewar-wasm (WasmVm)                       │       │
+│  │  ─────────────────────────                   │       │
+│  │  load_player_bytes() → charge un .cor        │       │
+│  │  init()              → place les champions   │       │
+│  │  step() / step_n()   → exécute N cycles      │       │
+│  │  get_arena()         → mémoire 4096 octets    │       │
+│  │  get_owner()         → carte des propriétaires│       │
+│  │  get_scrb()          → buffer d'écriture      │       │
+│  │  drain_events_json() → événements (live, aff) │       │
+│  └──────────────────┬───────────────────────────┘       │
+│                     │ utilise                             │
+│  ┌──────────────────▼───────────────────────────┐       │
+│  │  corewar-vm (Vm, Player, Process, VmEvent)   │       │
+│  │  ────────────────────────────────────         │       │
+│  │  LE MÊME CODE QUE LE BINAIRE CLI             │       │
+│  └──────────────────────────────────────────────┘       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Feature gating du visualiseur ncurses
+
+La VM Rust utilise normalement ncurses (via `pancurses`) pour le visualiseur interactif. Or ncurses ne peut pas se compiler en WASM — c'est une bibliothèque système C qui nécessite un terminal. Pour résoudre ce problème, le visualiseur est **feature-gated** dans `corewar-vm` :
+
+```toml
+# corewar-vm/Cargo.toml
+[features]
+default = ["visualizer"]
+visualizer = ["ncurse-dep"]
+
+[dependencies]
+ncurse-dep = { package = "ncurses", version = "5.101", optional = true }
+```
+
+Quand `corewar-wasm` dépend de `corewar-vm`, il **désactive les features par défaut** :
+
+```toml
+# corewar-wasm/Cargo.toml
+[dependencies]
+corewar-vm = { path = "../corewar-vm", default-features = false }
+```
+
+Ainsi, la compilation WASM n'inclut ni ncurses ni le module `visualizer` — uniquement le cœur de la VM. Le module `visualizer` est conditionné par `#[cfg(feature = "visualizer")]` dans `lib.rs` et `main.rs`, ce qui signifie qu'il est totalement exclu de la compilation WASM.
+
+### Système d'événements (`VmEvent`)
+
+En mode CLI, la VM affiche les événements via `println!` (live, aff, vainqueur). En mode WASM, il n'y a pas de stdout — le navigateur ne peut pas lire les prints Rust. Pour résoudre ce problème, la VM collecte les événements dans un `Vec<VmEvent>` :
+
+```rust
+pub enum VmEvent {
+    PlayerAlive { nplayer: i32, name: String, cycle: i32 },
+    AffChar { ch: char },
+    Winner { nplayer: i32, name: String },
+}
+```
+
+Les méthodes `player_alive()` et `op_aff()` poussent des événements dans `self.events` au lieu de faire un `println!`. Le bridge WASM expose `drain_events_json()` qui vide le buffer et renvoie les événements au format JSON, que le JavaScript peut alors parser et afficher dans le terminal xterm.js.
+
+Cette approche est propre et ne modifie pas le comportement de la VM : en mode CLI, les événements sont simplement imprimés ; en mode WASM, ils sont collectés et transmis au frontend.
+
+### Méthodes exposées par `WasmVm`
+
+Le bridge WASM expose les méthodes suivantes au JavaScript :
+
+| Méthode | Description |
+|---------|-------------|
+| `WasmVm.new()` | Crée une nouvelle instance de la VM |
+| `load_player_bytes(data, name)` | Charge un champion depuis les bytes d'un fichier `.cor` |
+| `load_player_bytes_with_num(data, name, n)` | Charge un champion avec un numéro de joueur spécifique |
+| `init()` | Place les champions dans l'arène et crée les processus initiaux |
+| `step()` | Exécute exactement 1 cycle, renvoie `false` si la VM est terminée |
+| `step_n(n)` | Exécute N cycles d'un coup |
+| `reset()` | Réinitialise la VM (conserve les champions chargés) |
+| `get_arena()` | Renvoie une copie de l'arène (4096 octets) |
+| `get_owner()` | Renvoie la carte des propriétaires (4096 octets : 0=aucun, 1-4=joueur) |
+| `get_scrb()` | Renvoie le screen buffer (cellules récemment écrites) |
+| `drain_events_json()` | Vide et renvoie les événements en JSON |
+| `cycles()` | Cycle actuel |
+| `cycle_to_die()` | Valeur actuelle de CYCLE_TO_DIE |
+| `process_count()` | Nombre de processus vivants |
+| `player_count()` | Nombre de joueurs |
+| `is_running()` | La VM est-elle en cours d'exécution |
+| `player_name(idx)` | Nom du joueur à l'index donné |
+| `player_nplayer(idx)` | Numéro du joueur |
+| `player_lives(idx)` | Nombre de lives du joueur |
+| `process_pc(idx)` | PC du processus à l'index donné |
+| `process_owner(idx)` | Propriétaire du processus |
+| `process_ir(idx)` | Instruction register du processus (-1 si aucune) |
+| `process_op_name(idx)` | Nom de l'opcode en cours d'exécution |
+| `winner_nplayer()` | Numéro du vainqueur |
+| `winner_name()` | Nom du vainqueur |
+| `set_verbose(v)` | Active/désactive le mode verbeux |
+
+Plus des fonctions utilitaires : `mem_size()`, `cycle_to_die_init()`, `cycle_delta()`, `nbr_live()`, `max_checks()`, `reg_number()`, `op_name(opcode)`, `op_cycle(opcode)`.
+
+### Compilation WASM locale
+
+Pour compiler le WASM localement (par exemple pour tester le shell sans push sur GitHub) :
+
+```bash
+# Prérequis : installer wasm-pack
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+# Ajouter la cible WASM au toolchain Rust
+rustup target add wasm32-unknown-unknown
+
+# Compiler (depuis la racine du workspace)
+cd corewar-wasm
+wasm-pack build --target web --out-dir ../../docs/wasm -- --no-default-features
+```
+
+Le flag `--no-default-features` est crucial : il désactive la feature `visualizer` de `corewar-vm`, sinon la compilation échouerait car ncurses ne peut pas être compilé en WASM.
+
+Le résultat est placé dans `docs/wasm/` :
+- `corewar_wasm.js` — le glue code JavaScript généré par wasm-bindgen
+- `corewar_wasm_bg.wasm` — le binaire WebAssembly compilé
+
+Le fichier `shell.html` importe ces fichiers via `import init, { WasmVm } from './wasm/corewar_wasm.js'`.
+
+---
+
+### GitHub Actions : workflow de build et déploiement
+
+Le projet utilise GitHub Actions pour compiler le WASM et déployer le shell sur GitHub Pages automatiquement à chaque push sur `main`. Le workflow est défini dans `.github/workflows/pages.yml`.
+
+#### Pipeline CI/CD
+
+```
+Push sur main
+     │
+     ▼
+┌─────────────────────┐
+│  Job: build          │
+│  ─────────────       │
+│  1. Checkout du repo │
+│  2. Install Rust     │
+│     (target: wasm32) │
+│  3. Install wasm-pack│
+│  4. Build WASM       │
+│     cd Corewar-rust/ │
+│     corewar-wasm/    │
+│     wasm-pack build  │
+│     --target web     │
+│     --out-dir        │
+│     ../../docs/wasm  │
+│  5. Verify output    │
+│     (test -f .js     │
+│      test -f .wasm)  │
+│  6. Upload artifact  │
+│     (docs/)          │
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  Job: deploy         │
+│  ─────────────       │
+│  1. Download artifact│
+│  2. Deploy to        │
+│     GitHub Pages     │
+└─────────────────────┘
+```
+
+#### Détails du workflow `pages.yml`
+
+```yaml
+name: Build WASM and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:          # Permet aussi de lancer manuellement
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write             # Requis pour le déploiement GitHub Pages
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true    # Annule les builds en cours si un nouveau push arrive
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown    # Cible WASM
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM
+        run: |
+          cd Corewar-rust/corewar-wasm
+          wasm-pack build --target web --out-dir ../../docs/wasm -- --no-default-features
+
+      - name: Verify WASM output
+        run: |
+          ls -la docs/wasm/
+          test -f docs/wasm/corewar_wasm.js || (echo "Missing JS glue" && exit 1)
+          test -f docs/wasm/corewar_wasm_bg.wasm || (echo "Missing WASM binary" && exit 1)
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+#### Points clés du workflow
+
+1. **`targets: wasm32-unknown-unknown`** — Indique à rustup d'installer la cible WASM. Sans ça, la compilation échouerait avec "can't find crate for std".
+
+2. **`--no-default-features`** — Désactive la feature `visualizer` (ncurses) de `corewar-vm`. C'est indispensable car ncurses est une dépendance système C qui ne peut pas être cross-compilée vers WASM.
+
+3. **`--target web`** — Dit à wasm-pack de générer un format compatible avec les imports ES modules (utilisable directement avec `import` dans le navigateur, sans bundler comme Webpack).
+
+4. **`--out-dir ../../docs/wasm`** — Place les fichiers générés dans le dossier `docs/wasm/` qui est servi par GitHub Pages. Le `shell.html` les importe avec `from './wasm/corewar_wasm.js'`.
+
+5. **Vérification des outputs** — Le workflow vérifie que les fichiers `.js` et `.wasm` existent bien avant de déployer. Si la compilation Rust échoue silencieusement ou produit un output incomplet, le workflow échoue au lieu de déployer une version cassée.
+
+6. **`workflow_dispatch`** — Permet de lancer le build manuellement depuis l'onglet Actions sur GitHub, utile pour forcer un redéploiement sans faire de commit.
+
+7. **Concurrency** — Si plusieurs pushes arrivent rapidement, seul le dernier build se termine, les autres sont annulés pour éviter de gaspiller des minutes CI.
+
+#### Dépannage du workflow
+
+Si le workflow échoue, les causes les plus probables sont :
+
+| Erreur | Cause | Solution |
+|--------|-------|----------|
+| `can't find crate for std` | Cible WASM non installée | Vérifier que `targets: wasm32-unknown-unknown` est dans le step Rust |
+| `linking with cc failed` | ncurses inclus dans le build WASM | Vérifier le `--no-default-features` dans la commande wasm-pack |
+| `Missing JS glue` / `Missing WASM binary` | La compilation a échoué silencieusement | Regarder les logs du step "Build WASM" pour l'erreur Rust |
+| `403` au déploiement | Permissions insuffisantes | Vérifier que le repo a GitHub Pages activé et que le workflow a les permissions `pages: write` |
+| Le shell affiche "Module WASM non chargé" | Les fichiers WASM ne sont pas dans `docs/wasm/` | Vérifier que le workflow a bien produit les fichiers et que GitHub Pages sert bien le dossier `docs` |
+
+---
+
+### Fonctionnalités du shell Web
+
+Le shell offre une interface complète dans le navigateur :
+
+- **Terminal interactif** (xterm.js) — Commandes : `load`, `sample`, `asm`, `asmload`, `run`, `step`, `pause`, `reset`, `status`, `arena`, `dump`, `players`, `procs`, `speed`, `help`
+- **Visualisation de l'arène** (canvas) — Grille 64×64 en hexadécimal, colorée par propriétaire, avec surbrillance des cellules récemment écrites (scrb) et des compteurs de programme (PC)
+- **Mode agrandi** — L'arène prend les 3/4 de la page, le terminal est réduit
+- **Mode plein écran** — L'arène occupe tout l'écran avec contrôles intégrés et panneau d'info latéral
+- **Éditeur d'assembleur** — Écrire du code `.s` directement dans le navigateur, l'assembler et le charger dans la VM
+- **Chargement de fichiers** — Charger des fichiers `.cor` depuis le disque local
+- **Champions exemples** — `live`, `zork`, `forker`, `stimp` pré-intégrés
+- **Contrôle de vitesse** — Slider de 1 à 100, adaptatif pour les simulations longues
+
+### Assembleur JavaScript
+
+Le shell inclut un assembleur JavaScript autonome pour le code `.s` écrit dans l'éditeur. Cet assembleur n'est **pas** une réimplémentation de `corewar-asm` — il est utilisé uniquement pour le workflow interactif dans le navigateur (écrire du code → assembler → charger dans la VM). Pour les besoins de référence et de validation, l'assembleur Rust (`corewar-asm`) doit être utilisé en CLI. L'assembleur JS génère un fichier `.cor` complet avec le header correct (magic number, nom, commentaire, taille du programme, bytecode), compatible avec la VM Rust.
