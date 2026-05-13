@@ -99,7 +99,7 @@
         try {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(C_BG);
-            scene.fog = new THREE.Fog(C_BG, 30, 60);
+            scene.fog = new THREE.Fog(C_BG, 80, 200);
 
             /* Top-down camera */
             const aspect = 960/540;
@@ -115,7 +115,7 @@
 
             /* Flat lighting — ambient only for that 2D look */
             scene.add(new THREE.AmbientLight(0xFFFFFF, 1.0));
-            scene.add(new THREE.DirectionalLight(0xFFFFFF, 0.15));
+            /* No directional light — keeps the flat 2D Nier look without shadows */
 
             clock = new THREE.Clock();
 
