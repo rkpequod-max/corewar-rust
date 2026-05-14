@@ -7936,171 +7936,195 @@ ctdRender();
     <div class="pdf-text">Génération du PDF en cours…</div>
 </div>
 
-<!-- html2pdf.js for PDF generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+<!-- jsPDF + html2canvas for chunked PDF generation (replaces html2pdf which OOMs on large pages) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 
 <script>
-/* ── PDF Download — with fallback to browser print ── */
-function downloadPDF() {
+/* ── PDF Download — chunked rendering with print fallback ── */
+
+/* Helper: strip interactive elements & style a cloned section for print */
+function pdfStyleClone(clone) {
+    var removeSelectors = [
+        '.copy-btn', '.anim-btn', '.arena-btn', '.sim-btn', '.filter-btn',
+        '.endian-toggle-btn', '.quiz-opt', '.code-tab', 'button',
+        'canvas', '.arena-visual', '#arena-canvas', '#sim-canvas',
+        '.sim-controls', '.sim-status', '.sim-info', 'svg'
+    ];
+    removeSelectors.forEach(function(sel) {
+        clone.querySelectorAll(sel).forEach(function(el) { el.remove(); });
+    });
+
+    clone.querySelectorAll('.collapse-content').forEach(function(el) {
+        el.style.maxHeight = 'none';
+        el.style.overflow = 'visible';
+        el.style.display = 'block';
+    });
+    clone.querySelectorAll('.collapse-header').forEach(function(el) {
+        el.style.cursor = 'default';
+    });
+    clone.querySelectorAll('.reveal').forEach(function(el) {
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+    });
+
+    clone.style.cssText = 'border-bottom:1px solid #ddd;padding:20px 0;';
+    var container = clone.querySelector('.container');
+    if (container) { container.style.cssText = 'max-width:100%;margin:0;padding:0;'; }
+
+    clone.querySelectorAll('pre').forEach(function(el) {
+        el.style.cssText = 'background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:12px;font-size:11px;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word;';
+    });
+    clone.querySelectorAll('code').forEach(function(el) {
+        el.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:11px;';
+    });
+    clone.querySelectorAll('.insight-box').forEach(function(el) {
+        el.style.cssText = 'background:#f0f7f0;border:1px solid #c0d8c0;border-left:4px solid #006633;border-radius:4px;padding:14px 18px;margin:16px 0;';
+    });
+    clone.querySelectorAll('.quiz-box').forEach(function(el) {
+        el.style.cssText = 'background:#f8f4ff;border:1px solid #d0c0e8;border-left:4px solid #7b2ff2;border-radius:4px;padding:14px 18px;margin:16px 0;';
+    });
+    clone.querySelectorAll('.intro-card, .layer-card, .process-card, .arch-card').forEach(function(el) {
+        el.style.cssText = 'border:1px solid #ddd;border-radius:4px;padding:14px 18px;margin:12px 0;';
+    });
+    clone.querySelectorAll('table').forEach(function(el) {
+        el.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;';
+    });
+    clone.querySelectorAll('th').forEach(function(el) {
+        el.style.cssText = 'background:#eee;border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:bold;';
+    });
+    clone.querySelectorAll('td').forEach(function(el) {
+        el.style.cssText = 'border:1px solid #ddd;padding:6px 10px;';
+    });
+    clone.querySelectorAll('h2, h3, h4').forEach(function(el) {
+        el.style.color = '#111';
+        el.style.textShadow = 'none';
+    });
+    return clone;
+}
+
+/* Helper: add a rendered canvas to jsPDF doc, splitting across A4 pages */
+function addCanvasPages(doc, canvas, margin, usableW, usableH, isFirst) {
+    var pxPerMm = canvas.width / usableW;
+    var totalH_mm = canvas.height / pxPerMm;
+    var y_mm = 0;
+
+    while (y_mm < totalH_mm) {
+        if (!isFirst.val) { doc.addPage(); }
+        isFirst.val = false;
+
+        var sliceH_mm = Math.min(usableH, totalH_mm - y_mm);
+        var y_px = Math.round(y_mm * pxPerMm);
+        var sh_px = Math.round(sliceH_mm * pxPerMm);
+
+        /* Clamp to canvas bounds */
+        sh_px = Math.min(sh_px, canvas.height - y_px);
+        if (sh_px <= 0) break;
+
+        var sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sh_px;
+        sliceCanvas.getContext('2d').drawImage(canvas, 0, y_px, canvas.width, sh_px, 0, 0, canvas.width, sh_px);
+
+        var imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+        var imgH_mm = sh_px / pxPerMm;
+        doc.addImage(imgData, 'JPEG', margin, margin, usableW, imgH_mm);
+
+        y_mm += sliceH_mm;
+    }
+}
+
+async function downloadPDF() {
     var overlay = document.getElementById('pdf-overlay');
     overlay.classList.add('active');
 
-    /* Check if html2pdf is loaded */
-    if (typeof html2pdf === 'undefined') {
+    /* Check libraries loaded */
+    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
         overlay.classList.remove('active');
-        if (confirm('La librairie PDF n\'est pas chargée (hors-ligne ?). Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
+        if (confirm('Les librairies PDF ne sont pas charg\u00e9es (hors-ligne ?). Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
             window.print();
         }
         return;
     }
 
-    /* Build a temporary wrapper with ALL guide content */
-    var wrapper = document.createElement('div');
-    wrapper.id = 'pdf-capture-root';
-    wrapper.style.cssText = 'background:#fff;color:#111;padding:20px 24px;font-family:Inter,IBM Plex Mono,monospace;';
+    try {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        var PW = doc.internal.pageSize.getWidth();   /* 210 */
+        var PH = doc.internal.pageSize.getHeight();  /* 297 */
+        var margin = 8;
+        var usableW = PW - 2 * margin;
+        var usableH = PH - 2 * margin;
+        var isFirst = { val: true };
 
-    /* 1) Clone the hero (title + subtitle) */
-    var hero = document.querySelector('.hero');
-    if (hero) {
-        var heroClone = hero.cloneNode(true);
-        heroClone.style.cssText = 'padding:40px 0 30px;text-align:center;border-bottom:2px solid #006633;margin-bottom:30px;';
-        heroClone.querySelector('.hero-scan') && heroClone.querySelector('.hero-scan').remove();
-        heroClone.querySelector('.hero-bg') && heroClone.querySelector('.hero-bg').remove();
-        heroClone.querySelector('.hero-overlay') && heroClone.querySelector('.hero-overlay').remove();
-        heroClone.querySelector('.light-beams') && heroClone.querySelector('.light-beams').remove();
-        heroClone.querySelector('.lens-flare') && heroClone.querySelector('.lens-flare').remove();
-        var heroH1 = heroClone.querySelector('h1');
-        if (heroH1) { heroH1.style.cssText = 'font-size:28px;color:#111;margin:0 0 8px;text-shadow:none;'; }
-        var heroSub = heroClone.querySelector('.sub');
-        if (heroSub) { heroSub.style.cssText = 'font-size:14px;color:#333;margin:0 0 12px;'; }
-        var heroBadges = heroClone.querySelector('.badges');
-        if (heroBadges) { heroBadges.style.cssText = 'display:flex;gap:8px;justify-content:center;'; }
-        wrapper.appendChild(heroClone);
-    }
+        var RENDER_WIDTH = 780;   /* px — smaller = less memory per chunk */
+        var CHUNK_SIZE = 3;       /* sections per render chunk */
 
-    /* 2) Clone ALL sections with their full content */
-    var sections = document.querySelectorAll('section');
-    sections.forEach(function(sec) {
-        var clone = sec.cloneNode(true);
+        /* 1) Hero chunk */
+        var hero = document.querySelector('.hero');
+        if (hero) {
+            var heroWrap = document.createElement('div');
+            heroWrap.style.cssText = 'background:#fff;color:#111;padding:20px 24px;font-family:Inter,IBM Plex Mono,monospace;width:' + RENDER_WIDTH + 'px;';
 
-        /* Remove interactive-only elements from clone */
-        var removeSelectors = [
-            '.copy-btn', '.anim-btn', '.arena-btn', '.sim-btn', '.filter-btn',
-            '.endian-toggle-btn', '.quiz-opt', '.code-tab', 'button',
-            'canvas', '.arena-visual', '#arena-canvas', '#sim-canvas',
-            '.sim-controls', '.sim-status', '.sim-info'
-        ];
-        removeSelectors.forEach(function(sel) {
-            clone.querySelectorAll(sel).forEach(function(el) { el.remove(); });
-        });
+            var heroClone = hero.cloneNode(true);
+            heroClone.style.cssText = 'padding:40px 0 30px;text-align:center;border-bottom:2px solid #006633;margin-bottom:30px;';
+            heroClone.querySelector('.hero-scan') && heroClone.querySelector('.hero-scan').remove();
+            heroClone.querySelector('.hero-bg') && heroClone.querySelector('.hero-bg').remove();
+            heroClone.querySelector('.hero-overlay') && heroClone.querySelector('.hero-overlay').remove();
+            heroClone.querySelector('.light-beams') && heroClone.querySelector('.light-beams').remove();
+            heroClone.querySelector('.lens-flare') && heroClone.querySelector('.lens-flare').remove();
+            var heroH1 = heroClone.querySelector('h1');
+            if (heroH1) { heroH1.style.cssText = 'font-size:28px;color:#111;margin:0 0 8px;text-shadow:none;'; }
+            var heroSub = heroClone.querySelector('.sub');
+            if (heroSub) { heroSub.style.cssText = 'font-size:14px;color:#333;margin:0 0 12px;'; }
+            var heroBadges = heroClone.querySelector('.badges');
+            if (heroBadges) { heroBadges.style.cssText = 'display:flex;gap:8px;justify-content:center;'; }
 
-        /* Expand all collapsed content */
-        clone.querySelectorAll('.collapse-content').forEach(function(el) {
-            el.style.maxHeight = 'none';
-            el.style.overflow = 'visible';
-            el.style.display = 'block';
-        });
-        clone.querySelectorAll('.collapse-header').forEach(function(el) {
-            el.style.cursor = 'default';
-        });
+            heroWrap.appendChild(heroClone);
+            document.body.appendChild(heroWrap);
 
-        /* Force reveal state */
-        clone.querySelectorAll('.reveal').forEach(function(el) {
-            el.style.opacity = '1';
-            el.style.transform = 'none';
-        });
-
-        /* Style the section for print */
-        clone.style.cssText = 'border-bottom:1px solid #ddd;padding:20px 0;page-break-inside:avoid;';
-        var container = clone.querySelector('.container');
-        if (container) {
-            container.style.cssText = 'max-width:100%;margin:0;padding:0;';
+            var heroCanvas = await html2canvas(heroWrap, {
+                scale: 1.2, useCORS: true, logging: false,
+                scrollY: 0, windowWidth: RENDER_WIDTH
+            });
+            heroWrap.remove();
+            addCanvasPages(doc, heroCanvas, margin, usableW, usableH, isFirst);
         }
 
-        /* Style code blocks */
-        clone.querySelectorAll('pre').forEach(function(el) {
-            el.style.cssText = 'background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:12px;font-size:11px;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word;';
-        });
-        clone.querySelectorAll('code').forEach(function(el) {
-            el.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:11px;';
-        });
+        /* 2) Section chunks — 3 sections at a time to avoid OOM */
+        var sections = document.querySelectorAll('section');
+        for (var i = 0; i < sections.length; i += CHUNK_SIZE) {
+            var chunkWrap = document.createElement('div');
+            chunkWrap.style.cssText = 'background:#fff;color:#111;padding:20px 24px;font-family:Inter,IBM Plex Mono,monospace;width:' + RENDER_WIDTH + 'px;';
 
-        /* Style insight boxes */
-        clone.querySelectorAll('.insight-box').forEach(function(el) {
-            el.style.cssText = 'background:#f0f7f0;border:1px solid #c0d8c0;border-left:4px solid #006633;border-radius:4px;padding:14px 18px;margin:16px 0;page-break-inside:avoid;';
-        });
+            var end = Math.min(i + CHUNK_SIZE, sections.length);
+            for (var j = i; j < end; j++) {
+                var clone = pdfStyleClone(sections[j].cloneNode(true));
+                chunkWrap.appendChild(clone);
+            }
 
-        /* Style quiz boxes */
-        clone.querySelectorAll('.quiz-box').forEach(function(el) {
-            el.style.cssText = 'background:#f8f4ff;border:1px solid #d0c0e8;border-left:4px solid #7b2ff2;border-radius:4px;padding:14px 18px;margin:16px 0;';
-        });
+            document.body.appendChild(chunkWrap);
 
-        /* Style cards */
-        clone.querySelectorAll('.intro-card, .layer-card, .process-card, .arch-card').forEach(function(el) {
-            el.style.cssText = 'border:1px solid #ddd;border-radius:4px;padding:14px 18px;margin:12px 0;';
-        });
+            var chunkCanvas = await html2canvas(chunkWrap, {
+                scale: 1.2, useCORS: true, logging: false,
+                scrollY: 0, windowWidth: RENDER_WIDTH
+            });
+            chunkWrap.remove();
 
-        /* Style tables */
-        clone.querySelectorAll('table').forEach(function(el) {
-            el.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;';
-        });
-        clone.querySelectorAll('th').forEach(function(el) {
-            el.style.cssText = 'background:#eee;border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:bold;';
-        });
-        clone.querySelectorAll('td').forEach(function(el) {
-            el.style.cssText = 'border:1px solid #ddd;padding:6px 10px;';
-        });
+            addCanvasPages(doc, chunkCanvas, margin, usableW, usableH, isFirst);
+        }
 
-        /* Fix heading colors */
-        clone.querySelectorAll('h2, h3, h4').forEach(function(el) {
-            el.style.color = '#111';
-            el.style.textShadow = 'none';
-        });
-
-        /* Remove SVG diagrams (they break html2canvas) */
-        clone.querySelectorAll('svg').forEach(function(el) { el.remove(); });
-
-        wrapper.appendChild(clone);
-    });
-
-    /* 3) Append wrapper to body temporarily */
-    document.body.appendChild(wrapper);
-
-    function cleanup() {
-        var el = document.getElementById('pdf-capture-root');
-        if (el) el.remove();
+        /* 3) Save */
+        doc.save('Corewar_Guide_Pedagogique.pdf');
         overlay.classList.remove('active');
-    }
 
-    /* 4) Timeout safety — if html2pdf hangs, fall back to print */
-    var pdfTimeout = setTimeout(function() {
-        console.warn('PDF generation timed out after 45s');
-        cleanup();
-        if (confirm('La génération PDF prend trop de temps. Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
-            window.print();
-        }
-    }, 45000);
-
-    var opt = {
-        margin:      [8, 8, 8, 8],
-        filename:    'Corewar_Guide_Pedagogique.pdf',
-        image:       { type: 'jpeg', quality: 0.92 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0, windowWidth: 900, windowHeight: 1600 },
-        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    html2pdf().set(opt).from(wrapper).save().then(function(){
-        clearTimeout(pdfTimeout);
-        cleanup();
-    }).catch(function(err){
-        clearTimeout(pdfTimeout);
+    } catch (err) {
         console.error('PDF generation failed:', err);
-        cleanup();
-        if (confirm('Erreur lors de la génération du PDF. Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
+        overlay.classList.remove('active');
+        if (confirm('Erreur lors de la g\u00e9n\u00e9ration du PDF. Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
             window.print();
         }
-    });
+    }
 }
 </script>
 
