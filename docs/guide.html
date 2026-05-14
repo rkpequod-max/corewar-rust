@@ -7773,62 +7773,132 @@ function downloadPDF() {
     var overlay = document.getElementById('pdf-overlay');
     overlay.classList.add('active');
 
-    /* Hide interactive elements before capture */
-    var hideSelector = '#sidebar, nav, #progress-bar, #back-to-top, #search-overlay, ' +
-        '#starfield, #scan-lines, #film-grain, .hero-scan, .copy-btn, #menu-toggle, ' +
-        '#pdf-btn, .anim-btn, .arena-btn, .sim-btn, .filter-btn, .endian-toggle-btn, .quiz-opt, .code-tab';
-    var hideEls = document.querySelectorAll(hideSelector);
-    hideEls.forEach(function(el){ el.setAttribute('data-pdf-hidden','1'); el.style.display='none'; });
+    /* Build a temporary wrapper with ALL guide content */
+    var wrapper = document.createElement('div');
+    wrapper.id = 'pdf-capture-root';
+    wrapper.style.cssText = 'background:#fff;color:#111;padding:20px 24px;font-family:Inter,IBM Plex Mono,monospace;';
 
-    /* Expand all collapsed sections */
-    var collapsed = document.querySelectorAll('.collapse-content');
-    collapsed.forEach(function(el){
-        el.setAttribute('data-pdf-collapsed', el.style.maxHeight||'');
-        el.style.maxHeight = 'none';
-        el.style.overflow = 'visible';
+    /* 1) Clone the hero (title + subtitle) */
+    var hero = document.querySelector('.hero');
+    if (hero) {
+        var heroClone = hero.cloneNode(true);
+        heroClone.style.cssText = 'padding:40px 0 30px;text-align:center;border-bottom:2px solid #006633;margin-bottom:30px;';
+        heroClone.querySelector('.hero-scan') && heroClone.querySelector('.hero-scan').remove();
+        heroClone.querySelector('.hero-bg') && heroClone.querySelector('.hero-bg').remove();
+        heroClone.querySelector('.hero-overlay') && heroClone.querySelector('.hero-overlay').remove();
+        heroClone.querySelector('.light-beams') && heroClone.querySelector('.light-beams').remove();
+        heroClone.querySelector('.lens-flare') && heroClone.querySelector('.lens-flare').remove();
+        var heroH1 = heroClone.querySelector('h1');
+        if (heroH1) { heroH1.style.cssText = 'font-size:28px;color:#111;margin:0 0 8px;text-shadow:none;'; }
+        var heroSub = heroClone.querySelector('.sub');
+        if (heroSub) { heroSub.style.cssText = 'font-size:14px;color:#333;margin:0 0 12px;'; }
+        var heroBadges = heroClone.querySelector('.badges');
+        if (heroBadges) { heroBadges.style.cssText = 'display:flex;gap:8px;justify-content:center;'; }
+        wrapper.appendChild(heroClone);
+    }
+
+    /* 2) Clone ALL sections with their full content */
+    var sections = document.querySelectorAll('section');
+    sections.forEach(function(sec) {
+        var clone = sec.cloneNode(true);
+
+        /* Remove interactive-only elements from clone */
+        var removeSelectors = [
+            '.copy-btn', '.anim-btn', '.arena-btn', '.sim-btn', '.filter-btn',
+            '.endian-toggle-btn', '.quiz-opt', '.code-tab', 'button',
+            'canvas', '.arena-visual', '#arena-canvas', '#sim-canvas',
+            '.sim-controls', '.sim-status', '.sim-info'
+        ];
+        removeSelectors.forEach(function(sel) {
+            clone.querySelectorAll(sel).forEach(function(el) { el.remove(); });
+        });
+
+        /* Expand all collapsed content */
+        clone.querySelectorAll('.collapse-content').forEach(function(el) {
+            el.style.maxHeight = 'none';
+            el.style.overflow = 'visible';
+            el.style.display = 'block';
+        });
+        clone.querySelectorAll('.collapse-header').forEach(function(el) {
+            el.style.cursor = 'default';
+        });
+
+        /* Force reveal state */
+        clone.querySelectorAll('.reveal').forEach(function(el) {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+
+        /* Style the section for print */
+        clone.style.cssText = 'border-bottom:1px solid #ddd;padding:20px 0;page-break-inside:avoid;';
+        var container = clone.querySelector('.container');
+        if (container) {
+            container.style.cssText = 'max-width:100%;margin:0;padding:0;';
+        }
+
+        /* Style code blocks */
+        clone.querySelectorAll('pre').forEach(function(el) {
+            el.style.cssText = 'background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:12px;font-size:11px;overflow-x:auto;white-space:pre-wrap;word-wrap:break-word;';
+        });
+        clone.querySelectorAll('code').forEach(function(el) {
+            el.style.cssText = 'font-family:IBM Plex Mono,monospace;font-size:11px;';
+        });
+
+        /* Style insight boxes */
+        clone.querySelectorAll('.insight-box').forEach(function(el) {
+            el.style.cssText = 'background:#f0f7f0;border:1px solid #c0d8c0;border-left:4px solid #006633;border-radius:4px;padding:14px 18px;margin:16px 0;page-break-inside:avoid;';
+        });
+
+        /* Style quiz boxes */
+        clone.querySelectorAll('.quiz-box').forEach(function(el) {
+            el.style.cssText = 'background:#f8f4ff;border:1px solid #d0c0e8;border-left:4px solid #7b2ff2;border-radius:4px;padding:14px 18px;margin:16px 0;';
+        });
+
+        /* Style cards */
+        clone.querySelectorAll('.intro-card, .layer-card, .process-card, .arch-card').forEach(function(el) {
+            el.style.cssText = 'border:1px solid #ddd;border-radius:4px;padding:14px 18px;margin:12px 0;';
+        });
+
+        /* Style tables */
+        clone.querySelectorAll('table').forEach(function(el) {
+            el.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;';
+        });
+        clone.querySelectorAll('th').forEach(function(el) {
+            el.style.cssText = 'background:#eee;border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:bold;';
+        });
+        clone.querySelectorAll('td').forEach(function(el) {
+            el.style.cssText = 'border:1px solid #ddd;padding:6px 10px;';
+        });
+
+        /* Fix heading colors */
+        clone.querySelectorAll('h2, h3, h4').forEach(function(el) {
+            el.style.color = '#111';
+            el.style.textShadow = 'none';
+        });
+
+        wrapper.appendChild(clone);
     });
 
-    /* Force reveal animations to final state */
-    var reveals = document.querySelectorAll('.reveal');
-    reveals.forEach(function(el){
-        el.setAttribute('data-pdf-reveal', el.style.opacity||'');
-        el.style.opacity = '1';
-        el.style.transform = 'none';
-    });
-
-    var element = document.querySelector('.container') || document.body;
+    /* 3) Append wrapper to body temporarily */
+    document.body.appendChild(wrapper);
 
     var opt = {
-        margin:      [10, 10, 10, 10],
+        margin:      [8, 8, 8, 8],
         filename:    'Corewar_Guide_Pedagogique.pdf',
         image:       { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 800 },
         jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    html2pdf().set(opt).from(element).save().then(function(){
-        /* Restore hidden elements */
-        hideEls.forEach(function(el){
-            el.style.display = '';
-            el.removeAttribute('data-pdf-hidden');
-        });
-        collapsed.forEach(function(el){
-            el.style.maxHeight = el.getAttribute('data-pdf-collapsed') || '';
-            el.style.overflow = '';
-            el.removeAttribute('data-pdf-collapsed');
-        });
-        reveals.forEach(function(el){
-            el.style.opacity = el.getAttribute('data-pdf-reveal') || '';
-            el.style.transform = '';
-            el.removeAttribute('data-pdf-reveal');
-        });
+    html2pdf().set(opt).from(wrapper).save().then(function(){
+        document.body.removeChild(wrapper);
         overlay.classList.remove('active');
     }).catch(function(err){
         console.error('PDF generation failed:', err);
-        hideEls.forEach(function(el){ el.style.display = ''; el.removeAttribute('data-pdf-hidden'); });
-        collapsed.forEach(function(el){ el.style.maxHeight = el.getAttribute('data-pdf-collapsed') || ''; el.style.overflow = ''; el.removeAttribute('data-pdf-collapsed'); });
-        reveals.forEach(function(el){ el.style.opacity = el.getAttribute('data-pdf-reveal') || ''; el.style.transform = ''; el.removeAttribute('data-pdf-reveal'); });
+        if (document.getElementById('pdf-capture-root')) {
+            document.body.removeChild(wrapper);
+        }
         overlay.classList.remove('active');
         alert('Erreur lors de la génération du PDF. Essayez Ctrl+P pour imprimer en PDF.');
     });
