@@ -3139,7 +3139,28 @@
         </div>
     </div>
 
+    
     <div class="insight-box">
+        <div class="ib-title">📖 La virtualisabilité Popek-Goldberg — Pourquoi la VM Corewar « marche »</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.383-389) présentent le théorème de Popek et Goldberg (1974), qui énonce les conditions formelles sous lesquelles une architecture peut être virtualisée : <em>« For any conventional third-generation computer, a virtual machine monitor may be constructed if the set of sensitive instructions for that computer is a subset of the set of privileged instructions. »</em> Selon Popek et Goldberg, un véritable moniteur de machine virtuelle doit satisfaire trois propriétés :</p>
+            <ul style="margin:8px 0 8px 20px;line-height:2">
+                <li><strong>Efficacité</strong> : toutes les instructions inoffensives doivent s'exécuter nativement sur le matériel, sans intervention du VMM.</li>
+                <li><strong>Contrôle des ressources</strong> : un programme invité ne peut pas directement modifier la configuration des ressources système.</li>
+                <li><strong>Équivalence</strong> : tout programme s'exécutant sur la machine virtuelle doit se comporter de manière identique à son exécution sur le matériel natif.</li>
+            </ul>
+            <p>La VM Corewar satisfait les trois : <strong>efficacité</strong> (les instructions simples s'exécutent directement via interprétation), <strong>contrôle des ressources</strong> (aucun champion ne peut accéder à l'état interne de la VM ou aux registres d'autres processus), et <strong>équivalence</strong> (un champion produit les mêmes résultats quel que soit le nombre d'autres champions dans l'arène). L'ISA de Corewar (les 16 opcodes) est par construction « efficacement virtualisable » : toutes les opérations sensibles (accès mémoire, création de processus via fork) passent par la VM. C'est un design radicalement différent de l'x86-64 original, qui n'était PAS virtualisable selon Popek-Goldberg — ce qui a nécessité l'invention de la paravirtualisation (Xen) et du matériel VT-x par Intel.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Origine du fork et programmes comme gènes</div>
+        <div class="ib-content">
+            <p>L'article d'août 1984 de Dewdney dans <em>Scientific American</em> révèle l'origine historique de l'instruction <code>fork</code>. <strong>David Menconi</strong>, game designer chez Atari, a proposé de faire de l'interaction entre programmes une caractéristique régulière du jeu en permettant à chaque programme de s'exécuter <strong>à deux endroits simultanément</strong> : <em>« allowing each battle program to execute in two places at once. Thus even if a program loses one 'self,' a second self might be able to repair the damage. »</em> Cette proposition de 1984 préfigure exactement l'instruction <code>fork</code> du Corewar 42 : le fork n'est pas un choix de design arbitraire — il est né de l'observation communautaire que les programmes multi-instances survivent mieux aux dommages. <strong>Edsel Worrell</strong> a ensuite généralisé en proposant <em>n</em> copies du même programme à des adresses différentes — l'ancêtre direct de la stratégie « fork bomb ».</p>
+            <p>Le même article rapporte des discussions sur des « <strong>programmes de type Creeper</strong> habitant des systèmes réels (dont des vers dans les Apple) » et des « <strong>programmes comme gènes</strong> ». Creeper (1971) fut le premier ver informatique, créé à BBN — le lien entre Core War et les programmes auto-réplicants réels n'était pas une métaphore mais une constatation. La discussion « programmes comme gènes » préfigure le champ de la <strong>vie artificielle</strong> (Tierra de Tom Ray, 1991, directement inspiré de Core War). Pour l'étudiant 42, cela signifie que les principes du Corewar — auto-réplication, compétition pour les ressources, mutation — sont les fondements de la biologie computationnelle et de l'évolution artificielle.</p>
+        </div>
+    </div>
+<div class="insight-box">
         <div class="ib-title">📖 Prérequis et ordre de lecture</div>
         <div class="ib-content">
             L'ordre recommandé est : <strong>1 → 2 → 3 → 4 → 5 → 6 → 7 → 10 → 8 → 9 → 11 → 12 → 13 → 14</strong>. Les sections 7 (Encodage) et 10 (Syntaxe du .s) sont complémentaires et doivent être lues ensemble. La section 9 (C vs Rust) est optionnelle et comparative. Chaque section bâtit sur la précédente — les sections 3 (Arène) et 5 (Cycle de vie) sont les plus critiques à comprendre en profondeur.
@@ -3290,6 +3311,26 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 </div>
 </section>
 
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Ordonnancement par minuteur et dégradation de performance</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.377-379) décrivent le modèle d'ordonnancement par minuteur : <em>« the interval timer [...] after being loaded with a value by the operating system, counts down clock ticks and triggers an interrupt when the value it holds becomes zero. [...] the operating system uses the timer to keep control of the processor by ensuring that no user application can run for an indefinite length of time. »</em> C'est exactement le modèle de <code>CYCLE_TO_DIE</code> dans Corewar : chaque processus dispose d'un quantum d'exécution, après quoi la VM reprend le contrôle. Le compte à rebours est <code>cycle_to_die</code>, et « l'interruption » est la vérification de la VM à chaque cycle.</p>
+            <p>Smith et Nair soulignent aussi le compromis de granularité : <em>« A fair scheme for allocating hardware resources to virtual machines is one in which the virtual machines get ownership of the resources in turn for roughly equal amounts of time. If the time allocated to each virtual machine is large, there is the possibility that the resources are not optimally utilized. On the other hand, if the time allocated is small, the overhead incurred in switching between the virtual machines begins to degrade performance. »</em> Ce compromis existe aussi dans Corewar : un <code>CYCLE_TO_DIE</code> trop grand permet à un champion de dominer sans vérification, un trop petit ajoute un overhead excessif à chaque vérification de survie.</p>
+            <p>La taxonomie des sources de dégradation de performance dans les VMs (p.415-416) s'applique directement à Corewar : <strong>Setup</strong> = initialisation d'un processus (fork), <strong>Emulation</strong> = overhead de décodage et dispatch des instructions, <strong>Interrupt handling</strong> = vérification de <code>cycle_to_die</code>, <strong>State saving</strong> = commutation de contexte entre processus, <strong>Bookkeeping</strong> = comptage des <code>live</code> et suivi de <code>NBR_LIVE</code>, <strong>Time elongation</strong> = coût de l'adressage circulaire et de l'arithmétique modulo. Cette taxonomie est une checklist pour optimiser une implémentation de VM Corewar.</p>
+        </div>
+    </div>
+
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Le chargement des champions comme boot loader</div>
+        <div class="ib-content">
+            <p>Levine (<em>Linkers and Loaders</em>, p.167-168) liste les étapes fondamentales du chargement d'un programme : (1) lire le header pour connaître l'espace nécessaire, (2) allouer cet espace, (3) copier le programme dans les segments, (4) mettre à zéro l'espace BSS, (5) créer un segment de pile, (6) initialiser les informations runtime, (7) démarrer le programme. Le chargement d'un champion Corewar est une version simplifiée de cette checklist : (1) lire le header .cor pour obtenir <code>prog_size</code>, (2) allouer l'espace dans l'arène à l'offset calculé, (3) copier le bytecode, (4) remplir de zéros le reste de la région, (5) créer un processus initial avec PC = adresse de départ, (6) initialiser <code>r1</code> avec le numéro du joueur et <code>carry</code> = 0, (7) ajouter le processus à la file d'exécution. Chaque étape a son parallèle direct.</p>
+            <p>Van der Linden (<em>Expert C Programming</em>, p.120-121) raconte l'histoire du magic number <code>0407</code> du format a.out original : c'était l'opcode d'une instruction de branchement inconditionnel sur le PDP-11 ! Si vous exécutiez le fichier directement, le magic number vous sautait par-dessus le header directement vers la première instruction — une forme primitive de code indépendant de la position. Le format ELF moderne utilise <code>\x7fELF</code> au même endroit. Le magic number <code>0xEA83F3</code> du format .cor joue le même rôle d'identification, mais sans la subtilité de l'auto-saut du PDP-11.</p>
+        </div>
+    </div>
+
+
 <!-- Section 3: Arena -->
 <section id="arena" class="reveal">
 <div class="container">
@@ -3325,6 +3366,16 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>L'arène Corewar utilise un <strong>mappage direct avec modulo</strong> : l'adresse que le champion voit (0-4095) correspond directement à l'index du tableau hôte, modulo MEM_SIZE. C'est la méthode la plus simple et la plus rapide — le coût de traduction est une seule opération modulo. Comme le soulignent Smith et Nair, le mappage direct est optimal quand l'espace d'adressage invité est plus petit ou égal à l'espace hôte, ce qui est le cas ici (4096 octets de l'arène vs plusieurs gigaoctets de RAM hôte).</p>
         </div>
     </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Code auto-modifiant, overlays et l'étymologie de l'arène</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.107-110) décrivent le problème du <strong>code auto-modifiant</strong> dans les machines virtuelles : <em>« Occasionally, an application program either refers to itself or attempts to modify itself by writing into the code region. This poses potential problems when binary translation is used. »</em> Leur solution est de maintenir une image mémoire fidèle du code invité et de toujours lire/écrire depuis cette image source. Dans Corewar, le code auto-modifiant n'est pas un problème — c'est une <strong>fonctionnalité</strong>. Les champions écrivent couramment dans l'arène (<code>sti</code>, <code>st</code>), potentiellement en écrasant le code que d'autres processus exécuteront. L'arène est simultanément code et données. Le principe de Smith et Nair — maintenir une image mémoire unique et cohérente — est exactement ce que fait la VM Corewar : il n'y a pas de cache de code séparé ; l'arène est à la fois la source d'instructions et l'espace de données inscriptible. Le code auto-modifiant fonctionne « gratuitement » dans Corewar.</p>
+            <p>Levine (<em>Linkers and Loaders</em>, p.177-183) décrit les <strong>overlays</strong> — une technique historique pour les espaces d'adressage contraints : <em>« Overlay programs divide the code into a tree of segments. Sibling segments in the overlay tree share the same memory. »</em> L'arène Corewar est conceptuellement une région d'overlay : plusieurs champions partagent le même espace d'adressage, chacun chargé dans une région spécifique. Levine mentionne que <em>« In environments like DSPs that have constrained program address spaces, overlay techniques can be a good way to squeeze programs in »</em> — exactement la situation Corewar (4096 octets). Le manager d'overlay OS/360 ne faisait que 500 octets ; certains pour des DSPs à espace d'adressage de 512 mots tenaient en une douzaine de mots. La contrainte mémoire de Corewar est du même ordre.</p>
+            <p>Van der Linden (<em>Expert C Programming</em>, p.157) utilise le terme <strong>« arena »</strong> pour décrire la région mémoire gérée par un allocateur : <em>« Some people use the term arena to describe the set of blocks managed by a memory allocator. »</em> Ce n'est pas une coïncidence si le Corewar utilise le même terme : les deux désignent une région mémoire contiguë gérée par un allocateur. Dans Corewar, l'arène est un tampon circulaire de taille fixe (pas de fragmentation possible grâce au modulo). En programmation système, une arena peut se fragmenter. Le lien étymologique enrichit la compréhension de pourquoi la mémoire Corewar s'appelle une « arène ».</p>
+        </div>
+    </div>
+
 
     <!-- Ring diagram SVG -->
     <div class="ring-diagram-container">
@@ -3843,6 +3894,16 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <button class="endian-toggle-btn" onclick="setEndianView('be',this)">Big Endian</button>
             <button class="endian-toggle-btn" onclick="setEndianView('le',this)">Little Endian</button>
         </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Position-Independent Code et le format COM — Pourquoi .cor n'a pas besoin de relocalisation</div>
+        <div class="ib-content">
+            <p>Van der Linden (<em>Expert C Programming</em>, p.103-104) explique le <strong>code indépendant de la position</strong> (PIC) : <em>« Position-independent code means that the generated code makes sure that every global data access is done through an extra indirection. This makes it easy to relocate the data simply by changing one value in the table of global offsets. »</em> Chaque champion Corewar est intrinsèquement du code indépendant de la position : toutes les adresses sont relatives au PC (décalages), donc le champion peut être chargé à n'importe quelle adresse dans l'arène sans modification. C'est pourquoi le format .cor n'a pas de table de relocalisation — le bytecode est déjà PIC par design.</p>
+            <p>Levine (<em>Linkers and Loaders</em>, p.154-155) confirme : <em>« Call and jump instructions use relative addressing, so the value in the instruction is the difference between the target address and the address of the byte following the instruction itself. For calls and jumps within the same segment, no relocation is required because the relative positions of addresses within a single segment never change. »</em> C'est la raison technique précise : toutes les instructions Corewar utilisent l'adressage relatif au PC pour leurs paramètres, et le « segment » (le code du champion) se déplace comme un bloc — aucune relocalisation intra-segment n'est jamais nécessaire.</p>
+            <p>Levine (p.49) identifie aussi le <strong>format DOS COM</strong> comme le plus proche analogie réelle du .cor : <em>« A COM file literally consists of nothing other than binary code. When the operating system runs a COM file, it merely loads the contents of the file into a block of free memory starting at offset 0x100… and jumps to the beginning of the loaded program. »</em> Comme le format COM, .cor est un « format objet nul » — bytecode pur, pas de header complexe, pas de relocalisation, chargé à un offset connu et exécuté directement. C'est plus précis que la comparaison avec a.out/ELF déjà dans le guide.</p>
+        </div>
+    </div>
+
         <div id="endianComparison" class="endian-comparison">
             <div class="endian-side" id="endianBeSide">
                 <div class="es-title" style="color:var(--cyan)">Big Endian ✅ (utilisé par la VM)</div>
@@ -3934,6 +3995,16 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
                 <button class="code-tab active" onclick="showCode(this,'c-arena')">C — vm.h</button>
                 <button class="code-tab" onclick="showCode(this,'r-arena')">Rust — vm.rs</button>
             </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Le piège de la promotion unsigned — Le bug n°1 des VMs Corewar</div>
+        <div class="ib-content">
+            <p>Van der Linden (<em>Expert C Programming</em>, p.29-31) identifie le bug le plus sournois du C : la promotion unsigned. Il donne cet exemple : si <code>d</code> vaut <code>-1</code> et <code>TOTAL_ELEMENTS</code> est <code>unsigned</code> (venant de <code>sizeof</code>), alors <code>d &lt;= TOTAL_ELEMENTS - 2</code> promeut <code>d</code> en unsigned, transformant <code>-1</code> en un nombre positif gigantesque — et la comparaison donne <code>false</code>. Il appelle cela <em>« The value preserving approach (ANSI C) says that when you mix integral operand types like this, the result type is signed or unsigned depending on the relative sizes of the operand types. »</em></p>
+            <p>Dans la VM Corewar, ce bug se manifeste dans <code>mem_mod()</code> : l'adressage indirect utilise des offsets signés (T_IND peut valoir -32768 à 32767). Si <code>MEM_SIZE</code> est <code>unsigned</code> et que <code>offset</code> est négatif, alors <code>pc + offset</code> peut déborder silencieusement : le négatif est promu en unsigned, devenant un nombre gigantesque. Kernighan et Ritchie (<em>The C Programming Language</em>, p.42) confirment : <em>« Conversion rules are more complicated when unsigned operands are involved. The problem is that comparisons between signed and unsigned values are machine-dependent. »</em> La solution : utiliser systématiquement <code>int32_t</code> pour les calculs intermédiaires et ne passer en <code>unsigned</code> que pour le modulo final.</p>
+            <p>Van der Linden (p.31) conclut avec un conseil qui devrait être gravé dans l'esprit de tout implémenteur : <em>« Avoid unnecessary complexity by minimizing your use of unsigned types. Specifically, don't use an unsigned type to represent a quantity just because it will never be negative. Use a signed type like int and you won't have to worry about boundary cases in the detailed rules for promoting mixed types. Only use unsigned types for bitfields or binary masks. »</em> En Rust, ce problème n'existe pas : <code>rem_euclid()</code> gère correctement les négatifs, et le système de types empêche les promotions implicites.</p>
+        </div>
+    </div>
+
         </div>
         <pre id="c-arena" class="active"><code><span class="cm">// C — vm/include/vm.h</span>
 <span class="kw">typedef struct</span> s_arena {
@@ -4160,6 +4231,16 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             </tbody>
         </table>
     </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 L'évaluation paresseuse du carry et le modèle d'enregistrement d'activation</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.70-73) décrivent une optimisation fondamentale pour les codes de condition : <em>« It turns out, however, that although the condition code values are set frequently, they are seldom used. To make condition code emulation more efficient, a common technique is to perform lazy evaluation, where the operands and operation that set the condition code, rather than the condition code settings themselves, are saved. »</em> Le carry de Corewar est l'analogue direct d'un code de condition — positionné par certaines instructions (<code>and</code>, <code>sub</code>, <code>ld</code>), testé par <code>zjmp</code>. L'évaluation paresseuse serait possible : au lieu de calculer le carry immédiatement après chaque instruction, on pourrait stocker l'opération et ses opérandes, et ne calculer le carry que quand <code>zjmp</code> le lit réellement. En pratique, la VM Corewar calcule le carry immédiatement — mais le principe de Smith et Nair explique pourquoi cette valeur est rarement lue, rendant l'optimisation envisageable.</p>
+            <p>Van der Linden (<em>Expert C Programming</em>, p.126-130) décrit le <strong>segment de pile</strong> et ses trois usages : stockage des variables locales, information de gestion des appels de fonction (enregistrement d'activation), et zone de travail temporaire. Il note que <em>« A stack would not be needed except for recursive calls. If not for these, a fixed amount of space for local variables, parameters, and return addresses would be known at compile time and could be allocated in the BSS. »</em> Le processus Corewar est un enregistrement d'activation simplifié : le PC (adresse de retour), le carry (statut), et les registres (variables locales). Sans <code>fork</code> (sans récurrence/branchement), une seule structure fixe suffirait — comme les premiers BASIC/COBOL/FORTRAN n'avaient pas de pile car ils ne permettaient pas la récursion.</p>
+            <p>Van der Linden (p.132) fait aussi le lien avec les <strong>threads</strong> : <em>« It should now be clear how different threads of control can be supported within a process. Simply have a different stack dedicated to each thread of control. »</em> Les processus Corewar sont exactement des threads légers — chacun avec son propre PC et ses registres (sa propre « pile »), la VM les ordonnanceant en round-robin. La liste des processus est une liste chaînée d'enregistrements d'activation stockés sur le tas, PAS sur la pile d'appels C. L'instruction <code>zjmp</code> est l'équivalent d'un <code>longjmp</code> (p.132-134) — elle transfère le contrôle à un PC différent. L'instruction <code>fork</code> est comme <code>setjmp</code> + <code>longjmp</code> combinés — elle sauve l'état courant et crée un duplicat à un nouveau PC.</p>
+        </div>
+    </div>
+
     <p><strong>Point clé</strong> : les instructions qui <strong>ne modifient PAS</strong> le carry sont : <code>live</code>, <code>st</code>, <code>sti</code>, <code>ldi</code>, <code>fork</code>, <code>lfork</code>, <code>aff</code>. C'est crucial pour comprendre le comportement de <code>zjmp</code> — si le carry n'a pas été explicitement positionné avant un <code>zjmp</code>, sa valeur est imprévisible.</p>
 
     <h3>Mort d'un processus</h3>
@@ -4246,6 +4327,16 @@ while (!halt) {
     <div class="lifecycle">
         <div class="lc-step">
             <div class="lc-num fetch">1</div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Le problème de la découverte de code et les exceptions précises</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.52-57) identifient le <strong>problème de la découverte de code</strong> : dans les ISA à instructions de longueur variable (comme l'x86-64 ou le Corewar), <em>« it is usually difficult [...] to determine whether or not an arbitrary byte is at the start of a new instruction sequence. »</em> Le bytecode Corewar a des instructions de longueur variable (1 à 15 octets selon l'opcode et l'OCP), rendant ce problème directement pertinent. La VM doit scanner depuis le PC, lire l'opcode, puis décoder le bon nombre d'octets de paramètres. Le concept de <strong>bloc de base dynamique</strong> — découvert au runtime en suivant le flux d'exécution réel — est exactement la façon dont la VM Corewar découvre les instructions : elle ne pré-parse pas toute l'arène, elle découvre les frontières d'instructions à la volée quand chaque processus s'exécute.</p>
+            <p>Smith et Nair (p.119-127) définissent aussi les <strong>exceptions précises</strong> : <em>« An exception is precise if (1) all instructions prior to the faulting instruction have been executed, (2) none of the instructions following the faulting instruction have been executed, and (3) the faulting instruction has not been executed. »</em> La VM Corewar garantit des exceptions précises par design : puisqu'elle interprète une instruction à la fois par processus, l'état est toujours précis aux frontières d'instructions. Quand un processus rencontre un opcode invalide, la VM peut produire le PC et l'état des registres exacts. Le contraste de Smith et Nair entre interprétation (naturellement précise) et traduction binaire (nécessite des tables de traduction inverses) explique pourquoi l'interprétation était le bon choix pour le modèle de correction de Corewar.</p>
+            <p>Pour le décodage de l'OCP, Kernighan et Ritchie (<em>The C Programming Language</em>, p.46) fournissent le pattern canonique : la fonction <code>getbits(x, p, n)</code> qui retourne le champ de <code>n</code> bits débutant à la position <code>p</code> : <code>return (x >> (p+1-n)) & ~(~0 << n);</code>. C'est littéralement le décodeur d'OCP : <code>getbits(ocp, 7, 2)</code> donne le type du premier argument, <code>getbits(ocp, 5, 2)</code> le second, <code>getbits(ocp, 3, 2)</code> le troisième. K&R mettent en garde (p.121-123) : les <strong>bit-fields C</strong> sont <em>« implementation-dependent »</em> — l'ordre d'allocation (gauche-droite vs droite-gauche) varie selon le compilateur. C'est pourquoi la VM Corewar NE DOIT PAS utiliser de bit-fields pour décoder l'OCP, mais doit utiliser l'extraction explicite par décalages et masques — exactement comme le montre <code>getbits</code>.</p>
+        </div>
+    </div>
+
             <div class="lc-content">
                 <div class="lc-title">Fetch — Lecture de l'opcode</div>
                 <div class="lc-desc">Le processus lit l'octet à son PC dans l'arène. Si c'est un opcode valide (1-16), il stocke l'index dans <code>ir</code> et initialise <code>duration</code> avec le nombre de cycles de l'instruction. Sinon, il avance le PC de 1.</div>
@@ -4738,6 +4829,16 @@ while (!halt) {
 
     <div class="insight-box">
         <div class="ib-title">📖 L'OCP et le ModR/M : même combat, complexité différente</div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Anatomie d'un fichier objet : ce que .cor omet et pourquoi</div>
+        <div class="ib-content">
+            <p>Levine (<em>Linkers and Loaders</em>, p.47) liste les <strong>cinq catégories d'information</strong> d'un fichier objet : (1) Header (taille du code, nom source, date), (2) Code objet (instructions binaires), (3) Information de relocalisation (positions à corriger lors du chargement), (4) Symboles (symboles globaux définis et importés), (5) Information de débogage. Le format .cor ne contient que les catégories 1 et 2. Il omet délibérément 3 (relocalisation — inutile car le code est PIC), 4 (symboles — pas de liaison inter-modules), et 5 (débogage — pas de débogueur attaché).</p>
+            <p>Levine (p.64-67) détaille les sections ELF : <code>.text</code> (PROGBITS + ALLOC + EXECINSTR), <code>.data</code> (PROGBITS + ALLOC + WRITE), <code>.rodata</code> (PROGBITS + ALLOC, lecture seule), <code>.bss</code> (NOBITS + ALLOC + WRITE, pas d'espace dans le fichier). Le format .cor fusionne tout cela en un seul flux de bytecode. Il n'y a pas de section <code>.data</code> (pas de données statiques inscriptibles), pas de <code>.bss</code> (pas de données non initialisées), pas de <code>.rodata</code> (pas de données en lecture seule séparées). Le champion est du pur <code>.text</code>.</p>
+            <p>Kernighan et Ritchie (<em>The C Programming Language</em>, p.113) mettent en garde : <em>« Don't assume that the size of a structure is the sum of the sizes of its members. Because of alignment requirements for different objects, there may be unnamed 'holes' in a structure. »</em> C'est la raison n°1 pour laquelle on NE DOIT PAS utiliser <code>fread(&amp;header, sizeof(header_t), 1, f)</code> pour lire un fichier .cor. Le compilateur C peut insérer du padding entre les membres de la structure <code>header_t</code>, rendant <code>sizeof(header_t)</code> plus grand que le nombre réel d'octets dans le fichier. Les champs doivent être lus octet par octet avec des offsets explicites. K&R (p.131) rappellent aussi d'utiliser <code>fopen("champion.cor", "rb")</code> — le mode binaire <code>"b"</code> est obligatoire sous Windows, où l'ouverture en mode texte transformerait l'octet <code>0x1A</code> en EOF et convertirait les séquences <code>\r\n</code>.</p>
+        </div>
+    </div>
+
         <div class="ib-content">
             <p>L'encodage des types d'opérandes est un problème universel en architecture des processeurs. L'x86-64 utilise un octet <strong>ModR/M</strong> (2 bits de mode + 3 bits de registre + 3 bits de registre/mémoire) suivi optionnellement d'un octet SIB (Scale-Index-Base) et d'un préfixe REX — permettant jusqu'à 10 modes d'adressage différents. Le Y86-64 de CSAPP simplifie drastiquement : un seul octet <code>rA:rB</code> (4 bits + 4 bits), chaque champ identifiant un registre ou la valeur 0xF (pas de registre).</p>
             <p>L'OCP de Corewar est entre les deux : 2 bits par paramètre (3 paramètres max = 6 bits), permettant d'encoder registre, direct ou indirect. C'est plus expressif que le Y86-64 (qui ne supporte pas l'adressage indirect) mais beaucoup plus simple que l'x86-64 (pas de scale, pas d'index, pas de displacement variable). Comme pour tout ISA, la propriété fondamentale est que <strong>l'encodage doit avoir une interprétation unique</strong> (CSAPP §4.1.3) : toute séquence d'octets encode soit une instruction unique, soit n'est pas légale. C'est ce qui permet à la VM de décoder le bytecode sans ambiguïté.</p>
@@ -4860,6 +4961,17 @@ live: live  %1
     <div class="lifecycle">
         <div class="lc-step">
             <div class="lc-num fetch">1</div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Tokens, patterns, lexèmes — L'analyse lexicale de l'assembleur</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, p.111) établit la triade fondamentale de l'analyse lexicale : <em>« A token is a pair consisting of a token name and an optional attribute value. [...] A pattern is a description of the form that the lexemes of a token may take. [...] A lexeme is a sequence of characters in the source program that matches the pattern for a token. »</em> L'assembleur Corewar distingue les tokens : noms d'opcodes (<code>live</code>, <code>ld</code>, <code>sti</code>), références de registres (<code>r1</code>–<code>r16</code>), labels, nombres, séparateurs (<code>,</code>, <code>%</code>). Chaque catégorie a un pattern (ex: <code>r[0-9]+</code> pour les registres, <code>[a-zA-Z_][a-zA-Z0-9_]*:</code> pour les labels) et un lexème (le texte concret matché).</p>
+            <p>Le Dragon Book (p.79, p.132) décrit la stratégie pour les mots réservés : <em>« Keywords generally satisfy the rules for forming identifiers, so a mechanism is needed for deciding when a lexeme forms a keyword and when it forms an identifier. The problem is easier to resolve if keywords are reserved. [...] Install the reserved words in the symbol table initially. »</em> Les 16 opcodes Corewar sont des mots réservés : <code>live</code>, <code>ld</code>, <code>st</code>, etc. ne peuvent pas être utilisés comme noms de labels. La stratégie « pré-semer la table des symboles » est exactement ce que l'assembleur doit faire : initialiser une table de hachage avec les noms d'opcodes mappés à leurs types de tokens, pour distinguer immédiatement un opcode d'un label.</p>
+            <p>Le Dragon Book (p.219-222) identifie l'assembleur Corewar comme un parseur <strong>LL(1)</strong> naturel : <em>« Predictive parsers, that is, recursive-descent parsers needing no backtracking, can be constructed for a class of grammars called LL(1). The first 'L' stands for scanning the input from left to right, the second 'L' for producing a leftmost derivation, and the '1' for using one input symbol of lookahead. »</em> Le format .s est naturellement LL(1) : le token opcode détermine univoquement le format de l'instruction (combien de paramètres, quels types). Un seul token de lookahead — l'opcode — suffit pour choisir la bonne règle de production. Pas de backtrack nécessaire.</p>
+            <p>Pour la table des symboles, le Dragon Book (p.86-89) décrit les <strong>tables chaînées par portée</strong> : <em>« The most-closely nested rule for blocks can be implemented by chaining symbol tables. That is, the table for a nested block points to the table for its enclosing block. »</em> En Corewar, les labels locaux (préfixés par un point) ont une portée délimitée par les labels non-pointés — exactement le modèle des blocs imbriqués avec la règle du « plus proche englobant ». La table des labels est un dictionnaire {nom → offset}, et les labels locaux créent une nouvelle portée à chaque label non-point, comme les tables de symboles chaînées du Dragon Book.</p>
+        </div>
+    </div>
+
             <div class="lc-content">
                 <div class="lc-title">Lexer — Tokenisation</div>
                 <div class="lc-desc">Découpe le fichier en tokens : labels, opcodes, paramètres, commentaires. Vérifie la syntaxe de base (caractères autorisés dans les labels, séparateurs valides).</div>
@@ -5090,6 +5202,17 @@ live: live  %1
 </div>
 </section>
 
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Les pièges du C que Rust élimine — Promotion, pointeurs de fonction, const</div>
+        <div class="ib-content">
+            <p>Kernighan et Ritchie (<em>The C Programming Language</em>, p.41) documentent le piège de la <strong>promotion signée</strong> : <em>« There is one subtle point about the conversion of characters to integers. [...] When a char is converted to an int, can it ever produce a negative integer? The answer varies from machine to machine. »</em> Quand la VM lit un octet de l'arène avec le bit 7 à 1 (valeur ≥ 128), le stocker dans un <code>char</code> signé et le convertir en <code>int</code> produit un nombre négatif sur les plateformes où <code>char</code> est signé. Cela corrompt silencieusement les opcodes et les valeurs d'arguments. L'arène DOIT être <code>unsigned char</code>. En Rust, ce problème n'existe pas : <code>u8</code> est toujours non signé.</p>
+            <p>K&R (p.98-100) décrivent les <strong>pointeurs de fonction</strong> pour la table de dispatch des opcodes : <em>« In C, a function itself is not a variable, but it is possible to define pointers to functions, which can be assigned, placed in arrays, passed to functions, returned by functions, and so on. »</em> La VM Corewar utilise typiquement <code>void (*op_table[16])(vm_t*, process_t*)</code> — un tableau de 16 pointeurs de fonction. K&R mettent en garde sur les parenthèses critiques : <code>int (*comp)()</code> est un pointeur vers fonction, mais <code>int *comp()</code> est une fonction retournant un pointeur — une confusion silencieuse qui change le type. Van der Linden (p.188-189) confirme que cette table de dispatch est un <strong>automate fini</strong> : <em>« A finite state machine (FSM) is a mathematical concept that can be very useful when embodied in a program. Most of them are based on an array of pointers to functions. »</em> En Rust, les enums et <code>match</code> rendent ce pattern plus sûr et plus lisible.</p>
+            <p>Van der Linden (p.27-28) démontre que <code>const</code> n'est PAS une vraie constante : <em>« The keyword const doesn't turn a variable into a constant! A symbol with the const qualifier merely means that the symbol cannot be used for assignment. »</em> Et Ken Thompson de rajouter : <em>« The const keyword only confuses library interfaces with the hope of catching some rare errors. »</em> En Rust, <code>const</code> est une vraie constante de compilation — elle peut être utilisée dans les tableaux de taille et les <code>match</code>. Cette différence est fondamentale pour la sécurité du code de la VM.</p>
+        </div>
+    </div>
+
+
 <!-- Section 10: Syntaxe du .s -->
 <section id="syntaxe" class="reveal">
 <div class="container">
@@ -5232,6 +5355,16 @@ live: live  %1
                 <li><strong>Erreur off-by-one</strong> (p.167) : le classique <code><</code> au lieu de <code><=</code>. En Corewar, l'erreur la plus subtile est le <code>+3</code> dans <code>store_at</code> — oublier ces 3 octets de décalage fait écrire au mauvais endroit.</li>
             </ul>
             <p>Kernighan et Ritchie (<em>The C Programming Language</em>, §2.9) mettent aussi en garde sur la <strong>précédence des opérateurs bit à bit</strong> : <em>« Note that the precedence of the bitwise operators &, ^, and | falls below == and !=. This implies that bit-testing expressions like if ((x & MASK) == 0) ... must be fully parenthesized to give proper results. »</em> C'est un piège sournois dans le calcul de l'OCP : <code>x & 0x03 == 0</code> ne teste PAS si les deux derniers bits sont nuls — il évalue d'abord <code>0x03 == 0</code> (faux, donc 0), puis <code>x & 0</code> (toujours 0). Il faut écrire <code>(x & 0x03) == 0</code>.</p>
+        </div>
+    </div>
+
+    
+    <div class="insight-box">
+        <div class="ib-title">📖 Les trois pièges mortels du C dans une VM — Fall-through, ordre d'évaluation, corruption mémoire</div>
+        <div class="ib-content">
+            <p>Van der Linden (<em>Expert C Programming</em>, p.38-40) raconte l'histoire de la <strong>chute de switch</strong> qui a causé la première panne majeure du réseau AT&T en 114 ans : <em>« Default Fall Through Is Wrong 97% of the Time. We analyzed the Sun C compiler sources to see how often the default fall through was used. Fall through occurs in just 3% of all these cases. »</em> Quand on implémente le décodeur d'instructions de la VM avec un <code>switch</code> sur les opcodes, oublier un <code>break</code> provoque une chute vers le handler d'instruction suivant — un bug subtil car le programme compile et s'exécute, mais incorrectement. Chaque handler d'opcode DOIT se terminer par <code>break</code>.</p>
+            <p>Van der Linden (p.47-49) met en garde sur l'<strong>ordre d'évaluation non spécifié</strong> : <em>« The order of expression evaluation is mostly unspecified to allow compiler-writers the maximum leeway to generate the fastest code. »</em> Quand la VM évalue les opérandes d'une instruction Corewar, l'ordre d'évaluation des arguments d'un appel de fonction en C est non spécifié. Pour <code>op_sti(reg[1], 42, reg[2])</code>, le compilateur peut évaluer les arguments dans n'importe quel ordre. La VM doit séquencer explicitement ses opérations pour correspondre à l'ordre défini par la spécification.</p>
+            <p>Van der Linden (p.158-159) distingue les deux catégories de problèmes mémoire : <em>« There are two common types of heap problems: freeing or overwriting something that is still in use (this is a 'memory corruption') and not freeing something that is no longer in use (this is a 'memory leak'). »</em> Dans une VM Corewar en C, quand un processus meurt, sa structure <code>t_process</code> doit être libérée de la liste chaînée. Oublier de libérer = fuite mémoire (la VM consomme lentement de la mémoire au fil des milliers de cycles). Libérer alors qu'un autre pointeur référence encore le processus = use-after-free. En Rust, l'ownership et le borrow checker éliminent ces deux catégories de bugs par construction.</p>
         </div>
     </div>
 
@@ -5458,6 +5591,17 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             </ul>
             <p>L'analyse stratégique de Goetsch, Mauldin et Milazzo (Carnegie-Mellon / Rice) a démontré un résultat fondamental : <strong>aucun programme de plus de 10 instructions ne peut battre Mortar sans être auto-réparateur, et aucun programme de plus de 14 instructions ne peut se réparer assez vite pour survivre à Mortar</strong>. Ce résultat établit une tension permanente entre complexité (plus de fonctionnalités) et vulnérabilité (plus de surface d'attaque) — le même compromis qu'en ingénierie logicielle réelle.</p>
             <p>Les interactions entre ces programmes forment un équilibre de Nash de type <strong>pierre-papier-ciseaux</strong> : Dwarf bat Mortar 60% du temps (ses bombes régulières touchent Mortar avant que les bombes Fibonacci ne le couvrent), Mortar tue Voter (les bombes Fibonacci sont trop denses pour la réparation), mais Voter bat Dwarf (la réparation résiste au bombing régulier clairsemé). <strong>Il n'existe pas de stratégie dominante</strong> — c'est ce qui rend le jeu intéressant et compétitif.</p>
+        </div>
+    </div>
+
+    
+    <div class="insight-box">
+        <div class="ib-title">📖 Optimisation de champion — Du compilateur à la stratégie</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, p.549-552) décrit l'<strong>optimisation peephole</strong> : <em>« A simple but effective technique for locally improving the target code is peephole optimization, which is done by examining a sliding window of target instructions and replacing instruction sequences within the peephole by a shorter or faster sequence. »</em> Cette technique s'applique directement au bytecode des champions : (1) un <code>zjmp %label</code> qui saute vers l'instruction suivante est un no-op et peut être éliminé ; (2) une chaîne de sauts <code>zjmp L1; L1: zjmp L2</code> peut être collapsée en <code>zjmp L2</code> (p.551) ; (3) <code>sub r1, r2, r3; add r3, r2, r1</code> est une identité simplifiable. Ces optimisations rendent les champions plus courts (plus de place en mémoire) et plus rapides (moins de cycles gaspillés).</p>
+            <p>Le Dragon Book (p.556-557) introduit l'<strong>allocation de registres par coloration de graphe</strong> : <em>« An attempt is made to color the register-interference graph using k colors, where k is the number of assignable registers. »</em> Corewar a exactement 16 registres (r1–r16), une ressource rare pour les champions complexes. Un champion qui a besoin de plus de 16 valeurs simultanément vivantes doit « spiller » en mémoire (paires <code>st</code>/<code>ld</code>), coûtant des cycles supplémentaires. La coloration de graphe montre comment assigner optimalement les valeurs aux 16 registres pour minimiser les spills.</p>
+            <p>L'article d'août 1984 de <em>Scientific American</em> documente le premier cas de <strong>comportement émergent</strong> dans Core War : le phénomène du « Double Dwarf ». Quand un Imp rencontre un Dwarf, une interaction peut créer une entité complètement nouvelle — un « double dwarf » qui bombarde inutilement l'arène tandis que l'objet de son attaque habite son propre corps et fait exactement la même chose. Cela illustre un principe fondamental : dans les systèmes concurrents à mémoire partagée, l'interaction entre programmes est aussi importante que les programmes eux-mêmes. Écrire un champion n'est pas seulement ce que votre code fait — c'est ce qui arrive quand votre code rencontre le code ennemi.</p>
+            <p>Smith et Nair (<em>Virtual Machines</em>, p.149-151) décrivent la formation de <strong>superblocks</strong> : <em>« Basic blocks may be rearranged in memory so that the most commonly followed execution path has instructions in consecutive memory locations. »</em> La boucle interne d'un champion Corewar (par exemple une boucle <code>live</code>/<code>zjmp</code>) est un superblock naturel : un seul point d'entrée, et le retour de boucle est la seule branche prise. Comprendre cette structure aide à expliquer pourquoi les boucles serrées dans les champions sont si efficaces — elles maximisent la localité spatiale et minimisent l'overhead de l'interpréteur.</p>
         </div>
     </div>
 
