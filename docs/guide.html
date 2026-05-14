@@ -7940,10 +7940,19 @@ ctdRender();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 
 <script>
-/* ── PDF Download ── */
+/* ── PDF Download — with fallback to browser print ── */
 function downloadPDF() {
     var overlay = document.getElementById('pdf-overlay');
     overlay.classList.add('active');
+
+    /* Check if html2pdf is loaded */
+    if (typeof html2pdf === 'undefined') {
+        overlay.classList.remove('active');
+        if (confirm('La librairie PDF n\'est pas chargée (hors-ligne ?). Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
+            window.print();
+        }
+        return;
+    }
 
     /* Build a temporary wrapper with ALL guide content */
     var wrapper = document.createElement('div');
@@ -8048,31 +8057,49 @@ function downloadPDF() {
             el.style.textShadow = 'none';
         });
 
+        /* Remove SVG diagrams (they break html2canvas) */
+        clone.querySelectorAll('svg').forEach(function(el) { el.remove(); });
+
         wrapper.appendChild(clone);
     });
 
     /* 3) Append wrapper to body temporarily */
     document.body.appendChild(wrapper);
 
+    function cleanup() {
+        var el = document.getElementById('pdf-capture-root');
+        if (el) el.remove();
+        overlay.classList.remove('active');
+    }
+
+    /* 4) Timeout safety — if html2pdf hangs, fall back to print */
+    var pdfTimeout = setTimeout(function() {
+        console.warn('PDF generation timed out after 45s');
+        cleanup();
+        if (confirm('La génération PDF prend trop de temps. Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
+            window.print();
+        }
+    }, 45000);
+
     var opt = {
         margin:      [8, 8, 8, 8],
         filename:    'Corewar_Guide_Pedagogique.pdf',
-        image:       { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0, windowWidth: 800 },
+        image:       { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false, scrollY: 0, windowWidth: 900, windowHeight: 1600 },
         jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     html2pdf().set(opt).from(wrapper).save().then(function(){
-        document.body.removeChild(wrapper);
-        overlay.classList.remove('active');
+        clearTimeout(pdfTimeout);
+        cleanup();
     }).catch(function(err){
+        clearTimeout(pdfTimeout);
         console.error('PDF generation failed:', err);
-        if (document.getElementById('pdf-capture-root')) {
-            document.body.removeChild(wrapper);
+        cleanup();
+        if (confirm('Erreur lors de la génération du PDF. Voulez-vous utiliser Ctrl+P pour imprimer en PDF ?')) {
+            window.print();
         }
-        overlay.classList.remove('active');
-        alert('Erreur lors de la génération du PDF. Essayez Ctrl+P pour imprimer en PDF.');
     });
 }
 </script>
