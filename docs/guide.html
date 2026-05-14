@@ -3278,6 +3278,8 @@
         </div>
     </div>
 
+    <div class="insight-box"><div class="ib-title">📖 Bytecode vs Tree-Walk vs Natif — Le spectre des représentations</div><div class="ib-content"><p>Robert Nystrom (Crafting Interpreters) décrit trois représentations possibles du code : le <strong>tree-walk</strong> (parcours d'AST — simple, portable, mais lent), le <strong>bytecode</strong> (compromis idéal), et le <strong>code natif</strong> (rapide mais complexe et non portable). Le format <code>.cor</code> du Corewar est du bytecode au sens strict : une séquence dense d'opcodes et d'opérandes, exécutée par une VM (MARS). L'histoire du p-code de Niklaus Wirth (Pascal) est frappante : dans les années 60-70, de nouvelles architectures apparaissaient chaque jour, et la portabilité du bytecode valait plus que la performance native. Corewar suit exactement cette philosophie — le format <code>.cor</code> est portable entre toutes les implémentations de MARS, indépendamment de l'architecture hôte.</p></div></div>
+
     <div class="insight-box">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
@@ -3390,6 +3392,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </div>
     </div>
 
+    <div class="insight-box"><div class="ib-title">📖 Stack-based vs Register-based — L'architecture hybride de Corewar</div><div class="ib-content"><p>La note de design dans Crafting Interpreters compare les VM <strong>stack-based</strong> (JVM, CPython — les opérandes sont empilés/dépilés) aux VM <strong>register-based</strong> (Lua 5.0+ — les instructions lisent/écrivent directement dans des slots). Lua a switché de stack à register en 5.0 et a mesuré un gain de vitesse significatif. Le Corewar est un cas fascinant : il est <strong>ni stack ni register pur</strong>. Il possède 16 registres (r1-r16) comme une machine à registres, mais ses modes d'adressage indirect (T_IND) ajoutent un niveau d'indirection similaire à une pile. De plus, l'absence de pile d'exécution signifie que les « temporaires » doivent vivre dans des registres ou en mémoire — il n'y a pas de push/pop. Cette hybridité est unique et reflète les contraintes d'un jeu où chaque instruction coûte un cycle.</p></div></div>
+
 </div>
 </section>
 
@@ -3403,6 +3407,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>La taxonomie des sources de dégradation de performance dans les VMs (p.415-416) s'applique directement à Corewar : <strong>Setup</strong> = initialisation d'un processus (fork), <strong>Emulation</strong> = overhead de décodage et dispatch des instructions, <strong>Interrupt handling</strong> = vérification de <code>cycle_to_die</code>, <strong>State saving</strong> = commutation de contexte entre processus, <strong>Bookkeeping</strong> = comptage des <code>live</code> et suivi de <code>NBR_LIVE</code>, <strong>Time elongation</strong> = coût de l'adressage circulaire et de l'arithmétique modulo. Cette taxonomie est une checklist pour optimiser une implémentation de VM Corewar.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Débit vs Latence — Le compromis fondamental de tout ordonnanceur</div><div class="ib-content"><p>Crafting Interpreters distingue deux métriques fondamentales pour évaluer un ramasse-miettes : le <strong>débit</strong> (throughput — fraction du temps passé à exécuter le code utilisateur vs le GC) et la <strong>latence</strong> (temps de pause maximal pendant une collection). Ce compromis s'applique directement à l'ordonnancement MARS : un ordonnanceur qui donne beaucoup de cycles par tour à chaque processus maximise le débit (moins de changements de contexte) mais augmente la latence (un processus peut monopoliser le CPU). À l'inverse, le round-robin strict de MARS (1 instruction par processus par cycle) minimise la latence mais paie un coût en débit (changement de contexte constant). Nystrom compare ça à une boulangerie : le débit, c'est le nombre de baguettes par jour ; la latence, c'est le temps d'attente du client le plus malchanceux. Corewar choisit la faible latence — chaque processus est servi équitablement, un cycle à la fois.</p></div></div>
 
 
     <div class="insight-box">
@@ -3461,6 +3467,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Van der Linden (<em>Expert C Programming</em>, p.157) utilise le terme <strong>« arena »</strong> pour décrire la région mémoire gérée par un allocateur : <em>« Some people use the term arena to describe the set of blocks managed by a memory allocator. »</em> Ce n'est pas une coïncidence si le Corewar utilise le même terme : les deux désignent une région mémoire contiguë gérée par un allocateur. Dans Corewar, l'arène est un tampon circulaire de taille fixe (pas de fragmentation possible grâce au modulo). En programmation système, une arena peut se fragmenter. Le lien étymologique enrichit la compréhension de pourquoi la mémoire Corewar s'appelle une « arène ».</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Références faibles et mémoire partagée — Le problème de l'arène</div><div class="ib-content"><p>Dans clox, la <strong>table d'internement des chaînes</strong> pose un problème délicat : elle référence chaque chaîne du tas, mais ne doit PAS empêcher le GC de les collecter. La solution est la <strong>référence faible</strong> : un pointeur qui ne compte pas comme racine pour le GC, et qui est automatiquement nettoyé si l'objet est collecté. L'arène Corewar pose un problème analogue : un processus peut écrire du code n'importe où dans l'arène, mais la simple existence de code dans l'arène ne signifie pas qu'il est « vivant ». Le code d'un processus mort est comme une chaîne orpheline dans la table d'internement — il occupe de l'espace mais n'est plus atteignable. La différence est que Corewar n'a PAS de références faibles : l'arène est un tableau brut, et le code mort reste jusqu'à ce qu'il soit écrasé. C'est exactement ce que les bombes exploitent — écraser le code « blanc » (non atteignable) des adversaires.</p></div></div>
 
 
     <!-- Ring diagram SVG -->
@@ -4082,6 +4090,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Kernighan et Ritchie (p.45) formalisent ces opérateurs : <em>« The shift operators << and >> perform left and right shifts of their left operand by the number of bit positions given by the right operand. Thus x << 2 shifts the value of x by two positions, filling vacated bits with zero; this is equivalent to multiplication by 4. »</em> La construction d'un mot 32 bits par décalages successifs est un idiome fondamental de la programmation système — et c'est exactement ce que fait <code>i32::from_be_bytes()</code> en Rust, de manière sûre et portable.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Localité spatiale et lignes de cache — Pourquoi le bytecode bat l'AST</div><div class="ib-content"><p>Crafting Interpreters explique pourquoi le bytecode est plus rapide que le tree-walk : les nœuds d'AST sont éparpillés dans le tas (heap), chaque pointeur pouvant causer un <em>cache miss</em>. Les CPUs modernes sont jusqu'à <strong>100× plus rapides</strong> quand les données sont déjà dans le cache L1/L2. Le bytecode, en revanche, est une séquence linéaire dense qui épouse parfaitement le comportement de préchargement du cache : quand le CPU lit un octet, il charge tout le bloc voisin. L'arène Corewar bénéficie du même avantage — les 4096 octets forment un bloc contigu en mémoire, et le PC avance séquentiellement. Quand MARS exécute une instruction après l'autre, le cache CPU précharge naturellement les instructions suivantes. C'est pourquoi un simple tableau d'octets en C battra toujours un arbre d'objets en Java pour implémenter l'arène.</p></div></div>
     <div class="code-wrapper">
         <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
@@ -4301,6 +4311,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </div>
     </div>
 
+    <div class="insight-box"><div class="ib-title">📖 Call frames et fenêtres de pile — Le modèle d'exécution Corewar</div><div class="ib-content"><p>Crafting Interpreters introduit le concept de <strong>call frame</strong> (cadre d'appel) : chaque fonction en cours d'exécution possède une « fenêtre » dans la pile de valeurs, avec son propre IP et ses propres variables locales. Les fenêtres du caller et du callee <em>se chevauchent</em> — les arguments sont déjà à la bonne place. Dans Corewar, chaque processus a également une « fenêtre d'exécution » : son PC, ses 16 registres et son carry forment un contexte indépendant. Mais contrairement à clox où les fenêtres sont imbriquées hiérarchiquement (caller → callee), les fenêtres Corewar sont <strong>plates et concurrentes</strong> — tous les processus partagent la même arène et sont ordonnancés en round-robin. Le SPL crée un nouveau contexte qui partage la mémoire mais diverge dans son exécution, une structure impossible dans un langage classique mais naturelle pour un jeu de guerre de programmes.</p></div></div>
+
     <div class="insight-box">
         <div class="ib-title">📖 fork() isole, SPL partage — L'inversion fondamentale</div>
         <div class="ib-content">
@@ -4363,6 +4375,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Ce modèle de « mort silencieuse » contraste avec les vrais processeurs où une instruction invalide déclenche une exception matérielle (SIGILL, SIGSEGV) qui doit être interceptée par le noyau de l'OS. CSAPP (§8.1) décrit ce mécanisme en détail. Dans Corewar, la VM joue simultanément le rôle de processeur et de noyau : elle détecte l'instruction invalide et « tue » le processus sans jamais interrompre la boucle principale.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Racines et accessibilité — Ce qui maintient la mémoire en vie</div><div class="ib-content"><p>Dans un ramasse-miettes, les <strong>racines</strong> (roots) sont les objets que la VM peut atteindre directement sans passer par d'autres objets : variables globales, pile d'exécution, call frames. Tout objet atteignable depuis une racine est vivant ; tout le reste est collectable. Dans Corewar, les racines sont les <strong>processus vivants</strong> : chaque PC de processus vivant est une racine, chaque registre pointant vers une adresse est un chemin d'accessibilité. Le code chargé au démarrage est aussi une racine (bien que le code puisse être écrasé). Cette formalisation est puissante : elle permet de définir précisément quelles zones de l'arène sont « sûres » à bomber (blanches — non atteignables depuis aucune racine) et lesquelles risquent de tuer un processus (noires — sur le chemin d'exécution d'un processus vivant). Un champion qui comprend les racines de ses adversaires peut les bombarder chirurgicalement.</p></div></div>
 
     <div class="insight-box">
         <div class="ib-title">📖 Processus zombie et ramasse-miettes</div>
@@ -4440,6 +4454,8 @@ while (!halt) {
             <p>Smith et Nair décrivent aussi des techniques d'optimisation : l'<strong>interprétation threaded</strong> (p.32-34) qui élimine la boucle centrale en chaînant directement les routines d'instruction, et le <strong>predecoding</strong> (p.34-38) qui analyse les instructions une fois pour toutes plutôt qu'à chaque exécution. Ces optimisations pourraient être appliquées à la VM Corewar pour améliorer les performances — le prédecoding serait particulièrement efficace car les instructions dans l'arène changent peu entre les cycles.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Le dispatch — Le cœur battant de toute VM</div><div class="ib-content"><p>Nystrom affirme que la fonction <code>run()</code> de clox — une boucle infinie avec un <code>switch</code> géant sur les opcodes — est « la fonction la plus importante de tout clox, de loin. L'interpréteur passe quelque chose comme 90% de son temps à l'intérieur de <code>run()</code> ». La boucle principale de MARS est exactement la même chose : un switch/case sur les 16 opcodes Redcode. Les techniques d'optimisation mentionnées — <strong>direct threaded code</strong>, <strong>computed goto</strong>, <strong>jump tables</strong> — s'appliquent toutes à MARS. GCC et Clang optimisent souvent les grands switch/case en tables de saut natives, ce qui élimine la cascade de comparaisons. Pour une VM Corewar en C, s'assurer que le compilateur C génère une jump table plutôt qu'une cascade de <code>if</code> est l'optimisation single la plus impactante. En Rust, le <code>match</code> sur un enum a le même comportement.</p></div></div>
 
     <div class="lifecycle">
         <div class="lc-step">
@@ -4575,6 +4591,8 @@ while (!halt) {
             <p><strong>5.</strong> Le gagnant est le dernier joueur à avoir été rapporté comme "en vie" par l'instruction <code>live</code>.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 L'abstraction tricolore — Ce que le GC nous apprend sur CYCLE_TO_DIE</div><div class="ib-content"><p>L'algorithme mark-sweep de McCarthy, tel qu'expliqué dans Crafting Interpreters, utilise l'<strong>abstraction tricolore</strong> : BLANC (non atteint), GRIS (atteint mais pas encore tracé), NOIR (entièrement tracé). Le ramasse-miettes progresse comme un front d'onde gris à travers le graphe d'objets. Transposé à Corewar : les cellules de l'arène sont BLANCHES par défaut (personne ne les référence), deviennent GRISES quand un processus vivant pointe vers elles (le PC les atteint), puis NOIRES une fois exécutées. Le CYCLE_TO_DIE est essentiellement un <strong>seuil de déclenchement du GC</strong> : quand un processus ne s'est pas manifesté (n'a pas exécuté de <code>live</code>) dans les N cycles, il est « sweepé » — éliminé. Le « tas auto-ajustable » de clox (où le seuil de GC s'adapte à la taille du tas vivant) est l'analogue exact de la façon dont CYCLE_TO_DIE diminue progressivement, s'ajustant au nombre de processus survivants.</p></div></div>
 
     <h3 id="ctd-anim">Animation — Évolution de CYCLE_TO_DIE</h3>
     <p>Visualisez comment <code>CYCLE_TO_DIE</code> diminue au fil de la partie. À chaque vérification, si le nombre de <code>live</code> est suffisant (≥ 21) ou après 10 checks sans assez de lives, la valeur est réduite de <code>CYCLE_DELTA</code> (50). La partie s'accélère progressivement jusqu'à ce que <code>CYCLE_TO_DIE</code> atteigne 0.</p>
@@ -4950,6 +4968,8 @@ while (!halt) {
         </div>
     </div>
 
+    <div class="insight-box"><div class="ib-title">📖 Le pool de constantes — L'ancêtre du header .cor</div><div class="ib-content"><p>Dans clox (la VM bytecode de Crafting Interpreters), chaque <em>chunk</em> de bytecode est accompagné d'un <strong>pool de constantes</strong> — un tableau séparé contenant les littéraux (nombres, chaînes) référencés par index dans les instructions <code>OP_CONSTANT</code>. Le header <code>.cor</code> joue exactement ce rôle : il contient le nom du champion (une constante chaîne) et la taille du code (une constante numérique), stockés séparément du bytecode lui-même. Nystrom explique que ce découplage est crucial : mettre les données volumineuses directement dans le flux d'instructions ruinerait la densité et la localité spatiale. Le Corewar pousse cette logique encore plus loin — le header est totalement séparé du corps, et l'arène ne contient que des instructions brutes, sans métadonnées. C'est l'ultimate expression du principe « le bytecode ne doit contenir que ce que la VM exécute ».</p></div></div>
+
     <h3>L'OCP — Octet de Codage des Paramètres</h3>
     <p>L'OCP (ou ACB) encode le type de chaque paramètre sur <strong>2 bits</strong> : <code>01</code> = registre, <code>10</code> = direct, <code>11</code> = indirect. Les bits inutilisés sont à 0.</p>
 
@@ -5084,6 +5104,8 @@ live: live  %1
             <p>Le Dragon Book note aussi que le rôle de la table des symboles est de <em>« pass information from declarations to uses »</em> (p.112) — exactement ce que fait la passe 1 (enregistrer les déclarations de labels) vers la passe 2 (utiliser ces déclarations pour résoudre les références). Dans Corewar, la table des symboles est un simple dictionnaire {nom_du_label → offset_en_octets}, sans les complexités de portées imbriquées des langages de haut niveau.</p>
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Single-pass vs Multi-pass — Le compromis de l'assembleur Corewar</div><div class="ib-content"><p>Crafting Interpreters implémente un compilateur <strong>single-pass</strong> (une seule passe) où le parsing et la génération de code sont entrelacés. Nystrom explique que ce design est possible parce que Lox est un langage dynamiquement typé où « on n'a pas besoin de beaucoup de contexte environnant pour comprendre un bout de syntaxe ». L'assembleur Corewar, lui, ne peut PAS être single-pass à cause des labels en référence avant : <code>jmp :label</code> où <code>:label</code> est défini plus bas. C'est exactement le problème que rencontraient les compilateurs C historiques : C exige les <em>forward declarations</em> (<code>void foo();</code>) précisément parce qu'il a été conçu pour un compilateur single-pass sur des machines avec très peu de mémoire. La solution de l'assembleur Corewar — deux passes — est le même compromis que Pascal : la première passe collecte les adresses, la seconde génère le code résolu.</p></div></div>
 
     <div class="lifecycle">
         <div class="lc-step">
@@ -5997,6 +6019,8 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             Les meilleurs champions combinent les trois archétypes : un processus principal qui fait des <code>live</code> (survie), des processus bombers qui écrasent le code adverse (attaque), et des forks pour créer des processus de remplacement si les bombers se font tuer (résilience). Le pattern classique est : fork → le parent continue à bomber, l'enfant fait des live.
         </div>
     </div>
+
+    <div class="insight-box"><div class="ib-title">📖 Les racines de l'adversaire — Bombing ciblé par l'analyse d'accessibilité</div><div class="ib-content"><p>En transposant le concept de GC à Corewar : un processus vivant a des <strong>racines</strong> (PC, registres) qui définissent ce qu'il peut atteindre. L'ensemble des cellules atteignables depuis ces racines forme le <strong>graphe de survie</strong> de l'adversaire. Un champion qui comprend ce graphe peut bombarder les <strong>points de coupure</strong> (cut vertices) — les nœuds dont la suppression déconnecte le graphe. Par exemple, si un adversaire a une boucle principale en adresse 50 et une sous-routine en adresse 200, le JMP à l'adresse 150 qui relie les deux est un point de coupure. Écraser cette seule instruction est plus efficace que de bomber aveuglément. C'est l'équivalent Corewar de l'optimisation de GC : au lieu de scanner tout le tas (bomber toute l'arène), on trace seulement les racines (les PCs vivants) pour trouver les cibles les plus rentables.</p></div></div>
 
 </div>
 </section>
