@@ -1225,11 +1225,68 @@
         #sidebar { width: 200px; }
     }
 
-    /* Print styles */
+    /* PDF download button */
+    #pdf-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    #pdf-btn:hover {
+        border-color: var(--ray);
+        color: var(--ray);
+        box-shadow: 0 0 8px rgba(0,255,136,0.15);
+    }
+    body.theme-light #pdf-btn:hover {
+        border-color: var(--nier-accent);
+        color: var(--nier-accent);
+        box-shadow: 0 0 8px rgba(201,168,76,0.2);
+    }
+
+    /* PDF generation overlay */
+    #pdf-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.85);
+        display: none;
+        align-items: center; justify-content: center;
+        z-index: 99999;
+        flex-direction: column; gap: 20px;
+    }
+    #pdf-overlay.active { display: flex; }
+    #pdf-overlay .spinner {
+        width: 48px; height: 48px;
+        border: 3px solid rgba(0,255,136,0.2);
+        border-top-color: var(--ray);
+        border-radius: 50%;
+        animation: pdf-spin 0.8s linear infinite;
+    }
+    body.theme-light #pdf-overlay .spinner {
+        border-color: rgba(201,168,76,0.2);
+        border-top-color: var(--nier-accent);
+    }
+    #pdf-overlay .pdf-text {
+        font-family: var(--mono);
+        color: var(--ray);
+        font-size: 0.9rem;
+        letter-spacing: 0.05em;
+    }
+    body.theme-light #pdf-overlay .pdf-text {
+        color: var(--nier-accent);
+    }
+    @keyframes pdf-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Print styles — also used by html2pdf */
     @media print {
         #sidebar, #progress-bar, #back-to-top, #search-overlay,
         #starfield, #scan-lines, #film-grain, nav, .hero-scan,
-        .copy-btn, #menu-toggle { display: none !important; }
+        .copy-btn, #menu-toggle, #pdf-btn, #pdf-overlay { display: none !important; }
         body { background: white; color: black; }
         body::before, body::after { display: none; }
         .hero { padding: 40px 20px; }
@@ -1243,6 +1300,10 @@
         body { padding-left: 0 !important; }
         nav { left: 0 !important; }
         .reveal { opacity: 1 !important; transform: none !important; }
+        .insight-box { page-break-inside: avoid; border: 1px solid #ccc !important; }
+        .anim-btn, .arena-btn, .wrap-btn, .filter-btn, .sim-btn,
+        .endian-toggle-btn, .quiz-opt, .code-tab, .collapse-header::after { display: none !important; }
+        .collapse-content { display: block !important; max-height: none !important; overflow: visible !important; }
     }
 
     /* Quiz */
@@ -3018,6 +3079,7 @@
     <div style="flex:1"></div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata">☀</button>
     <button onclick="openSearch()" style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--ray)';this.style.color='var(--ray)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">⌘K Rechercher</button>
+    <button id="pdf-btn" onclick="downloadPDF()" title="Télécharger en PDF">📄 PDF</button>
 </nav>
 <div class="spacer"></div>
 
@@ -7694,6 +7756,83 @@ ctdRender();
         }
     });
 })();
+</script>
+
+<!-- PDF overlay -->
+<div id="pdf-overlay">
+    <div class="spinner"></div>
+    <div class="pdf-text">Génération du PDF en cours…</div>
+</div>
+
+<!-- html2pdf.js for PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+
+<script>
+/* ── PDF Download ── */
+function downloadPDF() {
+    var overlay = document.getElementById('pdf-overlay');
+    overlay.classList.add('active');
+
+    /* Hide interactive elements before capture */
+    var hideSelector = '#sidebar, nav, #progress-bar, #back-to-top, #search-overlay, ' +
+        '#starfield, #scan-lines, #film-grain, .hero-scan, .copy-btn, #menu-toggle, ' +
+        '#pdf-btn, .anim-btn, .arena-btn, .sim-btn, .filter-btn, .endian-toggle-btn, .quiz-opt, .code-tab';
+    var hideEls = document.querySelectorAll(hideSelector);
+    hideEls.forEach(function(el){ el.setAttribute('data-pdf-hidden','1'); el.style.display='none'; });
+
+    /* Expand all collapsed sections */
+    var collapsed = document.querySelectorAll('.collapse-content');
+    collapsed.forEach(function(el){
+        el.setAttribute('data-pdf-collapsed', el.style.maxHeight||'');
+        el.style.maxHeight = 'none';
+        el.style.overflow = 'visible';
+    });
+
+    /* Force reveal animations to final state */
+    var reveals = document.querySelectorAll('.reveal');
+    reveals.forEach(function(el){
+        el.setAttribute('data-pdf-reveal', el.style.opacity||'');
+        el.style.opacity = '1';
+        el.style.transform = 'none';
+    });
+
+    var element = document.querySelector('.container') || document.body;
+
+    var opt = {
+        margin:      [10, 10, 10, 10],
+        filename:    'Corewar_Guide_Pedagogique.pdf',
+        image:       { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollY: 0 },
+        jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(element).save().then(function(){
+        /* Restore hidden elements */
+        hideEls.forEach(function(el){
+            el.style.display = '';
+            el.removeAttribute('data-pdf-hidden');
+        });
+        collapsed.forEach(function(el){
+            el.style.maxHeight = el.getAttribute('data-pdf-collapsed') || '';
+            el.style.overflow = '';
+            el.removeAttribute('data-pdf-collapsed');
+        });
+        reveals.forEach(function(el){
+            el.style.opacity = el.getAttribute('data-pdf-reveal') || '';
+            el.style.transform = '';
+            el.removeAttribute('data-pdf-reveal');
+        });
+        overlay.classList.remove('active');
+    }).catch(function(err){
+        console.error('PDF generation failed:', err);
+        hideEls.forEach(function(el){ el.style.display = ''; el.removeAttribute('data-pdf-hidden'); });
+        collapsed.forEach(function(el){ el.style.maxHeight = el.getAttribute('data-pdf-collapsed') || ''; el.style.overflow = ''; el.removeAttribute('data-pdf-collapsed'); });
+        reveals.forEach(function(el){ el.style.opacity = el.getAttribute('data-pdf-reveal') || ''; el.style.transform = ''; el.removeAttribute('data-pdf-reveal'); });
+        overlay.classList.remove('active');
+        alert('Erreur lors de la génération du PDF. Essayez Ctrl+P pour imprimer en PDF.');
+    });
+}
 </script>
 
 <div id="theme-transition"></div>
