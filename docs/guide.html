@@ -5778,6 +5778,54 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
         </div>
     </div>
 
+    <div class="insight-box">
+        <div class="ib-title">📖 Variables d'induction et réduction de force — L'optimisation reine du Corewar</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.9, p.88-89) définit les <strong>variables d'induction</strong> : <em>« A variable x is said to be an 'induction variable' if there is a positive or negative constant c such that each time x is assigned, its value increases by c. »</em> C'est la signature exacte du pointeur de bombardement dans un guerrier Corewar : un registre qui s'incrémente d'un pas fixe à chaque itération de la boucle d'attaque. Le pointeur est une variable d'induction de base ; l'adresse de la bombe (pointeur × pas + base) est une variable d'induction dérivée.</p>
+            <p>La <strong>réduction de force</strong> (p.89-90) est l'optimisation qui en découle : <em>« replacing a more expensive operation, such as multiplication, by a cheaper one, such as addition, is known as strength reduction. »</em> C'est l'optimisation la plus impactante en Corewar. Si un guerrier naïf calcule l'adresse de bombe par <code>step × iteration</code> (multiplication), la réduction de strength la remplace par une simple addition : <code>ptr = ptr + step</code> à chaque itération. Le MUL disparaît, remplacé par un ADD — un cycle gagné par itération, soit des milliers de cycles sur la durée du combat. L'élimination des variables d'induction (p.90-91) va plus loin : quand deux variables d'induction suivent le même rythme, on peut éliminer la redondante et son instruction d'update, raccourcissant encore la boucle.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Constant folding et propagation — Le calcul à la compilation</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.8, p.32) définit le <strong>constant folding</strong> : <em>« Here we evaluate constant expressions at compile time and replace the constant expressions by their values. Thus the expression 2 * 3.14 would be replaced by 6.28. »</em> En Corewar, cela signifie que tout calcul dont les opérandes sont connus à l'assemblage (offsets de bombe, pas de balayage, adresses de saut) doit être pré-calculé par le macro-assembleur et non par le guerrier à l'exécution. Chaque <code>add</code> ou <code>sub</code> calculant une constante est un cycle volé à l'attaque.</p>
+            <p>Le Dragon Book (Ch.9, p.128-132) étend cela à la <strong>propagation de constantes</strong> : suivre le flux de données pour déterminer si un registre contient une valeur constante à chaque point du programme. Si <code>r1</code> contient toujours 5 après le boot, toute instruction <code>add r1, r2</code> peut être remplacée par <code>add #5, r2</code> — voire supprimée si le résultat est immédiatement écrasé. Le Dragon Book note que la propagation de constantes est <em>monotone mais non distributive</em> (p.131) : l'algorithme itératif donne une solution sûre mais potentiellement sous-optimale. Pour le guerrier Corewar, cela signifie que certaines optimisations de constantes seront manquées par une analyse automatisée — l'œil humain reste irremplaçable.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Boucles naturelles et dominateurs — La structure cachée du guerrier</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.9, p.152-155) définit le <strong>dominateur</strong> : <em>« We say node d of a flow graph dominates node n, written d dom n, if every path from the entry node of the flow graph to n goes through d. »</em> L'<strong>arbre de dominateurs</strong> qui en résulte révèle la structure hiérarchique du flot de contrôle — chaque nœud est dominé par son parent dans l'arbre. Pour un guerrier Corewar, l'arbre de dominateurs montre quels blocs sont obligatoires avant d'atteindre un point donné.</p>
+            <p>Les <strong>boucles naturelles</strong> (p.161-163) sont définies par deux propriétés : <em>« 1. It must have a single-entry node, called the header. 2. There must be a back edge that enters the loop header. »</em> La boucle de bombardement d'un Dwarf ou la boucle de scan d'un Scanner sont des boucles naturelles parfaites — un seul point d'entrée (le header), un back edge (le <code>zjmp</code> ou <code>djn</code> de retour). Les guerriers bien structurés produisent des <strong>graphes de flot réductibles</strong> (p.158-160) : tous les retreating edges sont aussi des back edges, ce qui permet une analyse efficace. À l'inverse, un <code>zjmp</code> qui saute au milieu d'une boucle crée un <strong>graphe non réductible</strong> — plus difficile à analyser, mais aussi plus résistant au désassemblage par l'adversaire.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Maximal Munch — Une instruction qui en vaut trois</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.8, p.60) décrit le principe du <strong>maximal munch</strong> : <em>« a general rule is to favor larger reductions over smaller ones. This means that in a reduce-reduce conflict, the longer reduction is favored. This 'maximal munch' approach causes a larger number of operations to be performed with a single machine instruction. »</em> Autrement dit, quand plusieurs séquences d'instructions produisent le même résultat, toujours choisir celle qui fait le plus de travail en une seule instruction machine.</p>
+            <p>En Corewar, le maximal munch est une philosophie de conception. L'instruction <code>DJN</code> (Decrement and Jump if Not Zero) est l'archétype du maximal munch : elle combine trois opérations — décrémenter une valeur, tester si elle est non-nulle, et sauter conditionnellement — en une seule instruction d'un cycle. Sans <code>DJN</code>, il faudrait <code>sub #1, ptr</code> + <code>jmn ptr, loop</code> — deux cycles au lieu d'un. De même, les modes d'adressage pré-décrément (<code>&lt;</code>) et post-incrément (<code>&gt;</code>) en Redcode ICWS appliquent le maximal munch : l'incrémentation est fusionnée dans l'opération mémoire au lieu d'être une instruction séparée. Chaque fois qu'un guerrier utilise une instruction qui combine deux effets, il gagne un cycle par itération — sur des milliers d'itérations, c'est décisif.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Copy propagation et élimination globale des sous-expressions</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.9, p.86-87) décrit la <strong>propagation de copies</strong> : <em>« The idea behind the copy-propagation transformation is to use v for u, wherever possible after the copy statement u = v. »</em> En Corewar, après un <code>ld r1, r2</code> (copie), toutes les utilisations suivantes de <code>r2</code> peuvent être remplacées par <code>r1</code> — et si <code>r2</code> n'est plus jamais utilisé différemment de <code>r1</code>, la copie elle-même peut être éliminée. C'est un nettoyage systématique des registres redondants.</p>
+            <p>L'<strong>élimination globale des sous-expressions communes</strong> (p.84-85) étend ce principe au-delà d'un bloc : <em>« An occurrence of an expression E is called a common subexpression if E was previously computed and the values of the variables in E have not changed since the previous computation. »</em> Si deux blocs différents du guerrier calculent le même offset de bombe avec les mêmes valeurs d'entrée, un seul calcul suffit — le résultat est réutilisé. La <strong>propagation de copies</strong> et la <strong>disponibilité d'expressions</strong> (p.106-110) travaillent ensemble : une expression est « disponible » si elle a été calculée sur tous les chemins menant à ce point sans que ses opérandes n'aient été modifiés. Ne pas recalculer une expression disponible est l'équivalent Corewar du cache hit — zéro cycle au lieu d'un.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Analyse de vivacité — Quelles variables survivent au bloc</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers</em>, Ch.9, p.104-106) définit l'<strong>analyse de vivacité</strong> (live-variable analysis) : <em>« In live-variable analysis we wish to know for variable x and point p whether the value of x at p could be used along some path in the flow graph starting at p. If so, we say x is live at p; otherwise, x is dead at p. »</em> Cette analyse est <strong>rétrograde</strong> (backward) : l'information remonte du point de sortie vers le point d'entrée, car on veut savoir si une utilisation future existe.</p>
+            <p>En Corewar, l'analyse de vivacité est l'outil qui permet de répondre à la question : <em>cette instruction est-elle vraiment nécessaire ?</em> Si un registre est mort après un bloc (sa valeur ne sera jamais lue), toute instruction qui y écrit est du code mort. Si un registre est vivant à la sortie d'un bloc, il doit être préservé — ce qui détermine si un <code>st</code> (spill) est nécessaire avant un saut. L'information de <strong>prochaine utilisation</strong> (next-use, Ch.8 p.24) est la version locale de cette analyse : <em>« Knowing when the value of a variable will be used next is essential for generating good code. If the value of a variable that is currently in a register will never be referenced subsequently, then that register can be assigned to another variable. »</em> En pratique Corewar, si vous chargez un registre et ne le relisez jamais, l'instruction de chargement est morte — supprimez-la et gagnez un cycle.</p>
+        </div>
+    </div>
+
     <h3>Les 3 grands archétypes</h3>
     <div class="arena-three-layers">
         <div class="layer-card">
