@@ -1169,54 +1169,6 @@
     #back-to-top:hover { border-color: var(--ray); color: var(--ray);
         box-shadow: 0 0 15px rgba(0,255,136,0.2); }
 
-    /* Cheat Sheet Button & Panel */
-    #cheat-btn {
-        position: fixed; bottom: 72px; right: 24px; width: 40px; height: 40px;
-        border-radius: 50%; border: 1px solid var(--border); background: var(--card);
-        color: var(--text-muted); font-size: 1rem; cursor: pointer;
-        opacity: 0; transform: translateY(10px); transition: all 0.3s;
-        z-index: 90; display: flex; align-items: center; justify-content: center;
-    }
-    #cheat-btn.visible { opacity: 1; transform: translateY(0); }
-    #cheat-btn:hover { border-color: var(--ray); color: var(--ray);
-        box-shadow: 0 0 15px rgba(0,255,136,0.2); }
-    #cheat-btn.active { border-color: var(--ray); color: var(--ray); background: var(--card2); }
-
-    #cheat-panel {
-        position: fixed; top: 56px; right: 0; width: 380px; height: calc(100vh - 56px);
-        background: var(--card); border-left: 1px solid var(--border);
-        z-index: 95; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-        overflow-y: auto; padding: 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-    }
-    #cheat-panel.open { transform: translateX(0); }
-    #cheat-panel::-webkit-scrollbar { width: 4px; }
-    #cheat-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    #cheat-panel .cp-header {
-        position: sticky; top: 0; background: var(--card2); padding: 14px 16px;
-        border-bottom: 1px solid var(--border); display: flex; align-items: center;
-        justify-content: space-between; z-index: 2;
-    }
-    #cheat-panel .cp-header h3 { margin: 0; font-size: 0.85rem; font-family: var(--mono); color: var(--ray); }
-    #cheat-panel .cp-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 4px; }
-    #cheat-panel .cp-close:hover { color: var(--text); }
-    .cp-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-    .cp-table th {
-        background: var(--card2); padding: 8px 6px; text-align: center; color: var(--text-muted);
-        font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;
-        position: sticky; top: 52px; z-index: 1;
-    }
-    .cp-table td { padding: 6px; text-align: center; border-bottom: 1px solid rgba(21,30,53,0.3); font-family: var(--mono); }
-    .cp-table td:first-child { color: var(--ray); font-weight: 600; text-shadow: 0 0 6px rgba(0,255,136,0.2); }
-    .cp-table tr:hover { background: rgba(0,255,136,0.04); }
-    .cp-table .cp-yes { color: var(--green); font-weight: 600; }
-    .cp-table .cp-no { color: var(--text-muted); opacity: 0.5; }
-    .cp-table .cp-idx { color: var(--cyan); font-weight: 600; }
-    .cp-table .cp-carry { color: var(--pink); font-weight: 600; }
-    .cp-table .cp-cycles { color: var(--fg); font-weight: 700; }
-
-    @media (max-width: 500px) {
-        #cheat-panel { width: 100%; }
-    }
 
     /* Search modal */
     #search-overlay {
@@ -2152,22 +2104,6 @@
     [data-theme="nier"] .op-table tr:hover { background: rgba(196,54,43,0.03); }
     [data-theme="nier"] .op-table tr:hover td:first-child { color: #A02E24; text-shadow: none; }
 
-    /* Cheat Sheet — Nier style */
-    [data-theme="nier"] #cheat-btn { background: #FFFFFF; border-color: #D4CFC6; }
-    [data-theme="nier"] #cheat-btn:hover, [data-theme="nier"] #cheat-btn.active { border-color: #C4362B; color: #C4362B; box-shadow: none; }
-    [data-theme="nier"] #cheat-panel { background: #FAFAF7; border-color: #D4CFC6; }
-    [data-theme="nier"] #cheat-panel .cp-header { background: #F0EDE6; border-color: #D4CFC6; }
-    [data-theme="nier"] #cheat-panel .cp-header h3 { color: #C4362B; }
-    [data-theme="nier"] .cp-table th { background: #F0EDE6; border-bottom: 2px solid #C4362B; box-shadow: none; color: #6B6358; }
-    [data-theme="nier"] .cp-table td { border-bottom-color: #EDE8DF; }
-    [data-theme="nier"] .cp-table td:first-child { color: #C4362B; text-shadow: none; }
-    [data-theme="nier"] .cp-table tr:hover { background: rgba(196,54,43,0.03); }
-    [data-theme="nier"] .cp-yes { color: #4A7C59; }
-    [data-theme="nier"] .cp-no { color: #B0A89E; }
-    [data-theme="nier"] .cp-idx { color: #3A6EA5; }
-    [data-theme="nier"] .cp-carry { color: #B8860B; }
-    [data-theme="nier"] .cp-cycles { color: #2C2416; }
-
     /* Pills — simple bordered, no glow, clean fill */
     [data-theme="nier"] .pill { border-radius: 0; background: transparent; box-shadow: none; text-shadow: none; }
     [data-theme="nier"] .pill-yes { color: #4A7C59; border-color: #4A7C59; background: rgba(74,124,89,0.08); }
@@ -2742,22 +2678,6 @@
     [data-theme="ame"] .op-table td:first-child { color: #4A90E2; text-shadow: 0 0 8px rgba(74,144,226,0.3); }
     [data-theme="ame"] .op-table tr:hover { background: rgba(74,144,226,0.05); }
     [data-theme="ame"] .op-table tr:hover td:first-child { text-shadow: 0 0 14px rgba(74,144,226,0.5); }
-
-    /* Cheat Sheet — Âme style */
-    [data-theme="ame"] #cheat-btn { background: rgba(10,25,50,0.9); border-color: #1A3A5F; }
-    [data-theme="ame"] #cheat-btn:hover, [data-theme="ame"] #cheat-btn.active { border-color: #4A90E2; color: #4A90E2; box-shadow: 0 0 15px rgba(74,144,226,0.2); }
-    [data-theme="ame"] #cheat-panel { background: rgba(10,25,50,0.95); border-color: #1A3A5F; backdrop-filter: blur(12px); }
-    [data-theme="ame"] #cheat-panel .cp-header { background: rgba(10,25,50,0.95); border-color: #1A3A5F; }
-    [data-theme="ame"] #cheat-panel .cp-header h3 { color: #4A90E2; }
-    [data-theme="ame"] .cp-table th { background: rgba(10,25,50,0.95); border-bottom-color: #1A3A5F; color: #6B9FD6; }
-    [data-theme="ame"] .cp-table td { border-bottom-color: rgba(26,58,95,0.5); }
-    [data-theme="ame"] .cp-table td:first-child { color: #4A90E2; text-shadow: 0 0 6px rgba(74,144,226,0.2); }
-    [data-theme="ame"] .cp-table tr:hover { background: rgba(74,144,226,0.05); }
-    [data-theme="ame"] .cp-yes { color: #6BCB77; }
-    [data-theme="ame"] .cp-no { color: #4A6B8A; }
-    [data-theme="ame"] .cp-idx { color: #5BC0EB; }
-    [data-theme="ame"] .cp-carry { color: #E8A87C; }
-    [data-theme="ame"] .cp-cycles { color: #C8DEF2; }
 
     /* ── Arena Visual ── */
     [data-theme="ame"] .arena-visual {
@@ -8422,82 +8342,6 @@ async function downloadPDF() {
 
 <div id="theme-transition"></div>
 
-<!-- Cheat Sheet -->
-<button id="cheat-btn" onclick="toggleCheatSheet()" title="Cheat Sheet — 16 instructions">⚡</button>
-<div id="cheat-panel">
-    <div class="cp-header">
-        <h3>⚡ Cheat Sheet</h3>
-        <button class="cp-close" onclick="toggleCheatSheet()">✕</button>
-    </div>
-    <table class="cp-table">
-        <thead>
-            <tr><th>#</th><th>Inst</th><th>Params</th><th>Cycles</th><th>OCP</th><th>Dir</th><th>IDX</th><th>Carry</th></tr>
-        </thead>
-        <tbody>
-            <tr><td>1</td><td>live</td><td>%dir</td><td class="cp-cycles">10</td><td class="cp-no">—</td><td>4</td><td class="cp-no">—</td><td class="cp-no">—</td></tr>
-            <tr><td>2</td><td>ld</td><td>%d|ind, r</td><td class="cp-cycles">5</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
-            <tr><td>3</td><td>st</td><td>r, r|ind</td><td class="cp-cycles">5</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-no">—</td></tr>
-            <tr><td>4</td><td>add</td><td>r, r, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-carry">✓</td></tr>
-            <tr><td>5</td><td>sub</td><td>r, r, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-carry">✓</td></tr>
-            <tr><td>6</td><td>and</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
-            <tr><td>7</td><td>or</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
-            <tr><td>8</td><td>xor</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
-            <tr><td>9</td><td>zjmp</td><td>%dir</td><td class="cp-cycles">20</td><td class="cp-no">—</td><td>2</td><td class="cp-idx">✓</td><td>lit</td></tr>
-            <tr><td>10</td><td>ldi</td><td>r|d|i,d|r,r</td><td class="cp-cycles">25</td><td class="cp-yes">✓</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
-            <tr><td>11</td><td>sti</td><td>r,r|d|i,d|r</td><td class="cp-cycles">25</td><td class="cp-yes">✓</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
-            <tr><td>12</td><td>fork</td><td>%dir</td><td class="cp-cycles">800</td><td class="cp-no">—</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
-            <tr><td>13</td><td>lld</td><td>%d|ind, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">NON</td><td class="cp-carry">✓</td></tr>
-            <tr><td>14</td><td>lldi</td><td>r|d|i,d|r,r</td><td class="cp-cycles">50</td><td class="cp-yes">✓</td><td>2</td><td class="cp-no">NON</td><td class="cp-carry">✓</td></tr>
-            <tr><td>15</td><td>lfork</td><td>%dir</td><td class="cp-cycles">1000</td><td class="cp-no">—</td><td>2</td><td class="cp-no">NON</td><td class="cp-no">—</td></tr>
-            <tr><td>16</td><td>aff</td><td>r</td><td class="cp-cycles">2</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-no">—</td></tr>
-        </tbody>
-    </table>
-    <div style="padding:12px 16px;font-size:0.72rem;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border);">
-        <strong style="color:var(--fg)">Raccourcis clavier</strong><br>
-        <code style="background:var(--card2);padding:2px 6px;border-radius:3px;">Shift+C</code> Ouvrir/Fermer<br>
-        <code style="background:var(--card2);padding:2px 6px;border-radius:3px;">Échap</code> Fermer
-    </div>
-</div>
-
-<script>
-/* Cheat Sheet */
-function toggleCheatSheet() {
-    const panel = document.getElementById('cheat-panel');
-    const btn = document.getElementById('cheat-btn');
-    panel.classList.toggle('open');
-    btn.classList.toggle('active');
-}
-
-/* Keyboard shortcuts */
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const panel = document.getElementById('cheat-panel');
-        if (panel && panel.classList.contains('open')) {
-            toggleCheatSheet();
-        }
-    }
-    if (e.shiftKey && e.key === 'C') {
-        toggleCheatSheet();
-        e.preventDefault();
-    }
-});
-
-/* Show cheat button on scroll (same logic as back-to-top) */
-(function() {
-    const cb = document.getElementById('cheat-btn');
-    let ticking = false;
-    window.addEventListener('scroll', function() {
-        if (!ticking) {
-            requestAnimationFrame(function() {
-                if (window.scrollY > 300) cb.classList.add('visible');
-                else cb.classList.remove('visible');
-                ticking = false;
-            });
-            ticking = true;
-        }
-    });
-})();
-</script>
 
 </body>
 </html>
