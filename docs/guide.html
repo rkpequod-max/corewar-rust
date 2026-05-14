@@ -4310,6 +4310,15 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p><strong>Important</strong> : si <strong>tous</strong> les processus d'un joueur meurent, ce joueur peut <strong>encore gagner</strong> s'il a été le dernier joueur à être rapporté en vie par une instruction <code>live</code>. Un processus mort ne peut pas être ranimé — seul un <code>fork</code> depuis un processus vivant peut créer de nouveaux processus.</p>
 
     <div class="insight-box">
+        <div class="ib-title">📖 Sandboxing et confinement des fautes — MARS comme sandbox parfait</div>
+        <div class="ib-content">
+            <p>Smith et Nair (<em>Virtual Machines</em>, Ch.8 & 10) décrivent le <strong>fault containment</strong> (confinement des fautes) comme l'un des rôles fondamentaux des machines virtuelles : isoler les défaillances d'un invité pour qu'elles ne corrompent jamais l'hôte. MARS illustre ce principe de manière paradigmatique. Quand un guerrier exécute un <code>DAT</code> (instruction invalide), quand il tente de lire un registre hors limites, ou quand son opcode est corrompu par un bomber adverse, son processus est simplement retiré de la file d'exécution — il « meurt silencieusement ». La VM hôte n'est jamais affectée.</p>
+            <p>Ce comportement n'est pas un accident de conception, c'est une exigence structurelle. Smith et Nair (p.337-339) notent que dans les VMs de processus classiques, le code auto-modifiant (SMC) pose un défi de sécurité majeur car il oblige à protéger les pages de code contre l'écriture. Corewar inverse complètement cette logique : l'écriture dans le code est non seulement permise, mais c'est le mécanisme d'attaque principal. Le sandboxing de MARS garantit que cette permissivité ne compromet jamais l'intégrité du simulateur — un guerrier peut corrompre l'intégralité de l'arène, mais il ne pourra jamais causer un segfault sur la machine physique de l'évaluateur.</p>
+            <p>Ce modèle de « mort silencieuse » contraste avec les vrais processeurs où une instruction invalide déclenche une exception matérielle (SIGILL, SIGSEGV) qui doit être interceptée par le noyau de l'OS. CSAPP (§8.1) décrit ce mécanisme en détail. Dans Corewar, la VM joue simultanément le rôle de processeur et de noyau : elle détecte l'instruction invalide et « tue » le processus sans jamais interrompre la boucle principale.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
         <div class="ib-title">📖 Processus zombie et ramasse-miettes</div>
         <div class="ib-content">
             <p>En UNIX, un processus qui se termine mais dont le parent n'a pas encore appelé <code>wait()</code> devient un <strong>zombie</strong> — il conserve une entrée dans la table des processus mais ne consomme plus de ressources CPU. CSAPP (§8.4.3) explique que les zombies doivent être « récoltés » (reaped) par le parent, sinon ils s'accumulent et épuisent les ressources du système.</p>
@@ -5657,6 +5666,42 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
     </div>
 
     
+    <div class="insight-box">
+        <div class="ib-title">📖 Optimisation Redcode avancée — CMP, SLT et les quickscanners</div>
+        <div class="ib-content">
+            <p>Les scanners modernes n'utilisent presque jamais de simples sauts conditionnels (<code>JMZ</code>) pour détecter leurs ennemis. Ils exploitent des instructions de comparaison comme <code>CMP</code> (Compare) ou <code>SLT</code> (Skip if Less Than) combinées à des modificateurs d'auto-incrémentation. Cette technique permet de comparer de larges blocs de mémoire en quelques cycles, créant des boucles de balayage très compactes appelées <strong>quickscanners</strong>.</p>
+            <p>Le principe est élégant : au lieu de charger une valeur, de la comparer avec une constante, puis de sauter conditionnellement (3 instructions, 6+ cycles), un quickscanner utilise <code>CMP</code> avec un mode d'adressage qui incrémente automatiquement le pointeur de balayage. Chaque itération ne coûte qu'un seul cycle de comparaison. Quand <code>CMP</code> détecte une différence avec le <code>DAT 0</code> attendu, le scanner sait qu'un guerrier ennemi est présent à cette adresse et peut lancer son attaque.</p>
+            <p>Cette optimisation s'apparente à la <strong>fusion de boucles</strong> (loop fusion) décrite par le Dragon Book (p.550) : plutôt que de séparer la lecture mémoire, la comparaison et le branchement en instructions distinctes, on les combine en une seule opération qui fait tout en un cycle. C'est aussi un exemple de <strong>code golf</strong> — l'art de minimiser le nombre d'instructions pour réduire la surface d'attaque du guerrier. Un scanner compact de 5 instructions est beaucoup plus difficile à bomber qu'un scanner naïf de 15 instructions.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Anatomie du Vampire — Le détournement de flux d'exécution</div>
+        <div class="ib-content">
+            <p>Le <strong>Vampire</strong> est l'un des guerriers les plus fascinants de l'histoire de Corewar. Sa stratégie est fondamentalement différente du bomber ou du réplicateur : au lieu de détruire l'adversaire, il le <em>capture</em>. Le Vampire dissémine des instructions <code>JMP</code> dans l'arène, chacune pointant vers un <strong>« pit »</strong> (fosse) — une zone de code sous son contrôle. Quand un processus ennemi exécute accidentellement l'un de ces <code>JMP</code> parasites, il est détourné vers le pit et se retrouve à exécuter du code au profit du Vampire.</p>
+            <p>Ce mécanisme est l'analogue exact du <strong>stack smashing</strong> en sécurité informatique : un attaquant écrase l'adresse de retour sur la pile pour détourner le flux d'exécution du programme victime vers du code malveillant qu'il a injecté (shellcode). Van der Linden (<em>Expert C Programming</em>, Ch.4 & 6) décrit en détail comment les manipulations de pointeurs en C peuvent conduire à des corruptions similaires. En Corewar, le Vampire pousse ce concept à l'extrême : il ne se contente pas de détourner un processus — il <em>vole</em> le temps CPU de l'adversaire, car chaque processus capturé exécute les instructions du Vampire, accélérant son propre code au détriment de l'ennemi.</p>
+            <p>La contre-mesure contre les Vampires est le <strong>Imp</strong> : un processus qui ne fait que <code>MOV 0, 1</code> avance d'une case par cycle en se dupliquant. L'Imp est immunisé contre la capture car son code se reconstitue à chaque cycle — si un <code>JMP</code> vampire écrase son <code>MOV</code>, le processus suivant le réécrit immédiatement. C'est un exemple frappant de la dynamique pierre-papier-ciseaux : le Vampire bat les guerriers « intelligents » (scanners, bombers complexes), mais perd contre le plus simple de tous les programmes.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 Théorie virale et sécurité — Corewar comme laboratoire de cybersécurité</div>
+        <div class="ib-content">
+            <p>Corewar est souvent considéré comme le précurseur de l'étude des malwares. Les comportements observés dans l'arène — réplication automatique (Imp, Silk), corruption de mémoire (Bombers), détournement de flux d'exécution (Vampire) — sont les ancêtres conceptuels des techniques utilisées par les vrais virus et vers informatiques. L'Imp, avec son <code>MOV 0, 1</code>, est le modèle le plus primitif d'un <strong>ver réseau</strong> (worm) : un programme qui se copie d'adresse en adresse, se propageant automatiquement sans intervention extérieure.</p>
+            <p>Smith et Nair (<em>Virtual Machines</em>, Ch.10) décrivent comment les VMs sont utilisées comme <strong>sandbox de sécurité</strong> pour analyser les malwares : on exécute le code suspect dans un environnement isolé pour observer son comportement sans risque pour le système hôte. MARS est précisément cette sandbox — sauf que le comportement « malveillant » y est encouragé. Cette inversion de perspective est riche d'enseignements : les mêmes mécanismes qui rendent les virus dangereux (auto-réplication, code polymorphe, détournement de pointeurs) sont les outils stratégiques du jeu.</p>
+            <p>L'écrasement de la mémoire par un bomber est analogue aux attaques par <strong>dépassement de tampon</strong> (buffer overflow) documentées par CSAPP (§3.12) : l'attaquant écrit au-delà des limites d'un buffer pour écraser des données critiques. En Corewar, il n'y a pas de « limites » — tout l'espace est partagé — mais le principe est identique : exploiter la capacité d'écrire dans la mémoire d'un autre processus pour compromettre son exécution.</p>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <div class="ib-title">📖 L'écosystème moderne — De pMARS à Corewar.io</div>
+        <div class="ib-content">
+            <p>La spécification ultime de Corewar est le standard <strong>ICWS'94</strong> (International Core Wars Society, draft 1994). Bien que ce standard n'ait techniquement jamais été formellement adopté — l'ICWS s'est dissoute avant la finalisation — il est devenu le <em>standard de facto</em> de la communauté. Son implémentation de référence est <strong>pMARS</strong> (Portable Memory Array Redcode Simulator), écrite en C, qui reste à ce jour le simulateur le plus utilisé pour les tournois.</p>
+            <p>L'écosystème s'est modernisé au fil des décennies. <strong>Corewar.io</strong> propose une interface web permettant de coder et tester des guerriers directement dans le navigateur. <strong>npmars</strong> est un portage de pMARS en TypeScript, rendant le simulateur accessible dans l'écosystème JavaScript/Node.js. D'autres projets comme <strong>Corewar-UK</strong> (corewar.co.uk) maintiennent des archives de guerriers historiques et des tutoriels avancés.</p>
+            <p>Cette longévité est remarquable pour un concept né en 1984. Elle s'explique par la richesse stratégique du jeu — l'équilibre pierre-papier-ciseaux garantit qu'il n'existe pas de stratégie dominante — et par la précision technique requise : un simulateur Corewar doit être exact au cycle près, car le résultat d'un combat peut dépendre d'un seul cycle d'avance. Cette exigence de déterminisme absolu est la même que celle des simulateurs de processeurs réels décrits par Smith et Nair, et elle explique pourquoi pMARS, malgré son âge, reste la référence incontestée.</p>
+        </div>
+    </div>
+
     <div class="insight-box">
         <div class="ib-title">📖 Optimisation de champion — Du compilateur à la stratégie</div>
         <div class="ib-content">
