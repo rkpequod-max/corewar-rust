@@ -1169,6 +1169,55 @@
     #back-to-top:hover { border-color: var(--ray); color: var(--ray);
         box-shadow: 0 0 15px rgba(0,255,136,0.2); }
 
+    /* Cheat Sheet Button & Panel */
+    #cheat-btn {
+        position: fixed; bottom: 72px; right: 24px; width: 40px; height: 40px;
+        border-radius: 50%; border: 1px solid var(--border); background: var(--card);
+        color: var(--text-muted); font-size: 1rem; cursor: pointer;
+        opacity: 0; transform: translateY(10px); transition: all 0.3s;
+        z-index: 90; display: flex; align-items: center; justify-content: center;
+    }
+    #cheat-btn.visible { opacity: 1; transform: translateY(0); }
+    #cheat-btn:hover { border-color: var(--ray); color: var(--ray);
+        box-shadow: 0 0 15px rgba(0,255,136,0.2); }
+    #cheat-btn.active { border-color: var(--ray); color: var(--ray); background: var(--card2); }
+
+    #cheat-panel {
+        position: fixed; top: 56px; right: 0; width: 380px; height: calc(100vh - 56px);
+        background: var(--card); border-left: 1px solid var(--border);
+        z-index: 95; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+        overflow-y: auto; padding: 0; scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    #cheat-panel.open { transform: translateX(0); }
+    #cheat-panel::-webkit-scrollbar { width: 4px; }
+    #cheat-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #cheat-panel .cp-header {
+        position: sticky; top: 0; background: var(--card2); padding: 14px 16px;
+        border-bottom: 1px solid var(--border); display: flex; align-items: center;
+        justify-content: space-between; z-index: 2;
+    }
+    #cheat-panel .cp-header h3 { margin: 0; font-size: 0.85rem; font-family: var(--mono); color: var(--ray); }
+    #cheat-panel .cp-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 4px; }
+    #cheat-panel .cp-close:hover { color: var(--text); }
+    .cp-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .cp-table th {
+        background: var(--card2); padding: 8px 6px; text-align: center; color: var(--text-muted);
+        font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;
+        position: sticky; top: 52px; z-index: 1;
+    }
+    .cp-table td { padding: 6px; text-align: center; border-bottom: 1px solid rgba(21,30,53,0.3); font-family: var(--mono); }
+    .cp-table td:first-child { color: var(--ray); font-weight: 600; text-shadow: 0 0 6px rgba(0,255,136,0.2); }
+    .cp-table tr:hover { background: rgba(0,255,136,0.04); }
+    .cp-table .cp-yes { color: var(--green); font-weight: 600; }
+    .cp-table .cp-no { color: var(--text-muted); opacity: 0.5; }
+    .cp-table .cp-idx { color: var(--cyan); font-weight: 600; }
+    .cp-table .cp-carry { color: var(--pink); font-weight: 600; }
+    .cp-table .cp-cycles { color: var(--fg); font-weight: 700; }
+
+    @media (max-width: 500px) {
+        #cheat-panel { width: 100%; }
+    }
+
     /* Search modal */
     #search-overlay {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -2103,6 +2152,22 @@
     [data-theme="nier"] .op-table tr:hover { background: rgba(196,54,43,0.03); }
     [data-theme="nier"] .op-table tr:hover td:first-child { color: #A02E24; text-shadow: none; }
 
+    /* Cheat Sheet — Nier style */
+    [data-theme="nier"] #cheat-btn { background: #FFFFFF; border-color: #D4CFC6; }
+    [data-theme="nier"] #cheat-btn:hover, [data-theme="nier"] #cheat-btn.active { border-color: #C4362B; color: #C4362B; box-shadow: none; }
+    [data-theme="nier"] #cheat-panel { background: #FAFAF7; border-color: #D4CFC6; }
+    [data-theme="nier"] #cheat-panel .cp-header { background: #F0EDE6; border-color: #D4CFC6; }
+    [data-theme="nier"] #cheat-panel .cp-header h3 { color: #C4362B; }
+    [data-theme="nier"] .cp-table th { background: #F0EDE6; border-bottom: 2px solid #C4362B; box-shadow: none; color: #6B6358; }
+    [data-theme="nier"] .cp-table td { border-bottom-color: #EDE8DF; }
+    [data-theme="nier"] .cp-table td:first-child { color: #C4362B; text-shadow: none; }
+    [data-theme="nier"] .cp-table tr:hover { background: rgba(196,54,43,0.03); }
+    [data-theme="nier"] .cp-yes { color: #4A7C59; }
+    [data-theme="nier"] .cp-no { color: #B0A89E; }
+    [data-theme="nier"] .cp-idx { color: #3A6EA5; }
+    [data-theme="nier"] .cp-carry { color: #B8860B; }
+    [data-theme="nier"] .cp-cycles { color: #2C2416; }
+
     /* Pills — simple bordered, no glow, clean fill */
     [data-theme="nier"] .pill { border-radius: 0; background: transparent; box-shadow: none; text-shadow: none; }
     [data-theme="nier"] .pill-yes { color: #4A7C59; border-color: #4A7C59; background: rgba(74,124,89,0.08); }
@@ -2678,6 +2743,22 @@
     [data-theme="ame"] .op-table tr:hover { background: rgba(74,144,226,0.05); }
     [data-theme="ame"] .op-table tr:hover td:first-child { text-shadow: 0 0 14px rgba(74,144,226,0.5); }
 
+    /* Cheat Sheet — Âme style */
+    [data-theme="ame"] #cheat-btn { background: rgba(10,25,50,0.9); border-color: #1A3A5F; }
+    [data-theme="ame"] #cheat-btn:hover, [data-theme="ame"] #cheat-btn.active { border-color: #4A90E2; color: #4A90E2; box-shadow: 0 0 15px rgba(74,144,226,0.2); }
+    [data-theme="ame"] #cheat-panel { background: rgba(10,25,50,0.95); border-color: #1A3A5F; backdrop-filter: blur(12px); }
+    [data-theme="ame"] #cheat-panel .cp-header { background: rgba(10,25,50,0.95); border-color: #1A3A5F; }
+    [data-theme="ame"] #cheat-panel .cp-header h3 { color: #4A90E2; }
+    [data-theme="ame"] .cp-table th { background: rgba(10,25,50,0.95); border-bottom-color: #1A3A5F; color: #6B9FD6; }
+    [data-theme="ame"] .cp-table td { border-bottom-color: rgba(26,58,95,0.5); }
+    [data-theme="ame"] .cp-table td:first-child { color: #4A90E2; text-shadow: 0 0 6px rgba(74,144,226,0.2); }
+    [data-theme="ame"] .cp-table tr:hover { background: rgba(74,144,226,0.05); }
+    [data-theme="ame"] .cp-yes { color: #6BCB77; }
+    [data-theme="ame"] .cp-no { color: #4A6B8A; }
+    [data-theme="ame"] .cp-idx { color: #5BC0EB; }
+    [data-theme="ame"] .cp-carry { color: #E8A87C; }
+    [data-theme="ame"] .cp-cycles { color: #C8DEF2; }
+
     /* ── Arena Visual ── */
     [data-theme="ame"] .arena-visual {
         background: rgba(10,25,50,0.85);
@@ -3233,9 +3314,6 @@
     <p>Les premiers champions historiques sont légendaires : <strong>Imp</strong>, le plus simple — une seule instruction <code>MOV 0 1</code> qui se copie indéfiniment vers l'avant ; <strong>Dwarf</strong>, qui bombarde la mémoire avec des <code>DAT 0</code> toutes les 5 adresses ; <strong>Mortar</strong>, un bomber Fibonacci inventé par Michael Mauldin à Carnegie-Mellon ; et <strong>Voter</strong>, un programme auto-réparateur en trois parties. Ces programmes formaient un équilibre de type pierre-papier-ciseaux : Dwarf bat Mortar 60% du temps, Mortar tue Voter, mais Voter bat Dwarf. Cet équilibre illustre un principe fondamental de la théorie des jeux : <strong>il n'existe pas de stratégie dominante</strong>.</p>
     <p>Ce jeu de programmation enseigne des concepts fondamentaux de l'informatique : l'architecture de machine virtuelle, le langage assembleur, la compilation, la gestion mémoire et l'exécution concurrente. À l'école 42, c'est l'un des projets les plus difficiles car il exige de comprendre <strong>toutes les couches</strong> : de la syntaxe assembleur à l'exécution par la VM, en passant par l'encodage binaire et la résolution de symboles.</p>
     <p>Les compétences acquises sont transversales et profondes : compréhension des <strong>ISA</strong> (Instruction Set Architectures) — ce concept d'interface entre logiciel et matériel formalisé par Patterson et Hennessy —, manipulation de données au niveau octet, tampons circulaires, endianness, ordonnancement de processus, et la notion cruciale de <strong>contrat</strong> entre un compilateur et un runtime. Comme le soulignent Bryant et O'Hallaron dans <em>Computer Systems: A Programmer's Perspective</em>, l'ISA est l'abstraction fondamentale qui sépare ce que le programme voit de comment le matériel l'exécute : « The ISA defines the processor state, the format of instructions, and the effect each instruction will have on the state. » Votre VM Corewar est, en miniature, exactement cette abstraction.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La VM Corewar comme machine virtuelle de processus</summary>
 <div class="insight-box">
         <div class="ib-title">📖 La VM Corewar comme machine virtuelle de processus</div>
         <div class="ib-content">
@@ -3244,11 +3322,6 @@
             <p>Le concept de <strong>virtualisation comme isomorphisme</strong> (Smith & Nair, p.10) est aussi éclairant : la virtualisation consiste en deux opérations — (1) le <strong>mappage</strong> des ressources virtuelles (registres, mémoire, PC) vers les ressources réelles du processus hôte, et (2) l'<strong>émulation</strong> des instructions de la machine virtuelle par des instructions de la machine hôte. Dans Corewar, le mappage est direct : les 16 registres du champion sont des champs dans une structure C/Rust, le PC est un entier, et l'arène est un tableau d'octets en mémoire hôte. L'émulation est le loop principal de la VM — le fameux fetch-decode-execute.</p>
         </div>
     </div>
-</details>
-
-    
-    <details class="insight-details">
-<summary class="insight-summary">📖 La virtualisabilité Popek-Goldberg — Pourquoi la VM Corewar « marche »</summary>
 <div class="insight-box">
         <div class="ib-title">📖 La virtualisabilité Popek-Goldberg — Pourquoi la VM Corewar « marche »</div>
         <div class="ib-content">
@@ -3261,10 +3334,6 @@
             <p>La VM Corewar satisfait les trois : <strong>efficacité</strong> (les instructions simples s'exécutent directement via interprétation), <strong>contrôle des ressources</strong> (aucun champion ne peut accéder à l'état interne de la VM ou aux registres d'autres processus), et <strong>équivalence</strong> (un champion produit les mêmes résultats quel que soit le nombre d'autres champions dans l'arène). L'ISA de Corewar (les 16 opcodes) est par construction « efficacement virtualisable » : toutes les opérations sensibles (accès mémoire, création de processus via fork) passent par la VM. C'est un design radicalement différent de l'x86-64 original, qui n'était PAS virtualisable selon Popek-Goldberg — ce qui a nécessité l'invention de la paravirtualisation (Xen) et du matériel VT-x par Intel.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Origine du fork et programmes comme gènes</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Origine du fork et programmes comme gènes</div>
         <div class="ib-content">
@@ -3272,10 +3341,6 @@
             <p>Le même article rapporte des discussions sur des « <strong>programmes de type Creeper</strong> habitant des systèmes réels (dont des vers dans les Apple) » et des « <strong>programmes comme gènes</strong> ». Creeper (1971) fut le premier ver informatique, créé à BBN — le lien entre Core War et les programmes auto-réplicants réels n'était pas une métaphore mais une constatation. La discussion « programmes comme gènes » préfigure le champ de la <strong>vie artificielle</strong> (Tierra de Tom Ray, 1991, directement inspiré de Core War). Pour l'étudiant 42, cela signifie que les principes du Corewar — auto-réplication, compétition pour les ressources, mutation — sont les fondements de la biologie computationnelle et de l'évolution artificielle.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Von Neumann, automates auto-réplicateurs et virologie informatique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Von Neumann, automates auto-réplicateurs et virologie informatique</div>
         <div class="ib-content">
@@ -3284,10 +3349,6 @@
             <p>Étudier les dynamiques d'une arène Corewar ne relève donc pas du simple jeu : cela revient à observer l'évolution virale en laboratoire, faisant de cette machine virtuelle un modèle fondamental de l'analyse en sécurité informatique. Les mêmes mécanismes qui rendent les virus dangereux — auto-réplication, code polymorphe, détournement de pointeurs — sont les outils stratégiques du jeu, et les comprendre dans le cadre ludique de Corewar prépare à les reconnaître et à les combattre dans les systèmes réels.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'ère de l'ICWS et la standardisation des tournois</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'ère de l'ICWS et la standardisation des tournois</div>
         <div class="ib-content">
@@ -3296,63 +3357,23 @@
             <p>L'évolution des standards ICWS illustre un principe d'ingénierie fondamental : la tension entre <strong>stabilité</strong> (garder les règles simples et prévisibles) et <strong>expressivité</strong> (enrichir le langage pour permettre de nouvelles stratégies). Chaque révision a élargi l'espace des stratégies possibles, mais a aussi complexifié la VM — un compromis que tout concepteur d'ISA rencontre. Pour l'étudiant 42, la norme ICWS'94 est celle implémentée par le sujet, et comprendre son histoire aide à comprendre pourquoi certaines instructions semblent « étranges » (elles sont le fruit de compromis communautaires).</p>
         </div>
     </div>
-</details>
-
-<details class="insight-details">
-<summary class="insight-summary">📖 Prérequis et ordre de lecture</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Prérequis et ordre de lecture</div>
         <div class="ib-content">
             L'ordre recommandé est : <strong>1 → 2 → 3 → 4 → 5 → 6 → 7 → 10 → 8 → 9 → 11 → 12 → 13 → 14</strong>. Les sections 7 (Encodage) et 10 (Syntaxe du .s) sont complémentaires et doivent être lues ensemble. La section 9 (C vs Rust) est optionnelle et comparative. Chaque section bâtit sur la précédente — les sections 3 (Arène) et 5 (Cycle de vie) sont les plus critiques à comprendre en profondeur.
         </div>
     </div>
-</details>
 
 📖 La Loi d'Amdahl contre le guerrier</summary>
-    <details class="insight-details">
-<summary class="insight-summary">📖 La Loi d'Amdahl contre le guerrier</summary>
 <div class="insight-box"><div class="ib-title">📖 La Loi d'Amdahl contre le guerrier</div><div class="ib-content"><p>Hennessy et Patterson énoncent la Loi d'Amdahl : <em>Speedup = 1 / [(1 − Fraction_améliorée) + Fraction_améliorée / Speedup_améliorée]</em>. Le corollaire crucial est que <strong>l'amélioration incrémentale diminue à mesure qu'on ajoute des optimisations</strong> — c'est la loi des rendements décroissants. H&P illustrent cela avec un exemple frappant : accélérer le FPSQR par 10× (20% du temps) donne un speedup de 1.22, tandis qu'accélérer toutes les instructions FP par 1.6× (50% du temps) donne 1.23 — <strong>la fraction compte plus que le facteur d'accélération</strong>. Pour un guerrier Corewar, la boucle de bombardement (main loop) représente typiquement 95%+ des cycles, tandis que la séquence de boot s'exécute une seule fois. Optimiser le boot pour gagner 2 cycles est futile si la boucle en consomme des milliers. Le §1.11 renforce ce point avec le <em>Pitfall</em> : « Falling prey to Amdahl's heartbreaking law » — presque tous les architectes déploient un effort énorme sur une feature avant d'en mesurer l'usage réel, pour découvrir un speedup décevant. <strong>En Corewar : profilez d'abord, optimisez ensuite.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La Loi de Fer : IC × CPI × T</summary>
 <div class="insight-box"><div class="ib-title">📖 La Loi de Fer : IC × CPI × T</div><div class="ib-content"><p>H&P décomposent le temps CPU en la formule fondamentale : <strong>CPU time = Instruction Count × CPI × Clock cycle time</strong>, ou de façon plus fine : <strong>CPU time = Σ(IC_i × CPI_i) × T_clock</strong>. Cette équation est « the Iron Law of Processor Performance » — les trois leviers sont interdépendants (ISA affecte IC et CPI, organisation affecte CPI et T_clock, technologie affecte T_clock). Pour la VM Corewar, T_clock est fixe (déterminé par l'implémentation de la machine virtuelle), donc la performance d'un guerrier se réduit à : <strong>Total_Cycles = Σ(IC_opcode × CPI_opcode)</strong>. Deux leviers seulement : réduire le nombre d'instructions (code plus compact, moins de NOP), ou choisir des opcodes à CPI plus faible. H&P note que « CPI_i should be measured and not just calculated from a table in the back of a reference manual since it must include pipeline effects, cache misses, and any other memory system inefficiencies » — en Corewar, l'équivalent est que le CPI effectif dépend du contexte d'exécution (adresse dans l'arène, état des processus concurrents).</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Rendre le cas fréquent rapide</summary>
 <div class="insight-box"><div class="ib-title">📖 Rendre le cas fréquent rapide</div><div class="ib-content"><p>H&P : « Perhaps the most important and pervasive principle of computer design is to focus on the common case : favor the frequent case over the infrequent case. This principle applies when determining how to spend resources, since the impact of the improvement is higher if the occurrence is frequent. » H&P ajoutent un point subtil : <strong>« the frequent case is often simpler and can be done faster than the infrequent case »</strong> — par exemple, l'addition sans overflow est le cas commun et se fait plus vite qu'avec overflow. En Corewar, ce principe dicte la structure même d'un guerrier compétitif : la boucle de scan/bombardement est le cas fréquent (exécuté des milliers de fois), le boot est le cas rare (exécuté une fois). Un guerrier qui optimise sa boucle principale — en minimisant les instructions, en choisissant les opcodes les plus rapides, en maximisant les DAT-kills par cycle — applique exactement ce principe. Inversement, un guerrier sophistiqué avec un boot complexe mais une boucle sous-optimale viole ce principe. <strong>Investissez vos cycles proportionnellement au temps passé.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'approche quantitative : mesurer, ne pas deviner</summary>
 <div class="insight-box"><div class="ib-title">📖 L'approche quantitative : mesurer, ne pas deviner</div><div class="ib-content"><p>H&P ouvrent leur chapitre en déclarant : « At the core is a quantitative approach to computer design and analysis that uses empirical observations of programs, experimentation, and simulation as its tools. » Le §1.8 insiste : « the only consistent and reliable measure of performance is the execution time of real programs, and that all proposed alternatives to time as the metric or to real programs as the items measured have eventually led to misleading claims or even mistakes in computer design. » H&P documentent l'échec répété des benchmarks synthétiques (Dhrystone), des toy programs, et des kernels isolés — le benchmark matrix300 de SPEC89 passait 99% de son temps dans une seule ligne, et une optimisation du compilateur a multiplié la performance par 9 sans refléter la performance réelle. En Corewar, l'équivalent est clair : tester un guerrier contre un seul adversaire ou dans l'arène vide est aussi trompeur que Dhrystone. <strong>La win rate contre un pool diversifié d'adversaires est le seul métrique fiable</strong> — l'équivalent Corewar du benchmark suite SPEC. Et comme pour SPEC, la moyenne géométrique (pas arithmétique) est la bonne façon de résumer les performances.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le mur de puissance et la revanche du RISC</summary>
 <div class="insight-box"><div class="ib-title">📖 Le mur de puissance et la revanche du RISC</div><div class="ib-content"><p>H&P documentent l'arrêt brutal de la croissance des fréquences d'horloge en 2003 : « Since 2003, single-processor performance improvement has dropped to less than 22% per year due to the twin hurdles of maximum power dissipation of air-cooled chips and the lack of more instruction-level parallelism to exploit efficiently. » La puissance dynamique ∝ Capacitance × Voltage² × Frequency signifie que monter en fréquence coûte quadratiquement en énergie. H&P notent que « In low-end applications, such as cell phones, the cost in power and silicon area of the x86-translation overhead helped lead to a RISC architecture, ARM, becoming dominant » — ARM a expédié 6.1 milliards de puces en 2010, 20× plus que x86. La leçon pour Corewar est profonde : <strong>les ISA simples et réguliers (comme le Redcode) ne sont pas des vestiges pédagogiques, mais l'aboutissement logique d'une trajectoire architecturale</strong>. Le VM Corewar est un processeur in-order single-issue — exactement le type d'architecture qui domine quand la complexité coûte plus qu'elle ne rapporte. Le §1.11 enfonce le clou : « The La-Z-Boy programmer era of relying on hardware designers to make their programs go faster without lifting a finger is officially over. » En Corewar, il n'y a pas de hardware pour vous sauver — l'optimisation est entièrement à la charge du programmeur.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Performance de pointe ≠ performance réelle</summary>
 <div class="insight-box"><div class="ib-title">📖 Performance de pointe ≠ performance réelle</div><div class="ib-content"><p>Le §1.11 des Fallacies énonce : « Peak performance tracks observed performance » est une fallacie. H&P montrent que le pourcentage de performance de pointe réellement atteint varie de <strong>5% à 58%</strong> selon le programme et le processeur. La définition cinglante : « The only universally true definition of peak performance is the performance level a computer is guaranteed not to exceed. » En Corewar, la « performance de pointe » d'un guerrier est son taux de bombardement théorique dans l'arène vide — par exemple, un scanner qui bomb chaque cycle. Mais contre un adversaire réel, ce taux chute à cause des collisions, des interruptions de processus (SPL), et de la pression de CYCLE_TO_DIE. Un guerrier qui paraît optimal sur papier peut perdre systématiquement car sa performance de pointe n'est jamais atteinte en conditions réelles. <strong>La performance mesurée contre un pool représentatif est le seul indicateur fiable.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 MTTF, FIT et la mort du processus — L'ingénierie de la fiabilité appliquée à l'arène</summary>
 <div class="insight-box"><div class="ib-title">📖 MTTF, FIT et la mort du processus — L'ingénierie de la fiabilité appliquée à l'arène</div><div class="ib-content"><p>Le §1.7 (6e édition) définit les métriques fondamentales de fiabilité : le <strong>MTTF</strong> (Mean Time To Failure, en heures), le <strong>FIT</strong> (Failures In Time = défaillances par milliard d'heures — un MTTF de 10<super>6</super> heures = 1000 FIT), le <strong>MTTR</strong> (Mean Time To Repair), et la <strong>disponibilité</strong> = MTTF / (MTTF + MTTR). H&P illustrent avec un sous-système disque : 10 disques à 10<super>6</super> h de MTTF + contrôleur + alimentation + ventilateur = 23 000 FIT système, soit un MTTF système de 43 500 heures (~5 ans). L'ajout d'une alimentation redondante améliore le MTTF de l'alimentation de 200 000 h à 830 millions d'heures — facteur 4150× ! En Corewar, chaque processus a un MTTF mesuré en cycles avant qu'un MOV adverse ne l'écrase. Un processus unique (single-process warrior) a un MTTF faible — n'importe quel DAT le tue. Un guerrier avec N processus via SPL a un MTTF système bien plus élevé, car la « panne » (tous les processus tués) nécessite N frappes réussies. La redondance de processus est l'équivalent exact de la redondance matérielle : <strong>MTTF_système augmente quadratiquement avec le nombre de copies redondantes</strong>. C'est la justification quantitative de la stratégie « forker pour survivre ».</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Amdahl appliqué à la fiabilité — 4150× mieux sur un composant = 1.28× sur le système</summary>
 <div class="insight-box"><div class="ib-title">📖 Amdahl appliqué à la fiabilité — 4150× mieux sur un composant = 1.28× sur le système</div><div class="ib-content"><p>Le §1.9 (6e édition) applique la Loi d'Amdahl à un domaine inattendu — la fiabilité. Doubler la fiabilité d'une alimentation par redondance améliore son MTTF par <strong>4150×</strong> (de 200 000 h à 830 millions d'heures), mais comme l'alimentation ne représente que 22% du taux de défaillance du système, le MTTF système ne s'améliore que de <strong>1.28×</strong>. H&P concluent : « Despite an impressive 4150× improvement in reliability of one module, from the system's perspective, the change has a measurable but small benefit. » C'est la Loi d'Amdahl appliquée à la fiabilité au lieu de la performance. En Corewar, la leçon est directe : renforcer une seule partie d'un guerrier (rendre le boot invulnérable, ajouter un decoy sophistiqué) ne sert à rien si cette partie ne représente que 5% des défaillances. La majorité des « pannes » vient de la boucle principale exposée, et c'est là qu'il faut investir. <strong>Amdahl est universel : performance, énergie, fiabilité — la fraction compte plus que le facteur.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 « Bigger and dumber is better » — Les caches géants vs les pipelines complexes</summary>
 <div class="insight-box"><div class="ib-title">📖 « Bigger and dumber is better » — Les caches géants vs les pipelines complexes</div><div class="ib-content"><p>Le §3.13 (6e édition) identifie un Pitfall surprenant : « Sometimes bigger and dumber is better ». Les processeurs agressifs des années 2000 (Pentium 4 à 20+ étages, Itanium au peak issue rate le plus élevé) n'ont jamais atteint leur performance de pointe car « the main limitation in exploiting ILP often turned out to be the memory system ». La solution ? Construire de <strong>plus grands caches</strong> au lieu de pipelines plus profonds. L'Itanium 2 et l'i7 utilisent des caches trois niveaux (8-9 Mio en L3) contre seulement 2 Mio en L2 pour le Pentium 4 — et cette approche « plus simple et plus grosse » s'est révélée plus efficace. En Corewar, le parallèle est frappant : il n'y a pas de cache du tout, mais le principe s'applique à la stratégie de guerrier. Un guerrier avec une boucle de bombardement simple et une grande couverture spatiale (bigger) bat souvent un guerrier avec un code sophistiqué mais une couverture étroite (smarter but smaller). <strong>Quand le goulot d'étranglement est l'accès aux données, investir dans la couverture plutôt que dans la complexité calculatoire.</strong></p></div></div>
-</details>
 
     <h3>Correspondance avec l'informatique réelle</h3>
     <p>Les concepts du Corewar ne sont pas abstraits — ils correspondent directement à des mécanismes réels des processeurs et des systèmes d'exploitation. En étudiant ce projet, vous manipulez les mêmes abstractions qu'un ingénieur qui conçoit un processeur ou un compilateur. Le tableau ci-dessous fait le pont entre le monde de Corewar et les architectures réelles, en s'appuyant sur les concepts formalisés dans <em>Computer Systems: A Programmer's Perspective</em> (Bryant & O'Hallaron) :</p>
@@ -3375,9 +3396,6 @@
             </tbody>
         </table>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 ISA et abstraction : du Corewar au Y86-64</summary>
 <div class="insight-box">
         <div class="ib-title">📖 ISA et abstraction : du Corewar au Y86-64</div>
         <div class="ib-content">
@@ -3385,22 +3403,13 @@
             <p>Les parallèles sont frappants : le Y86-64 possède 15 registres, un PC, 3 codes de condition (ZF, SF, OF), un statut (AOK, HLT, ADR, INS), et un jeu d'instructions réduit (halt, nop, mov, OP, jump, call/ret, push/pop). Le Corewar possède 16 registres, un PC, un code de condition (carry), et 16 instructions. Les deux partagent un principe fondamental : <strong>les encodages d'instructions doivent avoir une interprétation unique</strong>. Toute séquence d'octets encode soit une séquence d'instructions unique, soit n'est pas une séquence légale. C'est ce qui permet au processeur de décoder le bytecode sans ambiguïté.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Bytecode vs Tree-Walk vs Natif — Le spectre des représentations</summary>
 <div class="insight-box"><div class="ib-title">📖 Bytecode vs Tree-Walk vs Natif — Le spectre des représentations</div><div class="ib-content"><p>Robert Nystrom (Crafting Interpreters) décrit trois représentations possibles du code : le <strong>tree-walk</strong> (parcours d'AST — simple, portable, mais lent), le <strong>bytecode</strong> (compromis idéal), et le <strong>code natif</strong> (rapide mais complexe et non portable). Le format <code>.cor</code> du Corewar est du bytecode au sens strict : une séquence dense d'opcodes et d'opérandes, exécutée par une VM (MARS). L'histoire du p-code de Niklaus Wirth (Pascal) est frappante : dans les années 60-70, de nouvelles architectures apparaissaient chaque jour, et la portabilité du bytecode valait plus que la performance native. Corewar suit exactement cette philosophie — le format <code>.cor</code> est portable entre toutes les implémentations de MARS, indépendamment de l'architecture hôte.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Suite logique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
             Maintenant que vous comprenez ce qu'est le Corewar, passez à la <a href="#architecture">section 2 — Architecture globale</a> pour voir comment les composants s'articulent, puis à la <a href="#arena">section 3 — L'Arène</a> pour comprendre le cœur du projet.
         </div>
     </div>
-</details>
 
 </div>
 
@@ -3472,9 +3481,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <h3>op.h — Le contrat entre l'assembleur et la VM</h3>
     <p>Le fichier <code>op.h</code> (ou le crate <code>corewar-common</code> en Rust) définit le <strong>jeu d'instructions</strong> : opcode, nom, types de paramètres acceptés, nombre de cycles, règles de carry, présence d'OCP, taille des directs. <strong>L'assembleur ET la VM doivent s'accorder sur cette spécification.</strong> Tout écart entre l'encodage de l'assembleur et le décodage de la VM provoquera des bugs silencieux — le champion sera compilé mais s'exécutera incorrectement.</p>
     <p>En C, <code>op.h</code> est un fichier header littéralement partagé entre les deux projets. En Rust, le crate <code>corewar-common</code> joue le même rôle : il est importé à la fois par <code>corewar-asm</code> et par <code>corewar-vm</code>, garantissant que les deux utilisent la même définition des opcodes et des constantes.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Architecture vs Implémentation : le contrat ISA</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Architecture vs Implémentation : le contrat ISA</div>
         <div class="ib-content">
@@ -3482,14 +3488,10 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Dans Corewar, <code>op.h</code> EST l'architecture. Il définit l'interface : les opcodes, les types de paramètres, les timings, les règles de carry. L'implémentation peut varier — C ou Rust, listes chaînées ou tableaux, interpréteur naïf ou optimisé — tant que le comportement observable depuis le point de vue du champion reste identique. C'est exactement le même principe qui permet à la famille IBM 360 d'avoir des modèles bas de gamme et haut de gamme exécutant le même jeu d'instructions. La propriété critique est la <strong>compatibilité</strong> : tout bytecode produit par un assembleur conforme doit s'exécuter correctement sur toute VM conforme, indépendamment de l'implémentation.</p>
         </div>
     </div>
-</details>
 
     <h3>Graphe de dépendances</h3>
     <p>Une propriété fondamentale de l'architecture : <strong>l'assembleur et la VM sont indépendants</strong>. L'assembleur dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de la VM. La VM dépend de <code>op.h</code>/<code>op_table</code> mais <strong>pas</strong> de l'assembleur. Ils communiquent <strong>uniquement</strong> via le format de fichier <code>.cor</code>.</p>
     <p>Cette séparation signifie que vous pouvez tester chaque composant indépendamment : compilez un champion avec votre assembleur, dumpz le bytecode, et vérifiez manuellement qu'il correspond à ce que vous attendez. De même, vous pouvez tester la VM avec un fichier <code>.cor</code> généré par un assembleur de référence.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 RISC vs CISC : où se situe le Corewar ?</summary>
 <div class="insight-box">
         <div class="ib-title">📖 RISC vs CISC : où se situe le Corewar ?</div>
         <div class="ib-content">
@@ -3512,41 +3514,16 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Le Dragon Book (<em>Compilers</em>, Ch.8, p.507) souligne un aspect supplémentaire qui rapproche Corewar du CISC : <em>« A CISC machine typically has few registers, two-address instructions, a variety of addressing modes. »</em> Contrairement aux architectures RISC qui utilisent un code à trois adresses (ex: <code>ADD r1, r2, r3</code> pour <code>r1 = r2 + r3</code>), le Redcode est fondamentalement un langage à <strong>deux adresses</strong> (champ A et champ B). Une instruction comme <code>ADD.AB 4, 5</code> lit la valeur à l'adresse relative +4, l'ajoute à celle située à +5, et stocke le résultat directement en +5 — la destination est aussi la deuxième source. Cette conception oblige le joueur à penser la mémoire à la fois comme source et destination, une caractéristique typique des anciennes architectures CISC très denses. Le mode d'adressage indirect (<code>@</code>) et les modificateurs de pré-décrément/post-incrément ajoutent encore à cette complexité CISC, offrant une variété de modes d'adressage que le Dragon Book identifie comme un défi classique pour les générateurs de code.</p>
         </div>
     </div>
-</details>
 
 📖 La classification d'H&P : Corewar n'est pas load-store, il est register-memory</summary>
-    <details class="insight-details">
-<summary class="insight-summary">📖 La classification d'H&P : Corewar n'est pas load-store, il est register-memory</summary>
 <div class="insight-box"><div class="ib-title">📖 La classification d'H&P : Corewar n'est pas load-store, il est register-memory</div><div class="ib-content"><p>H&P §A.2 classent les ISA en quatre familles : stack, accumulator, register-memory (1 opérande mémoire par instruction ALU), et load-store (0 opérande mémoire). Or, Corewar est souvent présenté comme « RISC-like », mais il permet à une instruction ALU comme <code>add</code> de prendre un opérande <code>T_IND</code> — c'est-à-dire une lecture mémoire directe sans <code>load</code> préalable. Dans la taxonomie de H&P (Figure A.3), Corewar tombe donc dans la catégorie <strong>register-memory</strong>, au même titre que l'IBM 360 ou le 80x86, et non dans la catégorie load-store de MIPS ou ARM. C'est un paradoxe fondamental : un ISA à 16 instructions, philosophiquement minimaliste, adopte structurellement le modèle que H&P associent au CISC. La conséquence pratique est que chaque instruction Corewar peut cacher un accès mémoire, ce qui rend la taille d'instruction variable et le décodage plus complexe — exactement le trade-off que H&P identifient : « Clocks per instruction vary by operand location ».</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les trois modes d'adressage de Corewar : le sous-ensemble optimal de H&P</summary>
 <div class="insight-box"><div class="ib-title">📖 Les trois modes d'adressage de Corewar : le sous-ensemble optimal de H&P</div><div class="ib-content"><p>H&P §A.3 mesurent l'utilisation des modes d'adressage sur des programmes réels et concluent : « we would expect a new architecture to support at least displacement, immediate, and register indirect — they represent 75% to 99% of addressing modes used ». Or, les trois types d'opérandes de Corewar correspondent exactement à ces trois modes : <code>T_REG</code> = mode registre, <code>T_DIR</code> = mode immédiat (la valeur est encodée dans l'instruction), <code>T_IND</code> = mode registre-indirect (l'adresse est dans le registre, on lit la valeur en mémoire). Corewar implémente donc le sous-ensemble minimal que H&P recommandent, à la différence près que le mode « displacement » (registre + offset) est absent — remplacé par un adressage purement PC-relative avec modulo. C'est un appauvrissement délibéré : dans l'arène de Corewar, il n'y a pas de pile ni de frame, donc pas besoin d'accéder des variables locales via offset. Le PC-relative universel remplace le displacement.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'absence de call/return : un vide assumé dans la taxonomie du flux de contrôle</summary>
 <div class="insight-box"><div class="ib-title">📖 L'absence de call/return : un vide assumé dans la taxonomie du flux de contrôle</div><div class="ib-content"><p>H&P §A.6 identifient <strong>quatre</strong> types de changement de flux : branchement conditionnel, saut inconditionnel, appel de procédure, retour de procédure. La Figure A.14 montre que les appels et retours représentent ~14% des instructions de contrôle sur une architecture load-store typique. Corewar, lui, n'a <strong>aucun</strong> mécanisme d'appel/retour — pas de <code>JSR</code>, pas de <code>RET</code>, pas de registre de lien. Le seul branchement conditionnel est <code>zjmp</code> (saute si carry = 1), et le seul mécanisme de fork est <code>spl</code> (crée un processus fils). Ce vide n'est pas un oubli mais un choix architectural radical : dans un jeu de programmation compétitif, les guerriers n'ont pas de sous-routines, seulement des boucles et des fork-bombs. En supprimant call/return, Corewar supprime aussi tout besoin de sauvegarde de contexte, de convention d'appel, de pile d'exécution. L'ISA est volontairement « plat ».</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 « Less is more » : quand 16 instructions valent la preuve par l'absurde</summary>
 <div class="insight-box"><div class="ib-title">📖 « Less is more » : quand 16 instructions valent la preuve par l'absurde</div><div class="ib-content"><p>H&P §A.8 recommandent « provide primitives, not solutions » et « less is more in the design of an instruction set ». La Figure A.13 montre que <strong>10 instructions simples comptent pour 96%</strong> des exécutions sur 80x86 : load, conditional branch, compare, store, add, and, sub, move, call, return. Corewar pousse cette logique à son terme : avec seulement 16 instructions, il couvre tout ce qui est nécessaire pour un jeu de programmation compétitif. Pas de multiplication, pas de division, pas de floating-point, pas d'opérations sur chaînes — et pourtant, les guerriers Corewar réalisent des algorithmes de recherche, de bombardement et de copie avec ces seules primitives. C'est la validation extrême du principe H&P : un ISA minimaliste, orthogonal, avec des primitives composables, bat un ISA riche en instructions spécialisées. Les 16 opcodes de Corewar sont les « primitives, not solutions » que H&P appellent de leurs vœux.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Stack-based vs Register-based — L'architecture hybride de Corewar</summary>
 <div class="insight-box"><div class="ib-title">📖 Stack-based vs Register-based — L'architecture hybride de Corewar</div><div class="ib-content"><p>La note de design dans Crafting Interpreters compare les VM <strong>stack-based</strong> (JVM, CPython — les opérandes sont empilés/dépilés) aux VM <strong>register-based</strong> (Lua 5.0+ — les instructions lisent/écrivent directement dans des slots). Lua a switché de stack à register en 5.0 et a mesuré un gain de vitesse significatif. Le Corewar est un cas fascinant : il est <strong>ni stack ni register pur</strong>. Il possède 16 registres (r1-r16) comme une machine à registres, mais ses modes d'adressage indirect (T_IND) ajoutent un niveau d'indirection similaire à une pile. De plus, l'absence de pile d'exécution signifie que les « temporaires » doivent vivre dans des registres ou en mémoire — il n'y a pas de push/pop. Cette hybridité est unique et reflète les contraintes d'un jeu où chaque instruction coûte un cycle.</p></div></div>
-</details>
 
 </div>
-</details>
 </section>
-
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Ordonnancement par minuteur et dégradation de performance</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Ordonnancement par minuteur et dégradation de performance</div>
         <div class="ib-content">
@@ -3556,17 +3533,9 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>La taxonomie des sources de dégradation de performance dans les VMs (p.415-416) s'applique directement à Corewar : <strong>Setup</strong> = initialisation d'un processus (fork), <strong>Emulation</strong> = overhead de décodage et dispatch des instructions, <strong>Interrupt handling</strong> = vérification de <code>cycle_to_die</code>, <strong>State saving</strong> = commutation de contexte entre processus, <strong>Bookkeeping</strong> = comptage des <code>live</code> et suivi de <code>NBR_LIVE</code>, <strong>Time elongation</strong> = coût de l'adressage circulaire et de l'arithmétique modulo. Cette taxonomie est une checklist pour optimiser une implémentation de VM Corewar.</p>
         </div>
     </div>
-</details>
 
 📖 Débit vs Latence — Le compromis fondamental de tout ordonnanceur</summary>
-    <details class="insight-details">
-<summary class="insight-summary">📖 Débit vs Latence — Le compromis fondamental de tout ordonnanceur</summary>
 <div class="insight-box"><div class="ib-title">📖 Débit vs Latence — Le compromis fondamental de tout ordonnanceur</div><div class="ib-content"><p>Crafting Interpreters distingue deux métriques fondamentales pour évaluer un ramasse-miettes : le <strong>débit</strong> (throughput — fraction du temps passé à exécuter le code utilisateur vs le GC) et la <strong>latence</strong> (temps de pause maximal pendant une collection). Ce compromis s'applique directement à l'ordonnancement MARS : un ordonnanceur qui donne beaucoup de cycles par tour à chaque processus maximise le débit (moins de changements de contexte) mais augmente la latence (un processus peut monopoliser le CPU). À l'inverse, le round-robin strict de MARS (1 instruction par processus par cycle) minimise la latence mais paie un coût en débit (changement de contexte constant). Nystrom compare ça à une boulangerie : le débit, c'est le nombre de baguettes par jour ; la latence, c'est le temps d'attente du client le plus malchanceux. Corewar choisit la faible latence — chaque processus est servi équitablement, un cycle à la fois.</p></div></div>
-</details>
-
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le chargement des champions comme boot loader</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le chargement des champions comme boot loader</div>
         <div class="ib-content">
@@ -3574,7 +3543,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Van der Linden (<em>Expert C Programming</em>, p.120-121) raconte l'histoire du magic number <code>0407</code> du format a.out original : c'était l'opcode d'une instruction de branchement inconditionnel sur le PDP-11 ! Si vous exécutiez le fichier directement, le magic number vous sautait par-dessus le header directement vers la première instruction — une forme primitive de code indépendant de la position. Le format ELF moderne utilise <code>\x7fELF</code> au même endroit. Le magic number <code>0xEA83F3</code> du format .cor joue le même rôle d'identification, mais sans la subtilité de l'auto-saut du PDP-11.</p>
         </div>
     </div>
-</details>
 
 
 <!-- Section 3: Arena -->
@@ -3590,9 +3558,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>Il faut comprendre une chose essentielle : <strong>chaque octet est partagé</strong>. Tous les champions lisent et écrivent dans le <strong>même espace mémoire</strong>. Il n'y a pas de mémoire privée, pas de zone protégée. Quand un champion écrit à l'adresse 500, tous les autres champions peuvent lire cette valeur — ou l'écraser ! C'est ce qui fait de l'arène un véritable <strong>champ de bataille</strong> : la mémoire est le territoire que les champions se disputent.</p>
 
     <p>En réalité, l'arène n'a rien de magique. C'est simplement un tableau de 4096 octets en RAM, comme n'importe quel autre tableau en C ou en Rust. La « magie » circulaire est entièrement assurée par la fonction <code>mem_mod()</code>, qui prend n'importe quel entier et le ramène dans l'intervalle [0, 4095]. <strong>Chaque accès mémoire</strong> — lecture comme écriture — passe par cette fonction. C'est elle qui transforme un tableau linéaire banal en un anneau sans couture.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Arène et mémoire virtuelle : l'illusion de l'espace infini</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Arène et mémoire virtuelle : l'illusion de l'espace infini</div>
         <div class="ib-content">
@@ -3602,10 +3567,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Cette indirection est aussi ce que la mémoire virtuelle utilise pour la <strong>protection</strong>. CSAPP (§9.5, p.848-849) explique que chaque entrée de table de pages (PTE) contient des <strong>bits de permission</strong> : R/W (lecture/écriture), U/S (utilisateur/superviseur), et XD (Execute Disable, p.863). Ces bits permettent à l'OS de rendre le code en lecture seule, d'interdire l'exécution de la pile, ou de protéger les données du noyau. L'arène Corewar n'a <strong>aucun de ces bits</strong> : chaque cellule est implicitement <code>PROT_READ | PROT_WRITE | PROT_EXEC</code> — l'accès total, comme le confirment les paramètres de <code>mmap()</code> (CSAPP p.874). L'espace d'adressage Linux est structuré en segments distincts (code <code>.text</code> en lecture-seule+exécutable, <code>.data</code> en lecture-écriture, pile en lecture-écriture+non-exécutable, CSAPP p.865) — l'arène est un seul segment plat où code et données sont confondus. C'est à la fois sa simplicité et sa dangerosité.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les trois méthodes de mappage mémoire (Smith & Nair)</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Les trois méthodes de mappage mémoire (Smith & Nair)</div>
         <div class="ib-content">
@@ -3618,10 +3579,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>L'arène Corewar utilise un <strong>mappage direct avec modulo</strong> : l'adresse que le champion voit (0-4095) correspond directement à l'index du tableau hôte, modulo MEM_SIZE. C'est la méthode la plus simple et la plus rapide — le coût de traduction est une seule opération modulo. Comme le soulignent Smith et Nair, le mappage direct est optimal quand l'espace d'adressage invité est plus petit ou égal à l'espace hôte, ce qui est le cas ici (4096 octets de l'arène vs plusieurs gigaoctets de RAM hôte).</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Code auto-modifiant, overlays et l'étymologie de l'arène</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Code auto-modifiant, overlays et l'étymologie de l'arène</div>
         <div class="ib-content">
@@ -3632,52 +3589,15 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Van der Linden (<em>Expert C Programming</em>, p.157) utilise le terme <strong>« arena »</strong> pour décrire la région mémoire gérée par un allocateur : <em>« Some people use the term arena to describe the set of blocks managed by a memory allocator. »</em> Ce n'est pas une coïncidence si le Corewar utilise le même terme : les deux désignent une région mémoire contiguë gérée par un allocateur. Dans Corewar, l'arène est un tampon circulaire de taille fixe (pas de fragmentation possible grâce au modulo). En programmation système, une arena peut se fragmenter. Le lien étymologique enrichit la compréhension de pourquoi la mémoire Corewar s'appelle une « arène ».</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Write-back et code auto-modifiant : la modification gratuite</summary>
 <div class="insight-box"><div class="ib-title">📖 Write-back et code auto-modifiant : la modification gratuite</div><div class="ib-content"><p>Le CSAPP §6.4.5 oppose deux politiques d'écriture : le <em>write-through</em> (écriture immédiate vers le niveau inférieur) et le <em>write-back</em> (écriture différée jusqu'à l'éviction, via un <em>dirty bit</em>). Les caches modernes utilisent massivement le write-back. Pour Corewar, c'est crucial : quand un guerrier écrit dans l'arène (code auto-modifiant), la modification reste dans le L1 et n'est répercutée en DRAM que si la ligne est évictée — ce qui, comme on vient de le voir, n'arrive pratiquement jamais puisque l'arène tient entière en L1. Conséquence : <strong>l'auto-modification est « gratuite » en termes de bande passante mémoire</strong>. En round-robin mono-cœur, le guerrier B voit immédiatement les modifications du guerrier A car ils partagent le même L1. Mais sur un simulateur multi-cœurs, il faudrait des protocoles de cohérence cache (MESI) — un angle de complexité souvent sous-estimé dans les implémentations parallèles de Corewar.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Thrashing entre guerriers : l'analogie dotprod</summary>
 <div class="insight-box"><div class="ib-title">📖 Thrashing entre guerriers : l'analogie dotprod</div><div class="ib-content"><p>Le CSAPP illustre les <em>conflict misses</em> par l'exemple <code>dotprod</code> (§6.4.2) : deux tableaux <code>x[8]</code> et <code>y[8]</code> placés consécutivement en mémoire mappent aux mêmes sets de cache, provoquant un <em>thrashing</em> systématique — chaque accès à <code>y[i]</code> évicte le bloc de <code>x[i]</code> et vice versa. Transposé à Corewar : si deux guerriers sont chargés à des adresses séparées par un multiple de la taille de set L1, leurs lignes de code mappent aux mêmes sets. Avec le L1 8-way associatif du Core i7, jusqu'à 8 guerriers peuvent cohabiter dans le même set avant éviction — mais dans un cache direct-mapped (E=1), deux guerriers dont les PC alternent entre les mêmes sets se thrasheraient mutuellement. La solution CSAPP (<em>padding</em> de B bytes entre les tableaux) suggère qu'un écart d'au moins une taille de bloc (64 B) entre les positions de chargement des guerriers éliminerait ce risque. C'est un paramètre de placement que les chargeurs Corewar pourraient optimiser.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'arène sans MESI — Quand l'absence de protocole de cohérence est une feature</summary>
 <div class="insight-box"><div class="ib-title">📖 L'arène sans MESI — Quand l'absence de protocole de cohérence est une feature</div><div class="ib-content"><p>H&P §5.2 détaillent le protocole MESI (Modified, Exclusive, Shared, Invalid) qui garantit que, quand un cœur écrit un bloc, toutes les autres copies sont invalidées avant que l'écriture ne soit considérée complète. Dans un système réel, cette invalidation coûte 50-170 cycles selon le nombre de cœurs partageant le bloc. Corewar n'a <em>aucun</em> protocole de cohérence — et n'en a pas besoin. L'arène est un espace mémoire unique sans cache : chaque STI écrit directement dans la mémoire partagée, chaque LD lit la valeur actuelle. Il n'y a jamais de copie périmée, jamais de coherence miss, jamais de false sharing. Cette absence est une <em>feature</em> : là où MESI doit arbitrer des invalidations broadcast sur un bus, Corewar obtient la cohérence trivialement. Mais le prix à payer est l'absence de cache — chaque accès mémoire est un « miss » au sens H&P. Quand un warrior exécute un code auto-modifiant (un processus réécrit les instructions d'un autre), c'est la violation ultime du modèle MESI : dans un système réel, le cache d'instructions du processus cible serait <em>stale</em> et l'invalidation devrait se propager. Dans Corewar, l'instruction modifiée est simplement lue telle quelle au prochain cycle — pas de cache d'instructions à invalider, pas de pénalité.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Consistance séquentielle pour free — Le round-robin comme machine de Lamport</summary>
 <div class="insight-box"><div class="ib-title">📖 Consistance séquentielle pour free — Le round-robin comme machine de Lamport</div><div class="ib-content"><p>H&P §5.6 définissent la <em>consistance séquentielle</em> (SC) : le résultat de toute exécution doit être équivalent à celui obtenu si les accès mémoire de chaque processeur gardaient leur ordre programme et les accès entre processeurs étaient arbitrairement entrelacés. C'est le modèle le plus fort — et le plus coûteux à implémenter. H&P montrent qu'en SC, un processeur doit attendre que <em>toutes</em> les invalidations d'une écriture soient complètes avant de poursuivre, ce qui peut bloquer un cœur pendant 170 cycles sur un write miss. Corewar implémente SC trivialement par le round-robin déterministe : chaque processus exécute exactement une instruction à son tour, dans un ordre fixe et cyclique. Il n'y a pas de réordonnancement possible, pas de write buffer, pas de spéculation. SC est « gratuit » parce qu'il n'y a qu'un seul chemin d'exécution à chaque instant. C'est en réalité une propriété encore plus forte que la SC de Lamport : non seulement les résultats sont équivalents à un ordre séquentiel, mais l'ordre <em>est</em> séquentiel. Cette garantie est ce qui rend les guerriers prévisibles et permet le bombing pattern déterministe.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'arène comme pire cas de cohérence — Si MARS tournait sur un vrai SMP</summary>
 <div class="insight-box"><div class="ib-title">📖 L'arène comme pire cas de cohérence — Si MARS tournait sur un vrai SMP</div><div class="ib-content"><p>H&P §5.3 analysent les « coherence misses » sur des workloads commerciaux : true sharing (données réellement communiquées entre cœurs) et false sharing (bloc invalidé pour un mot différent). La figure 5.14 montre que les true sharing misses croissent avec le nombre de processeurs et ne sont pas réduites par des caches plus grands. Si l'on simulait Corewar sur un vrai SMP avec caches MESI, l'arène de 4096 bytes serait un <em>pire cas absolu</em> de trafic de cohérence. Chaque STI d'un processus potentiellement invalide la cache line de tous les autres processus — non pour des données de synchronisation, mais pour <em>tout</em> le code et toutes les données. Le taux de true sharing serait maximal puisque tous les processus accèdent au même espace d'adressage. C'est la justification architecturale inverse de MARS : la simulation logicielle à un seul thread, sans caches, est plus efficace qu'une exécution SMP réelle pour ce pattern d'accès.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Références faibles et mémoire partagée — Le problème de l'arène</summary>
 <div class="insight-box"><div class="ib-title">📖 Références faibles et mémoire partagée — Le problème de l'arène</div><div class="ib-content"><p>Dans clox, la <strong>table d'internement des chaînes</strong> pose un problème délicat : elle référence chaque chaîne du tas, mais ne doit PAS empêcher le GC de les collecter. La solution est la <strong>référence faible</strong> : un pointeur qui ne compte pas comme racine pour le GC, et qui est automatiquement nettoyé si l'objet est collecté. L'arène Corewar pose un problème analogue : un processus peut écrire du code n'importe où dans l'arène, mais la simple existence de code dans l'arène ne signifie pas qu'il est « vivant ». Le code d'un processus mort est comme une chaîne orpheline dans la table d'internement — il occupe de l'espace mais n'est plus atteignable. La différence est que Corewar n'a PAS de références faibles : l'arène est un tableau brut, et le code mort reste jusqu'à ce qu'il soit écrasé. C'est exactement ce que les bombes exploitent — écraser le code « blanc » (non atteignable) des adversaires.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 « Programs are synchronized » — Le contrat implicite que Corewar viole</summary>
 <div class="insight-box"><div class="ib-title">📖 « Programs are synchronized » — Le contrat implicite que Corewar viole</div><div class="ib-content"><p>Le §5.6 (6e édition) introduit le concept crucial de <strong>programme synchronisé</strong> : « A program is synchronized if all accesses to shared data are ordered by synchronization operations. » Les programmes non synchronisés sont des <em>data races</em> : « the execution outcome depends on the relative speed of the processors, and like races in hardware design, the outcome is unpredictable ». H&P notent que « it is a broadly accepted observation that most programs are synchronized » et que « reasoning about such programs is very difficult » même en consistance séquentielle. Corewar est le cas extrême du programme <strong>non synchronisé</strong> : les processus partagent l'arène sans aucun mécanisme de coordination, et le résultat dépend effectivement de la vitesse relative (du nombre de processus, de l'ordonnancement round-robin). Pire : un guerrier veut <em>activement</em> créer des data races chez l'adversaire — le MOV qui écrase le code ennemi est une « course » délibérément gagnée. <strong>Corewar est l'anti-programme synchronisé : là où les programmes normaux évitent les data races, les guerriers les recherchent.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La hiérarchie des modèles de consistance — De SC à Release, MARS choisit le plus fort</summary>
 <div class="insight-box"><div class="ib-title">📖 La hiérarchie des modèles de consistance — De SC à Release, MARS choisit le plus fort</div><div class="ib-content"><p>Le §5.6 (mis à jour pour RISC-V dans la 6e édition) classe cinq modèles de consistance mémoire du plus strict au plus relâché : <strong>consistance séquentielle</strong> (SC) → <strong>TSO/processor consistency</strong> (relaxe W→R) → <strong>PSO</strong> (relaxe W→R et W→W) → <strong>weak ordering</strong> (relaxe tout) → <strong>release consistency</strong> (RISC-V, ARMv8, C/C++ — ne préserve que l'ordre autour des opérations de synchronisation). H&P donnent l'exemple frappant de deux processeurs P1 et P2 : P1 écrit A=1 puis lit B, P2 écrit B=1 puis lit A. En SC, il est <strong>impossible</strong> que les deux lectures voient 0. En modèle relâché, c'est possible car les écritures peuvent être retardées. MARS implémente SC « pour free » car il n'y a pas de réordonnancement possible — chaque instruction s'exécute complètement avant la suivante. C'est un luxe que les vrais multiprocesseurs paient cher, mais que Corewar obtient gratuitement par sa simplicité. <strong>Le modèle le plus coûteux en hardware est le modèle par défaut en interprétation séquentielle.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La pénalité de 170 cycles — Le coût que Corewar ne paie jamais</summary>
 <div class="insight-box"><div class="ib-title">📖 La pénalité de 170 cycles — Le coût que Corewar ne paie jamais</div><div class="ib-content"><p>Le §5.6 (6e édition) donne un exemple chiffré de la consistance séquentielle : un write miss sur un système à 4 processeurs coûte <strong>170 cycles</strong> (50 d'ownership + 40 d'invalidation séquentielle + 80 d'acknowledgement) si le processeur doit attendre toutes les invalidations. Sans attendre : seulement 50 cycles — 3.4× plus rapide. C'est la motivation principale des modèles relâchés : permettre au processeur de continuer pendant que les invalidations se propagent. MARS ne paie aucun de ces coûts : il n'y a pas de cache, pas d'invalidation, pas de protocole de cohérence. Chaque écriture est immédiatement visible par tous les processus. Le « 170 cycles » que paie un vrai multiprocesseur pour la consistance séquentielle est le prix de la cohérence matérielle — un prix que MARS évite en n'ayant pas de cache du tout. <strong>La consistance séquentielle est « gratuite » seulement si vous n'avez rien à invalider.</strong></p></div></div>
-</details>
 
 
     <!-- Ring diagram SVG -->
@@ -3717,21 +3637,13 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             Kernighan et Ritchie (<em>The C Programming Language</em>, §5.4, p.84) définissent l'arithmétique de pointeurs : <em>« If p is a pointer to some element of an array, then p++ increments p to point to the next element, and p+=i increments it to point i elements beyond. »</em> Ils ajoutent que <em>« C is consistent and regular in its approach to address arithmetic; its integration of pointers, arrays, and address arithmetic is one of the strengths of the language. »</em> En C standard, dépasser la taille allouée d'un tableau lors de l'arithmétique de pointeurs entraîne un <em>Undefined Behavior</em> fatal. Dans Corewar, l'arithmétique d'adresse est omniprésente, car toutes les adresses Redcode sont relatives à l'instruction courante. Cependant, pour éviter les violations de mémoire sur la machine hôte, la VM MARS applique systématiquement une topologie circulaire : toute opération sur les pointeurs est enveloppée dans un <code>modulo CORESIZE</code>, transformant l'arène d'un simple tableau plat en un anneau de Möbius de mémoire infinie, sans jamais provoquer de <em>Segfault</em>.
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 4096 octets = exactement une page mémoire</summary>
 <div class="insight-box">
         <div class="ib-title">📖 4096 octets = exactement une page mémoire</div>
         <div class="ib-content">
             <p>Van der Linden (<em>Expert C Programming</em>, p.169-171) raconte l'allégorie du <em>« Paging Game »</em> : <em>« Each player gets several million 'things.' Things are kept in crates that hold 4096 things each. »</em> Les « choses » sont des octets, les « caisses » sont des pages mémoire, et chaque page fait <strong>exactement 4096 octets</strong> sur la quasi-totalité des architectures modernes (x86, x86-64, ARM, RISC-V). L'arène Corewar fait 4096 octets — soit <strong>exactement une page</strong>. Ce n'est pas une coïncidence fortuite, c'est un choix de design délibéré : A. K. Dewdney, créateur de Corewar, a choisi 4096 car c'est la taille d'une page mémoire standard x86 (4 KB), garantissant que l'arène entière tient dans une seule page physique et ne sera <strong>jamais évincée du cache TLB</strong>. Contrairement à un programme qui accède à des données dispersées sur des centaines de pages (déclenchant des TLB misses coûteux), la VM Corewar balaie une zone mémoire parfaitement alignée sur une frontière de page — un avantage de performance silencieux mais réel.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Utopie cache : l'arène entière tient dans le L1</summary>
 <div class="insight-box"><div class="ib-title">📖 Utopie cache : l'arène entière tient dans le L1</div><div class="ib-content"><p>Le CSAPP détaille la hiérarchie cache d'un Intel Core i7 : L1 = 32 KB, L2 = 256 KB, L3 = 8 MB (Figure 6.39). L'arène de Corewar fait exactement 4 096 octets — soit <strong>12,5 % du L1</strong>. Avec des blocs de 64 B, l'arène entière occupe seulement 64 lignes de cache. Après les 64 compulsory misses du démarrage à froid (~200 cycles chacune depuis la DRAM, soit ~12 800 cycles de pénalité totale), l'arène est intégralement chaude dans le L1. Cela signifie : <strong>zéro capacity miss pour toujours</strong>. C'est un profil de cache exceptionnellement propre — la plupart des programmes réels souffrent des trois types de misses (compulsory, capacity, conflict), mais l'arène de Corewar élimine les capacity misses par construction. En termes quantitatifs : 4 KB < 32 KB, donc le working set de tout warrior est toujours inférieur à la capacité du L1. La seule pénalité cache mesurable dans Corewar est le froid initial — après quoi chaque accès est un hit L1 à ~4 cycles.</p></div></div>
-</details>
 
     <p>Pour comprendre l'arène, il faut imaginer <strong>3 tableaux superposés</strong>, tous indexés de 0 à 4095, qui vivent en parallèle :</p>
 
@@ -4186,9 +4098,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>La VM Corewar est <strong>Big Endian</strong> : l'octet de poids fort (le plus significatif) est stocké à l'adresse la plus basse. C'est l'inverse de l'architecture x86 (Little Endian) que votre ordinateur utilise. La lecture multi-octets est <strong>toujours circulaire</strong> : chaque octet successif est lu via <code>mem_mod()</code>, donc une lecture de 4 octets démarrant à l'adresse 4094 lira les octets aux adresses 4094, 4095, 0, 1 — traversant la « couture » de l'anneau sans problème.</p>
 
     <p><strong>Pourquoi Big Endian ?</strong> C'est le standard pour les <strong>machines virtuelles</strong> et les <strong>protocoles réseau</strong> (c'est pourquoi on l'appelle aussi « network byte order »). Le choix du Big Endian garantit que tous les champions voient les données de la même manière, indépendamment de l'architecture matérielle de la machine qui exécute la VM. C'est un choix de <strong>portabilité</strong> et de <strong>prévisibilité</strong>.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Endianness : un problème de convention, pas de technologie</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Endianness : un problème de convention, pas de technologie</div>
         <div class="ib-content">
@@ -4197,10 +4106,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>En pratique, cela signifie que votre assembleur doit écrire les valeurs 32-bit en Big Endian (MSB en premier), et votre VM doit lire en Big Endian. Les fonctions <code>htonl()</code>/<code>ntohl()</code> de la bibliothèque standard C font exactement cette traduction pour le réseau. Dans votre projet, <code>store_at()</code> et <code>reverse_bytes()</code> sont vos équivalents manuels de ces fonctions.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Endianness : de Gulliver aux formats objet</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Endianness : de Gulliver aux formats objet</div>
         <div class="ib-content">
@@ -4209,7 +4114,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>En C, la conséquence pratique est immédiate : sur une machine x86 (Little Endian), on ne peut PAS faire <code>*(int*)&bytes[0]</code> pour lire un entier 4 octets depuis l'arène. Il faut construire la valeur explicitement, octet par octet : <code>(b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]</code>. Cette technique de déconstruction/reconstruction est exactement celle décrite par Kernighan et Ritchie (<em>The C Programming Language</em>, §2.9) : <em>« The bitwise AND operator & is often used to mask off some set of bits »</em> et les opérateurs de décalage <code><<</code> et <code>>></code> permettent de positionner chaque octet à sa place dans le mot 32 bits.</p>
         </div>
     </div>
-</details>
 
     <div class="endian-interactive">
         <h4 style="text-align:center;color:var(--cyan);margin-bottom:12px">Comparaison Big Endian vs Little Endian</h4>
@@ -4219,9 +4123,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <button class="endian-toggle-btn" onclick="setEndianView('be',this)">Big Endian</button>
             <button class="endian-toggle-btn" onclick="setEndianView('le',this)">Little Endian</button>
         </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Position-Independent Code et le format COM — Pourquoi .cor n'a pas besoin de relocalisation</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Position-Independent Code et le format COM — Pourquoi .cor n'a pas besoin de relocalisation</div>
         <div class="ib-content">
@@ -4231,7 +4132,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Levine (p.49) identifie aussi le <strong>format DOS COM</strong> comme le plus proche analogie réelle du .cor : <em>« A COM file literally consists of nothing other than binary code. When the operating system runs a COM file, it merely loads the contents of the file into a block of free memory starting at offset 0x100… and jumps to the beginning of the loaded program. »</em> Comme le format COM, .cor est un « format objet nul » — bytecode pur, pas de header complexe, pas de relocalisation, chargé à un offset connu et exécuté directement. C'est plus précis que la comparaison avec a.out/ELF déjà dans le guide.</p>
         </div>
     </div>
-</details>
 
         <div id="endianComparison" class="endian-comparison">
             <div class="endian-side" id="endianBeSide">
@@ -4307,9 +4207,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <!-- Structure de données -->
     <h3>Structure de données — Arène</h3>
     <p>Dans l'implémentation C, les trois tableaux sont regroupés dans un <code>struct t_arena</code> imbriqué dans <code>t_vm</code>, accessible via <code>vm->ram.arena[i]</code>. En Rust, les tableaux sont des champs directs de la structure <code>Vm</code>, ce qui simplifie l'accès en <code>vm.arena[i]</code>. La structure Rust contient aussi les processus, les joueurs et les compteurs de cycles directement — pas de liste chaînée, mais des <code>Vec</code> et un buffer <code>new_processes</code> pour les forks en attente.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'arène comme tableau d'octets — Le modèle mémoire du C</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'arène comme tableau d'octets — Le modèle mémoire du C</div>
         <div class="ib-content">
@@ -4318,17 +4215,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Kernighan et Ritchie (p.45) formalisent ces opérateurs : <em>« The shift operators << and >> perform left and right shifts of their left operand by the number of bit positions given by the right operand. Thus x << 2 shifts the value of x by two positions, filling vacated bits with zero; this is equivalent to multiplication by 4. »</em> La construction d'un mot 32 bits par décalages successifs est un idiome fondamental de la programmation système — et c'est exactement ce que fait <code>i32::from_be_bytes()</code> en Rust, de manière sûre et portable.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Localité spatiale et lignes de cache — Pourquoi le bytecode bat l'AST</summary>
 <div class="insight-box"><div class="ib-title">📖 Localité spatiale et lignes de cache — Pourquoi le bytecode bat l'AST</div><div class="ib-content"><p>Crafting Interpreters explique pourquoi le bytecode est plus rapide que le tree-walk : les nœuds d'AST sont éparpillés dans le tas (heap), chaque pointeur pouvant causer un <em>cache miss</em>. Les CPUs modernes sont jusqu'à <strong>100× plus rapides</strong> quand les données sont déjà dans le cache L1/L2. Le bytecode, en revanche, est une séquence linéaire dense qui épouse parfaitement le comportement de préchargement du cache : quand le CPU lit un octet, il charge tout le bloc voisin. L'arène Corewar bénéficie du même avantage — les 4096 octets forment un bloc contigu en mémoire, et le PC avance séquentiellement. Quand MARS exécute une instruction après l'autre, le cache CPU précharge naturellement les instructions suivantes. C'est pourquoi un simple tableau d'octets en C battra toujours un arbre d'objets en Java pour implémenter l'arène.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 SRAM vs DRAM : la mémoire de Corewar n'est ni l'une ni l'autre</summary>
 <div class="insight-box"><div class="ib-title">📖 SRAM vs DRAM : la mémoire de Corewar n'est ni l'une ni l'autre</div><div class="ib-content"><p>Le CSAPP §6.1.1 détaille : SRAM (6 transistors/bit, ~4 cycles d'accès, coûte 1000× plus cher) vs DRAM (1 transistor/bit, ~200 cycles, needs refresh). Le tableau Figure 6.2 cristallise la différence. Pour Corewar, la « mémoire » de l'arène n'est ni de la SRAM ni de la DRAM — c'est une abstraction logicielle. Mais l'implémentation du simulateur détermine dans quel niveau de la hiérarchie elle réside réellement. Un tableau <code>uint8_t arena[4096]</code> en C sera alloué sur le tas (DRAM) mais migrera vers le L1 (SRAM) après les premiers accès grâce au caching matériel. L'insight : <strong>le simulateur Corewar bénéficie gratuitement de 3 niveaux de la hiérarchie</strong> — la RAM pour le stockage permanent, le L1 pour l'exécution rapide, les registres pour les variables locales du simulateur. Les données CSAPP (Figure 6.15) montrent que le coût du SRAM est 100× celui du DRAM par MB — Corewar obtient les performances du SRAM au prix du DRAM, exactement comme la hiérarchie mémoire est conçue pour le permettre.</p></div></div>
-</details>
     <div class="code-wrapper">
         <button class="copy-btn" onclick="copyCode(this)">Copier</button>
         <div class="code-header">
@@ -4337,9 +4225,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
                 <button class="code-tab active" onclick="showCode(this,'c-arena')">C — vm.h</button>
                 <button class="code-tab" onclick="showCode(this,'r-arena')">Rust — vm.rs</button>
             </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le piège de la promotion unsigned — Le bug n°1 des VMs Corewar</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le piège de la promotion unsigned — Le bug n°1 des VMs Corewar</div>
         <div class="ib-content">
@@ -4348,7 +4233,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Van der Linden (p.31) conclut avec un conseil qui devrait être gravé dans l'esprit de tout implémenteur : <em>« Avoid unnecessary complexity by minimizing your use of unsigned types. Specifically, don't use an unsigned type to represent a quantity just because it will never be negative. Use a signed type like int and you won't have to worry about boundary cases in the detailed rules for promoting mixed types. Only use unsigned types for bitfields or binary masks. »</em> En Rust, ce problème n'existe pas : <code>rem_euclid()</code> gère correctement les négatifs, et le système de types empêche les promotions implicites.</p>
         </div>
     </div>
-</details>
 
         </div>
         <pre id="c-arena" class="active"><code><span class="cm">// C — vm/include/vm.h</span>
@@ -4410,16 +4294,12 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <div class="qq-explain">store_at() écrit en Big Endian en décrémentant l'adresse. L'octet de poids faible (0xDD) va à l'adresse de départ (100), puis 0xCC à 99, 0xBB à 98, 0xAA à 97 (poids fort à l'adresse la plus basse).</div>
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Suite logique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
             L'arène est l'espace où tout se passe. Mais qui lit et écrit dans cette mémoire ? Les <a href="#process">processus</a> — passez à la section 4 pour comprendre leur anatomie, puis à la <a href="#lifecycle">section 5</a> pour voir comment ils exécutent les instructions cycle par cycle.
         </div>
     </div>
-</details>
 
 </div>
 </section>
@@ -4543,9 +4423,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <p>Les processus s'exécutent dans l'ordre où ils apparaissent dans la liste (FIFO en C, ordre du tableau en Rust). <strong>Tous les processus d'un même cycle sont traités avant de passer au cycle suivant.</strong></p>
     <p>Les nouveaux processus créés par <code>fork</code> sont ajoutés à la fin de la liste (C) ou dans le buffer <code>new_processes</code> (Rust) et sont insérés <strong>après</strong> la fin du cycle en cours. Cela signifie qu'un processus forké ne s'exécute <strong>pas</strong> au cycle où il a été créé.</p>
     <p>L'ordre d'exécution a des conséquences concrètes : si le processus A écrit à l'adresse X et le processus B lit à l'adresse X pendant le même cycle, le processus B verra l'<strong>ancienne</strong> valeur s'il est traité après A, ou la <strong>nouvelle</strong> valeur s'il est traité avant A (cela dépend de la phase d'exécution respective des deux processus).</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Commutation de contexte et ordonnancement</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Commutation de contexte et ordonnancement</div>
         <div class="ib-content">
@@ -4555,15 +4432,7 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>CSAPP (§8.1) classifie les exceptions en <strong>quatre catégories</strong> qui mappe remarquablement sur les événements Corewar : <strong>Interrupt</strong> (asynchrone, retour à l'instruction suivante) — c'est exactement le comportement de l'ordonnanceur MARS quand il interrompt un processus à la fin de son timeslice ; le processus reprend au cycle suivant comme si rien ne s'était passé. <strong>Trap</strong> (synchrone, intentionnel, retour à l'instruction suivante) — <code>SPL</code> est un trap : il invoque le « noyau » MARS pour créer un nouveau processus, puis le parent continue à l'instruction suivante. <strong>Fault</strong> (synchrone, potentiellement récupérable, re-exécute l'instruction fautive) — dans un OS, un page fault est récupérable ; en Corewar, cette catégorie n'existe pas : il n'y a pas de seconde chance. <strong>Abort</strong> (synchrone, irrécupérable, ne retourne jamais) — exécuter un <code>DAT</code> est un abort pur : le processus est détruit sans possibilité de retour. Cette taxonomie révèle que Corewar est un modèle où les faults sont toujours promus en aborts — simplification radicale qui rend le jeu plus brutal mais plus simple à raisonner.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Call frames et fenêtres de pile — Le modèle d'exécution Corewar</summary>
 <div class="insight-box"><div class="ib-title">📖 Call frames et fenêtres de pile — Le modèle d'exécution Corewar</div><div class="ib-content"><p>Crafting Interpreters introduit le concept de <strong>call frame</strong> (cadre d'appel) : chaque fonction en cours d'exécution possède une « fenêtre » dans la pile de valeurs, avec son propre IP et ses propres variables locales. Les fenêtres du caller et du callee <em>se chevauchent</em> — les arguments sont déjà à la bonne place. Dans Corewar, chaque processus a également une « fenêtre d'exécution » : son PC, ses 16 registres et son carry forment un contexte indépendant. Mais contrairement à clox où les fenêtres sont imbriquées hiérarchiquement (caller → callee), les fenêtres Corewar sont <strong>plates et concurrentes</strong> — tous les processus partagent la même arène et sont ordonnancés en round-robin. Le SPL crée un nouveau contexte qui partage la mémoire mais diverge dans son exécution, une structure impossible dans un langage classique mais naturelle pour un jeu de guerre de programmes.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 fork() isole, SPL partage — L'inversion fondamentale</summary>
 <div class="insight-box">
         <div class="ib-title">📖 fork() isole, SPL partage — L'inversion fondamentale</div>
         <div class="ib-content">
@@ -4572,10 +4441,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Il y a une conséquence tactique majeure : en Corewar, il n'existe pas de <strong>sections critiques</strong>. CSAPP (p.804-805) montre comment <code>sigprocmask</code> permet de bloquer les signaux pendant une section critique. Rien de tel n'existe dans Corewar — chaque instruction est interruptible. Votre code doit être correct <em>à chaque frontière d'instruction</em>, car l'adversaire peut agir entre deux de vos instructions. C'est pourquoi les guerriers robustes utilisent des chaînes <code>JMP</code> plutôt que du code long en ligne droite.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le bloc de contexte — L'état archivé d'un processus</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le bloc de contexte — L'état archivé d'un processus</div>
         <div class="ib-content">
@@ -4584,7 +4449,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Les registres spécialisés jouent des rôles distincts, comme le décrivent Smith et Nair (p.562) : <em>« The most important of these special-purpose registers is the program counter (PC). Other special-purpose registers include condition code registers, stack pointers, link registers, and loop count registers. Special-purpose registers often tend to be used implicitly by certain instructions; they may not be explicitly specified as operands in the instructions that manipulate them. »</em> Le <code>carry</code> de Corewar est un tel registre spécialisé : il est implicite — <code>zjmp</code> le lit sans qu'il apparaisse comme paramètre, et les instructions arithmétiques le modifient sans qu'il soit spécifié. C'est le même modèle que le Zero Flag (ZF) de l'x86-64, que les instructions <code>JE</code>/<code>JNE</code> testent implicitement.</p>
         </div>
     </div>
-</details>
 
     <h3>Le carry en pratique</h3>
     <p>Le carry est un flag binaire (0 ou 1) qui détermine le comportement de <code>zjmp</code>. Voici un tableau de référence pour comprendre quelles instructions le modifient et comment :</p>
@@ -4604,9 +4468,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             </tbody>
         </table>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'évaluation paresseuse du carry et le modèle d'enregistrement d'activation</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'évaluation paresseuse du carry et le modèle d'enregistrement d'activation</div>
         <div class="ib-content">
@@ -4617,16 +4478,12 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Van der Linden (p.129) explique aussi pourquoi l'état d'un processus Corewar peut être si compact (juste PC + carry + 16 registres) : <em>« C does not allow functions to be nested this way. All functions in C are at the top lexical level. »</em> Puisque C n'a pas de fonctions imbriquées, il n'a pas besoin de <em>static link</em> (pointeur vers l'enregistrement d'activation de la fonction englobante). Chaque fonction C est une entité plate et indépendante — exactement comme chaque processus Corewar. L'absence de contexte lexical englobant permet à l'état du processus d'être un bloc mémoire fixe et auto-suffisant, sans référence à une pile d'appels parente. C'est ce qui rend le <code>fork</code> si élégant : il suffit de dupliquer ce bloc fixe, sans avoir à recréer une hiérarchie de portées.</p>
         </div>
     </div>
-</details>
 
     <p><strong>Point clé</strong> : les instructions qui <strong>ne modifient PAS</strong> le carry sont : <code>live</code>, <code>st</code>, <code>sti</code>, <code>ldi</code>, <code>fork</code>, <code>lfork</code>, <code>aff</code>. C'est crucial pour comprendre le comportement de <code>zjmp</code> — si le carry n'a pas été explicitement positionné avant un <code>zjmp</code>, sa valeur est imprévisible.</p>
 
     <h3>Mort d'un processus</h3>
     <p>Un processus meurt quand il n'a pas fait de <code>live</code> avant la vérification de <code>CYCLE_TO_DIE</code>. Quand un processus meurt, <strong>tout son état est perdu</strong> (registres, carry, PC). En C, le nœud de liste est libéré (<code>free()</code>). En Rust, le processus est retiré du <code>Vec</code> via <code>retain_mut</code>.</p>
     <p><strong>Important</strong> : si <strong>tous</strong> les processus d'un joueur meurent, ce joueur peut <strong>encore gagner</strong> s'il a été le dernier joueur à être rapporté en vie par une instruction <code>live</code>. Un processus mort ne peut pas être ranimé — seul un <code>fork</code> depuis un processus vivant peut créer de nouveaux processus.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Sandboxing et confinement des fautes — MARS comme sandbox parfait</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Sandboxing et confinement des fautes — MARS comme sandbox parfait</div>
         <div class="ib-content">
@@ -4635,45 +4492,13 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Ce modèle de « mort silencieuse » contraste avec les vrais processeurs où une instruction invalide déclenche une exception matérielle (SIGILL, SIGSEGV) qui doit être interceptée par le noyau de l'OS. CSAPP (§8.1) décrit ce mécanisme en détail. Dans Corewar, la VM joue simultanément le rôle de processeur et de noyau : elle détecte l'instruction invalide et « tue » le processus sans jamais interrompre la boucle principale.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Data races sans filet — Pourquoi les processus SPL ne peuvent pas se coordonner</summary>
 <div class="insight-box"><div class="ib-title">📖 Data races sans filet — Pourquoi les processus SPL ne peuvent pas se coordonner</div><div class="ib-content"><p>H&P §5.5 présentent les primitives de synchronisation hardware : atomic exchange, test-and-set, fetch-and-increment, et la paire load-linked/store-conditional (LL/SC). Toutes reposent sur une opération <em>atomique</em> read-modify-write — la capacité de lire et modifier une case mémoire de façon indivisible. Corewar n'a <em>aucune</em> de ces primitives. STI est atomique au sens où elle s'exécute en un cycle, mais ce n'est pas un read-modify-write — c'est un simple store. LD puis STI ne sont pas atomiques ensemble : entre le LD et le STI, un autre processus peut modifier la cible. Conséquence directe : deux processus issus d'un SPL qui veulent se coordonner par une variable partagée sont dans un <em>data race</em> permanent. H&P §5.6 définissent les data races comme des accès non synchronisés à des données partagées où le résultat dépend de la vitesse relative des processeurs — exactement la situation de deux processus Corewar se marchant sur les pieds. La seule « synchronisation » possible exploite le déterminisme du round-robin : si un processus connaît le nombre exact d'instructions avant que l'autre n'exécute, il peut prédire la fenêtre temporelle. Mais cette synchronisation par prédiction d'ordonnancement est extrêmement fragile — un NOP ajouté par l'adversaire la détruit.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le round-robin de MARS — Du Niagara à l'arène</summary>
 <div class="insight-box"><div class="ib-title">📖 Le round-robin de MARS — Du Niagara à l'arène</div><div class="ib-content"><p>H&P §3.12 décrivent le <strong>multithreading à grain fin</strong> : commutation de thread à chaque cycle d'horloge, en round-robin, en sautant les threads bloqués. C'est <em>exactement</em> le scheduler MARS. Le Sun T1 (Niagara), processeur emblématique de cette approche, utilisait un pipeline simple 6 étages mono-émission avec 4 threads par cœur. H&P notent : « fine-grained multithreading works perfectly for a single issue processor, and SMT would make no sense » — l'hyper-threading n'a de sens que sur un superscalaire. Corewar, mono-émission par construction, incarne ce principe à l'état pur : chaque processus prend exactement un cycle, puis cède la place. Le T1 affichait un CPI par thread de 7.2 mais un CPI par cœur de 1.80 (4 threads) — la lenteur individuelle est le prix de la survie collective. En Corewar, SPL crée exactement ce modèle : un guerrier à N threads progresse N fois plus lentement par thread, mais occupe N fois plus de cycles d'arène. La stratégie est la même que celle du T1 : sacrifier la latence individuelle pour maximiser le débit global.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le piège du logiciel non parallèle — La leçon SGI revisitée par Corewar</summary>
 <div class="insight-box"><div class="ib-title">📖 Le piège du logiciel non parallèle — La leçon SGI revisitée par Corewar</div><div class="ib-content"><p>H&P §5.9 racontent l'histoire de SGI en 2000 : l'OS protégeait la table des pages avec un <em>seul verrou</em>, présumant que les allocations de pages étaient rares. Sur uniprocesseur, aucun problème. Sur multiprocesseur, ce verrou unique sérialisait toutes les initialisations parallèles — détruisant le parallélisme par un goulot d'étranglement inattendu. Le piège : un logiciel conçu pour l'uniprocesseur, adapté au multiprocesseur sans repenser les structures de données partagées. Corewar illustre le problème <em>inverse</em> et plus fondamental : les warriors sont des programmes conçus pour un modèle sans synchronisation, s'exécutant dans un environnement multiprocessus. La « table des pages » de Corewar, c'est l'arène elle-même. Chaque processus écrit sans verrou, sans coordination, sans protocole de cohérence. H&P notent que la solution SGI fut de placer des verrous sur des portions plus fines de la table. Dans Corewar, il n'y a <em>pas</em> de verrou possible — la seule « protection » est la distance spatiale (écrire loin de son propre code) ou la redondance (copier son code critique). C'est le paradigme de la programmation sans filet : là où un système réel offre des mécanismes de plus en plus fins (MESI → directory → LL/SC → locks → barriers), Corewar n'offre <em>rien</em>.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 SMT et les limites du multithreading — 1.28× de speedup, pas plus</summary>
 <div class="insight-box"><div class="ib-title">📖 SMT et les limites du multithreading — 1.28× de speedup, pas plus</div><div class="ib-content"><p>Le §3.11 (NOUVEAU dans la 6e édition) rapporte les mesures d'Esmaeilzadeh et al. (2011) sur l'i7 : le SMT (2 threads/cœur) offre un speedup moyen de <strong>1.28×</strong> sur les benchmarks Java et <strong>1.31×</strong> sur PARSEC — bien loin des 2× théoriques. Deux benchmarks avec peu de parallélisme ne gagnent presque rien. H&P attribuent cette modestie au fait que « existing implementations of SMT offer only two to four contexts with fetching and issue from only one [thread], and up to four issues per clock ». En Corewar, la leçon est double : (1) ajouter des processus via SPL n'accélère pas linéairement — chaque thread dilue le temps CPU, et (2) si le travail par thread est trivial (un SPL suivi d'un DAT), le « parallélisme » est illusoire. Le speedup SMT de 1.28× est le plafond réaliste du multithreading matériel quand les threads partagent des ressources — <strong>MARS obtient le même type de compromis par construction : plus de processus = plus de couverture, mais chaque processus progresse plus lentement</strong>.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le Cortex-A53 : le jumeau spirituel de MARS dans le monde réel</summary>
 <div class="insight-box"><div class="ib-title">📖 Le Cortex-A53 : le jumeau spirituel de MARS dans le monde réel</div><div class="ib-content"><p>Le §3.12 (6e édition) décrit l'ARM Cortex-A53, processeur dual-issue <strong>in-order</strong> pour tablettes et smartphones. Son CPI idéal est de <strong>0.5</strong> (deux instructions par cycle), mais en pratique sur SPECint2006, le CPI varie de <strong>1.0 à 8.6</strong> — les stalls dégradent le CPI d'un facteur 2× à 17×. Trois sources de stalls : hazards fonctionnels (deux instructions veulent la même unité), hazards de données (dépendances RAW), hazards de contrôle (misprediction = 8 cycles de penalty). L'A53 consomme ~1/200ème de la puissance d'un i7 pour un processeur quadricœur. MARS est un A53 encore plus simple : mono-issue (CPI idéal = 1, pas 0.5), pas de prédiction de branchement (donc pas de misprediction penalty), pas de cache (donc pas de cache miss stalls). <strong>Si l'A53 est un « RISC pour mobile », MARS est un « RISC pour arène » — la même philosophie de simplicité, poussée à l'extrême</strong>. Le CPI de MARS est exactement 1.0, sans variance — la régularité absolue que l'A53 ne peut qu'approcher.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Multithreading à grain coarse vs fin — MARS, le T1 et le pipeline start-up</summary>
 <div class="insight-box"><div class="ib-title">📖 Multithreading à grain coarse vs fin — MARS, le T1 et le pipeline start-up</div><div class="ib-content"><p>Le §3.11 (NOUVEAU dans la 6e édition) distingue trois formes de multithreading : à <strong>grain grossier</strong> (coarse-grained, commute uniquement sur les stalls coûteux), à <strong>grain fin</strong> (fine-grained, commute chaque cycle en round-robin), et <strong>simultané</strong> (SMT, sur superscalaire). H&P notent que le coarse-grained souffre d'un « pipeline start-up cost » : quand un thread prend la relève après un stall, le pipeline doit se remplir, créant des bulles. Le fine-grained élimine ce coût en intercalant systématiquement, mais « it slows down the execution of an individual thread because a thread that is ready to execute without stalls will be delayed by instructions from other threads ». MARS est du grain fin pur : chaque processus prend exactement une instruction, puis cède — exactement le modèle du Sun T1. H&P précisent que « fine-grained multithreading works perfectly for a single issue processor, and SMT would make no sense » — l'hyper-threading n'est pertinent que sur un superscalaire, ce que Corewar n'est pas et ne peut pas être. <strong>Le grain fin est l'unique modèle de multithreading qui ait du sens pour MARS.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Racines et accessibilité — Ce qui maintient la mémoire en vie</summary>
 <div class="insight-box"><div class="ib-title">📖 Racines et accessibilité — Ce qui maintient la mémoire en vie</div><div class="ib-content"><p>Dans un ramasse-miettes, les <strong>racines</strong> (roots) sont les objets que la VM peut atteindre directement sans passer par d'autres objets : variables globales, pile d'exécution, call frames. Tout objet atteignable depuis une racine est vivant ; tout le reste est collectable. Dans Corewar, les racines sont les <strong>processus vivants</strong> : chaque PC de processus vivant est une racine, chaque registre pointant vers une adresse est un chemin d'accessibilité. Le code chargé au démarrage est aussi une racine (bien que le code puisse être écrasé). Cette formalisation est puissante : elle permet de définir précisément quelles zones de l'arène sont « sûres » à bomber (blanches — non atteignables depuis aucune racine) et lesquelles risquent de tuer un processus (noires — sur le chemin d'exécution d'un processus vivant). Un champion qui comprend les racines de ses adversaires peut les bombarder chirurgicalement.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Processus zombie et ramasse-miettes</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Processus zombie et ramasse-miettes</div>
         <div class="ib-content">
@@ -4681,7 +4506,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Dans Corewar, la fonction <code>kill_zombies()</code> est l'équivalent de ce ramasse-miettes : à chaque vérification de <code>CYCLE_TO_DIE</code>, elle parcourt la liste des processus et élimine ceux qui n'ont pas fait de <code>live</code>. En C, cette opération coûte O(N²) dans l'implémentation naive (parcours de liste chaînée + suppression), tandis qu'en Rust, l'utilisation de <code>retain_mut()</code> réduit la complexité à O(N). C'est un exemple concret où le choix de la structure de données impacte directement les performances — un thème central de CSAPP.</p>
         </div>
     </div>
-</details>
 
     <div class="quiz-box">
         <div class="quiz-title">🎯 Quiz — Le Processus</div>
@@ -4713,9 +4537,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 <div class="container">
     <h2><span class="num">05</span> Cycle de vie d'une instruction</h2>
     <p>Chaque instruction passe par 4 phases. La notion clé est que les instructions <strong>consomment toujours leurs cycles</strong> : même si l'instruction est invalide, les cycles sont déduits. Une instruction ne s'exécute qu'à la <strong>fin de son dernier cycle</strong>.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Du processeur réel au processeur Corewar</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Du processeur réel au processeur Corewar</div>
         <div class="ib-content">
@@ -4731,10 +4552,6 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <p>Le Corewar simplifie ce pipeline en <strong>4 phases</strong> : Fetch → Decode/Wait → Validate → Execute. Les étages Memory et Writeback sont fusionnés dans Execute, et l'étage Decode est étiré en une attente de plusieurs cycles (simulant la latence variable des instructions). C'est un choix de design qui rend le jeu plus tactique : les instructions longues comme <code>fork</code> (800 cycles) créent des fenêtres de vulnérabilité pendant lesquelles le processus ne peut pas réagir.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'interpréteur à décodage-dispatch — Le cœur de la VM</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'interpréteur à décodage-dispatch — Le cœur de la VM</div>
         <div class="ib-content">
@@ -4756,19 +4573,11 @@ while (!halt) {
             <p>Smith et Nair décrivent aussi des techniques d'optimisation : l'<strong>interprétation threaded</strong> (p.32-34) qui élimine la boucle centrale en chaînant directement les routines d'instruction, et le <strong>predecoding</strong> (p.34-38) qui analyse les instructions une fois pour toutes plutôt qu'à chaque exécution. Ces optimisations pourraient être appliquées à la VM Corewar pour améliorer les performances — le prédecoding serait particulièrement efficace car les instructions dans l'arène changent peu entre les cycles.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le dispatch — Le cœur battant de toute VM</summary>
 <div class="insight-box"><div class="ib-title">📖 Le dispatch — Le cœur battant de toute VM</div><div class="ib-content"><p>Nystrom affirme que la fonction <code>run()</code> de clox — une boucle infinie avec un <code>switch</code> géant sur les opcodes — est « la fonction la plus importante de tout clox, de loin. L'interpréteur passe quelque chose comme 90% de son temps à l'intérieur de <code>run()</code> ». La boucle principale de MARS est exactement la même chose : un switch/case sur les 16 opcodes Redcode. Les techniques d'optimisation mentionnées — <strong>direct threaded code</strong>, <strong>computed goto</strong>, <strong>jump tables</strong> — s'appliquent toutes à MARS. GCC et Clang optimisent souvent les grands switch/case en tables de saut natives, ce qui élimine la cascade de comparaisons. Pour une VM Corewar en C, s'assurer que le compilateur C génère une jump table plutôt qu'une cascade de <code>if</code> est l'optimisation single la plus impactante. En Rust, le <code>match</code> sur un enum a le même comportement.</p></div></div>
-</details>
 
     <div class="lifecycle">
         <div class="lc-step">
             <div class="lc-num fetch">1</div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le code auto-modifiant comme hazard de pipeline — Pourquoi Corewar est mono-cycle</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le code auto-modifiant comme hazard de pipeline — Pourquoi Corewar est mono-cycle</div>
         <div class="ib-content">
@@ -4777,65 +4586,17 @@ while (!halt) {
             <p>CSAPP documente aussi les conséquences du pipelining sur les <strong>hazards de données</strong> (p.460) : <em>« A data hazard can arise for an instruction when one of its operands is updated by any of the three preceding instructions. »</em> Le processeur doit alors insérer des <strong>bulles</strong> (NOP forcés, p.461-462) ou implémenter du <strong>forwarding</strong> (court-circuitage, p.464-466) — 5 sources vers 2 destinations. La VM Corewar n'a ni bulles ni forwarding : chaque instruction voit l'état exact de l'arène au moment de son exécution. Le CPI (Cycles Per Instruction) du processeur Y86-64 pipeliné de CSAPP est de <strong>1.27</strong> (p.495) — 27% de surcoût dû aux hazards — tandis que la VM Corewar atteint <strong>CPI = 1.0</strong> systématiquement. Ce n'est pas un accident, c'est le choix de design qui rend le code auto-modifiant triviallement correct.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le processeur idéal comme plafond de Corewar</summary>
 <div class="insight-box"><div class="ib-title">📖 Le processeur idéal comme plafond de Corewar</div><div class="ib-content"><p>H&P §3.10 définissent le <strong>processeur idéal</strong> par 5 hypothèses : (1) renommage infini de registres, (2) prédiction de branchement parfaite, (3) prédiction de saut parfaite, (4) analyse parfaite d'alias mémoire, (5) caches parfaites. Muni de ces cinq conditions, le parallélisme disponible plafonne à ~18-150 instructions/cycle selon les programmes (SPEC92). Corewar viole <em>toutes</em> ces hypothèses : zéro renommage, zéro prédiction de branchement, zéro analyse d'alias, et mémoire directe sans cache. Mais le constat frappant de H&P est que même avec l'idéal, les programmes entiers (type <code>li</code>, un interpréteur LISP) plafonnent à ~18 IPC — car leurs chaînes de dépendances courtes et leurs branchements fréquents limitent fondamentalement le parallélisme. Les guerriers Corewar, avec leurs blocs de base de 3-6 instructions et leur auto-modification constante, ressemblent à <code>li</code> : leur ILP intrinsèque est si faible que l'absence de support matériel les pénalise bien moins qu'on ne le croirait. <strong>Le plafond est bas, et Corewar est déjà proche du sol.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 RAW seul au monde — Pourquoi l'absence de WAR/WAW n'est pas une lacune</summary>
 <div class="insight-box"><div class="ib-title">📖 RAW seul au monde — Pourquoi l'absence de WAR/WAW n'est pas une lacune</div><div class="ib-content"><p>H&P §3.1 établissent une distinction cruciale : les dépendances <strong>nominales</strong> (WAR antidépendance, WAW dépendance de sortie) ne sont pas des dépendances vraies — elles n'impliquent aucune transmission de valeur. Dans un pipeline mono-émission in-order, les lectures sont précoces (ID) et les écritures tardives (WB), donc WAR et WAW <strong>ne peuvent pas se produire</strong>. Seul RAW (read after write), qui correspond à la dépendance de données vraie, existe. Corewar est exactement ce modèle : mono-émission, in-order, une seule écriture par cycle. L'absence de WAR/WAW n'est donc pas une simplification dégénérative, c'est la conséquence structurelle d'une architecture in-order. La seule dépendance qui contraint <em>tout</em> processeur — la chaîne de données vraie — est aussi la seule que Corewar subit. H&P le disent explicitement : « a data dependence conveys an upper bound on how much parallelism can possibly be exploited » — et cette borne s'applique identiquement au Corewar et au Power7.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'auto-modification rend le out-of-order impossible — Alias mémoire imprévisible</summary>
 <div class="insight-box"><div class="ib-title">📖 L'auto-modification rend le out-of-order impossible — Alias mémoire imprévisible</div><div class="ib-content"><p>H&P §3.10 soulignent que même dans le processeur idéal, les hazards WAW et WAR à travers la mémoire <strong>n'ont pas été éliminés</strong>. En Corewar, le problème est décuplé : l'auto-modification de code crée des dépendances de données <em>à travers la mémoire</em> entre une instruction qui écrit (MOV) et une instruction ultérieure qui lit ou <em>exécute</em> cette même adresse. H&P §3.9 expliquent que la prédiction d'alias d'adresse — « predicts whether two stores or a load and a store refer to the same memory address » — est la forme simplifiée et praticable de la prédiction de valeur. Mais en Corewar, l'adresse cible d'un MOV est souvent <em>calculée dynamiquement</em> (adresse dans un registre), rendant l'alias imprévisible sans exécuter d'abord l'instruction. Un processeur out-of-order devrait connaître l'adresse écrite avant de réordonner les lectures/écritures ultérieures — ce qui est circulaire. C'est pourquoi le out-of-order est fondamentalement impuissant face à l'auto-modification : la dépendance mémoire est <em>vraie</em> (transmission de valeur) mais <em>dynamique</em> (l'adresse n'est connue qu'à l'exécution). Le in-order de Corewar n'est pas un choix paresseux — c'est une nécessité logique.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La prédiction de valeur comme arme stratégique — Quand l'échec matériel devient victoire guerrière</summary>
 <div class="insight-box"><div class="ib-title">📖 La prédiction de valeur comme arme stratégique — Quand l'échec matériel devient victoire guerrière</div><div class="ib-content"><p>H&P §3.9 consacrent un développement à la <strong>prédiction de valeur</strong> : prédire la valeur produite par une instruction pour briser les chaînes de dépendance. Le verdict est sans appel : « over 100 papers on the subject has achieved a significant enhancement in ILP when using a realistic prediction scheme ». La prédiction de valeur matérielle échoue car les valeurs sont intrinsèquement imprévisibles dans un programme général. Mais en Corewar, la prédiction de valeur prend une forme radicalement différente : un guerrier <em>prédit</em> ce que l'adversaire va écrire dans l'arène. Un bomber prédit que les cases cibles contiendront du code adverse. Un scanner prédit le motif d'instructions ennemi. H&P distinguent la prédiction de valeur (échoue) de la prédiction d'alias d'adresse (réussit partiellement) — en Corewar, c'est l'<em>alias</em> qui intéresse le guerrier : « mon MOV va-t-il écraser une case occupée par l'adversaire ? ». Cette prédiction d'alias stratégique est précisément ce que font les scanners : sonder l'arène pour prédire les conflits d'adresse avant de bombarder. <strong>Le hardware n'a pas su exploiter la prédiction de valeur ; le guerrier Corewar l'exploite par conception.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La fenêtre d'instructions et le théorème de la vulnérabilité</summary>
 <div class="insight-box"><div class="ib-title">📖 La fenêtre d'instructions et le théorème de la vulnérabilité</div><div class="ib-content"><p>H&P §3.10 (Figure 3.27) montrent la relation entre <strong>taille de fenêtre d'instructions</strong> et parallélisme exploitable. Pour les programmes entiers, passer d'une fenêtre infinie à 64 entrées fait chuter l'IPC de ~55 à ~15 (pour <code>gcc</code>) ; à 32 entrées, on tombe à ~10. En Corewar, la « fenêtre d'instructions » d'un guerrier est dictée par la portée de ses MOV : il ne peut « voir » et affecter que les cases dans son rayon d'écriture. Un guerrier agressif avec des MOV longue portée a une grande fenêtre mais un cycle d'exécution plus long (plus de terrain à couvrir). Un guerrier compact (paper) a une fenêtre minuscule mais se replie vite. Le trade-off est le même que H&P identifient pour les processeurs réels : élargir la fenêtre coûte exponentiellement plus en ressources pour un gain marginal décroissant. Le guerrier optimal se situe au point où le coût d'élargissement de la fenêtre égale le gain en couverture — exactement le compromis que les architectes de processeurs ont dû faire quand ils ont abandonné les fenêtres de 128+ entrées pour se limiter à 40-50 instructions.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 CPI = 1 + 0 : quand la formule de pipeline d'H&P s'annule par construction</summary>
 <div class="insight-box"><div class="ib-title">📖 CPI = 1 + 0 : quand la formule de pipeline d'H&P s'annule par construction</div><div class="ib-content"><p>H&P App.C donnent la formule fondamentale de performance pipeline : <strong>CPI_pipelined = Ideal_CPI + Pipeline_stall_cycles_per_instruction</strong>, où <strong>Stall_cycles = Branch_stalls + Data_stalls + Structural_stalls</strong>. Pour le R4000, H&P montrent que ces stalls dégradent le CPI de 1 (idéal) à 1.2–2.8 en pratique. Pour Corewar, les trois termes sont <strong>zéro par construction</strong> : pas de pipeline → pas de hazards de données (RAW, WAR, WAW impossibles), pas de hazards de contrôle (pas de prédiction de branchement, <code>zjmp</code> est résolu dans le même cycle), pas de hazards structurels (une seule instruction par cycle, une seule unité fonctionnelle). La formule se réduit à <strong>CPI = 1 + 0 = 1</strong>, l'idéal théorique. Ce n'est pas une optimisation — c'est une <strong>élimination par conception</strong>. Le mono-cycle de Corewar est le seul design où la formule de H&P donne son résultat minimal sans aucune ingénierie de forwarding, de prédiction ou de scheduling.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le « forwarding gratuit » : l'anti-pipeline qui résout le problème du pipeline</summary>
 <div class="insight-box"><div class="ib-title">📖 Le « forwarding gratuit » : l'anti-pipeline qui résout le problème du pipeline</div><div class="ib-content"><p>H&P App.C expliquent le forwarding comme une technique matérielle pour éviter les stalls de données : le résultat de l'ALU est rerouté depuis les pipeline registers vers les entrées de l'ALU, court-circuitant l'écriture puis la lecture du fichier de registres. C'est une solution à un problème créé par le pipelining lui-même. Corewar, en revanche, n'a pas de pipeline registers, donc pas de problème à résoudre : le résultat d'une instruction est écrit dans le fichier de registres à la fin du cycle, et l'instruction suivante le lit au début du cycle suivant. C'est du « forwarding gratuit » — le bénéfice du forwarding (disponibilité immédiate du résultat) sans aucun matériel de forwarding. H&P montrent que même avec forwarding, une instruction <code>LD</code> suivie immédiatement d'une utilisation nécessite un stall de 1 cycle. Corewar n'a pas ce problème non plus, puisque l'instruction <code>T_IND</code> lit ET calcule dans le même cycle. <strong>L'absence de pipeline élimine toute la complexité que H&P dédiennent ~30 pages à résoudre.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'encodage hybride du .cor : le compromis que H&P n'avaient pas prévu pour les VM</summary>
 <div class="insight-box"><div class="ib-title">📖 L'encodage hybride du .cor : le compromis que H&P n'avaient pas prévu pour les VM</div><div class="ib-content"><p>H&P §A.7 distinguent trois styles d'encodage : variable (80x86, VAX), fixe (MIPS, ARM), et hybride (IBM 360, Thumb). Le format <code>.cor</code> de Corewar est un cas hybride particulier : l'opcode détermine le format (comme en fixe), mais l'OCP (Octet de Code Paramètre) spécifie le mode d'adressage de chaque opérande (comme en variable), et la taille totale varie de 1 à 5 octets selon les types d'opérandes. H&P disent : « the architect more interested in code size than performance will pick variable encoding, and the one more interested in performance than code size will pick fixed encoding ». Corewar choisit la compacité : l'arène fait <code>MEM_SIZE</code> octets, et chaque octet compte. L'OCP est le compromis élégant — un seul octet qui encode jusqu'à 3 types d'opérandes, évitant les address specifiers séparés du VAX tout en restant plus compact que le fixe 32-bit de MIPS. C'est l'encodage hybride poussé à son minimum : un octet de contrôle, pas plus.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le paradoxe de David Wall — Même avec 64 issues, les entiers plafonnent à ~10 IPC</summary>
 <div class="insight-box"><div class="ib-title">📖 Le paradoxe de David Wall — Même avec 64 issues, les entiers plafonnent à ~10 IPC</div><div class="ib-content"><p>Le §3.13 (6e édition) cite l'étude fameuse de David Wall (1993) : même avec un processeur idéal à <strong>64 issues par cycle</strong> (8× plus large que le plus large processeur de 2017), renommage infini, prédiction parfaite et désambiguïsation mémoire parfaite, les programmes entiers n'atteignent que ~10 IPC en moyenne, et les programmes FP ~35 IPC (grâce au parallélisme de boucle). « The effect of the window size for the integer programs is not as severe as for FP programs [...] other factors—such as branch prediction, register renaming, and less parallelism, to start with—are all important limitations. » Wall's study was initially not believed, but « 10 years later, the reality had sunk in ». Pour Corewar, cette étude est la validation quantitative ultime : les guerriers sont des programmes « entier-like » avec peu de parallélisme intrinsèque, des branchements fréquents et des chaînes de dépendances courtes. <strong>Même un processeur magique n'en tirerait pas grand-chose de plus. Le CPI=1 de MARS n'est pas un handicap — c'est le reflet d'un plafond de parallélisme fondamental.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le delayed branch — Ce que RISC-V a supprimé et Corewar n'a jamais eu</summary>
 <div class="insight-box"><div class="ib-title">📖 Le delayed branch — Ce que RISC-V a supprimé et Corewar n'a jamais eu</div><div class="ib-content"><p>L'Appendice C §C.2 (6e édition) décrit le <strong>delayed branch</strong> : dans les premiers RISC (MIPS, SPARC), l'instruction suivant un branchement est <strong>toujours exécutée</strong> (le « branch delay slot »), que le branchement soit pris ou non. Le compilateur doit trouver une instruction utile à y placer. RISC-V a <strong>explicitement supprimé</strong> cette feature : « RISC-V appropriately omitted delayed branches » car elle « complicates implementation when there is dynamic branch prediction ». Corewar n'a jamais eu de branch delay slot : <code>zjmp</code> (le seul branchement conditionnel) prend effet immédiatement. C'est un choix de simplicité cohérent avec RISC-V : dans un modèle sans prédiction de branchement (comme MARS), le delayed branch n'apporterait rien — il n'y a pas de « bubble » à remplir car il n'y a pas de pipeline. <strong>L'absence de delay slot en Corewar est doublement justifiée : pas de pipeline à optimiser, pas de prédiction à compliquer.</strong> C'est un exemple où Corewar, par sa simplicité, a anticipé une décision que RISC-V a prise 30 ans plus tard.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le prédicteur à 2 bits et la leçon pour le guerrier — L'hystérésis de la prédiction</summary>
 <div class="insight-box"><div class="ib-title">📖 Le prédicteur à 2 bits et la leçon pour le guerrier — L'hystérésis de la prédiction</div><div class="ib-content"><p>L'Appendice C §C.2 (6e édition) décrit l'évolution des prédicteurs de branchement : le prédicteur <strong>1-bit</strong> a un défaut — même si un branchement est pris 99% du temps, il sera mal préduit <strong>deux fois</strong> à chaque changement (une fois quand il change, une fois quand il revient). Le prédicteur <strong>2-bits</strong> (saturating counter) résout ce problème en exigeant <strong>deux mauvaises prédictions consécutives</strong> avant de changer de prédiction — c'est de l'hystérésis. Les taux de misprédiction sur SPEC89 varient de <strong>1% à 18%</strong> selon les programmes (integer toujours pire que FP). En Corewar, l'équivalent est la prédiction du comportement adverse : un guerrier qui « prédit » que l'adversaire va bomber à gauche puis change de prédiction dès la première déviation est un prédicteur 1-bit — instable. Un guerrier qui maintient sa prédiction malgré quelques déviations est un prédicteur 2-bit — plus robuste au bruit. <strong>La leçon des prédicteurs 2-bits : il faut deux preuves de changement avant d'inverser sa stratégie.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le problème de la découverte de code et les exceptions précises</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le problème de la découverte de code et les exceptions précises</div>
         <div class="ib-content">
@@ -4844,7 +4605,6 @@ while (!halt) {
             <p>Pour le décodage de l'OCP, Kernighan et Ritchie (<em>The C Programming Language</em>, p.46) fournissent le pattern canonique : la fonction <code>getbits(x, p, n)</code> qui retourne le champ de <code>n</code> bits débutant à la position <code>p</code> : <code>return (x >> (p+1-n)) & ~(~0 << n);</code>. C'est littéralement le décodeur d'OCP : <code>getbits(ocp, 7, 2)</code> donne le type du premier argument, <code>getbits(ocp, 5, 2)</code> le second, <code>getbits(ocp, 3, 2)</code> le troisième. K&R mettent en garde (p.121-123) : les <strong>bit-fields C</strong> sont <em>« implementation-dependent »</em> — l'ordre d'allocation (gauche-droite vs droite-gauche) varie selon le compilateur. C'est pourquoi la VM Corewar NE DOIT PAS utiliser de bit-fields pour décoder l'OCP, mais doit utiliser l'extraction explicite par décalages et masques — exactement comme le montre <code>getbits</code>.</p>
         </div>
     </div>
-</details>
 
             <div class="lc-content">
                 <div class="lc-title">Fetch — Lecture de l'opcode</div>
@@ -4958,11 +4718,7 @@ while (!halt) {
             <p><strong>5.</strong> Le gagnant est le dernier joueur à avoir été rapporté comme "en vie" par l'instruction <code>live</code>.</p>
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'abstraction tricolore — Ce que le GC nous apprend sur CYCLE_TO_DIE</summary>
 <div class="insight-box"><div class="ib-title">📖 L'abstraction tricolore — Ce que le GC nous apprend sur CYCLE_TO_DIE</div><div class="ib-content"><p>L'algorithme mark-sweep de McCarthy, tel qu'expliqué dans Crafting Interpreters, utilise l'<strong>abstraction tricolore</strong> : BLANC (non atteint), GRIS (atteint mais pas encore tracé), NOIR (entièrement tracé). Le ramasse-miettes progresse comme un front d'onde gris à travers le graphe d'objets. Transposé à Corewar : les cellules de l'arène sont BLANCHES par défaut (personne ne les référence), deviennent GRISES quand un processus vivant pointe vers elles (le PC les atteint), puis NOIRES une fois exécutées. Le CYCLE_TO_DIE est essentiellement un <strong>seuil de déclenchement du GC</strong> : quand un processus ne s'est pas manifesté (n'a pas exécuté de <code>live</code>) dans les N cycles, il est « sweepé » — éliminé. Le « tas auto-ajustable » de clox (où le seuil de GC s'adapte à la taille du tas vivant) est l'analogue exact de la façon dont CYCLE_TO_DIE diminue progressivement, s'ajustant au nombre de processus survivants.</p></div></div>
-</details>
 
     <h3 id="ctd-anim">Animation — Évolution de CYCLE_TO_DIE</h3>
     <p>Visualisez comment <code>CYCLE_TO_DIE</code> diminue au fil de la partie. À chaque vérification, si le nombre de <code>live</code> est suffisant (≥ 21) ou après 10 checks sans assez de lives, la valeur est réduite de <code>CYCLE_DELTA</code> (50). La partie s'accélère progressivement jusqu'à ce que <code>CYCLE_TO_DIE</code> atteigne 0.</p>
@@ -5294,16 +5050,12 @@ while (!halt) {
             <div class="qq-explain">fork applique IDX_MOD au paramètre (limitant le saut à ±512), tandis que lfork n'applique pas cette restriction, permettant de forker à n'importe quelle adresse. lfork coûte aussi plus de cycles (1000 vs 800).</div>
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Suite logique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
             Vous connaissez maintenant les 16 instructions. Mais comment sont-elles encodées en bytecode ? Passez à la <a href="#encoding">section 7 — Encodage</a> pour comprendre le format .cor, puis à la <a href="#syntaxe">section 10 — Syntaxe du .s</a> pour la référence complète du langage assembleur.
         </div>
     </div>
-</details>
 
 </div>
 </section>
@@ -5331,9 +5083,6 @@ while (!halt) {
             <div><div class="enc-token enc-acb">PADDING<br><small>4 octets</small></div><div class="endian-label">null</div></div>
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le format .cor et les formats objet historiques</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le format .cor et les formats objet historiques</div>
         <div class="ib-content">
@@ -5343,18 +5092,10 @@ while (!halt) {
             <p>Le CSAPP §7.7.1 introduit les entrées de relocalisation (<code>Elf64_Rela</code>), ces métadonnées que l'assembleur laisse dans <code>.rel.text</code> et <code>.rel.data</code> pour indiquer au lieur quelles références doivent être patchées et comment. Le lieur utilise ces entrées pour transformer les adresses placeholder (0x00000000) en adresses réelles au moment de l'édition de liens. Le format .cor contient <strong>zéro entrée de relocalisation</strong> : toutes les références sont résolues à l'intérieur de l'assembleur lui-même, pendant la seconde passe. Cela signifie que l'assembleur Corewar joue simultanément les rôles d'assembleur <em>et</em> de lieur au sens CSAPP — il collecte les symboles (passe 1), puis résout et relocalise les références (passe 2), produisant un fichier directement exécutable. Cette fusion est possible précisément parce qu'il n'y a qu'un seul module et que toutes les adresses sont relatives : le lieur n'a rien à fusionner ni à déplacer.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le pool de constantes — L'ancêtre du header .cor</summary>
 <div class="insight-box"><div class="ib-title">📖 Le pool de constantes — L'ancêtre du header .cor</div><div class="ib-content"><p>Dans clox (la VM bytecode de Crafting Interpreters), chaque <em>chunk</em> de bytecode est accompagné d'un <strong>pool de constantes</strong> — un tableau séparé contenant les littéraux (nombres, chaînes) référencés par index dans les instructions <code>OP_CONSTANT</code>. Le header <code>.cor</code> joue exactement ce rôle : il contient le nom du champion (une constante chaîne) et la taille du code (une constante numérique), stockés séparément du bytecode lui-même. Nystrom explique que ce découplage est crucial : mettre les données volumineuses directement dans le flux d'instructions ruinerait la densité et la localité spatiale. Le Corewar pousse cette logique encore plus loin — le header est totalement séparé du corps, et l'arène ne contient que des instructions brutes, sans métadonnées. C'est l'ultimate expression du principe « le bytecode ne doit contenir que ce que la VM exécute ».</p></div></div>
-</details>
 
     <h3>L'OCP — Octet de Codage des Paramètres</h3>
     <p>L'OCP (ou ACB) encode le type de chaque paramètre sur <strong>2 bits</strong> : <code>01</code> = registre, <code>10</code> = direct, <code>11</code> = indirect. Les bits inutilisés sont à 0.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'OCP et le ModR/M : même combat, complexité différente</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'OCP et le ModR/M : même combat, complexité différente</div>
 
@@ -5374,7 +5115,6 @@ while (!halt) {
             <p>L'OCP de Corewar est entre les deux : 2 bits par paramètre (3 paramètres max = 6 bits), permettant d'encoder registre, direct ou indirect. C'est plus expressif que le Y86-64 (qui ne supporte pas l'adressage indirect) mais beaucoup plus simple que l'x86-64 (pas de scale, pas d'index, pas de displacement variable). Comme pour tout ISA, la propriété fondamentale est que <strong>l'encodage doit avoir une interprétation unique</strong> (CSAPP §4.1.3) : toute séquence d'octets encode soit une instruction unique, soit n'est pas légale. C'est ce qui permet à la VM de décoder le bytecode sans ambiguïté.</p>
         </div>
     </div>
-</details>
     <div class="encoding-demo">
         <h4>Exemple : <code>sti r1, %:live, %1</code></h4>
         <div class="encoding-row">
@@ -5515,9 +5255,6 @@ live: live  %1
 <div class="container">
     <h2><span class="num">08</span> L'Assembleur — Pipeline complet</h2>
     <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Du pipeline de compilation au pipeline de l'assembleur</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Du pipeline de compilation au pipeline de l'assembleur</div>
         <div class="ib-content">
@@ -5536,10 +5273,6 @@ live: live  %1
             <p>La différence majeure est que le pipeline CSAPP est <strong>séquentiel entre des outils séparés</strong> (cpp, gcc, as, ld), tandis que votre assembleur est <strong>un programme unique avec deux passes</strong>. La première passe collecte les labels et leurs adresses, la deuxième génère le bytecode en résolvant les références. C'est la technique classique de l'<strong>assemblage en deux passes</strong>, utilisée par tous les assembleurs réels depuis les années 1950.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le problème des références avant — Pourquoi deux passes sont obligatoires</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le problème des références avant — Pourquoi deux passes sont obligatoires</div>
         <div class="ib-content">
@@ -5552,44 +5285,16 @@ live: live  %1
             <p>Le Dragon Book note aussi que le rôle de la table des symboles est de <em>« pass information from declarations to uses »</em> (p.112) — exactement ce que fait la passe 1 (enregistrer les déclarations de labels) vers la passe 2 (utiliser ces déclarations pour résoudre les références). Dans Corewar, la table des symboles est un simple dictionnaire {nom_du_label → offset_en_octets}, sans les complexités de portées imbriquées des langages de haut niveau.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Single-pass vs Multi-pass — Le compromis de l'assembleur Corewar</summary>
 <div class="insight-box"><div class="ib-title">📖 Single-pass vs Multi-pass — Le compromis de l'assembleur Corewar</div><div class="ib-content"><p>Crafting Interpreters implémente un compilateur <strong>single-pass</strong> (une seule passe) où le parsing et la génération de code sont entrelacés. Nystrom explique que ce design est possible parce que Lox est un langage dynamiquement typé où « on n'a pas besoin de beaucoup de contexte environnant pour comprendre un bout de syntaxe ». L'assembleur Corewar, lui, ne peut PAS être single-pass à cause des labels en référence avant : <code>jmp :label</code> où <code>:label</code> est défini plus bas. C'est exactement le problème que rencontraient les compilateurs C historiques : C exige les <em>forward declarations</em> (<code>void foo();</code>) précisément parce qu'il a été conçu pour un compilateur single-pass sur des machines avec très peu de mémoire. La solution de l'assembleur Corewar — deux passes — est le même compromis que Pascal : la première passe collecte les adresses, la seconde génère le code résolu.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Symboles forts et faibles — L'absence totale d'espace de noms dans .cor</summary>
 <div class="insight-box"><div class="ib-title">📖 Symboles forts et faibles — L'absence totale d'espace de noms dans .cor</div><div class="ib-content"><p>Le CSAPP §7.6.1 décrit comment l'éditeur de liens résout les conflits entre symboles globaux dupliqués grâce à une hiérarchie <strong>fort/faible</strong> : les fonctions et variables initialisées sont « fortes », les variables non initialisées sont « faibles ». En cas de conflit, le symbole fort l'emporte silencieusement sur le faible — un mécanisme qui peut introduire des bugs subtils (p. 708-709 : un <code>int x</code> et un <code>double x</code> dans deux modules différents, et le <code>double</code> écrase les 8 bytes adjacents en mémoire). Le format .cor n'a <strong>aucun espace de noms</strong> : le seul « symbole » est le nom du champion dans le header, qui sert exclusivement à l'affichage. Il n'existe ni symboles globaux ni locaux, ni mécanisme de résolution, ni risque de conflit. L'assembleur Corewar est un compilateur pour un programme à un seul module — la question de la visibilité inter-modules ne se pose tout simplement pas. Là où l'éditeur de liens traditionnel doit arbitrer entre des définitions concurrentes, l'assembleur Corewar opère dans un monde où chaque label est privé par construction.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Archives et bibliothèques statiques — Pourquoi les champions ne peuvent pas partager de code</summary>
 <div class="insight-box"><div class="ib-title">📖 Archives et bibliothèques statiques — Pourquoi les champions ne peuvent pas partager de code</div><div class="ib-content"><p>Le CSAPP §7.6.2-7.6.3 explique comment les archives <code>.a</code> permettent l'édition de liens sélective : parmi des centaines de modules objet dans <code>libc.a</code>, le lieur n'extrait que ceux qui sont effectivement référencés. Ce mécanisme résout le problème de l'encombrement — au lieu d'embarquer toute la bibliothèque, on n'inclut que ce qu'on utilise. Dans l'univers Corewar, ce concept est <strong>totalement absent</strong> : un champion est un fichier unique et autosuffisant, sans possibilité d'importer des routines depuis une bibliothèque. On ne peut pas écrire un <code>fork_bomb.o</code> et le lier à plusieurs champions. Cette limitation est à la fois une contrainte (pas de réutilisation de code entre champions) et une garantie d'indépendance (aucune dépendance externe, aucun conflit de version, aucun problème d'ordre sur la ligne de commande). Le concept d'archive fait néanmoins apparaître une piste intéressante pour une variante de Corewar : que se passerait-il si les champions pouvaient appeler des « bibliothèques standards » de routines de combat, avec un lieur qui sélectionne uniquement les fonctions référencées ?</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le PLT/GOT et la liaison dynamique — .cor comme format de fermeture totale</summary>
 <div class="insight-box"><div class="ib-title">📖 Le PLT/GOT et la liaison dynamique — .cor comme format de fermeture totale</div><div class="ib-content"><p>Le CSAPP §7.10-7.12 détaille l'architecture de la liaison dynamique : le PLT (Procedure Linkage Table) et le GOT (Global Offset Table) permettent à un programme d'appeler des fonctions dont l'adresse n'est connue qu'au moment de l'exécution, via un mécanisme de résolution paresseuse (lazy binding). Le GOT contient les adresses absolues résolues par le lieur dynamique, tandis que le PLT fournit des stubs de code qui dirigent l'exécution vers le lieur dynamique lors du premier appel. Chez Corewar, rien de tout cela n'existe : chaque champion est chargé dans l'arène comme une image isolée, sans possibilité d'appeler du code externe. Là où le PLT/GOT est un mécanisme d'ouverture (permettre à un binaire de s'interface avec un monde extérieur inconnu au moment de la compilation), .cor est un format de <strong>fermeture totale</strong> — le champion est son propre univers. Cette isolation a un coût (pas de partage de code entre processus en mémoire) et un bénéfice (aucune surface d'attaque par interposition de bibliothèque, pas de <code>LD_PRELOAD</code> possible). En termes CSAPP, .cor est au format objet ce qu'un programme en mémoire privée est à un processus qui charge des <code>.so</code> — une décision d'isolation radicale qui élimine toute la complexité du lieur dynamique.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'addend, le fixup et l'offset — Ce que .cor élimine en trois coups</summary>
 <div class="insight-box"><div class="ib-title">📖 L'addend, le fixup et l'offset — Ce que .cor élimine en trois coups</div><div class="ib-content"><p>Levine (Linkers and Loaders, Ch.7) détaille les mécanismes de relocation : sur SPARC et MIPS, les instructions n'ont pas la place pour stocker une adresse 32-bit complète, donc un champ <strong>addend</strong> dans l'entrée de relocation porte la valeur complémentaire. Le linker combine l'addend avec la base du segment pour calculer l'adresse finale. Corewar évite entièrement ce problème : chaque champ opérande stocke directement le <strong>décalage relatif</strong> (modulo la taille du core), et la VM calcule l'adresse effective au runtime par <code>(PC + offset) % CORE_SIZE</code>. Pas d'addend, pas de table de relocation, pas de fixup au chargement. Levine décrit aussi les <strong>références chaînées</strong> : les entrées de relocation forment une liste chaînée dans le code objet, chaque entrée pointant vers la suivante. L'adressage indirect <code>@</code> de Corewar est l'équivalent runtime : au lieu que le linker suive la chaîne de fixups à l'édition des liens, la VM suit la chaîne de pointeurs à l'exécution. <strong>Le .cor élimine la relocation à la compilation, l'addend à l'encodage, et le fixup au chargement — trois problèmes résolus par un seul choix : l'adressage relatif.</strong></p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Link-time, load-time, ni l'un ni l'autre — Corewar saute les deux phases</summary>
 <div class="insight-box"><div class="ib-title">📖 Link-time, load-time, ni l'un ni l'autre — Corewar saute les deux phases</div><div class="ib-content"><p>Levine (Ch.7, §7.2) distingue deux phases de relocation : la <strong>link-time relocation</strong> (combinaison des segments de différents fichiers objet en une image unique) et la <strong>load-time relocation</strong> (ajustement de l'image finale pour son adresse réelle en mémoire). Corewar n'a ni l'une ni l'autre. Il n'y a pas de link-time car il n'y a qu'un seul fichier source (.s → .cor) sans combinaison de modules. Il n'y a pas de load-time car tous les adressages sont relatifs — le loader se réduit à un simple <code>memcpy</code> vers l'arène. C'est le cas le plus trivial décrit par Levine : « no load-time relocation is needed ». Mais Corewar pousse la simplification encore plus loin : même la relocation à l'édition des liens (résolution des labels en offsets) est faite par l'assembleur en une seule passe, pas par un linker séparé. <strong>Le .cor est le format objet ultime pour un monde sans linker : la compilation est la dernière étape, et le chargement est un copié-collé.</strong></p></div></div>
-</details>
 
     <div class="lifecycle">
         <div class="lc-step">
             <div class="lc-num fetch">1</div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Tokens, patterns, lexèmes — L'analyse lexicale de l'assembleur</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Tokens, patterns, lexèmes — L'analyse lexicale de l'assembleur</div>
         <div class="ib-content">
@@ -5599,7 +5304,6 @@ live: live  %1
             <p>Pour la table des symboles, le Dragon Book (p.86-89) décrit les <strong>tables chaînées par portée</strong> : <em>« The most-closely nested rule for blocks can be implemented by chaining symbol tables. That is, the table for a nested block points to the table for its enclosing block. »</em> En Corewar, les labels locaux (préfixés par un point) ont une portée délimitée par les labels non-pointés — exactement le modèle des blocs imbriqués avec la règle du « plus proche englobant ». La table des labels est un dictionnaire {nom → offset}, et les labels locaux créent une nouvelle portée à chaque label non-point, comme les tables de symboles chaînées du Dragon Book.</p>
         </div>
     </div>
-</details>
 
             <div class="lc-content">
                 <div class="lc-title">Lexer — Tokenisation</div>
@@ -5764,9 +5468,6 @@ live: live  %1
             </tr>
         </tbody>
     </table>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Comportement indéfini : le fantôme du C</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Comportement indéfini : le fantôme du C</div>
         <div class="ib-content">
@@ -5775,7 +5476,6 @@ live: live  %1
             <p>Le tableau de comparaison C/Rust de ce guide illustre concrètement ces différences : là où le C utilise <code>*(int*)&bytes[0]</code> (type punning, comportement indéfini selon la norme C), le Rust utilise <code>i32::from_be_bytes()</code> (sûr, défini, portable). Là où le C a un débordement d'entier silencieux (UB), le Rust utilise <code>wrapping_add()</code> qui définit explicitement le comportement modulo 2<sup>32</sup>. Comme le dit Van der Linden : <em>« Performance Is (almost) Everything — if you don't get accurate results, then it's immaterial how fast you get them. »</em> (p.9)</p>
         </div>
     </div>
-</details>
 
     <h3>Pourquoi le Rust est 5-21× plus rapide ?</h3>
     <div class="intro-grid">
@@ -5797,21 +5497,9 @@ live: live  %1
     </div>
 
     <h3>Micro-optimisation extrême — Les secrets des VM performantes</h3>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Computed Gotos — Tuer le cache miss du switch</summary>
 <div class="insight-box"><div class="ib-title">📖 Computed Gotos — Tuer le cache miss du switch</div><div class="ib-content"><p>L'extension GCC des <strong>Computed Gotos</strong> est la technique utilisée par la VM de CPython (CEval) pour détruire l'overhead de la prédiction de branchement. Au lieu d'un <code>switch(opcode)</code> généré en cascade de comparaisons, les computed gotos utilisent une <strong>table de pointeurs de fonctions</strong> : <code>goto *dispatch_table[opcode];</code>. Chaque case se termine par <code>goto *dispatch_table[next_opcode];</code> pour enchaîner directement sur l'instruction suivante sans repasser par le dispatcher.</p><p>Pourquoi c'est plus rapide ? Le switch traditionnel force le CPU à prédire un branchement indirect parmi 16 cibles possibles — le prédicteur de branchement rate souvent. Avec les computed gotos, le pattern de saut est mémorisé par le BTB (Branch Target Buffer), et GCC peut même insérer l'opcode suivant comme hint. <strong>Benchmark typique : 15-25% d'accélération sur la boucle principale de la VM.</strong></p><p>En Rust, le <code>match</code> sur un enum est déjà optimisé en jump table par LLVM — les computed gotos sont donc un avantage spécifique au C. Mais en C, si vous ne les utilisez pas, votre switch sera probablement compilé en cascade de <code>if</code> (si les opcodes ne sont pas consécutifs) plutôt qu'en table de saut.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 </summary>
 <div class="insight-box"><div class="ib-title">📖 <code>restrict</code> en C — Le mot-clé que personne n'utilise</div><div class="ib-content"><p>L'arène est modifiée en permanence par des lectures et des écritures qui se chevauchent potentiellement. En C, le mot-clé <code>restrict</code> indique au compilateur que <strong>deux pointeurs qualifiés restrict ne peuvent pas pointer vers la même zone mémoire</strong> (pas d'aliasing). Cela permet des optimisations SIMD automatiques et la réorganisation des lectures/écritures.</p><p>Dans les boucles critiques de la VM, déclarez : <code>unsigned char * restrict arena = vm->arena;</code> et <code>int * restrict reg = process->reg;</code>. GCC/Clang peut alors vectoriser les <code>store_at</code> et les <code>load_from</code> sans insérer de barrières de cohérence. <strong>Attention : si les pointeurs se chevauchent réellement (ce qui arrive quand une instruction modifie une zone lue par un autre opérande), le comportement est indéfini.</strong> Utilisez restrict uniquement dans les fonctions où vous êtes certain de l'absence d'aliasing — typiquement, les fonctions d'encodage/décodage où l'entrée et la sortie sont des buffers séparés.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 </summary>
 <div class="insight-box"><div class="ib-title">📖 <code>unreachable_unchecked()</code> en Rust — La jump table parfaite</div><div class="ib-content"><p>Dans le <code>match</code> des opcodes en Rust, le compilateur insère des vérifications de bornes par défaut : si l'opcode est en dehors de 1-16, le bras <code>_ =></code> panique. Mais cette vérification empêche LLVM de générer une <strong>jump table parfaite</strong> (sans overhead de vérification).</p><p>Si l'on a déjà validé que l'opcode est entre 1 et 16 (ce que fait le décodeur en amont), utiliser <code>std::hint::unreachable_unchecked()</code> sur le bras <code>_ =></code> permet à LLVM d'éliminer la vérification de bornes et de générer une table de saut native. <strong>Le gain est de 5-10% sur la boucle principale</strong>, car chaque instruction économise une comparaison et un branchement conditionnel.</p><p>⚠️ <strong>Sécurité</strong> : <code>unreachable_unchecked()</code> est un <code>unsafe</code> — si l'opcode n'est effectivement pas dans les bornes, c'est un comportement indéfini (UB en Rust, comme en C). Ne l'utilisez que si vous avez une garantie absolue, par exemple après un <code>if opcode >= 1 && opcode <= 16</code> vérifié plus tôt.</p></div></div>
-</details>
 
     <h3>Kill zombies — La différence algorithmique</h3>
     <div class="code-wrapper">
@@ -5850,10 +5538,6 @@ live: live  %1
     </div>
 </div>
 </section>
-
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les pièges du C que Rust élimine — Promotion, pointeurs de fonction, const</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Les pièges du C que Rust élimine — Promotion, pointeurs de fonction, const</div>
         <div class="ib-content">
@@ -5862,7 +5546,6 @@ live: live  %1
             <p>Van der Linden (p.27-28) démontre que <code>const</code> n'est PAS une vraie constante : <em>« The keyword const doesn't turn a variable into a constant! A symbol with the const qualifier merely means that the symbol cannot be used for assignment. »</em> Et Ken Thompson de rajouter : <em>« The const keyword only confuses library interfaces with the hope of catching some rare errors. »</em> En Rust, <code>const</code> est une vraie constante de compilation — elle peut être utilisée dans les tableaux de taille et les <code>match</code>. Cette différence est fondamentale pour la sécurité du code de la VM.</p>
         </div>
     </div>
-</details>
 
 
 <!-- Section 10: Syntaxe du .s -->
@@ -5959,9 +5642,6 @@ live: live  %1
         <li>Les lignes vides et les espaces sont ignorés</li>
         <li>Un label peut apparaître <strong>avant</strong> sa référence (forward reference) : l'assembleur fait deux passes</li>
     </ul>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'analyse lexicale — La première étape invisible</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'analyse lexicale — La première étape invisible</div>
         <div class="ib-content">
@@ -5970,7 +5650,6 @@ live: live  %1
             <p>Le Dragon Book recommande aussi de séparer le lexer en deux sous-processus (p.133) : le <strong>scanning</strong> (suppression des commentaires et espaces) et l'<strong>analyse lexicale proprement dite</strong> (tokenisation). C'est exactement ce que fait votre assembleur quand il ignore les lignes vides et les commentaires avant de parser les tokens. Enfin, le livre souligne l'importance du <strong>numéro de ligne</strong> dans les messages d'erreur (p.133) : <em>« The lexical analyzer may keep track of the number of newline characters seen, so it can associate a line number with each error message. »</em> — une pratique essentielle pour que l'utilisateur puisse localiser rapidement l'erreur dans son fichier <code>.s</code>.</p>
         </div>
     </div>
-</details>
 
     <h3>Taille des instructions en mémoire</h3>
     <p>Chaque instruction occupe un nombre variable d'octets selon ses paramètres. La formule est : <strong>1 (opcode) + 1 (OCP, si applicable) + taille des paramètres</strong>. Voici la taille de chaque type de paramètre :</p>
@@ -5998,9 +5677,6 @@ live: live  %1
 <div class="container">
     <h2><span class="num">11</span> Pièges & Erreurs courantes</h2>
     <p>Le projet Corewar regorge de subtilités qui peuvent faire perdre des heures de debug. Voici les pièges les plus fréquents, classés par catégorie, avec pour chacun l'erreur, l'explication et la correction.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les pièges du C bas niveau — Leçons de la pratique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Les pièges du C bas niveau — Leçons de la pratique</div>
         <div class="ib-content">
@@ -6014,11 +5690,6 @@ live: live  %1
             <p>Kernighan et Ritchie (<em>The C Programming Language</em>, §2.9) mettent aussi en garde sur la <strong>précédence des opérateurs bit à bit</strong> : <em>« Note that the precedence of the bitwise operators &, ^, and | falls below == and !=. This implies that bit-testing expressions like if ((x & MASK) == 0) ... must be fully parenthesized to give proper results. »</em> C'est un piège sournois dans le calcul de l'OCP : <code>x & 0x03 == 0</code> ne teste PAS si les deux derniers bits sont nuls — il évalue d'abord <code>0x03 == 0</code> (faux, donc 0), puis <code>x & 0</code> (toujours 0). Il faut écrire <code>(x & 0x03) == 0</code>.</p>
         </div>
     </div>
-</details>
-
-    
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les trois pièges mortels du C dans une VM — Fall-through, ordre d'évaluation, corruption mémoire</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Les trois pièges mortels du C dans une VM — Fall-through, ordre d'évaluation, corruption mémoire</div>
         <div class="ib-content">
@@ -6028,7 +5699,6 @@ live: live  %1
             <p>Van der Linden (p.158-159) distingue les deux catégories de problèmes mémoire : <em>« There are two common types of heap problems: freeing or overwriting something that is still in use (this is a 'memory corruption') and not freeing something that is no longer in use (this is a 'memory leak'). »</em> Dans une VM Corewar en C, quand un processus meurt, sa structure <code>t_process</code> doit être libérée de la liste chaînée. Oublier de libérer = fuite mémoire (la VM consomme lentement de la mémoire au fil des milliers de cycles). Libérer alors qu'un autre pointeur référence encore le processus = use-after-free. En Rust, l'ownership et le borrow checker éliminent ces deux catégories de bugs par construction.</p>
         </div>
     </div>
-</details>
 
     <h3>Pièges sur les instructions</h3>
 
@@ -6160,16 +5830,12 @@ live: live  %1
             <div class="qq-explain">store_at() écrit le poids faible à l'adresse de départ puis décrémente. Si on veut que les 4 octets soient à partir de l'adresse calculée, il faut démarrer l'écriture 3 adresses plus loin pour que le décrément place les octets aux bonnes positions.</div>
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Suite logique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
             Vous connaissez les pièges courants. Pour une méthodologie structurée de débogage, consultez la <a href="#debug">section 15 — Guide de débogage</a>. Pour écrire votre champion, passez à la <a href="#strategie">section 13 — Stratégie</a>.
         </div>
     </div>
-</details>
 
 </div>
 </section>
@@ -6275,9 +5941,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
 <div class="container">
     <h2><span class="num">13</span> Stratégie — Écrire un champion gagnant</h2>
     <p>Comprendre la mécanique du Corewar est une chose, écrire un champion qui gagne en est une autre. Cette section présente les stratégies classiques, les patterns de code récurrents, et des exemples concrets de champions commentés.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Histoire : les programmes de bataille originaux (1984)</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Histoire : les programmes de bataille originaux (1984)</div>
         <div class="ib-content">
@@ -6292,11 +5955,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Les interactions entre ces programmes forment un équilibre de Nash de type <strong>pierre-papier-ciseaux</strong> : Dwarf bat Mortar 60% du temps (ses bombes régulières touchent Mortar avant que les bombes Fibonacci ne le couvrent), Mortar tue Voter (les bombes Fibonacci sont trop denses pour la réparation), mais Voter bat Dwarf (la réparation résiste au bombing régulier clairsemé). <strong>Il n'existe pas de stratégie dominante</strong> — c'est ce qui rend le jeu intéressant et compétitif.</p>
         </div>
     </div>
-</details>
-
-    
-    <details class="insight-details">
-<summary class="insight-summary">📖 Optimisation Redcode avancée — CMP, SLT et les quickscanners</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Optimisation Redcode avancée — CMP, SLT et les quickscanners</div>
         <div class="ib-content">
@@ -6305,10 +5963,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Cette optimisation s'apparente à la <strong>fusion de boucles</strong> (loop fusion) décrite par le Dragon Book (p.550) : plutôt que de séparer la lecture mémoire, la comparaison et le branchement en instructions distinctes, on les combine en une seule opération qui fait tout en un cycle. C'est aussi un exemple de <strong>code golf</strong> — l'art de minimiser le nombre d'instructions pour réduire la surface d'attaque du guerrier. Un scanner compact de 5 instructions est beaucoup plus difficile à bomber qu'un scanner naïf de 15 instructions.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Bombes à processus, decoys et guerre de l'information</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Bombes à processus, decoys et guerre de l'information</div>
         <div class="ib-content">
@@ -6317,10 +5971,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Ces tactiques illustrent un principe fondamental de la guerre de l'information : <strong>la désinformation est aussi importante que l'attaque directe</strong>. En sécurité informatique réelle, les honeypots (pot de miel) jouent exactement le rôle des decoys — des systèmes factices conçus pour attirer et piéger les attaquants, leur faisant croire qu'ils ont trouvé une cible valide. La saturation par <code>SPL</code> est l'analogue d'une attaque par déni de service (DoS) : submerger les ressources de l'adversaire pour le rendre inopérant. Corewar, encore une fois, modélise en miniature les tactiques de la cybersécurité moderne.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Anatomie du Vampire — Le détournement de flux d'exécution</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Anatomie du Vampire — Le détournement de flux d'exécution</div>
         <div class="ib-content">
@@ -6329,10 +5979,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>La contre-mesure contre les Vampires est le <strong>Imp</strong> : un processus qui ne fait que <code>MOV 0, 1</code> avance d'une case par cycle en se dupliquant. L'Imp est immunisé contre la capture car son code se reconstitue à chaque cycle — si un <code>JMP</code> vampire écrase son <code>MOV</code>, le processus suivant le réécrit immédiatement. C'est un exemple frappant de la dynamique pierre-papier-ciseaux : le Vampire bat les guerriers « intelligents » (scanners, bombers complexes), mais perd contre le plus simple de tous les programmes.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 ASLR, canary et NX bit — Les protections que Corewar transforme en jeu</summary>
 <div class="insight-box">
         <div class="ib-title">📖 ASLR, canary et NX bit — Les protections que Corewar transforme en jeu</div>
         <div class="ib-content">
@@ -6341,10 +5987,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Enfin, CSAPP (p.325-326) décrit le <strong>NX bit</strong> (Execute Disable) : <em>« One method is to limit which memory regions hold executable code… the stack can be marked as being readable and writable, but not executable. »</em> Corewar n'a <strong>aucun équivalent du NX bit</strong> — chaque cellule de l'arène est à la fois lisible, inscriptible et exécutable. C'est la raison fondamentale pour laquelle le jeu existe : la transition écriture→exécution (écrire un <code>DAT</code> que l'ennemi exécutera) que le NX bit est conçu pour empêcher est <em>le mécanisme de base</em> de Corewar. Le célèbre « Segmentation fault (core dumped) » que tout programmeur C a rencontré est précisément le hardware qui vous dit : <em>« vous venez de faire ce que les guerriers Corewar font tout le temps. »</em> CSAPP (§9.5, p.849) confirme : <em>« If an instruction violates these permissions, then the CPU triggers a general protection fault that transfers control to an exception handler in the kernel, which sends a SIGSEGV signal. »</em> Chaque segfault est la preuve que le monde réel déploie des tranchées que Corewar a délibérément nivelées.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Théorie virale et sécurité — Corewar comme laboratoire de cybersécurité</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Théorie virale et sécurité — Corewar comme laboratoire de cybersécurité</div>
         <div class="ib-content">
@@ -6355,10 +5997,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Une conséquence souvent négligée du modèle Corewar est l'<strong>absence de notification de mort</strong>. CSAPP (p.783) explique qu'en UNIX, <em>« When a child process terminates or stops, the kernel sends a SIGCHLD signal to the parent. »</em> En Corewar, quand un processus d'un guerrier meurt sur un <code>DAT</code>, <strong>aucun signal n'est envoyé</strong> à ses processus frères. Ils continuent à s'exécuter dans l'ignorance totale. Cela crée un problème de coordination unique : si votre processus « éclaireur » meurt, vos processus principaux ne le savent pas et peuvent compter sur des informations périmées. C'est pourquoi les guerriers multi-processus robustes utilisent des patterns d'auto-vérification (comparer une cellule sentinelle avec <code>CMP</code>) plutôt que de faire confiance à leurs frères — une discipline qui n'a pas d'équivalent en programmation système classique où le noyau vous prévient quand un fils meurt.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 L'écosystème moderne — De pMARS aux algorithmes génétiques</summary>
 <div class="insight-box">
         <div class="ib-title">📖 L'écosystème moderne — De pMARS aux algorithmes génétiques</div>
         <div class="ib-content">
@@ -6367,10 +6005,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Cette longévité est remarquable pour un concept né en 1984. Elle s'explique par la richesse stratégique du jeu — l'équilibre pierre-papier-ciseaux garantit qu'il n'existe pas de stratégie dominante — et par la précision technique requise : un simulateur Corewar doit être exact au cycle près, car le résultat d'un combat peut dépendre d'un seul cycle d'avance. Cette exigence de déterminisme absolu est la même que celle des simulateurs de processeurs réels décrits par Smith et Nair, et elle explique pourquoi pMARS, malgré son âge, reste la référence incontestée.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Optimisation de champion — Du compilateur à la stratégie</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Optimisation de champion — Du compilateur à la stratégie</div>
         <div class="ib-content">
@@ -6382,10 +6016,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Smith et Nair (<em>Virtual Machines</em>, p.149-151) décrivent la formation de <strong>superblocks</strong> : <em>« Basic blocks may be rearranged in memory so that the most commonly followed execution path has instructions in consecutive memory locations. »</em> La boucle interne d'un champion Corewar (par exemple une boucle <code>live</code>/<code>zjmp</code>) est un superblock naturel : un seul point d'entrée, et le retour de boucle est la seule branche prise. Comprendre cette structure aide à expliquer pourquoi les boucles serrées dans les champions sont si efficaces — elles maximisent la localité spatiale et minimisent l'overhead de l'interpréteur.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Blocs de base et graphes de flot — Anatomie du guerrier</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Blocs de base et graphes de flot — Anatomie du guerrier</div>
         <div class="ib-content">
@@ -6393,10 +6023,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>En Corewar, lire et désassembler un guerrier ennemi nécessite d'identifier ses blocs de base. Les instructions séquentielles (<code>live</code>, <code>ld</code>, <code>add</code>, <code>st</code>, etc.) forment des blocs qui sont brisés par les instructions de branchement (<code>zjmp</code>, <code>sti</code> indirect). Le <strong>graphe de flot de contrôle</strong> (Control Flow Graph) qui en résulte révèle la structure du programme : boucles d'attaque, routines de copie, leurres. Les compilateurs modernes utilisent ce graphe pour optimiser le code ; en Corewar, un programme comme <em>pMARS</em> pourrait construire un CFG pour analyser la vulnérabilité d'un guerrier. Comprendre les points d'entrée et de sortie des blocs est crucial pour concevoir un guerrier résistant aux scanners ennemis : un bloc de base compact, sans point d'entrée intermédiaire, est beaucoup plus difficile à corrompre partiellement.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Élimination du code mort — Chaque instruction est une cible</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Élimination du code mort — Chaque instruction est une cible</div>
         <div class="ib-content">
@@ -6404,10 +6030,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Dans Corewar, c'est une question de <strong>vie ou de mort</strong>. Le Core (la mémoire de MARS) est un espace hostile où chaque instruction de votre programme allonge votre « profil » et augmente vos chances de vous faire écraser par une bombe (<code>DAT</code> ou <code>live</code> parasite). Une variable morte — un registre chargé mais jamais relu, un résultat stocké mais jamais utilisé — coûte non seulement un cycle machine, mais occupe aussi une case mémoire vulnérable. Les bons joueurs effectuent manuellement ou via macro-assembleur une élimination drastique du code mort et des variables inutiles pour rendre le guerrier le plus petit, compact et rapide à se répliquer possible. C'est l'équivalent Corewar de l'option <code>-Os</code> de GCC (optimiser pour la taille) : dans un espace fini de 4096 octets, chaque instruction supprimée est un gain direct en survie.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Code invariant et vitesse de frappe — Le boot avant la boucle</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Code invariant et vitesse de frappe — Le boot avant la boucle</div>
         <div class="ib-content">
@@ -6415,10 +6037,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>L'architecture de la plupart des guerriers (Dwarves, Vampires, Imp Rings) repose sur une <strong>boucle infinie de bombardement</strong>. La règle d'or en Corewar est de sortir tout calcul invariant de cette boucle : si vous devez calculer un décalage ou initialiser un pointeur, cela se fait <em>avant</em> d'entrer dans la boucle — c'est le <strong>boot</strong>. Une boucle d'attaque optimisée ne doit contenir que l'instruction de frappe, l'incrémentation du pointeur, et le saut. Gagner un cycle machine sur une boucle itérée des milliers de fois est souvent ce qui différencie un vainqueur d'un perdant. Le boot est à Corewar ce que le prologue de fonction est à un compilateur : le travail préparatoire qui permet au cœur du code d'être aussi minimal que possible.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La fenêtre de vulnérabilité — Scheduling et entrelacement critique</summary>
 <div class="insight-box">
         <div class="ib-title">📖 La fenêtre de vulnérabilité — Scheduling et entrelacement critique</div>
         <div class="ib-content">
@@ -6426,35 +6044,11 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Parce que l'exécution est round-robin cycle par cycle, il existe une <strong>fenêtre de vulnérabilité</strong> entre le moment où un pointeur est calculé (par ex. avec un <code>add</code>) et le moment où il est utilisé (via <code>sti</code> ou <code>zjmp</code>). Si ces instructions ne sont pas adjacentes dans le bloc de base, l'ennemi exécute un processus intermédiaire et peut altérer l'adresse pointée — un bit bombé entre le calcul et l'utilisation détruit toute la séquence. Les meilleurs développeurs optimisent chaque bloc d'attaque pour compresser le scheduling et réduire cette fenêtre à zéro : calcul et utilisation doivent être consécutifs, sans aucune instruction intermédiaire. C'est l'équivalent Corewar de la <strong>latence zéro</strong> que les compilateurs cherchent à atteindre en réordonnant les instructions critiques dans un bloc de base.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La montagne mémoire : le guerrier-boucle vs le guerrier-scanner</summary>
 <div class="insight-box"><div class="ib-title">📖 La montagne mémoire : le guerrier-boucle vs le guerrier-scanner</div><div class="ib-content"><p>Le CSAPP introduit la <em>memory mountain</em> (Figure 6.41) : un graphique 3D du débit de lecture en fonction de la taille du working set (localité temporelle) et du stride (localité spatiale). Le pic L1 atteint 14 GB/s, la vallée DRAM tombe à 900 MB/s — un facteur 15×. Appliqué aux patterns d'exécution des guerriers : un guerrier en boucle serrée (imp, bomber à petit pas) a un working set minuscule et un stride-1 — il vit sur la <strong>crête L1</strong> à débit maximal. Un guerrier qui scanne toute l'arène avec des sauts aléatoires a un working set de 4 KB (encore < 32 KB) mais un stride élevé — il descend la pente de localité spatiale. L'insight surprenant : puisque l'arène tient en L1, <strong>même les scanners aléatoires restent dans la région L1</strong> (4 KB < 32 KB) — la pénalité n'est pas des miss DRAM mais des miss L1→L2 occasionnels si le scanner crée des conflits de sets. La montagne mémoire de Corewar est essentiellement plate au sommet, ce qui rend les guerriers moins sensibles aux patterns d'accès que dans des programmes réels.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Localité temporelle vs spatiale : deux stratégies de guerrier</summary>
 <div class="insight-box"><div class="ib-title">📖 Localité temporelle vs spatiale : deux stratégies de guerrier</div><div class="ib-content"><p>Le CSAPP §6.2 distingue rigoureusement la localité temporelle (revisiter les mêmes adresses) de la localité spatiale (accéder à des adresses proches). §6.2.3 résume : « Les programmes qui référencent répétitivement les mêmes variables bénéficient d'une bonne localité temporelle. Les patterns stride-1 ont la meilleure localité spatiale. » Dans Corewar, les guerriers se divisent en deux archétypes : les <strong>boucleurs</strong> (forte localité temporelle — le PC revisite les mêmes instructions, le working set est minuscule) et les <strong>scanners</strong> (forte localité spatiale — le PC avance séquentiellement à travers l'arène, stride-1). Le CSAPP montre que la localité temporelle est plus précieuse car elle maintient les données dans les niveaux les plus rapides de la hiérarchie. Pour Corewar, cela signifie qu'un guerrier-boucle tire davantage du cache L1 qu'un guerrier-scan — non pas en misses (les deux tiennent en L1), mais en <em>prédiction de branchement</em> et <em>prefetching matériel</em> : le processeur détecte et précharge les patterns stride-1 (CSAPP note le « flat ridge line » du Core i7 pour stride=1, Figure 6.41), mais les boucles serrées bénéficient aussi de la prédiction de branchement parfaite.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Miss rate comme prédicteur de performance : pourquoi la matrice transpose lentement</summary>
 <div class="insight-box"><div class="ib-title">📖 Miss rate comme prédicteur de performance : pourquoi la matrice transpose lentement</div><div class="ib-content"><p>Le CSAPP présente l'exemple frappant de <code>sumarrayrows</code> vs <code>sumarraycols</code> (§6.5) : deux fonctions calculant la même somme, mais l'une parcourt en row-major (stride-1) et l'autre en column-major (stride-N). Résultat mesuré : <strong>25× de différence</strong> de temps d'exécution. L'analyse cache explique pourquoi : la version stride-N a un miss rate quasi-100 % (chaque accès tombe dans une ligne de cache différente), tandis que la version stride-1 a 25 % (1 miss par bloc de 4 mots). Pour Corewar, l'analogie est directe : un guerrier qui exécute ses instructions séquentiellement (PC += taille_instruction) bénéficie du stride-1, tandis qu'un guerrier qui saute de 128 en 128 octets (stride élevé) gaspille la majorité de chaque ligne de cache de 64 B. La leçon quantitative du CSAPP : le <strong>miss rate est un meilleur prédicteur de performance que le nombre total d'accès mémoire</strong> (§6.6.2, Figure 6.45) — un guerrier avec peu d'accès mais un miss rate élevé peut être plus lent qu'un guerrier avec plus d'accès mais un miss rate faible.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 La fin de l'ère ILP — Corewar comme prophétie réalisée</summary>
 <div class="insight-box"><div class="ib-title">📖 La fin de l'ère ILP — Corewar comme prophétie réalisée</div><div class="ib-content"><p>H&P §3.15 racontent l'histoire de la transition historique de 2000-2005 : l'industrie a réalisé que l'exploitation agressive de l'ILP était « simply too inefficient both from the viewpoint of silicon utilization and power efficiency ». Le Pentium 4 (20+ étages de pipeline, 7 unités fonctionnelles) a été abandonné. L'Itanium (approche VLIW logicielle) a échoué. L'industrie s'est tournée vers le <strong>multicœur et le TLP</strong>. Corewar a <em>toujours</em> fait ce choix : zéro ILP, TLP pur via SPL. Chaque SPL crée un thread indépendant avec son propre PC et ses propres registres — il n'y a aucune dépendance nominale entre threads (pas de registres partagés), seulement la mémoire partagée. Le T1 de Sun, qui a « abandoned the intense focus on ILP, returned to a simple pipeline strategy, and focused on exploiting TLP », est l'ancêtre spirituel de MARS. L'histoire de l'architecture des processeurs valide <em>a posteriori</em> le design de Corewar : quand même Intel a capitulé face aux limites de l'ILP, le modèle mono-émission multi-thread de Corewar n'était pas en retard sur son temps — <strong>il était en avance</strong>.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Même ISA, même technologie, performances ×10 — La fallacie de la prévisibilité</summary>
 <div class="insight-box"><div class="ib-title">📖 Même ISA, même technologie, performances ×10 — La fallacie de la prévisibilité</div><div class="ib-content"><p>Le §3.13 (6e édition) démontre une fallacie frappante : « It is easy to predict the performance and energy efficiency of two different versions of the same instruction set architecture, if we hold the technology constant ». L'Intel Core i7 920 et l'Atom 230, tous deux en 45 nm et exécutant x86, présentent des performances <strong>4× à 10× différentes</strong> — le i7 est au moins 4 fois plus rapide, et jusqu'à 10× sur certains benchmarks FP. Pourtant, l'Atom consomme seulement 4.2 W contre 43 W pour le i7, et son efficacité énergétique est <strong>1.5× à 2× meilleure</strong> ! Le ratio de fréquence d'horloge n'est que de 1.6×, donc la différence vient principalement du CPI : facteur 2.8× à 4.3× selon les workloads. La leçon pour Corewar : deux guerriers avec le même « ISA » (même ensemble d'opcodes) peuvent avoir des performances radicalement différentes selon leur microarchitecture interne — <strong>la structure du code (boucle serrée vs. code dispersé, processus multiples vs. processus unique) est le véritable déterminant, pas le vocabulaire d'instructions</strong>.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Variables d'induction et réduction de force — L'optimisation reine du Corewar</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Variables d'induction et réduction de force — L'optimisation reine du Corewar</div>
         <div class="ib-content">
@@ -6462,10 +6056,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>La <strong>réduction de force</strong> (p.89-90) est l'optimisation qui en découle : <em>« replacing a more expensive operation, such as multiplication, by a cheaper one, such as addition, is known as strength reduction. »</em> C'est l'optimisation la plus impactante en Corewar. Si un guerrier naïf calcule l'adresse de bombe par <code>step × iteration</code> (multiplication), la réduction de strength la remplace par une simple addition : <code>ptr = ptr + step</code> à chaque itération. Le MUL disparaît, remplacé par un ADD — un cycle gagné par itération, soit des milliers de cycles sur la durée du combat. L'élimination des variables d'induction (p.90-91) va plus loin : quand deux variables d'induction suivent le même rythme, on peut éliminer la redondante et son instruction d'update, raccourcissant encore la boucle.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Constant folding et propagation — Le calcul à la compilation</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Constant folding et propagation — Le calcul à la compilation</div>
         <div class="ib-content">
@@ -6473,10 +6063,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Le Dragon Book (Ch.9, p.128-132) étend cela à la <strong>propagation de constantes</strong> : suivre le flux de données pour déterminer si un registre contient une valeur constante à chaque point du programme. Si <code>r1</code> contient toujours 5 après le boot, toute instruction <code>add r1, r2</code> peut être remplacée par <code>add #5, r2</code> — voire supprimée si le résultat est immédiatement écrasé. Le Dragon Book note que la propagation de constantes est <em>monotone mais non distributive</em> (p.131) : l'algorithme itératif donne une solution sûre mais potentiellement sous-optimale. Pour le guerrier Corewar, cela signifie que certaines optimisations de constantes seront manquées par une analyse automatisée — l'œil humain reste irremplaçable.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Boucles naturelles et dominateurs — La structure cachée du guerrier</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Boucles naturelles et dominateurs — La structure cachée du guerrier</div>
         <div class="ib-content">
@@ -6484,10 +6070,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>Les <strong>boucles naturelles</strong> (p.161-163) sont définies par deux propriétés : <em>« 1. It must have a single-entry node, called the header. 2. There must be a back edge that enters the loop header. »</em> La boucle de bombardement d'un Dwarf ou la boucle de scan d'un Scanner sont des boucles naturelles parfaites — un seul point d'entrée (le header), un back edge (le <code>zjmp</code> ou <code>djn</code> de retour). Les guerriers bien structurés produisent des <strong>graphes de flot réductibles</strong> (p.158-160) : tous les retreating edges sont aussi des back edges, ce qui permet une analyse efficace. À l'inverse, un <code>zjmp</code> qui saute au milieu d'une boucle crée un <strong>graphe non réductible</strong> — plus difficile à analyser, mais aussi plus résistant au désassemblage par l'adversaire.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Maximal Munch — Une instruction qui en vaut trois</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Maximal Munch — Une instruction qui en vaut trois</div>
         <div class="ib-content">
@@ -6495,10 +6077,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>En Corewar, le maximal munch est une philosophie de conception. L'instruction <code>DJN</code> (Decrement and Jump if Not Zero) est l'archétype du maximal munch : elle combine trois opérations — décrémenter une valeur, tester si elle est non-nulle, et sauter conditionnellement — en une seule instruction d'un cycle. Sans <code>DJN</code>, il faudrait <code>sub #1, ptr</code> + <code>jmn ptr, loop</code> — deux cycles au lieu d'un. De même, les modes d'adressage pré-décrément (<code>&lt;</code>) et post-incrément (<code>&gt;</code>) en Redcode ICWS appliquent le maximal munch : l'incrémentation est fusionnée dans l'opération mémoire au lieu d'être une instruction séparée. Chaque fois qu'un guerrier utilise une instruction qui combine deux effets, il gagne un cycle par itération — sur des milliers d'itérations, c'est décisif.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Copy propagation et élimination globale des sous-expressions</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Copy propagation et élimination globale des sous-expressions</div>
         <div class="ib-content">
@@ -6506,10 +6084,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>L'<strong>élimination globale des sous-expressions communes</strong> (p.84-85) étend ce principe au-delà d'un bloc : <em>« An occurrence of an expression E is called a common subexpression if E was previously computed and the values of the variables in E have not changed since the previous computation. »</em> Si deux blocs différents du guerrier calculent le même offset de bombe avec les mêmes valeurs d'entrée, un seul calcul suffit — le résultat est réutilisé. La <strong>propagation de copies</strong> et la <strong>disponibilité d'expressions</strong> (p.106-110) travaillent ensemble : une expression est « disponible » si elle a été calculée sur tous les chemins menant à ce point sans que ses opérandes n'aient été modifiés. Ne pas recalculer une expression disponible est l'équivalent Corewar du cache hit — zéro cycle au lieu d'un.</p>
         </div>
     </div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Analyse de vivacité — Quelles variables survivent au bloc</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Analyse de vivacité — Quelles variables survivent au bloc</div>
         <div class="ib-content">
@@ -6517,7 +6091,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>En Corewar, l'analyse de vivacité est l'outil qui permet de répondre à la question : <em>cette instruction est-elle vraiment nécessaire ?</em> Si un registre est mort après un bloc (sa valeur ne sera jamais lue), toute instruction qui y écrit est du code mort. Si un registre est vivant à la sortie d'un bloc, il doit être préservé — ce qui détermine si un <code>st</code> (spill) est nécessaire avant un saut. L'information de <strong>prochaine utilisation</strong> (next-use, Ch.8 p.24) est la version locale de cette analyse : <em>« Knowing when the value of a variable will be used next is essential for generating good code. If the value of a variable that is currently in a register will never be referenced subsequently, then that register can be assigned to another variable. »</em> En pratique Corewar, si vous chargez un registre et ne le relisez jamais, l'instruction de chargement est morte — supprimez-la et gagnez un cycle.</p>
         </div>
     </div>
-</details>
 
     <h3>Les 3 grands archétypes</h3>
     <div class="arena-three-layers">
@@ -6574,19 +6147,8 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
     </div>
 
     <p><strong>Le concept clé du Paper</strong> : la copie de code à distance. Contrairement à un fork simple qui crée un processus au même endroit (vulnérable au même bomber), le Paper crée une <strong>copie intégrale</strong> de son code à ~800 octets de distance, puis fork à cette adresse. Même si l'original est détruit, la copie continue — et peut elle-même créer de nouvelles copies. C'est la stratégie la plus résiliente de l'arène.</p>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le Bootstrapping — Pourquoi les meilleurs champions fuient leur point de départ</summary>
 <div class="insight-box"><div class="ib-title">📖 Le Bootstrapping — Pourquoi les meilleurs champions fuient leur point de départ</div><div class="ib-content"><p>Les meilleurs champions (comme le célèbre <code>Gagnant.s</code> ou <code>Asm.s</code>) commencent par <strong>copier leur code loin de leur point d'apparition initial</strong>, puis ils y sautent. Pourquoi ? Parce que le point de départ est <strong>ciblé par les bombers aveugles dès le premier cycle</strong>. Les champions sont placés à <code>i * MEM_SIZE / N</code> — des positions prévisibles et connues de tous. Un bomber qui commence à écrire à ces positions fixes tuera tout champion qui y reste. Le bootstrapping est la technique de survie #1 : quelques instructions pour se dupliquer à une adresse aléatoire, puis <code>zjmp</code> vers la copie. Le code original peut être écrasé — il a déjà servi.</p><p>C'est l'équivalent informatique du « déplacement tactique » : un programme qui reste statique est une cible. Un programme qui se déplace est un survivant. Le boot est le code minimal qui permet ce déplacement — souvent 5-10 instructions, mais cruciales.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le Pumping et l'Imp-Spiral — Les nombres premiers comme arme</summary>
 <div class="insight-box"><div class="ib-title">📖 Le Pumping et l'Imp-Spiral — Les nombres premiers comme arme</div><div class="ib-content"><p>Le <strong>Pumping</strong> est une technique avancée où des <code>MOV 0, 1</code> (l'instruction la plus simple du Redcode, copiant l'instruction suivante une case plus loin) sont lancés avec des <strong>espacements mathématiques précis</strong>. Si les espacements sont des nombres premiers relatifs à 4096 (la taille de l'arène), les MOV créent un <strong>réseau invincible</strong> — une spirale de copies qui couvre l'arène de manière non périodique, rendant impossible la prédiction des zones sûres par l'adversaire.</p><p>L'<strong>Imp-Spiral</strong> est la version offensive : au lieu de copier des NOP, on copie des <code>DAT</code> (bombes). Le MOV avance comme un imp (pas de 1), mais à intervalles réguliers, un fork lance un nouvel imp dans une direction différente. Avec 3-5 imp-spirales utilisant des nombres premiers entre eux (par exemple 2667, 3137, 3571), la couverture de l'arène est quasi-totale et impossible à contrer par un seul bomber. Cette technique est directement inspirée de la théorie des nombres : la <strong>régularité du pas</strong> crée des motifs prévisibles, mais l'<strong>irrégularité des nombres premiers</strong> les brise.</p></div></div>
-</details>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Le chargement des champions — Placement en mémoire</summary>
 <div class="insight-box">
         <div class="ib-title">📖 Le chargement des champions — Placement en mémoire</div>
         <div class="ib-content">
@@ -6595,7 +6157,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             <p>L'absence de relocalisation est aussi notable : contrairement aux formats objet réels qui nécessitent des <strong>tables de relocalisation</strong> (Levine, p.59-60) pour ajuster les adresses au moment du chargement, le bytecode Corewar n'a pas besoin de relocalisation car toutes les adresses sont <strong>relatives au PC</strong>. Le chargement se réduit à copier le bytecode dans l'arène à l'adresse assignée — un cas particulier du <em>load-time relocation</em> (Levine, p.168) où la relocalisation est nulle.</p>
         </div>
     </div>
-</details>
 
     <h3>Champion 1 : Le survivant minimal</h3>
     <p>Le champion le plus simple possible : une boucle infinie de <code>live</code> avec un contrôle explicite du carry. Rappelez-vous : <code>live</code> ne modifie PAS le carry, et <code>zjmp</code> ne saute QUE si carry = 1. Il faut donc garantir que carry = 1 avant chaque <code>zjmp</code>.</p>
@@ -6695,11 +6256,7 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
             Les meilleurs champions combinent les trois archétypes : un processus principal qui fait des <code>live</code> (survie), des processus bombers qui écrasent le code adverse (attaque), et des forks pour créer des processus de remplacement si les bombers se font tuer (résilience). Le pattern classique est : fork → le parent continue à bomber, l'enfant fait des live.
         </div>
     </div>
-
-    <details class="insight-details">
-<summary class="insight-summary">📖 Les racines de l'adversaire — Bombing ciblé par l'analyse d'accessibilité</summary>
 <div class="insight-box"><div class="ib-title">📖 Les racines de l'adversaire — Bombing ciblé par l'analyse d'accessibilité</div><div class="ib-content"><p>En transposant le concept de GC à Corewar : un processus vivant a des <strong>racines</strong> (PC, registres) qui définissent ce qu'il peut atteindre. L'ensemble des cellules atteignables depuis ces racines forme le <strong>graphe de survie</strong> de l'adversaire. Un champion qui comprend ce graphe peut bombarder les <strong>points de coupure</strong> (cut vertices) — les nœuds dont la suppression déconnecte le graphe. Par exemple, si un adversaire a une boucle principale en adresse 50 et une sous-routine en adresse 200, le JMP à l'adresse 150 qui relie les deux est un point de coupure. Écraser cette seule instruction est plus efficace que de bomber aveuglément. C'est l'équivalent Corewar de l'optimisation de GC : au lieu de scanner tout le tas (bomber toute l'arène), on trace seulement les racines (les PCs vivants) pour trouver les cibles les plus rentables.</p></div></div>
-</details>
 
 </div>
 </section>
@@ -8864,5 +8421,83 @@ async function downloadPDF() {
 </script>
 
 <div id="theme-transition"></div>
+
+<!-- Cheat Sheet -->
+<button id="cheat-btn" onclick="toggleCheatSheet()" title="Cheat Sheet — 16 instructions">⚡</button>
+<div id="cheat-panel">
+    <div class="cp-header">
+        <h3>⚡ Cheat Sheet</h3>
+        <button class="cp-close" onclick="toggleCheatSheet()">✕</button>
+    </div>
+    <table class="cp-table">
+        <thead>
+            <tr><th>#</th><th>Inst</th><th>Params</th><th>Cycles</th><th>OCP</th><th>Dir</th><th>IDX</th><th>Carry</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>1</td><td>live</td><td>%dir</td><td class="cp-cycles">10</td><td class="cp-no">—</td><td>4</td><td class="cp-no">—</td><td class="cp-no">—</td></tr>
+            <tr><td>2</td><td>ld</td><td>%d|ind, r</td><td class="cp-cycles">5</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
+            <tr><td>3</td><td>st</td><td>r, r|ind</td><td class="cp-cycles">5</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-no">—</td></tr>
+            <tr><td>4</td><td>add</td><td>r, r, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-carry">✓</td></tr>
+            <tr><td>5</td><td>sub</td><td>r, r, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-carry">✓</td></tr>
+            <tr><td>6</td><td>and</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
+            <tr><td>7</td><td>or</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
+            <tr><td>8</td><td>xor</td><td>r|d|i,r|d|i,r</td><td class="cp-cycles">6</td><td class="cp-yes">✓</td><td>4</td><td class="cp-idx">ind</td><td class="cp-carry">✓</td></tr>
+            <tr><td>9</td><td>zjmp</td><td>%dir</td><td class="cp-cycles">20</td><td class="cp-no">—</td><td>2</td><td class="cp-idx">✓</td><td>lit</td></tr>
+            <tr><td>10</td><td>ldi</td><td>r|d|i,d|r,r</td><td class="cp-cycles">25</td><td class="cp-yes">✓</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
+            <tr><td>11</td><td>sti</td><td>r,r|d|i,d|r</td><td class="cp-cycles">25</td><td class="cp-yes">✓</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
+            <tr><td>12</td><td>fork</td><td>%dir</td><td class="cp-cycles">800</td><td class="cp-no">—</td><td>2</td><td class="cp-idx">✓</td><td class="cp-no">—</td></tr>
+            <tr><td>13</td><td>lld</td><td>%d|ind, r</td><td class="cp-cycles">10</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">NON</td><td class="cp-carry">✓</td></tr>
+            <tr><td>14</td><td>lldi</td><td>r|d|i,d|r,r</td><td class="cp-cycles">50</td><td class="cp-yes">✓</td><td>2</td><td class="cp-no">NON</td><td class="cp-carry">✓</td></tr>
+            <tr><td>15</td><td>lfork</td><td>%dir</td><td class="cp-cycles">1000</td><td class="cp-no">—</td><td>2</td><td class="cp-no">NON</td><td class="cp-no">—</td></tr>
+            <tr><td>16</td><td>aff</td><td>r</td><td class="cp-cycles">2</td><td class="cp-yes">✓</td><td>4</td><td class="cp-no">—</td><td class="cp-no">—</td></tr>
+        </tbody>
+    </table>
+    <div style="padding:12px 16px;font-size:0.72rem;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border);">
+        <strong style="color:var(--fg)">Raccourcis clavier</strong><br>
+        <code style="background:var(--card2);padding:2px 6px;border-radius:3px;">Shift+C</code> Ouvrir/Fermer<br>
+        <code style="background:var(--card2);padding:2px 6px;border-radius:3px;">Échap</code> Fermer
+    </div>
+</div>
+
+<script>
+/* Cheat Sheet */
+function toggleCheatSheet() {
+    const panel = document.getElementById('cheat-panel');
+    const btn = document.getElementById('cheat-btn');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active');
+}
+
+/* Keyboard shortcuts */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const panel = document.getElementById('cheat-panel');
+        if (panel && panel.classList.contains('open')) {
+            toggleCheatSheet();
+        }
+    }
+    if (e.shiftKey && e.key === 'C') {
+        toggleCheatSheet();
+        e.preventDefault();
+    }
+});
+
+/* Show cheat button on scroll (same logic as back-to-top) */
+(function() {
+    const cb = document.getElementById('cheat-btn');
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                if (window.scrollY > 300) cb.classList.add('visible');
+                else cb.classList.remove('visible');
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+})();
+</script>
+
 </body>
 </html>
