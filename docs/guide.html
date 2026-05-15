@@ -156,6 +156,52 @@
     </div>
 </div>
 
+<!-- Pedagogical roadmap (before Partie A) -->
+<div style="max-width:900px;margin:0 auto;padding:10px 24px 0">
+    <div class="roadmap">
+        <div class="rm-header">
+            <span class="rm-title">Parcours d'implémentation</span>
+            <span class="rm-sub">Pourquoi cet ordre ?</span>
+        </div>
+        <p class="rm-intro">Ce guide suit la logique du projet 42 : d'abord <strong>comprendre</strong> la machine, puis <strong>écrire</strong> du bytecode, enfin <strong>exécuter et optimiser</strong>. Chaque phase dépose les fondations de la suivante.</p>
+        <div class="rm-phases">
+            <div class="rm-phase rm-phase-comprendre">
+                <div class="rm-phase-header">
+                    <span class="rm-phase-num">I</span>
+                    <div class="rm-phase-titles">
+                        <strong>Comprendre la machine</strong>
+                        <span>Sections 01 → 07</span>
+                    </div>
+                </div>
+                <p>Avant de coder quoi que ce soit, il faut savoir ce qu'est une arène, comment un processus y vit et meurt, quelles sont les 16 instructions et comment elles sont encodées en binaire. Sans cette base, l'assembleur et la VM n'auront aucun sens — vous seriez en train d'implémenter un cahier des charges sans comprendre le modèle sous-jacent.</p>
+                <div class="rm-step">01 Intro → 02 Architecture → 03 L'Arène → 04 Le Processus → 05 Cycle de vie → 06 Les 16 instructions → 07 Encodage</div>
+            </div>
+            <div class="rm-phase rm-phase-ecrire">
+                <div class="rm-phase-header">
+                    <span class="rm-phase-num">II</span>
+                    <div class="rm-phase-titles">
+                        <strong>Écrire un champion</strong>
+                        <span>Sections 08 → 10</span>
+                    </div>
+                </div>
+                <p>Une fois la machine comprise, on apprend à écrire du bytecode à la main : la syntaxe du fichier <code>.s</code> d'abord, puis l'outil qui le compile (l'assembleur), et enfin les erreurs que tout le monde fait. L'ordre Syntaxe → Assembleur → Pièges est intentionnel : on ne peut pas comprendre l'assembleur sans connaître la syntaxe qu'il consomme, et connaître les pièges est inutile tant qu'on n'a pas essayé d'écrire.</p>
+                <div class="rm-step">08 Syntaxe du .s → 09 L'Assembleur → 10 Pièges &amp; Erreurs</div>
+            </div>
+            <div class="rm-phase rm-phase-executer">
+                <div class="rm-phase-header">
+                    <span class="rm-phase-num">III</span>
+                    <div class="rm-phase-titles">
+                        <strong>Exécuter &amp; Optimiser</strong>
+                        <span>Sections 11 → 15</span>
+                    </div>
+                </div>
+                <p>Le champion est écrit, il faut maintenant le lancer, le tester et l'améliorer. La comparaison C/Rust (section 11) est un choix d'implémentation qui vient naturellement après la phase d'écriture. Ensuite la CLI, la stratégie champion, le simulateur et le débogage sont les outils du cycle compiler → lancer → observer → corriger qui constitue le quotidien du développeur Corewar.</p>
+                <div class="rm-step">11 C vs Rust → 12 CLI → 13 Stratégie → 14 Simulateur → 15 Débogage</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Partie A: Corewar 42 -->
 <div style="max-width:900px;margin:0 auto;padding:20px 24px 0">
     <div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--cyan);opacity:0.6;margin-bottom:4px">Partie A</div>

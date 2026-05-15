@@ -3448,6 +3448,205 @@
     .de-info span { font-size: 0.76rem; }
 }
 
+/* Pedagogical roadmap */
+.roadmap {
+    background: rgba(10, 15, 26, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    backdrop-filter: blur(4px);
+}
+.rm-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.rm-title {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+.rm-sub {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+.rm-intro {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 0 16px 0;
+}
+.rm-phases {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.rm-phase {
+    padding: 12px 16px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: all 0.25s ease;
+}
+.rm-phase:hover {
+    transform: translateX(4px);
+}
+.rm-phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.rm-phase-num {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.rm-phase-titles {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.rm-phase-titles strong {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.rm-phase-titles span {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+.rm-phase p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin: 0 0 8px 0;
+}
+.rm-phase p code {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 2px;
+}
+.rm-step {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    opacity: 0.6;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(255,255,255,0.08);
+}
+/* Phase I — Comprendre */
+.rm-phase-comprendre {
+    background: rgba(16, 185, 129, 0.06);
+    border-color: rgba(16, 185, 129, 0.15);
+}
+.rm-phase-comprendre .rm-phase-num {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+}
+.rm-phase-comprendre .rm-phase-titles strong { color: #6ee7b7; }
+.rm-phase-comprendre:hover { border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.1); }
+/* Phase II — Écrire */
+.rm-phase-ecrire {
+    background: rgba(168, 85, 247, 0.06);
+    border-color: rgba(168, 85, 247, 0.15);
+}
+.rm-phase-ecrire .rm-phase-num {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c4b5fd;
+}
+.rm-phase-ecrire .rm-phase-titles strong { color: #c4b5fd; }
+.rm-phase-ecrire:hover { border-color: rgba(168, 85, 247, 0.35); background: rgba(168, 85, 247, 0.1); }
+/* Phase III — Exécuter */
+.rm-phase-executer {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.15);
+}
+.rm-phase-executer .rm-phase-num {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+}
+.rm-phase-executer .rm-phase-titles strong { color: #fcd34d; }
+.rm-phase-executer:hover { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
+
+/* Nier theme — roadmap */
+[data-theme="nier"] .roadmap {
+    background: rgba(245, 240, 232, 0.5);
+    border-color: #c8c0b0;
+}
+[data-theme="nier"] .rm-phase-comprendre {
+    background: rgba(5, 150, 105, 0.06);
+    border-color: rgba(5, 150, 105, 0.15);
+}
+[data-theme="nier"] .rm-phase-comprendre .rm-phase-num { background: rgba(5, 150, 105, 0.12); color: #059669; }
+[data-theme="nier"] .rm-phase-comprendre .rm-phase-titles strong { color: #059669; }
+[data-theme="nier"] .rm-phase-ecrire {
+    background: rgba(107, 33, 168, 0.06);
+    border-color: rgba(107, 33, 168, 0.15);
+}
+[data-theme="nier"] .rm-phase-ecrire .rm-phase-num { background: rgba(107, 33, 168, 0.12); color: #7c3aed; }
+[data-theme="nier"] .rm-phase-ecrire .rm-phase-titles strong { color: #7c3aed; }
+[data-theme="nier"] .rm-phase-executer {
+    background: rgba(180, 83, 9, 0.06);
+    border-color: rgba(180, 83, 9, 0.15);
+}
+[data-theme="nier"] .rm-phase-executer .rm-phase-num { background: rgba(180, 83, 9, 0.12); color: #b45309; }
+[data-theme="nier"] .rm-phase-executer .rm-phase-titles strong { color: #b45309; }
+[data-theme="nier"] .rm-step { border-top-color: rgba(0,0,0,0.08); }
+
+/* Âme theme — roadmap */
+[data-theme="ame"] .roadmap {
+    background: rgba(10, 25, 41, 0.6);
+    border-color: rgba(74, 144, 226, 0.2);
+}
+[data-theme="ame"] .rm-phase-comprendre {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+[data-theme="ame"] .rm-phase-comprendre .rm-phase-num { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+[data-theme="ame"] .rm-phase-comprendre .rm-phase-titles strong { color: #6ee7b7; }
+[data-theme="ame"] .rm-phase-ecrire {
+    background: rgba(168, 85, 247, 0.08);
+    border-color: rgba(168, 85, 247, 0.2);
+}
+[data-theme="ame"] .rm-phase-ecrire .rm-phase-num { background: rgba(168, 85, 247, 0.18); color: #c4b5fd; }
+[data-theme="ame"] .rm-phase-ecrire .rm-phase-titles strong { color: #c4b5fd; }
+[data-theme="ame"] .rm-phase-executer {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+[data-theme="ame"] .rm-phase-executer .rm-phase-num { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+[data-theme="ame"] .rm-phase-executer .rm-phase-titles strong { color: #fcd34d; }
+
+@media (max-width: 800px) {
+    .roadmap { padding: 14px 16px; }
+    .rm-phase { padding: 10px 12px; }
+    .rm-phase p { font-size: 0.78rem; }
+    .rm-step { font-size: 0.65rem; }
+}
+
 /* Level badge (inline indicator) */
 .level-badge {
     display: inline-block;
