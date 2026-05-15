@@ -3455,63 +3455,107 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
 .code-wrapper[data-level] { margin: 16px 0; }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LEVEL RIBBON — Colored left margin band showing current reading level
+   LEVEL BADGE — Fixed badge showing current reading level
    🔵 Noyau / 🟡 Compréhension / 🔴 Approfondissement
    ═══════════════════════════════════════════════════════════════════ */
 
-/* The ribbon is a fixed vertical strip on the left edge */
-#level-ribbon {
-    position: fixed;
-    left: 0;
-    top: 56px; /* below nav */
-    bottom: 0;
-    width: 4px;
-    z-index: 98;
-    pointer-events: none;
-    transition: background 0.4s ease;
-    background: var(--level-noyau); /* default */
-}
-#level-ribbon.level-noyau { background: var(--level-noyau); box-shadow: 0 0 12px rgba(59, 130, 246, 0.3), 2px 0 8px rgba(59, 130, 246, 0.15); }
-#level-ribbon.level-comprehension { background: var(--level-comprehension); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3), 2px 0 8px rgba(245, 158, 11, 0.15); }
-#level-ribbon.level-approfondissement { background: var(--level-approfondissement); box-shadow: 0 0 12px rgba(239, 68, 68, 0.3), 2px 0 8px rgba(239, 68, 68, 0.15); }
-
-/* Floating level indicator badge (bottom-left) */
-#level-indicator {
+#level-badge {
     position: fixed;
     bottom: 24px;
     left: 16px;
     z-index: 98;
     font-family: var(--mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    padding: 5px 12px;
-    border-radius: 3px;
+    padding: 7px 14px 7px 10px;
+    border-radius: 4px;
     pointer-events: none;
-    opacity: 0;
-    transition: all 0.4s ease;
-    backdrop-filter: blur(8px);
+    transition: all 0.35s ease;
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
 }
-#level-indicator.visible {
-    opacity: 1;
+/* The colored dot before the text */
+#level-badge .lb-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.35s ease;
 }
-#level-indicator.level-noyau {
-    color: var(--level-noyau);
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+/* 🔵 Noyau */
+#level-badge.level-noyau {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1.5px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.2), inset 0 0 12px rgba(59, 130, 246, 0.05);
 }
-#level-indicator.level-comprehension {
-    color: var(--level-comprehension);
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+#level-badge.level-noyau .lb-dot {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
 }
-#level-indicator.level-approfondissement {
-    color: var(--level-approfondissement);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+/* 🟡 Compréhension */
+#level-badge.level-comprehension {
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1.5px solid rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.2), inset 0 0 12px rgba(245, 158, 11, 0.05);
+}
+#level-badge.level-comprehension .lb-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+/* 🔴 Approfondissement */
+#level-badge.level-approfondissement {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1.5px solid rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.2), inset 0 0 12px rgba(239, 68, 68, 0.05);
+}
+#level-badge.level-approfondissement .lb-dot {
+    background: #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Nier theme: darker badge bg to stay readable on light bg */
+[data-theme="nier"] #level-badge.level-noyau {
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.45);
+    box-shadow: 0 1px 8px rgba(59, 130, 246, 0.15);
+}
+[data-theme="nier"] #level-badge.level-comprehension {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 1px 8px rgba(245, 158, 11, 0.15);
+}
+[data-theme="nier"] #level-badge.level-approfondissement {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    box-shadow: 0 1px 8px rgba(239, 68, 68, 0.15);
+}
+
+/* Âme dans l'eau theme */
+[data-theme="ame"] #level-badge.level-noyau {
+    color: #93c5fd;
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+[data-theme="ame"] #level-badge.level-comprehension {
+    color: #fcd34d;
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.5);
+}
+[data-theme="ame"] #level-badge.level-approfondissement {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* Mobile adjustments */
@@ -3524,13 +3568,15 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
         padding: 2px 7px;
         font-size: 0.58rem;
     }
-    #level-ribbon {
-        width: 3px;
-    }
-    #level-indicator {
+    #level-badge {
         bottom: 12px;
         left: 10px;
-        font-size: 0.55rem;
-        padding: 3px 8px;
+        font-size: 0.6rem;
+        padding: 5px 10px 5px 8px;
+        gap: 5px;
+    }
+    #level-badge .lb-dot {
+        width: 7px;
+        height: 7px;
     }
 }

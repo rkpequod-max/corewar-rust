@@ -16,9 +16,8 @@
 <!-- Film Grain (static, no SVG filter) -->
 <div id="film-grain"></div>
 
-<!-- Level Ribbon (colored left margin band) -->
-<div id="level-ribbon" class="level-noyau"></div>
-<div id="level-indicator" class="level-noyau">Noyau</div>
+<!-- Level Badge (fixed, shows current reading level) -->
+<div id="level-badge" class="level-noyau"><span class="lb-dot"></span><span class="lb-text">Noyau</span></div>
 
 <!-- Level Filter Bar -->
 <div id="level-filter">
@@ -3704,21 +3703,20 @@ function resetLevels() {
 })();
 
 /* ═══════════════════════════════════════
-   LEVEL RIBBON — Detect current level on scroll
+   LEVEL BADGE — Detect current level on scroll
    ═══════════════════════════════════════ */
 (function() {
-    var ribbon = document.getElementById('level-ribbon');
-    var indicator = document.getElementById('level-indicator');
-    if (!ribbon || !indicator) return;
+    var badge = document.getElementById('level-badge');
+    if (!badge) return;
+    var dotEl = badge.querySelector('.lb-dot');
+    var textEl = badge.querySelector('.lb-text');
 
     var levelLabels = {
         'noyau': 'Noyau',
         'comprehension': 'Compréhension',
         'approfondissement': 'Approfondissement'
     };
-    var levelPriority = { 'approfondissement': 3, 'comprehension': 2, 'noyau': 1 };
     var currentLevel = 'noyau';
-    var hideTimeout = null;
 
     function detectCurrentLevel() {
         var viewportMid = window.innerHeight * 0.4;
@@ -3742,16 +3740,8 @@ function resetLevels() {
 
         if (bestLevel && bestLevel !== currentLevel) {
             currentLevel = bestLevel;
-            // Update ribbon
-            ribbon.className = 'level-' + currentLevel;
-            // Update indicator
-            indicator.className = 'visible level-' + currentLevel;
-            indicator.textContent = levelLabels[currentLevel] || currentLevel;
-            // Auto-hide indicator after 2s
-            clearTimeout(hideTimeout);
-            hideTimeout = setTimeout(function() {
-                indicator.classList.remove('visible');
-            }, 2500);
+            badge.className = 'level-' + currentLevel;
+            if (textEl) textEl.textContent = levelLabels[currentLevel] || currentLevel;
         }
     }
 
