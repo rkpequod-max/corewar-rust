@@ -165,6 +165,37 @@
         </div>
     </div>
 
+    <div class="depth-explainer">
+        <div class="de-header">
+            <span class="de-title">Système de profondeur</span>
+            <span class="de-sub">Comment lire ce guide</span>
+        </div>
+        <div class="de-levels">
+            <div class="de-level de-level-noyau">
+                <span class="de-icon">🔵</span>
+                <div class="de-info">
+                    <strong>Noyau</strong>
+                    <span>Ce qu'il faut implémenter. Sans ça, ça ne compile pas. Le strict minimum pour un projet fonctionnel.</span>
+                </div>
+            </div>
+            <div class="de-level de-level-comprehension">
+                <span class="de-icon">🟡</span>
+                <div class="de-info">
+                    <strong>Compréhension</strong>
+                    <span>Pourquoi ça fonctionne ainsi. Les liens avec l'architecture réelle, les concepts CS sous-jacents, les intuitions qui transforment la mémorisation en compréhension.</span>
+                </div>
+            </div>
+            <div class="de-level de-level-approfondissement">
+                <span class="de-icon">🔴</span>
+                <div class="de-info">
+                    <strong>Approfondissement</strong>
+                    <span>Théorie, historique, comparaisons ICWS'94. Pour aller plus loin — renvoie à la Partie B.</span>
+                </div>
+            </div>
+        </div>
+        <p class="de-note">L'indicateur dans la barre <strong>Profondeur</strong> ci-dessus se met à jour automatiquement en fonction de la section lue : il affiche le niveau dominant du contenu en cours de lecture.</p>
+    </div>
+
     <h3>Pourquoi ce projet ?</h3>
     <p data-level="approfondissement">Le Corewar trouve ses origines dans un jeu appelé <strong>Darwin</strong>, inventé par <strong>Victor A. Vyssotsky</strong> aux laboratoires Bell d'AT&T dans les années 1960, puis popularisé sous le nom <strong>Core War</strong> par <strong>A.K. Dewdney</strong> dans <em>Scientific American</em> en 1984. Le simulateur s'appelait <strong>MARS</strong> et le langage <strong>Redcode</strong>. Les premiers champions — <strong>Imp</strong>, <strong>Dwarf</strong>, <strong>Mortar</strong>, <strong>Voter</strong> — formaient un équilibre pierre-papier-ciseaux qui illustre un principe fondamental : <strong>il n'existe pas de stratégie dominante</strong>. Pour l'histoire complète et le contexte, voir <a href="#histoire">Partie B — H1</a>.</p>
     <p>Ce jeu de programmation enseigne des concepts fondamentaux de l'informatique : l'architecture de machine virtuelle, le langage assembleur, la compilation, la gestion mémoire et l'exécution concurrente. À l'école 42, c'est l'un des projets les plus difficiles car il exige de comprendre <strong>toutes les couches</strong> : de la syntaxe assembleur à l'exécution par la VM, en passant par l'encodage binaire et la résolution de symboles.</p>

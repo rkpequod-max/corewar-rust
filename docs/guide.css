@@ -3299,6 +3299,155 @@
     border-radius: 0 4px 4px 0 !important;
 }
 
+/* ── Depth Explainer (intro section) ── */
+.depth-explainer {
+    background: rgba(10, 15, 26, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    backdrop-filter: blur(4px);
+}
+.de-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.de-title {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+.de-sub {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+.de-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.de-level {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: all 0.25s ease;
+}
+.de-level:hover {
+    transform: translateX(4px);
+}
+.de-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 2px;
+}
+.de-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.de-info strong {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.de-info span {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+/* 🔵 Noyau */
+.de-level-noyau {
+    background: rgba(59, 130, 246, 0.06);
+    border-color: rgba(59, 130, 246, 0.15);
+}
+.de-level-noyau .de-info strong { color: #93c5fd; }
+.de-level-noyau:hover { border-color: rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.1); }
+/* 🟡 Compréhension */
+.de-level-comprehension {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.15);
+}
+.de-level-comprehension .de-info strong { color: #fcd34d; }
+.de-level-comprehension:hover { border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
+/* 🔴 Approfondissement */
+.de-level-approfondissement {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.15);
+}
+.de-level-approfondissement .de-info strong { color: #fca5a5; }
+.de-level-approfondissement:hover { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.1); }
+.de-note {
+    margin-top: 14px;
+    margin-bottom: 0;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+    line-height: 1.5;
+}
+
+/* Nier theme — depth explainer */
+[data-theme="nier"] .depth-explainer {
+    background: rgba(245, 240, 232, 0.5);
+    border-color: #c8c0b0;
+}
+[data-theme="nier"] .de-level-noyau {
+    background: rgba(37, 99, 235, 0.06);
+    border-color: rgba(37, 99, 235, 0.15);
+}
+[data-theme="nier"] .de-level-noyau .de-info strong { color: #2563eb; }
+[data-theme="nier"] .de-level-comprehension {
+    background: rgba(180, 83, 9, 0.06);
+    border-color: rgba(180, 83, 9, 0.15);
+}
+[data-theme="nier"] .de-level-comprehension .de-info strong { color: #b45309; }
+[data-theme="nier"] .de-level-approfondissement {
+    background: rgba(185, 28, 28, 0.06);
+    border-color: rgba(185, 28, 28, 0.15);
+}
+[data-theme="nier"] .de-level-approfondissement .de-info strong { color: #b91c1c; }
+
+/* Âme theme — depth explainer */
+[data-theme="ame"] .depth-explainer {
+    background: rgba(10, 25, 41, 0.6);
+    border-color: rgba(74, 144, 226, 0.2);
+}
+[data-theme="ame"] .de-level-noyau {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+[data-theme="ame"] .de-level-noyau .de-info strong { color: #93c5fd; }
+[data-theme="ame"] .de-level-comprehension {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+[data-theme="ame"] .de-level-comprehension .de-info strong { color: #fcd34d; }
+[data-theme="ame"] .de-level-approfondissement {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+[data-theme="ame"] .de-level-approfondissement .de-info strong { color: #fca5a5; }
+
+@media (max-width: 800px) {
+    .depth-explainer { padding: 14px 16px; }
+    .de-level { padding: 8px 10px; gap: 10px; }
+    .de-info span { font-size: 0.76rem; }
+}
+
 /* Level badge (inline indicator) */
 .level-badge {
     display: inline-block;
