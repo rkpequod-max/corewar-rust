@@ -65,10 +65,10 @@
         <a href="#lifecycle" class="sb-link" data-section="lifecycle">05 — Cycle de vie</a>
         <a href="#instructions" class="sb-link" data-section="instructions">06 — Les 16 instructions</a>
         <a href="#encoding" class="sb-link" data-section="encoding">07 — Encodage</a>
-        <a href="#assembler" class="sb-link" data-section="assembler">08 — L'Assembleur</a>
-        <a href="#c-vs-rust" class="sb-link" data-section="c-vs-rust">09 — C vs Rust</a>
-        <a href="#syntaxe" class="sb-link" data-section="syntaxe">10 — Syntaxe du .s</a>
-        <a href="#erreurs" class="sb-link" data-section="erreurs">11 — Pièges & Erreurs</a>
+        <a href="#syntaxe" class="sb-link" data-section="syntaxe">08 — Syntaxe du .s</a>
+        <a href="#assembler" class="sb-link" data-section="assembler">09 — L'Assembleur</a>
+        <a href="#erreurs" class="sb-link" data-section="erreurs">10 — Pièges & Erreurs</a>
+        <a href="#c-vs-rust" class="sb-link" data-section="c-vs-rust">11 — C vs Rust</a>
         <a href="#cli" class="sb-link" data-section="cli">12 — Ligne de commande</a>
         <a href="#strategie" class="sb-link" data-section="strategie">13 — Stratégie champion</a>
         <a href="#simulateur" class="sb-link" data-section="simulateur">14 — Simulateur VM</a>
@@ -213,7 +213,7 @@
 <div class="insight-box" data-level="comprehension">
         <div class="ib-title">📖 Prérequis et ordre de lecture</div>
         <div class="ib-content">
-            L'ordre recommandé est : <strong>1 → 2 → 3 → 4 → 5 → 6 → 7 → 10 → 8 → 9 → 11 → 12 → 13 → 14</strong>. Les sections 7 (Encodage) et 10 (Syntaxe du .s) sont complémentaires et doivent être lues ensemble. La section 9 (C vs Rust) est optionnelle et comparative. Chaque section bâtit sur la précédente — les sections 3 (Arène) et 5 (Cycle de vie) sont les plus critiques à comprendre en profondeur.
+            L'ordre recommandé est : <strong>1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14</strong>. Les sections 7 (Encodage) et 8 (Syntaxe du .s) se suivent naturellement. La section 11 (C vs Rust) est optionnelle et comparative. Chaque section bâtit sur la précédente — les sections 3 (Arène) et 5 (Cycle de vie) sont les plus critiques à comprendre en profondeur.
         </div>
     </div>
 
@@ -242,7 +242,7 @@
 </div>
 </section>
 
-<!-- Section 2: Architecture -->
+<!-- Section 02: Architecture -->
 <section id="architecture" class="reveal">
 <div class="container">
     <h2><span class="num">02</span> Architecture globale</h2>
@@ -272,21 +272,21 @@
             </div>
         </div>
         <pre id="c-const" class="active"><code><span class="cm">// C — include/op.h</span>
-<span class="mac">#define</span> <span class="mac">MEM_SIZE</span>       <span class="num">4096</span>    <span class="cm">// Taille de l'arene (octets)</span>
-<span class="mac">#define</span> <span class="mac">IDX_MOD</span>        <span class="num">512</span>     <span class="cm">// MEM_SIZE / 8, modulo d'adressage</span>
-<span class="mac">#define</span> <span class="mac">CYCLE_TO_DIE</span>   <span class="num">1536</span>    <span class="cm">// Cycles avant verification des lives</span>
-<span class="mac">#define</span> <span class="mac">NBR_LIVE</span>       <span class="num">21</span>      <span class="cm">// Lives pour decrementer CYCLE_DELTA</span>
-<span class="mac">#define</span> <span class="mac">CYCLE_DELTA</span>    <span class="num">50</span>      <span class="cm">// Reduction de cycle_to_die</span>
-<span class="mac">#define</span> <span class="mac">MAX_CHECKS</span>     <span class="num">10</span>      <span class="cm">// Checks avant decrementation forcee</span>
-<span class="mac">#define</span> <span class="mac">REG_NUMBER</span>     <span class="num">16</span>      <span class="cm">// Registres par processus</span></code></pre>
+<span class="mac">#define</span> <span class="mac">MEM_SIZE</span>       <span class="num">02</span>    <span class="cm">// Taille de l'arene (octets)</span>
+<span class="mac">#define</span> <span class="mac">IDX_MOD</span>        <span class="num">02</span>     <span class="cm">// MEM_SIZE / 8, modulo d'adressage</span>
+<span class="mac">#define</span> <span class="mac">CYCLE_TO_DIE</span>   <span class="num">02</span>    <span class="cm">// Cycles avant verification des lives</span>
+<span class="mac">#define</span> <span class="mac">NBR_LIVE</span>       <span class="num">02</span>      <span class="cm">// Lives pour decrementer CYCLE_DELTA</span>
+<span class="mac">#define</span> <span class="mac">CYCLE_DELTA</span>    <span class="num">02</span>      <span class="cm">// Reduction de cycle_to_die</span>
+<span class="mac">#define</span> <span class="mac">MAX_CHECKS</span>     <span class="num">02</span>      <span class="cm">// Checks avant decrementation forcee</span>
+<span class="mac">#define</span> <span class="mac">REG_NUMBER</span>     <span class="num">02</span>      <span class="cm">// Registres par processus</span></code></pre>
         <pre id="r-const"><code><span class="cm">// Rust — corewar-common/src/constants.rs</span>
-<span class="kw">pub const</span> <span class="mac">MEM_SIZE</span>: <span class="ty">usize</span> = <span class="num">4096</span>;
-<span class="kw">pub const</span> <span class="mac">IDX_MOD</span>: <span class="ty">i32</span> = <span class="num">512</span>;
-<span class="kw">pub const</span> <span class="mac">CYCLE_TO_DIE</span>: <span class="ty">i32</span> = <span class="num">1536</span>;
-<span class="kw">pub const</span> <span class="mac">NBR_LIVE</span>: <span class="ty">i32</span> = <span class="num">21</span>;
-<span class="kw">pub const</span> <span class="mac">CYCLE_DELTA</span>: <span class="ty">i32</span> = <span class="num">50</span>;
-<span class="kw">pub const</span> <span class="mac">MAX_CHECKS</span>: <span class="ty">i32</span> = <span class="num">10</span>;
-<span class="kw">pub const</span> <span class="mac">REG_NUMBER</span>: <span class="ty">usize</span> = <span class="num">16</span>;</code></pre>
+<span class="kw">pub const</span> <span class="mac">MEM_SIZE</span>: <span class="ty">usize</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">IDX_MOD</span>: <span class="ty">i32</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">CYCLE_TO_DIE</span>: <span class="ty">i32</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">NBR_LIVE</span>: <span class="ty">i32</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">CYCLE_DELTA</span>: <span class="ty">i32</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">MAX_CHECKS</span>: <span class="ty">i32</span> = <span class="num">02</span>;
+<span class="kw">pub const</span> <span class="mac">REG_NUMBER</span>: <span class="ty">usize</span> = <span class="num">02</span>;</code></pre>
     </div>
 
     <h3>Flux de données complet</h3>
@@ -325,7 +325,7 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 </section>
 
 
-<!-- Section 3: Arena -->
+<!-- Section 03: Arena -->
 <section id="arena" class="reveal">
 <div class="container">
     <h2><span class="num">03</span> L'Arène — Mémoire circulaire</h2>
@@ -507,14 +507,14 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </div>
         <pre id="c-store" class="active"><code><span class="cm">// C — vm/src/parsing/byte_management.c</span>
 <span class="kw">void</span> <span class="fn">store_at</span>(t_vm *vm, t_list *process, <span class="ty">unsigned int</span> val, <span class="ty">int</span> address) {
-    <span class="ty">char</span> i = <span class="num">4</span>;
+    <span class="ty">char</span> i = <span class="num">03</span>;
     <span class="kw">while</span> (i--) {
         <span class="ty">int</span> mod = <span class="fn">mem_mod</span>(address);          <span class="cm">// Adresse circulaire</span>
         vm->ram.owner[mod] = ((TP*)P->obj)->owner; <span class="cm">// Revendique le territoire !</span>
         vm->ram.scrb[mod]  = ((TP*)P->obj)->owner; <span class="cm">// Marque pour surbrillance</span>
-        vm->ram.arena[mod] = val & <span class="num">0xFF</span>;        <span class="cm">// Octet de poids faible</span>
-        address = <span class="fn">mem_mod</span>(address - <span class="num">1</span>);   <span class="cm">// Décrémente circulairement</span>
-        val >>= <span class="num">8</span>;                            <span class="cm">// Décale pour l'octet suivant</span>
+        vm->ram.arena[mod] = val & <span class="num">03xFF</span>;        <span class="cm">// Octet de poids faible</span>
+        address = <span class="fn">mem_mod</span>(address - <span class="num">03</span>);   <span class="cm">// Décrémente circulairement</span>
+        val >>= <span class="num">03</span>;                            <span class="cm">// Décale pour l'octet suivant</span>
     }
 }</code></pre>
         <pre id="r-store"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
@@ -522,13 +522,13 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
     <span class="kw">let</span> owner = <span class="kw">self</span>.processes[process_idx].owner <span class="kw">as</span> <span class="ty">u8</span>;
     <span class="kw">let mut</span> val = val;
     <span class="kw">let mut</span> address = address;
-    <span class="kw">for</span> _ <span class="kw">in</span> <span class="num">0</span>..<span class="num">4</span> {
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="num">03</span>..<span class="num">03</span> {
         <span class="kw">let</span> m = <span class="fn">mem_mod</span>(address);              <span class="cm">// Adresse circulaire</span>
         <span class="kw">self</span>.owner[m] = owner;                  <span class="cm">// Revendique le territoire !</span>
         <span class="kw">self</span>.scrb[m] = owner;                   <span class="cm">// Marque pour surbrillance</span>
-        <span class="kw">self</span>.arena[m] = (val & <span class="num">0xFF</span>) <span class="kw">as</span> <span class="ty">u8</span>;    <span class="cm">// Octet de poids faible</span>
-        address = <span class="fn">mem_mod</span>(address - <span class="num">1</span>) <span class="kw">as</span> <span class="ty">i32</span>; <span class="cm">// Décrémente circulairement</span>
-        val >>= <span class="num">8</span>;                                 <span class="cm">// Décale pour l'octet suivant</span>
+        <span class="kw">self</span>.arena[m] = (val & <span class="num">03xFF</span>) <span class="kw">as</span> <span class="ty">u8</span>;    <span class="cm">// Octet de poids faible</span>
+        address = <span class="fn">mem_mod</span>(address - <span class="num">03</span>) <span class="kw">as</span> <span class="ty">i32</span>; <span class="cm">// Décrémente circulairement</span>
+        val >>= <span class="num">03</span>;                                 <span class="cm">// Décale pour l'octet suivant</span>
     }
 }</code></pre>
     </div>
@@ -667,7 +667,7 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 <span class="ty">int</span> <span class="fn">load_champions</span>(t_vm *vm) {
     <span class="ty">int</span> space = <span class="mac">MEM_SIZE</span> / vm->nplayers;  <span class="cm">// 4096/2=2048, 4096/4=1024</span>
     <span class="ty">t_player</span> *champion = vm->player;
-    <span class="ty">int</span> ad = <span class="num">0</span>, n = <span class="num">1</span>;
+    <span class="ty">int</span> ad = <span class="num">03</span>, n = <span class="num">03</span>;
 
     <span class="kw">while</span> (champion) {
         <span class="fn">ft_memcpy</span>(&vm->ram.arena[ad], champion->code, champion->prog_size);
@@ -681,13 +681,13 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         <pre id="r-load"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
 <span class="kw">pub fn</span> <span class="fn">load_champions</span>(&<span class="kw">mut self</span>) {
     <span class="kw">let</span> space = <span class="mac">MEM_SIZE</span> / <span class="kw">self</span>.nplayers;
-    <span class="kw">let mut</span> ad: <span class="ty">usize</span> = <span class="num">0</span>;
+    <span class="kw">let mut</span> ad: <span class="ty">usize</span> = <span class="num">03</span>;
 
     <span class="kw">for</span> (n, player) <span class="kw">in</span> <span class="kw">self</span>.players.iter_mut().enumerate() {
         <span class="kw">let</span> code_len = player.code.len();
         <span class="kw">self</span>.arena[ad..ad + code_len].<span class="fn">copy_from_slice</span>(&player.code[..code_len]);
-        <span class="kw">for</span> j <span class="kw">in</span> <span class="num">0</span>..code_len {
-            <span class="kw">self</span>.owner[ad + j] = (n + <span class="num">1</span>) <span class="kw">as</span> <span class="ty">u8</span>; <span class="cm">// owner=1,2,3,4</span>
+        <span class="kw">for</span> j <span class="kw">in</span> <span class="num">03</span>..code_len {
+            <span class="kw">self</span>.owner[ad + j] = (n + <span class="num">03</span>) <span class="kw">as</span> <span class="ty">u8</span>; <span class="cm">// owner=1,2,3,4</span>
         }
         player.pc_address = ad;
         ad += space;
@@ -761,14 +761,14 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         <pre id="c-memmod" class="active"><code><span class="cm">// C — vm/src/parsing/logical_management.c</span>
 <span class="ty">unsigned int</span> <span class="fn">mem_mod</span>(<span class="ty">int</span> x) {
     <span class="ty">int</span> ret = (<span class="ty">unsigned int</span>)(x % <span class="mac">MEM_SIZE</span>);
-    <span class="kw">if</span> (ret < <span class="num">0</span>)           <span class="cm">// En C, -1 % 4096 = -1 !</span>
+    <span class="kw">if</span> (ret < <span class="num">03</span>)           <span class="cm">// En C, -1 % 4096 = -1 !</span>
         <span class="kw">return</span> (ret + <span class="mac">MEM_SIZE</span>); <span class="cm">// Correction pour les négatifs</span>
     <span class="kw">return</span> (ret);
 }</code></pre>
         <pre id="r-memmod"><code><span class="cm">// Rust — corewar-common/src/types.rs</span>
 <span class="kw">pub fn</span> <span class="fn">mem_mod</span>(x: <span class="ty">i32</span>) -> <span class="ty">usize</span> {
     <span class="kw">let</span> r = x % <span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>;
-    <span class="kw">if</span> r < <span class="num">0</span> {
+    <span class="kw">if</span> r < <span class="num">03</span> {
         (r + <span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>) <span class="kw">as</span> <span class="ty">usize</span>
     } <span class="kw">else</span> {
         r <span class="kw">as</span> <span class="ty">usize</span>
@@ -901,28 +901,28 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         <pre id="c-be" class="active"><code><span class="cm">// C — vm/src/parsing/byte_management.c</span>
 <span class="cm">// Chaque octet est lu circulairement via mem_mod() !</span>
 <span class="ty">int</span> <span class="fn">reverse_bytes</span>(t_vm *vm, <span class="ty">unsigned int</span> pc, <span class="ty">int</span> bytes) {
-    <span class="ty">t_uchar</span> bytes4[<span class="num">4</span>];
-    <span class="kw">if</span> (bytes == <span class="num">4</span>) {
-        bytes4[<span class="num">0</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">3</span>)]; <span class="cm">// Circulaire !</span>
-        bytes4[<span class="num">1</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">2</span>)];
-        bytes4[<span class="num">2</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">1</span>)];
-        bytes4[<span class="num">3</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc)];
-        <span class="kw">return</span> *(<span class="ty">int</span>*)&bytes4[<span class="num">0</span>]; <span class="cm">// Type punning (UB en strict C)</span>
+    <span class="ty">t_uchar</span> bytes4[<span class="num">03</span>];
+    <span class="kw">if</span> (bytes == <span class="num">03</span>) {
+        bytes4[<span class="num">03</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">03</span>)]; <span class="cm">// Circulaire !</span>
+        bytes4[<span class="num">03</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">03</span>)];
+        bytes4[<span class="num">03</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc + <span class="num">03</span>)];
+        bytes4[<span class="num">03</span>] = vm->ram.arena[<span class="fn">mem_mod</span>(pc)];
+        <span class="kw">return</span> *(<span class="ty">int</span>*)&bytes4[<span class="num">03</span>]; <span class="cm">// Type punning (UB en strict C)</span>
     }
     <span class="cm">// ... même logique pour 2 octets</span>
 }</code></pre>
         <pre id="r-be"><code><span class="cm">// Rust — corewar-common/src/types.rs</span>
 <span class="cm">// Chaque octet est lu circulairement via mem_mod() !</span>
 <span class="kw">pub fn</span> <span class="fn">reverse_bytes_circular</span>(arena: &[<span class="ty">u8</span>; <span class="mac">MEM_SIZE</span>], pc: <span class="ty">usize</span>, bytes: <span class="ty">usize</span>) -> <span class="ty">i32</span> {
-    <span class="kw">if</span> bytes == <span class="num">4</span> {
+    <span class="kw">if</span> bytes == <span class="num">03</span> {
         <span class="kw">let</span> b0 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span>)];
-        <span class="kw">let</span> b1 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">1</span>)];
-        <span class="kw">let</span> b2 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">2</span>)];
-        <span class="kw">let</span> b3 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">3</span>)];
+        <span class="kw">let</span> b1 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">03</span>)];
+        <span class="kw">let</span> b2 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">03</span>)];
+        <span class="kw">let</span> b3 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">03</span>)];
         <span class="ty">i32</span>::<span class="fn">from_be_bytes</span>([b0, b1, b2, b3]) <span class="cm">// Safe et idiomatique</span>
-    } <span class="kw">else if</span> bytes == <span class="num">2</span> {
+    } <span class="kw">else if</span> bytes == <span class="num">03</span> {
         <span class="kw">let</span> b0 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span>)];
-        <span class="kw">let</span> b1 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">1</span>)];
+        <span class="kw">let</span> b1 = arena[<span class="fn">mem_mod</span>(pc <span class="kw">as</span> <span class="ty">i32</span> + <span class="num">03</span>)];
         <span class="ty">i16</span>::<span class="fn">from_be_bytes</span>([b0, b1]) <span class="kw">as</span> <span class="ty">i32</span>
     } <span class="kw">else</span> { <span class="num">-1</span> }
 }</code></pre>
@@ -1032,7 +1032,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 </div>
 </section>
 
-<!-- Section 4: Process -->
+
+<!-- Section 04: Process -->
 <section id="process" class="reveal">
 <div class="container">
 
@@ -1120,30 +1121,30 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </div>
         <pre id="c-fork" class="active"><code><span class="cm">// fork : avec IDX_MOD</span>
 <span class="kw">void</span> <span class="fn">op_fork</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">04</span>, <span class="num">04</span>);
     <span class="fn">add_process</span>(vm, process, <span class="fn">mem_mod</span>(P->pc + (move % <span class="mac">IDX_MOD</span>)));
-    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">04</span>);
 }
 
 <span class="cm">// lfork : SANS IDX_MOD (long fork)</span>
 <span class="kw">void</span> <span class="fn">op_lfork</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">04</span>, <span class="num">04</span>);
     <span class="fn">add_process</span>(vm, process, <span class="fn">mem_mod</span>(P->pc + move)); <span class="cm">// Pas de % IDX_MOD !</span>
-    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">04</span>);
 }</code></pre>
         <pre id="r-fork"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
 <span class="kw">fn</span> <span class="fn">op_fork</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
-    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">04</span>, <span class="num">04</span>);
     <span class="kw">let</span> new_pc = (pc <span class="kw">as</span> <span class="ty">i32</span> + move % <span class="mac">IDX_MOD</span>).rem_euclid(<span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>);
     <span class="kw">self</span>.new_processes.<span class="fn">push</span>(<span class="fn">clone_process</span>(idx, new_pc <span class="kw">as</span> <span class="ty">usize</span>));
-    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">3</span>) % <span class="mac">MEM_SIZE</span>;
+    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">04</span>) % <span class="mac">MEM_SIZE</span>;
 }
 
 <span class="kw">fn</span> <span class="fn">op_lfork</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
-    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">1</span>, <span class="num">2</span>);
+    <span class="kw">let</span> move = <span class="kw">self</span>.<span class="fn">read_mem</span>(pc + <span class="num">04</span>, <span class="num">04</span>);
     <span class="kw">let</span> new_pc = (pc <span class="kw">as</span> <span class="ty">i32</span> + move).rem_euclid(<span class="mac">MEM_SIZE</span> <span class="kw">as</span> <span class="ty">i32</span>); <span class="cm">// Pas de IDX_MOD !</span>
     <span class="kw">self</span>.new_processes.<span class="fn">push</span>(<span class="fn">clone_process</span>(idx, new_pc <span class="kw">as</span> <span class="ty">usize</span>));
-    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">3</span>) % <span class="mac">MEM_SIZE</span>;
+    <span class="kw">self</span>.processes[idx].pc = (pc + <span class="num">04</span>) % <span class="mac">MEM_SIZE</span>;
 }</code></pre>
     </div>
 
@@ -1203,7 +1204,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 
 </section>
 
-<!-- Section 5: Lifecycle -->
+
+<!-- Section 05: Lifecycle -->
 <section id="lifecycle" class="reveal">
 <div class="container">
     <h2><span class="num">05</span> Cycle de vie d'une instruction</h2>
@@ -1253,10 +1255,10 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </div>
         <pre id="c-loop" class="active"><code><span class="cm">// C — vm/src/computer-system/run_cpu.c</span>
 <span class="kw">int</span> <span class="fn">run_processes</span>(t_vm *vm, <span class="ty">int</span> control) {
-    <span class="kw">while</span> (vm->processes != NULL && vm->cycle_to_die > <span class="num">0</span>) {
+    <span class="kw">while</span> (vm->processes != NULL && vm->cycle_to_die > <span class="num">05</span>) {
         <span class="cm">// Verification CYCLE_TO_DIE ?</span>
         <span class="ty">int</span> check = (vm->cycles && (vm->cycles - vm->diff_to_die)
-                                         % vm->cycle_to_die == <span class="num">0</span>);
+                                         % vm->cycle_to_die == <span class="num">05</span>);
         <span class="fn">update_cycles</span>(vm);             <span class="cm">// Incremente, decremente CYCLE_DELTA</span>
         <span class="fn">process_operations</span>(vm, vm->processes);  <span class="cm">// Execute tous les processus</span>
         <span class="fn">kill_zombies</span>(vm, vm->processes, check); <span class="cm">// Tue les processus sans live</span>
@@ -1265,9 +1267,9 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 }</code></pre>
         <pre id="r-loop"><code><span class="cm">// Rust — corewar-vm/src/vm.rs</span>
 <span class="kw">pub fn</span> <span class="fn">run</span>(&<span class="kw">mut self</span>) {
-    <span class="kw">while</span> !<span class="kw">self</span>.processes.<span class="fn">is_empty</span>() && <span class="kw">self</span>.cycle_to_die > <span class="num">0</span> {
-        <span class="kw">let</span> check = <span class="kw">self</span>.cycles > <span class="num">0</span>
-            && (<span class="kw">self</span>.cycles - <span class="kw">self</span>.diff_to_die) % <span class="kw">self</span>.cycle_to_die == <span class="num">0</span>;
+    <span class="kw">while</span> !<span class="kw">self</span>.processes.<span class="fn">is_empty</span>() && <span class="kw">self</span>.cycle_to_die > <span class="num">05</span> {
+        <span class="kw">let</span> check = <span class="kw">self</span>.cycles > <span class="num">05</span>
+            && (<span class="kw">self</span>.cycles - <span class="kw">self</span>.diff_to_die) % <span class="kw">self</span>.cycle_to_die == <span class="num">05</span>;
         <span class="kw">self</span>.<span class="fn">update_cycles</span>();
         <span class="kw">self</span>.<span class="fn">process_operations</span>();
         <span class="kw">self</span>.<span class="fn">kill_zombies</span>(check);
@@ -1391,7 +1393,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 </div>
 </section>
 
-<!-- Section 6: Instructions -->
+
+<!-- Section 06: Instructions -->
 <section id="instructions" class="reveal">
 <div class="container">
     <h2><span class="num">06</span> Les 16 instructions</h2>
@@ -1459,9 +1462,9 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
 <span class="kw">void</span> <span class="fn">op_live</span>(t_vm *vm, t_list *process) {
     P->live_count++;
     vm->nlives++;
-    <span class="ty">int</span> live = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">4</span>);
+    <span class="ty">int</span> live = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">06</span>, <span class="num">06</span>);
     <span class="fn">player_alive</span>(vm, live);
-    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">5</span>);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">06</span>);
 }</code></pre></div>
         </div>
     </div>
@@ -1485,8 +1488,8 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
             <div class="code-wrapper"><button class="copy-btn" onclick="copyCode(this)">Copier</button><div class="code-header"><span class="lang">zjmp</span></div>
             <pre style="display:block"><code><span class="cm">// C</span>
 <span class="kw">void</span> <span class="fn">op_zjmp</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">1</span>, <span class="num">2</span>) % <span class="mac">IDX_MOD</span>;
-    P->pc = <span class="fn">mem_mod</span>(P->pc + (P->carry ? move : <span class="num">3</span>));
+    <span class="ty">int</span> move = <span class="fn">reverse_bytes</span>(vm, P->pc + <span class="num">06</span>, <span class="num">06</span>) % <span class="mac">IDX_MOD</span>;
+    P->pc = <span class="fn">mem_mod</span>(P->pc + (P->carry ? move : <span class="num">06</span>));
 }</code></pre></div>
         </div>
     </div>
@@ -1551,19 +1554,19 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre id="c-st" class="active"><code><span class="cm">// C</span>
 <span class="kw">void</span> <span class="fn">op_st</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> val = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>];
-    <span class="kw">if</span> (is_reg(P->ocp, <span class="num">1</span>))
-        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">3</span>) - <span class="num">1</span>] = val;
+    <span class="ty">int</span> val = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>];
+    <span class="kw">if</span> (is_reg(P->ocp, <span class="num">06</span>))
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>] = val;
     <span class="kw">else</span>
-        <span class="fn">store_at</span>(vm, process, val, P->pc + (<span class="fn">get_ind</span>(vm, P->pc + <span class="num">3</span>) % <span class="mac">IDX_MOD</span>));
+        <span class="fn">store_at</span>(vm, process, val, P->pc + (<span class="fn">get_ind</span>(vm, P->pc + <span class="num">06</span>) % <span class="mac">IDX_MOD</span>));
 }</code></pre>
             <pre id="r-st"><code><span class="cm">// Rust</span>
 <span class="kw">fn</span> <span class="fn">op_st</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
-    <span class="kw">let</span> val = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">0</span>);
-    <span class="kw">if</span> arg_is_reg(<span class="num">1</span>) {
-        <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">1</span>, val);
+    <span class="kw">let</span> val = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">06</span>);
+    <span class="kw">if</span> arg_is_reg(<span class="num">06</span>) {
+        <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">06</span>, val);
     } <span class="kw">else</span> {
-        <span class="kw">let</span> addr = <span class="kw">self</span>.<span class="fn">read_ind</span>(idx, <span class="num">1</span>) % <span class="mac">IDX_MOD</span>;
+        <span class="kw">let</span> addr = <span class="kw">self</span>.<span class="fn">read_ind</span>(idx, <span class="num">06</span>) % <span class="mac">IDX_MOD</span>;
         <span class="kw">self</span>.<span class="fn">store_at</span>(idx, val, addr);
     }
 }</code></pre></div>
@@ -1581,18 +1584,18 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre id="c-add" class="active"><code><span class="cm">// add</span>
 <span class="kw">void</span> <span class="fn">op_add</span>(t_vm *vm, t_list *process) {
-    P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">4</span>) - <span class="num">1</span>] =
-        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>] +
-        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">3</span>) - <span class="num">1</span>];
-    P->carry = (P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">4</span>) - <span class="num">1</span>] == <span class="num">0</span>);
-    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">5</span>);
+    P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>] =
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>] +
+        P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>];
+    P->carry = (P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>] == <span class="num">06</span>);
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">06</span>);
 }
 <span class="cm">// sub : identique mais avec '-'</span></code></pre>
             <pre id="r-add"><code><span class="cm">// Rust — add</span>
 <span class="kw">fn</span> <span class="fn">op_add</span>(&<span class="kw">mut self</span>, idx: <span class="ty">usize</span>) {
-    <span class="kw">let</span> result = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">0</span>).<span class="fn">wrapping_add</span>(<span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">1</span>));
-    <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">2</span>, result);
-    <span class="kw">self</span>.processes[idx].carry = <span class="kw">if</span> result == <span class="num">0</span> { <span class="num">1</span> } <span class="kw">else</span> { <span class="num">0</span> };
+    <span class="kw">let</span> result = <span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">06</span>).<span class="fn">wrapping_add</span>(<span class="kw">self</span>.<span class="fn">read_reg</span>(idx, <span class="num">06</span>));
+    <span class="kw">self</span>.<span class="fn">write_reg</span>(idx, <span class="num">06</span>, result);
+    <span class="kw">self</span>.processes[idx].carry = <span class="kw">if</span> result == <span class="num">06</span> { <span class="num">06</span> } <span class="kw">else</span> { <span class="num">06</span> };
 }</code></pre></div>
         </div>
     </div>
@@ -1610,10 +1613,10 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre style="display:block"><code><span class="cm">// C — and (or et xor sont identiques, seul l'opérateur change)</span>
 <span class="kw">void</span> <span class="fn">op_and</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">0</span>); <span class="cm">// premier paramètre</span>
-    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>); <span class="cm">// deuxième paramètre</span>
-    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = a & b;  <span class="cm">// & pour and, | pour or, ^ pour xor</span>
-    P->carry = (P->reg[...] == <span class="num">0</span>);
+    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">06</span>); <span class="cm">// premier paramètre</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">06</span>); <span class="cm">// deuxième paramètre</span>
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">06</span>) - <span class="num">06</span>] = a & b;  <span class="cm">// & pour and, | pour or, ^ pour xor</span>
+    P->carry = (P->reg[...] == <span class="num">06</span>);
 }</code></pre></div>
         </div>
     </div>
@@ -1629,10 +1632,10 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre style="display:block"><code><span class="cm">// C — ldi</span>
 <span class="kw">void</span> <span class="fn">op_ldi</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> a = <span class="fn">get_arg_idx</span>(vm, P, <span class="num">0</span>); <span class="cm">// modulo IDX_MOD si indirect</span>
-    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>);
+    <span class="ty">int</span> a = <span class="fn">get_arg_idx</span>(vm, P, <span class="num">06</span>); <span class="cm">// modulo IDX_MOD si indirect</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">06</span>);
     <span class="ty">int</span> addr = <span class="fn">mem_mod</span>(P->pc + ((a + b) % <span class="mac">IDX_MOD</span>));
-    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">4</span>);
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">06</span>) - <span class="num">06</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">06</span>);
     <span class="cm">// Pas de modification du carry !</span>
 }</code></pre></div>
         </div>
@@ -1649,11 +1652,11 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre style="display:block"><code><span class="cm">// C — lldi (identique à ldi mais SANS IDX_MOD)</span>
 <span class="kw">void</span> <span class="fn">op_lldi</span>(t_vm *vm, t_list *process) {
-    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">0</span>);  <span class="cm">// PAS de modulo IDX_MOD</span>
-    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">1</span>);
+    <span class="ty">int</span> a = <span class="fn">get_arg</span>(vm, P, <span class="num">06</span>);  <span class="cm">// PAS de modulo IDX_MOD</span>
+    <span class="ty">int</span> b = <span class="fn">get_arg</span>(vm, P, <span class="num">06</span>);
     <span class="ty">int</span> addr = <span class="fn">mem_mod</span>(P->pc + a + b); <span class="cm">// Adresse complète</span>
-    P->reg[<span class="fn">get_reg</span>(..., <span class="num">2</span>) - <span class="num">1</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">4</span>);
-    P->carry = (P->reg[...] == <span class="num">0</span>); <span class="cm">// Modifie le carry !</span>
+    P->reg[<span class="fn">get_reg</span>(..., <span class="num">06</span>) - <span class="num">06</span>] = <span class="fn">reverse_bytes</span>(vm, addr, <span class="num">06</span>);
+    P->carry = (P->reg[...] == <span class="num">06</span>); <span class="cm">// Modifie le carry !</span>
 }</code></pre></div>
         </div>
     </div>
@@ -1713,9 +1716,9 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
             <button class="copy-btn" onclick="copyCode(this)">Copier</button>
             <pre style="display:block"><code><span class="cm">// C</span>
 <span class="kw">void</span> <span class="fn">op_aff</span>(t_vm *vm, t_list *process) {
-    <span class="ty">char</span> c = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">2</span>) - <span class="num">1</span>] % <span class="num">256</span>;
-    <span class="fn">write</span>(<span class="num">1</span>, &c, <span class="num">1</span>); <span class="cm">// Affiche le caractère</span>
-    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">3</span>);
+    <span class="ty">char</span> c = P->reg[<span class="fn">get_reg</span>(vm, P->pc + <span class="num">06</span>) - <span class="num">06</span>] % <span class="num">06</span>;
+    <span class="fn">write</span>(<span class="num">06</span>, &c, <span class="num">06</span>); <span class="cm">// Affiche le caractère</span>
+    P->pc = <span class="fn">mem_mod</span>(P->pc + <span class="num">06</span>);
 }</code></pre></div>
         </div>
     </div>
@@ -1755,7 +1758,8 @@ carry <span class="fs-emph">unchanged</span>; PC := PC + instruction_size;
 </div>
 </section>
 
-<!-- Section 7: Encoding -->
+
+<!-- Section 07: Encoding -->
 <section id="encoding" class="reveal">
 <div class="container">
     <h2><span class="num">07</span> Encodage — Du .s au .cor</h2>
@@ -1817,10 +1821,10 @@ live: live  %1
      zjmp  %:live
 
 <span class="cm"># Bytecode compilé :</span>
-<span class="num">0x0b</span> <span class="str">0x68</span> <span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x0f</span> <span class="num">0x00</span> <span class="num">0x01</span>  <span class="cm">← sti r1,%:live,%1</span>
-<span class="num">0x06</span> <span class="str">0x64</span> <span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x01</span>  <span class="cm">← and r1,%0,r1</span>
-<span class="num">0x01</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x00</span> <span class="num">0x01</span>                <span class="cm">← live %1</span>
-<span class="num">0x09</span> <span class="num">0xff</span> <span class="num">0xfb</span>                          <span class="cm">← zjmp %:live  (−5 = 0xFFFB)</span></code></pre>
+<span class="num">07x0b</span> <span class="str">0x68</span> <span class="num">07x01</span> <span class="num">07x00</span> <span class="num">07x0f</span> <span class="num">07x00</span> <span class="num">07x01</span>  <span class="cm">← sti r1,%:live,%1</span>
+<span class="num">07x06</span> <span class="str">0x64</span> <span class="num">07x01</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x01</span>  <span class="cm">← and r1,%0,r1</span>
+<span class="num">07x01</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x01</span>                <span class="cm">← live %1</span>
+<span class="num">07x09</span> <span class="num">07xff</span> <span class="num">07xfb</span>                          <span class="cm">← zjmp %:live  (−5 = 0xFFFB)</span></code></pre>
     </div>
 
     <h3>Calcul de l'OCP en code</h3>
@@ -1836,14 +1840,14 @@ live: live  %1
         <pre id="c-ocp" class="active"><code><span class="cm">// C — assembler/src/synthesis/collect_codebytes.c</span>
 <span class="kw">static char</span> <span class="fn">get_acb</span>(t_instruction *instruction) {
     <span class="ty">t_args</span> *argument = instruction->args;
-    <span class="ty">int</span> i = <span class="num">7</span>, acb = <span class="num">0</span>;
+    <span class="ty">int</span> i = <span class="num">07</span>, acb = <span class="num">07</span>;
     <span class="kw">while</span> (argument) {
         <span class="kw">if</span> (argument->reg && i--)
-            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i);                       <span class="cm">// 01 = registre</span>
+            acb += <span class="fn">ft_power</span>(<span class="num">07</span>, i);                       <span class="cm">// 01 = registre</span>
         <span class="kw">else if</span> (argument->dir && i--)
-            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i + <span class="num">1</span>);                 <span class="cm">// 10 = direct</span>
+            acb += <span class="fn">ft_power</span>(<span class="num">07</span>, i + <span class="num">07</span>);                 <span class="cm">// 10 = direct</span>
         <span class="kw">else if</span> (argument->ind && i--)
-            acb += <span class="fn">ft_power</span>(<span class="num">2</span>, i + <span class="num">1</span>) + <span class="fn">ft_power</span>(<span class="num">2</span>, i); <span class="cm">// 11 = indirect</span>
+            acb += <span class="fn">ft_power</span>(<span class="num">07</span>, i + <span class="num">07</span>) + <span class="fn">ft_power</span>(<span class="num">07</span>, i); <span class="cm">// 11 = indirect</span>
         i--;
         argument = argument->next;
     }
@@ -1851,16 +1855,16 @@ live: live  %1
 }</code></pre>
         <pre id="r-ocp"><code><span class="cm">// Rust — corewar-asm/src/codegen.rs</span>
 <span class="kw">fn</span> <span class="fn">compute_acb</span>(instr: &<span class="ty">Instruction</span>) -> <span class="ty">u8</span> {
-    <span class="kw">let mut</span> acb: <span class="ty">u8</span> = <span class="num">0</span>;
-    <span class="kw">let mut</span> bit_pos: <span class="ty">i32</span> = <span class="num">7</span>;
+    <span class="kw">let mut</span> acb: <span class="ty">u8</span> = <span class="num">07</span>;
+    <span class="kw">let mut</span> bit_pos: <span class="ty">i32</span> = <span class="num">07</span>;
     <span class="kw">for</span> arg <span class="kw">in</span> &instr.args {
-        bit_pos -= <span class="num">1</span>;
+        bit_pos -= <span class="num">07</span>;
         <span class="kw">match</span> arg {
-            <span class="ty">Arg::Reg</span>(_) => { acb |= <span class="num">1</span> << bit_pos; }     <span class="cm">// 01</span>
-            <span class="ty">Arg::Dir</span>(_) => { acb |= <span class="num">2</span> << bit_pos; }     <span class="cm">// 10</span>
-            <span class="ty">Arg::Ind</span>(_) => { acb |= <span class="num">3</span> << bit_pos; }     <span class="cm">// 11</span>
+            <span class="ty">Arg::Reg</span>(_) => { acb |= <span class="num">07</span> << bit_pos; }     <span class="cm">// 01</span>
+            <span class="ty">Arg::Dir</span>(_) => { acb |= <span class="num">07</span> << bit_pos; }     <span class="cm">// 10</span>
+            <span class="ty">Arg::Ind</span>(_) => { acb |= <span class="num">07</span> << bit_pos; }     <span class="cm">// 11</span>
         }
-        bit_pos -= <span class="num">1</span>;
+        bit_pos -= <span class="num">07</span>;
     }
     acb
 }</code></pre>
@@ -1929,342 +1933,12 @@ live: live  %1
     </script>
 </div>
 </section>
-<section id="assembler" class="reveal">
-<div class="container">
-    <h2><span class="num">08</span> L'Assembleur — Pipeline complet</h2>
-    <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
-<div class="insight-box" data-level="comprehension">
-        <div class="ib-title">📖 Du pipeline de compilation au pipeline de l'assembleur</div>
-        <div class="ib-content">
-            <p>Le pipeline de l'assembleur Corewar est une version miniature du pipeline de compilation décrit par Bryant et O'Hallaron (CSAPP §1.2) : <code>Source → Préprocesseur → Compilateur → Assembleur → Éditeur de liens → Exécutable</code>. En Corewar, les étapes sont simplifiées car le langage source est déjà de l'assembleur :</p>
-            <div class="cmp-table-wrapper" style="margin-top:8px">
-                <table class="cmp-table">
-                    <thead><tr><th>Étape CSAPP</th><th>Équivalent Corewar</th><th>Rôle</th></tr></thead>
-                    <tbody>
-                        <tr><td>Préprocesseur (#include, #define)</td><td>Lexer (tokenisation)</td><td>Découper le texte brut en unités syntaxiques</td></tr>
-                        <tr><td>Compilateur (C → assembleur)</td><td>Parser (syntaxe → structure)</td><td>Construire une représentation structurée (AST)</td></tr>
-                        <tr><td>Assembleur (asm → objet)</td><td>Codegen (structure → bytecode)</td><td>Générer le code binaire avec résolution de symboles</td></tr>
-                        <tr><td>Éditeur de liens (objets → exécutable)</td><td>Résolution de labels (2 passes)</td><td>Résoudre les références croisées entre les labels et leurs adresses</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <p>La différence majeure est que le pipeline CSAPP est <strong>séquentiel entre des outils séparés</strong> (cpp, gcc, as, ld), tandis que votre assembleur est <strong>un programme unique avec deux passes</strong>. La première passe collecte les labels et leurs adresses, la deuxième génère le bytecode en résolvant les références. C'est la technique classique de l'<strong>assemblage en deux passes</strong>, utilisée par tous les assembleurs réels depuis les années 1950.</p>
-        </div>
-    </div>
-<div class="insight-box" data-level="comprehension">
-        <div class="ib-title">📖 Le problème des références avant — Pourquoi deux passes sont obligatoires</div>
-        <div class="ib-content">
-            <p>Le Dragon Book (<em>Compilers: Principles, Techniques, and Tools</em>, p.433) identifie le problème fondamental qui rend l'assemblage en deux passes nécessaire : <em>« A key problem when generating code for boolean expressions and flow-of-control statements is that of matching a jump instruction with the target of the jump. [...] In a one-pass translation, B must be translated before S is examined. What then is the target of the goto that jumps over the code for S? »</em></p>
-            <p>Dans Corewar, ce problème se manifeste concrètement : quand l'assembleur rencontre <code>zjmp %:loop</code> au début du fichier, il ne connaît pas encore l'adresse du label <code>loop:</code> défini plus loin. Il doit attendre d'avoir parcouru tout le fichier pour connaître la position de chaque label. C'est la <strong>forward reference</strong> — la référence en avant. La solution classique est l'assemblage en deux passes :</p>
-            <ul style="margin:8px 0 8px 20px;line-height:2">
-                <li><strong>Passe 1</strong> : collecter les labels et leurs positions — équivalent à construire la <strong>table des symboles</strong>. Le Dragon Book (p.108) définit cette table comme : <em>« Symbol tables are data structures that are used by compilers to hold information about source-program constructs. [...] Entries in the symbol table contain information about an identifier such as its character string (or lexeme), its type, its position in storage. »</em></li>
-                <li><strong>Passe 2</strong> : résoudre les références et générer le bytecode — équivalent au <strong>backpatching</strong>. Le Dragon Book (p.434) décrit cette opération : <em>« When a jump is generated, the target of the jump is temporarily left unspecified. Each such jump is put on a list of jumps whose labels are to be filled in when the proper label can be determined. »</em></li>
-            </ul>
-            <p>Le Dragon Book note aussi que le rôle de la table des symboles est de <em>« pass information from declarations to uses »</em> (p.112) — exactement ce que fait la passe 1 (enregistrer les déclarations de labels) vers la passe 2 (utiliser ces déclarations pour résoudre les références). Dans Corewar, la table des symboles est un simple dictionnaire {nom_du_label → offset_en_octets}, sans les complexités de portées imbriquées des langages de haut niveau.</p>
-        </div>
-    </div>
-
-    <div class="lifecycle">
-        <div class="lc-step">
-            <div class="lc-num fetch">1</div>
 
 
-            <div class="lc-content">
-                <div class="lc-title">Lexer — Tokenisation</div>
-                <div class="lc-desc">Découpe le fichier en tokens : labels, opcodes, paramètres, commentaires. Vérifie la syntaxe de base (caractères autorisés dans les labels, séparateurs valides).</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num decode">2</div>
-            <div class="lc-content">
-                <div class="lc-title">Parser — Validation sémantique</div>
-                <div class="lc-desc">Valide que chaque instruction a le bon nombre de paramètres et les bons types. Vérifie que tous les labels référencés existent. Construit la structure interne (liste chaînée en C, <code>Vec&lt;Label&gt;</code> en Rust).</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num wait">3</div>
-            <div class="lc-content">
-                <div class="lc-title">Calcul des positions — Première passe</div>
-                <div class="lc-desc">Parcourt toutes les instructions pour calculer leur position en mémoire (<code>mem_pos</code>) et la taille totale du programme. Chaque instruction a une taille variable qui dépend de l'OCP et des types de paramètres.</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num exec">4</div>
-            <div class="lc-content">
-                <div class="lc-title">Codegen — Deuxième passe</div>
-                <div class="lc-desc">Résout les labels (calcule les offsets relatifs) et génère le bytecode final. Écrit le header + le bytecode dans le fichier <code>.cor</code>. Toutes les valeurs sont en Big Endian.</div>
-            </div>
-        </div>
-    </div>
-
-    <h3>Résolution des labels</h3>
-    <p>Un label référencé par <code>%:label</code> est résolu en calculant la <strong>différence de position</strong> entre l'instruction qui référence et l'instruction cible :</p>
-    <div class="code-wrapper">
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <div class="code-header">
-            <span class="lang">Label resolution</span>
-            <div class="code-tabs">
-                <button class="code-tab active" onclick="showCode(this,'c-label')">C</button>
-                <button class="code-tab" onclick="showCode(this,'r-label')">Rust</button>
-            </div>
-        </div>
-        <pre id="c-label" class="active"><code><span class="cm">// C — assembler/src/analysis/parsing.c</span>
-<span class="ty">int</span> <span class="fn">exist_label</span>(t_code *code, <span class="ty">char</span> *label, <span class="ty">int</span> line) {
-    <span class="kw">while</span> (code) {
-        <span class="kw">if</span> (<span class="fn">ft_strcmp</span>(label, code->label) == <span class="num">0</span>)
-            <span class="kw">return</span> (<span class="num">1</span>); <span class="cm">// Label trouvé</span>
-        code = code->next;
-    }
-    <span class="cm">// Erreur : label inconnu</span>
-    <span class="kw">return</span> (<span class="num">0</span>);
-}</code></pre>
-        <pre id="r-label"><code><span class="cm">// Rust — corewar-asm/src/parser.rs</span>
-<span class="kw">pub fn</span> <span class="fn">validate_labels</span>(code_tab: &[<span class="ty">Label</span>]) -> <span class="ty">Result</span>&lt;(), <span class="ty">AsmError</span>&gt; {
-    <span class="kw">let</span> defined: <span class="ty">Vec</span>&lt;&str&gt; = code_tab.<span class="fn">iter</span>().<span class="fn">map</span>(|l| l.label.<span class="fn">as_str</span>()).<span class="fn">collect</span>();
-    <span class="kw">for</span> label <span class="kw">in</span> code_tab {
-        <span class="kw">for</span> instr <span class="kw">in</span> &label.instructions {
-            <span class="kw">for</span> arg <span class="kw">in</span> &instr.args {
-                <span class="kw">match</span> arg {
-                    <span class="ty">Arg::Dir</span>(s) <span class="kw">if</span> s.<span class="fn">starts_with</span>(<span class="str">':'</span>) => {
-                        <span class="kw">if</span> !defined.<span class="fn">contains</span>(&&s[<span class="num">1</span>..]) {
-                            <span class="kw">return</span> <span class="ty">Err</span>(<span class="ty">AsmError::Label</span>(...));
-                        }
-                    }
-                    <span class="cm">// idem pour Arg::Ind</span>
-                    _ => {}
-                }
-            }
-        }
-    }
-    <span class="ty">Ok</span>(())
-}</code></pre>
-    </div>
-
-    <h3>Gestion des erreurs — Ce que l'assembleur doit rejeter</h3>
-    <p>Un assembleur robuste doit détecter et signaler toutes les erreurs possibles. Voici la liste exhaustive des erreurs que votre assembleur doit gérer, classées par phase du pipeline :</p>
-
-    <div class="cmp-table-wrapper">
-        <table class="cmp-table">
-            <thead><tr><th>Phase</th><th>Erreur</th><th>Message attendu</th></tr></thead>
-            <tbody>
-                <tr><td>Lexer</td><td>Caractère illégal dans un label</td><td><code>Lexical error: invalid character '!' in label</code></td></tr>
-                <tr><td>Lexer</td><td>Guillemets non fermés dans .name/.comment</td><td><code>Lexical error: unclosed string</code></td></tr>
-                <tr><td>Parser</td><td>Opcode inconnu</td><td><code>Syntax error: unknown instruction "mov"</code></td></tr>
-                <tr><td>Parser</td><td>Mauvais nombre de paramètres</td><td><code>Syntax error: sti expects 3 parameters, got 2</code></td></tr>
-                <tr><td>Parser</td><td>Type de paramètre invalide</td><td><code>Semantic error: st: parameter 2 cannot be direct</code></td></tr>
-                <tr><td>Parser</td><td>Label référencé mais non défini</td><td><code>Semantic error: undefined label "end"</code></td></tr>
-                <tr><td>Parser</td><td>Registre hors limites (0 ou >16)</td><td><code>Semantic error: invalid register r0</code></td></tr>
-                <tr><td>Header</td><td>.name ou .comment manquant</td><td><code>Error: missing .name directive</code></td></tr>
-                <tr><td>Header</td><td>.name trop long (&gt;128)</td><td><code>Error: champion name too long (130 &gt; 128)</code></td></tr>
-                <tr><td>Codegen</td><td>Programme trop grand (&gt;MEM_SIZE)</td><td><code>Error: program too big (4210 &gt; 4096)</code></td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <p><strong>En C</strong>, les erreurs sont typiquement gérées par des codes de retour (<code>-1</code>) et des messages sur <code>stderr</code> via <code>ft_printf_fd(2, ...)</code>. <strong>En Rust</strong>, le système de <code>Result&lt;T, E&gt;</code> avec l'opérateur <code>?</code> garantit qu'aucune erreur ne peut être silencieusement ignorée — le programme ne compilera pas si un <code>Result</code> n'est pas traité.</p>
-
-    <h3>Les deux passes — Pourquoi c'est nécessaire</h3>
-    <p>L'assembleur fait obligatoirement <strong>deux passes</strong> sur le code source. La raison est fondamentale : un label peut être <strong>référencé avant sa définition</strong> (forward reference). Par exemple, dans <code>zjmp %:loop</code> suivi plus loin de <code>loop: live %1</code>, l'assembleur ne peut pas calculer l'offset de <code>%:loop</code> lors de la première rencontre — il doit d'abord connaître la position de toutes les instructions.</p>
-
-    <p><strong>Première passe</strong> (calcul des positions) : on parcourt toutes les instructions en calculant leur taille (opcode + OCP + paramètres) pour déterminer l'adresse de chaque label. On enregistre les positions dans une table des labels.</p>
-
-    <p><strong>Deuxième passe</strong> (génération du bytecode) : on reparcourt les instructions en remplaçant chaque référence à un label par son offset relatif (<code>label_pos - instruction_pos</code>), puis on encode chaque instruction en bytecode. Cette approche en deux passes est la technique classique de résolution de symboles, utilisée par tous les assembleurs réels depuis les années 1950. Levine (<em>Linkers and Loaders</em>, pp.6-8) décrit le même processus pour l'édition de liens : <em>« Linking, like compiling or assembling, is fundamentally a two-pass process. [...] Pass 1: When a linker runs, it first has to scan the input files to find the sizes of the segments and to collect the definitions and references of all the symbols. [...] Pass 2: The second pass uses the information collected in the first pass to control the actual linking process. »</em> Le parallèle est saisissant : votre assembleur est un éditeur de liens en miniature, et les labels Corewar sont les symboles exportés d'un module objet.</p>
-
-</div>
-</section>
-
-<!-- Section 9: C vs Rust -->
-<section id="c-vs-rust" class="reveal">
-<div class="container">
-    <h2><span class="num">09</span> C vs Rust — Comparaison d'implémentation</h2>
-    <p>Le même projet implémenté en C et en Rust illustre les différences fondamentales entre les deux langages. Voici les choix architecturaux et leurs conséquences :</p>
-
-    <table class="cmp-table">
-        <thead><tr><th>Aspect</th><th class="c-col">C</th><th class="r-col">Rust</th><th>Impact</th></tr></thead>
-        <tbody>
-            <tr>
-                <td>Processus</td>
-                <td class="c-col"><code>t_list*</code> (liste chaînée, <code>malloc</code> par nœud)</td>
-                <td class="r-col"><code>Vec&lt;Process&gt;</code> (tableau contigu)</td>
-                <td><span class="win win-r">Rust 5-21× plus rapide</span> (localité cache)</td>
-            </tr>
-            <tr>
-                <td>Dispatch</td>
-                <td class="c-col">Pointeurs de fonction dans <code>g_op_tab[].f</code></td>
-                <td class="r-col"><code>match ir { 0 => ..., 15 => ... }</code></td>
-                <td>Équivalent (les deux sont O(1))</td>
-            </tr>
-            <tr>
-                <td>Lecture mémoire</td>
-                <td class="c-col"><code>*(int*)&bytes[0]</code> (type punning, UB)</td>
-                <td class="r-col"><code>i32::from_be_bytes()</code> (safe)</td>
-                <td><span class="win win-r">Rust</span> (pas d'UB)</td>
-            </tr>
-            <tr>
-                <td>Gestion erreurs</td>
-                <td class="c-col">Codes de retour <code>-1</code>, <code>ft_printf_fd(2,...)</code></td>
-                <td class="r-col"><code>Result&lt;T, E&gt;</code> + <code>?</code> + <code>thiserror</code></td>
-                <td><span class="win win-r">Rust</span> (impossible d'oublier)</td>
-            </tr>
-            <tr>
-                <td>Fork insertion</td>
-                <td class="c-col">Insère immédiatement dans la liste</td>
-                <td class="r-col">Buffer <code>new_processes</code>, insère après le cycle</td>
-                <td><span class="win win-c">C</span> (comportement natif du sujet)</td>
-            </tr>
-            <tr>
-                <td>Débordement entier</td>
-                <td class="c-col">UB en C standard</td>
-                <td class="r-col"><code>wrapping_add()</code> / <code>wrapping_sub()</code></td>
-                <td><span class="win win-r">Rust</span> (comportement défini)</td>
-            </tr>
-            <tr>
-                <td>Taille binaire</td>
-                <td class="c-col"><strong>231 Ko</strong></td>
-                <td class="r-col">1.2 Mo</td>
-                <td><span class="win win-c">C</span> (5× plus petit)</td>
-            </tr>
-            <tr>
-                <td>Architecture</td>
-                <td class="c-col">Monolithique + <code>libft</code></td>
-                <td class="r-col">4 crates (<code>common</code>, <code>asm</code>, <code>vm</code>, <code>disasm</code>)</td>
-                <td><span class="win win-r">Rust</span> (modulaire)</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>Pourquoi le Rust est 5-21× plus rapide ?</h3>
-    <div class="intro-grid">
-        <div class="intro-card">
-            <div class="icon">🧱</div>
-            <div class="title">Vec&lt;Process&gt; vs liste chaînée</div>
-            <div class="desc">Le Rust stocke les processus dans un tableau contigu en mémoire. Le CPU peut précharger les données (cache lines). Le C utilise des nœuds éparpillés avec <code>malloc</code> individuel = cache misses constants.</div>
-        </div>
-        <div class="intro-card">
-            <div class="icon">♻️</div>
-            <div class="title">Pas de malloc/free par fork</div>
-            <div class="desc">Le C alloue et libère un nœud de liste chaînée pour chaque <code>fork</code> et chaque zombie tué. Le Rust utilise un <code>Vec</code> qui recycle la mémoire via <code>retain_mut</code>.</div>
-        </div>
-        <div class="intro-card">
-            <div class="icon">⚡</div>
-            <div class="title">Optimisations LLVM</div>
-            <div class="desc">Le compilateur Rust (backend LLVM) est plus agressif : inlining automatique, vectorisation SIMD, élimination de code mort. Même avec <code>-O2</code>, GCC ne matche pas LLVM sur cette base de code.</div>
-        </div>
-    </div>
-
-    
-    <h3>Benchmarks reproductibles — Mesurer, ne pas affirmer</h3>
-    <p>Pour reproduire ces mesures sur votre propre implémentation, utilisez le protocole suivant. Les résultats varient selon le matériel, le compilateur et les flags d'optimisation, mais les ordres de grandeur et les ratios doivent rester cohérents.</p>
-    
-    <div class="formal-spec" data-level="noyau"><span class="fs-label">Protocole de benchmark</span>
-<span class="fs-let">let</span> BINARY = "./corewar"                    <span class="fs-comment"># votre exécutable</span>
-<span class="fs-let">let</span> CHAMP1 = "champions/carapace.cor"       <span class="fs-comment"># champion de référence</span>
-<span class="fs-let">let</span> CHAMP2 = "champions/helltrain.cor"      <span class="fs-comment"># second champion</span>
-
-<span class="fs-comment"># 1. Temps d'exécution (wall-clock)</span>
-$ time $BINARY $CHAMP1 $CHAMP2
-
-<span class="fs-comment"># 2. Profiling par instruction (cycles par opcode)</span>
-$ valgrind --tool=callgrind $BINARY $CHAMP1 $CHAMP2
-$ kcachegrind callgrind.out.*
-
-<span class="fs-comment"># 3. Cache misses (perf Linux)</span>
-$ perf stat -e cache-misses,cycles,instructions $BINARY $CHAMP1 $CHAMP2
-
-<span class="fs-comment"># 4. Fuzzing de l'assembleur (générer des .s aléatoires)</span>
-$ for i in $(seq 1 1000); do
-    python3 fuzz_asm.py > fuzz_$i.s
-    ./asm fuzz_$i.s 2>&1 | grep -c Error
-  done
-</div>
-
-    <table class="complexity-table">
-        <thead>
-            <tr><th>Métrique</th><th>C (GCC -O2)</th><th>Rust (--release)</th><th>Ratio</th></tr>
-        </thead>
-        <tbody>
-            <tr><td>Partie 1v1 (moy. 10 runs)</td><td>~2.1s</td><td>~0.15s</td><td class="ct-on">14×</td></tr>
-            <tr><td>Partie fork-heavy (64 processus)</td><td>~8.5s</td><td>~0.4s</td><td class="ct-on">21×</td></tr>
-            <tr><td>Partie lean (2 processus)</td><td>~1.8s</td><td>~0.35s</td><td class="ct-o1">5×</td></tr>
-            <tr><td>kill_zombies (1000 processus)</td><td>~3ms</td><td>~0.02ms</td><td class="ct-on">150×</td></tr>
-            <tr><td>Cache misses L1 (partie fork)</td><td>~45% miss rate</td><td>~2% miss rate</td><td class="ct-on2">22×</td></tr>
-            <tr><td>Instructions par cycle (IPC)</td><td>~0.8</td><td>~2.4</td><td class="ct-o1">3×</td></tr>
-        </tbody>
-    </table>
-    <p><em>Conditions : Intel i7-12700K, 32GB DDR4, Linux 6.x, GCC 12.2 -O2, Rust 1.70 --release, champions : carapace.cor vs helltrain.cor, MEM_SIZE=4096, CYCLE_TO_DIE=1536. Les mesures sont indicatives et dépendent de votre implémentation.</em></p>
-
-    <h3>Fuzzing de la VM — Trouver les bugs par l'exploration aléatoire</h3>
-    <p>Le fuzzing est la technique la plus efficace pour découvrir les bugs de votre VM et de votre assembleur. Le principe : générer des champions aléatoires (ou muter des champions existants) et vérifier que la VM ne crash pas, ne boucle pas infiniment, et produit un résultat déterministe.</p>
-    
-    <div class="formal-spec" data-level="noyau"><span class="fs-label">Stratégies de fuzzing</span>
-<span class="fs-comment"># 1. Fuzzing de l'assembleur : générer des .s syntaxiquement valides</span>
-<span class="fs-comment">#    - Opcodes aléatoires parmi les 16</span>
-<span class="fs-comment">#    - Paramètres valides (registres 1-16, direct %N, indirect N)</span>
-<span class="fs-comment">#    - Labels aléatoires (références avant/arrière)</span>
-<span class="fs-comment">#    Vérifier : pas de crash, pas de leak, pas de .cor corrompu</span>
-
-<span class="fs-comment"># 2. Fuzzing de la VM : générer des .cor aléatoires</span>
-<span class="fs-comment">#    - Header valide (magic = 0xea83f3, nom, comment)</span>
-<span class="fs-comment">#    - Bytecode aléatoire (opcode 0-255)</span>
-<span class="fs-comment">#    Vérifier : pas de segfault, pas de UB, déterminisme</span>
-
-<span class="fs-comment"># 3. Mutation testing : muter des champions existants</span>
-<span class="fs-comment">#    - Flip 1 bit aléatoire dans le .cor</span>
-<span class="fs-comment">#    - Insérer/supprimer un octet</span>
-<span class="fs-comment">#    - Remplacer un opcode par un autre</span>
-<span class="fs-comment">#    Vérifier : même comportement ou crash propre</span>
-
-<span class="fs-comment"># 4. Test de déterminisme</span>
-$ md5sum <($BINARY -d 0 $C1 $C2 | tail -1) \
-        <($BINARY -d 0 $C1 $C2 | tail -1)
-<span class="fs-comment"># Les deux hashs doivent être identiques</span>
-</div>
-    <p>L'objectif du fuzzing n'est pas de faire gagner votre champion, mais de <strong>garantir la robustesse de votre VM</strong>. Un champion aléatoire est l'équivalent d'un utilisateur malveillant qui essaie de casser votre programme. Si votre VM survit à 10 000 champions aléatoires sans crash ni comportement indéfini, elle est probablement robuste.</p>
-
-<h3>Micro-optimisation extrême — Les secrets des VM performantes</h3>
-
-    <h3>Kill zombies — La différence algorithmique</h3>
-    <div class="code-wrapper">
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <div class="code-header">
-            <span class="lang">kill_zombies</span>
-            <div class="code-tabs">
-                <button class="code-tab active" onclick="showCode(this,'c-kill')">C — O(N²)</button>
-                <button class="code-tab" onclick="showCode(this,'r-kill')">Rust — O(N)</button>
-            </div>
-        </div>
-        <pre id="c-kill" class="active"><code><span class="cm">// C — parcours de liste + suppression de nœud</span>
-<span class="kw">void</span> <span class="fn">kill_zombies</span>(t_vm *vm, t_list *process, <span class="ty">int</span> check) {
-    <span class="kw">while</span> (process) {
-        <span class="kw">if</span> (!P->live_count || vm->cycle_to_die < <span class="num">0</span>) {
-            <span class="cm">// Supprimer le nœud de la liste chaînée</span>
-            <span class="cm">// + free() le nœud et le processus</span>
-            <span class="cm">// Complexité : O(N) par suppression × N processus</span>
-            vm->process_alive--;
-        }
-        P->live_count = <span class="num">0</span>;
-        process = process->next;
-    }
-}</code></pre>
-        <pre id="r-kill"><code><span class="cm">// Rust — retain_mut en O(N) total</span>
-<span class="kw">fn</span> <span class="fn">kill_zombies</span>(&<span class="kw">mut self</span>, check: <span class="ty">bool</span>) {
-    <span class="kw">if</span> <span class="kw">self</span>.cycles > <span class="num">0</span> && check {
-        <span class="kw">let</span> cycle_to_die = <span class="kw">self</span>.cycle_to_die;
-        <span class="kw">self</span>.processes.<span class="fn">retain_mut</span>(|p| {
-            <span class="kw">if</span> p.live_count == <span class="num">0</span> || cycle_to_die < <span class="num">0</span> { <span class="kw">false</span> }
-            <span class="kw">else</span> { p.live_count = <span class="num">0</span>; <span class="kw">true</span> }
-        });
-        <span class="kw">self</span>.process_alive = <span class="kw">self</span>.processes.<span class="fn">len</span>() <span class="kw">as</span> <span class="ty">i32</span>;
-    }
-}</code></pre>
-    </div>
-</div>
-</section>
-
-<!-- Section 10: Syntaxe du .s -->
+<!-- Section 08: Syntaxe du .s -->
 <section id="syntaxe" class="reveal">
 <div class="container">
-    <h2><span class="num">10</span> Syntaxe du fichier <code>.s</code></h2>
+    <h2><span class="num">08</span> Syntaxe du fichier <code>.s</code></h2>
     <p>Le fichier <code>.s</code> est le code source en assembleur Corewar. Il suit une syntaxe stricte que l'assembleur doit parser et valider. Voici la référence complète de tout ce que vous pouvez écrire dans un fichier <code>.s</code>.</p>
 
     <h3>Structure d'un fichier .s</h3>
@@ -2378,10 +2052,156 @@ live: live  %1
 </div>
 </section>
 
-<!-- Section 11: Erreurs courantes & Pièges -->
+</section>
+<section id="assembler" class="reveal">
+<div class="container">
+    <h2><span class="num">09</span> L'Assembleur — Pipeline complet</h2>
+    <p>L'assembleur transforme un fichier <code>.s</code> en <code>.cor</code> en plusieurs étapes. Le principe est le même en C et en Rust, mais l'implémentation diffère dans la gestion des erreurs et des structures de données.</p>
+<div class="insight-box" data-level="comprehension">
+        <div class="ib-title">📖 Du pipeline de compilation au pipeline de l'assembleur</div>
+        <div class="ib-content">
+            <p>Le pipeline de l'assembleur Corewar est une version miniature du pipeline de compilation décrit par Bryant et O'Hallaron (CSAPP §1.2) : <code>Source → Préprocesseur → Compilateur → Assembleur → Éditeur de liens → Exécutable</code>. En Corewar, les étapes sont simplifiées car le langage source est déjà de l'assembleur :</p>
+            <div class="cmp-table-wrapper" style="margin-top:8px">
+                <table class="cmp-table">
+                    <thead><tr><th>Étape CSAPP</th><th>Équivalent Corewar</th><th>Rôle</th></tr></thead>
+                    <tbody>
+                        <tr><td>Préprocesseur (#include, #define)</td><td>Lexer (tokenisation)</td><td>Découper le texte brut en unités syntaxiques</td></tr>
+                        <tr><td>Compilateur (C → assembleur)</td><td>Parser (syntaxe → structure)</td><td>Construire une représentation structurée (AST)</td></tr>
+                        <tr><td>Assembleur (asm → objet)</td><td>Codegen (structure → bytecode)</td><td>Générer le code binaire avec résolution de symboles</td></tr>
+                        <tr><td>Éditeur de liens (objets → exécutable)</td><td>Résolution de labels (2 passes)</td><td>Résoudre les références croisées entre les labels et leurs adresses</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>La différence majeure est que le pipeline CSAPP est <strong>séquentiel entre des outils séparés</strong> (cpp, gcc, as, ld), tandis que votre assembleur est <strong>un programme unique avec deux passes</strong>. La première passe collecte les labels et leurs adresses, la deuxième génère le bytecode en résolvant les références. C'est la technique classique de l'<strong>assemblage en deux passes</strong>, utilisée par tous les assembleurs réels depuis les années 1950.</p>
+        </div>
+    </div>
+<div class="insight-box" data-level="comprehension">
+        <div class="ib-title">📖 Le problème des références avant — Pourquoi deux passes sont obligatoires</div>
+        <div class="ib-content">
+            <p>Le Dragon Book (<em>Compilers: Principles, Techniques, and Tools</em>, p.433) identifie le problème fondamental qui rend l'assemblage en deux passes nécessaire : <em>« A key problem when generating code for boolean expressions and flow-of-control statements is that of matching a jump instruction with the target of the jump. [...] In a one-pass translation, B must be translated before S is examined. What then is the target of the goto that jumps over the code for S? »</em></p>
+            <p>Dans Corewar, ce problème se manifeste concrètement : quand l'assembleur rencontre <code>zjmp %:loop</code> au début du fichier, il ne connaît pas encore l'adresse du label <code>loop:</code> défini plus loin. Il doit attendre d'avoir parcouru tout le fichier pour connaître la position de chaque label. C'est la <strong>forward reference</strong> — la référence en avant. La solution classique est l'assemblage en deux passes :</p>
+            <ul style="margin:8px 0 8px 20px;line-height:2">
+                <li><strong>Passe 1</strong> : collecter les labels et leurs positions — équivalent à construire la <strong>table des symboles</strong>. Le Dragon Book (p.108) définit cette table comme : <em>« Symbol tables are data structures that are used by compilers to hold information about source-program constructs. [...] Entries in the symbol table contain information about an identifier such as its character string (or lexeme), its type, its position in storage. »</em></li>
+                <li><strong>Passe 2</strong> : résoudre les références et générer le bytecode — équivalent au <strong>backpatching</strong>. Le Dragon Book (p.434) décrit cette opération : <em>« When a jump is generated, the target of the jump is temporarily left unspecified. Each such jump is put on a list of jumps whose labels are to be filled in when the proper label can be determined. »</em></li>
+            </ul>
+            <p>Le Dragon Book note aussi que le rôle de la table des symboles est de <em>« pass information from declarations to uses »</em> (p.112) — exactement ce que fait la passe 1 (enregistrer les déclarations de labels) vers la passe 2 (utiliser ces déclarations pour résoudre les références). Dans Corewar, la table des symboles est un simple dictionnaire {nom_du_label → offset_en_octets}, sans les complexités de portées imbriquées des langages de haut niveau.</p>
+        </div>
+    </div>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+
+
+            <div class="lc-content">
+                <div class="lc-title">Lexer — Tokenisation</div>
+                <div class="lc-desc">Découpe le fichier en tokens : labels, opcodes, paramètres, commentaires. Vérifie la syntaxe de base (caractères autorisés dans les labels, séparateurs valides).</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title">Parser — Validation sémantique</div>
+                <div class="lc-desc">Valide que chaque instruction a le bon nombre de paramètres et les bons types. Vérifie que tous les labels référencés existent. Construit la structure interne (liste chaînée en C, <code>Vec&lt;Label&gt;</code> en Rust).</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Calcul des positions — Première passe</div>
+                <div class="lc-desc">Parcourt toutes les instructions pour calculer leur position en mémoire (<code>mem_pos</code>) et la taille totale du programme. Chaque instruction a une taille variable qui dépend de l'OCP et des types de paramètres.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Codegen — Deuxième passe</div>
+                <div class="lc-desc">Résout les labels (calcule les offsets relatifs) et génère le bytecode final. Écrit le header + le bytecode dans le fichier <code>.cor</code>. Toutes les valeurs sont en Big Endian.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Résolution des labels</h3>
+    <p>Un label référencé par <code>%:label</code> est résolu en calculant la <strong>différence de position</strong> entre l'instruction qui référence et l'instruction cible :</p>
+    <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <div class="code-header">
+            <span class="lang">Label resolution</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-label')">C</button>
+                <button class="code-tab" onclick="showCode(this,'r-label')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-label" class="active"><code><span class="cm">// C — assembler/src/analysis/parsing.c</span>
+<span class="ty">int</span> <span class="fn">exist_label</span>(t_code *code, <span class="ty">char</span> *label, <span class="ty">int</span> line) {
+    <span class="kw">while</span> (code) {
+        <span class="kw">if</span> (<span class="fn">ft_strcmp</span>(label, code->label) == <span class="num">09</span>)
+            <span class="kw">return</span> (<span class="num">09</span>); <span class="cm">// Label trouvé</span>
+        code = code->next;
+    }
+    <span class="cm">// Erreur : label inconnu</span>
+    <span class="kw">return</span> (<span class="num">09</span>);
+}</code></pre>
+        <pre id="r-label"><code><span class="cm">// Rust — corewar-asm/src/parser.rs</span>
+<span class="kw">pub fn</span> <span class="fn">validate_labels</span>(code_tab: &[<span class="ty">Label</span>]) -> <span class="ty">Result</span>&lt;(), <span class="ty">AsmError</span>&gt; {
+    <span class="kw">let</span> defined: <span class="ty">Vec</span>&lt;&str&gt; = code_tab.<span class="fn">iter</span>().<span class="fn">map</span>(|l| l.label.<span class="fn">as_str</span>()).<span class="fn">collect</span>();
+    <span class="kw">for</span> label <span class="kw">in</span> code_tab {
+        <span class="kw">for</span> instr <span class="kw">in</span> &label.instructions {
+            <span class="kw">for</span> arg <span class="kw">in</span> &instr.args {
+                <span class="kw">match</span> arg {
+                    <span class="ty">Arg::Dir</span>(s) <span class="kw">if</span> s.<span class="fn">starts_with</span>(<span class="str">':'</span>) => {
+                        <span class="kw">if</span> !defined.<span class="fn">contains</span>(&&s[<span class="num">09</span>..]) {
+                            <span class="kw">return</span> <span class="ty">Err</span>(<span class="ty">AsmError::Label</span>(...));
+                        }
+                    }
+                    <span class="cm">// idem pour Arg::Ind</span>
+                    _ => {}
+                }
+            }
+        }
+    }
+    <span class="ty">Ok</span>(())
+}</code></pre>
+    </div>
+
+    <h3>Gestion des erreurs — Ce que l'assembleur doit rejeter</h3>
+    <p>Un assembleur robuste doit détecter et signaler toutes les erreurs possibles. Voici la liste exhaustive des erreurs que votre assembleur doit gérer, classées par phase du pipeline :</p>
+
+    <div class="cmp-table-wrapper">
+        <table class="cmp-table">
+            <thead><tr><th>Phase</th><th>Erreur</th><th>Message attendu</th></tr></thead>
+            <tbody>
+                <tr><td>Lexer</td><td>Caractère illégal dans un label</td><td><code>Lexical error: invalid character '!' in label</code></td></tr>
+                <tr><td>Lexer</td><td>Guillemets non fermés dans .name/.comment</td><td><code>Lexical error: unclosed string</code></td></tr>
+                <tr><td>Parser</td><td>Opcode inconnu</td><td><code>Syntax error: unknown instruction "mov"</code></td></tr>
+                <tr><td>Parser</td><td>Mauvais nombre de paramètres</td><td><code>Syntax error: sti expects 3 parameters, got 2</code></td></tr>
+                <tr><td>Parser</td><td>Type de paramètre invalide</td><td><code>Semantic error: st: parameter 2 cannot be direct</code></td></tr>
+                <tr><td>Parser</td><td>Label référencé mais non défini</td><td><code>Semantic error: undefined label "end"</code></td></tr>
+                <tr><td>Parser</td><td>Registre hors limites (0 ou >16)</td><td><code>Semantic error: invalid register r0</code></td></tr>
+                <tr><td>Header</td><td>.name ou .comment manquant</td><td><code>Error: missing .name directive</code></td></tr>
+                <tr><td>Header</td><td>.name trop long (&gt;128)</td><td><code>Error: champion name too long (130 &gt; 128)</code></td></tr>
+                <tr><td>Codegen</td><td>Programme trop grand (&gt;MEM_SIZE)</td><td><code>Error: program too big (4210 &gt; 4096)</code></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p><strong>En C</strong>, les erreurs sont typiquement gérées par des codes de retour (<code>-1</code>) et des messages sur <code>stderr</code> via <code>ft_printf_fd(2, ...)</code>. <strong>En Rust</strong>, le système de <code>Result&lt;T, E&gt;</code> avec l'opérateur <code>?</code> garantit qu'aucune erreur ne peut être silencieusement ignorée — le programme ne compilera pas si un <code>Result</code> n'est pas traité.</p>
+
+    <h3>Les deux passes — Pourquoi c'est nécessaire</h3>
+    <p>L'assembleur fait obligatoirement <strong>deux passes</strong> sur le code source. La raison est fondamentale : un label peut être <strong>référencé avant sa définition</strong> (forward reference). Par exemple, dans <code>zjmp %:loop</code> suivi plus loin de <code>loop: live %1</code>, l'assembleur ne peut pas calculer l'offset de <code>%:loop</code> lors de la première rencontre — il doit d'abord connaître la position de toutes les instructions.</p>
+
+    <p><strong>Première passe</strong> (calcul des positions) : on parcourt toutes les instructions en calculant leur taille (opcode + OCP + paramètres) pour déterminer l'adresse de chaque label. On enregistre les positions dans une table des labels.</p>
+
+    <p><strong>Deuxième passe</strong> (génération du bytecode) : on reparcourt les instructions en remplaçant chaque référence à un label par son offset relatif (<code>label_pos - instruction_pos</code>), puis on encode chaque instruction en bytecode. Cette approche en deux passes est la technique classique de résolution de symboles, utilisée par tous les assembleurs réels depuis les années 1950. Levine (<em>Linkers and Loaders</em>, pp.6-8) décrit le même processus pour l'édition de liens : <em>« Linking, like compiling or assembling, is fundamentally a two-pass process. [...] Pass 1: When a linker runs, it first has to scan the input files to find the sizes of the segments and to collect the definitions and references of all the symbols. [...] Pass 2: The second pass uses the information collected in the first pass to control the actual linking process. »</em> Le parallèle est saisissant : votre assembleur est un éditeur de liens en miniature, et les labels Corewar sont les symboles exportés d'un module objet.</p>
+
+</div>
+</section>
+
+
+<!-- Section 10: Erreurs courantes & Pièges -->
 <section id="erreurs" class="reveal">
 <div class="container">
-    <h2><span class="num">11</span> Pièges & Erreurs courantes</h2>
+    <h2><span class="num">10</span> Pièges & Erreurs courantes</h2>
     <p>Le projet Corewar regorge de subtilités qui peuvent faire perdre des heures de debug. Voici les pièges les plus fréquents, classés par catégorie, avec pour chacun l'erreur, l'explication et la correction.</p>
 <div class="insight-box" data-level="noyau">
         <div class="ib-title">📖 Les pièges du C bas niveau — Leçons de la pratique</div>
@@ -2541,6 +2361,197 @@ live: live  %1
 </div>
 </section>
 
+
+<!-- Section 11: C vs Rust -->
+<section id="c-vs-rust" class="reveal">
+<div class="container">
+    <h2><span class="num">11</span> C vs Rust — Comparaison d'implémentation</h2>
+    <p>Le même projet implémenté en C et en Rust illustre les différences fondamentales entre les deux langages. Voici les choix architecturaux et leurs conséquences :</p>
+
+    <table class="cmp-table">
+        <thead><tr><th>Aspect</th><th class="c-col">C</th><th class="r-col">Rust</th><th>Impact</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>Processus</td>
+                <td class="c-col"><code>t_list*</code> (liste chaînée, <code>malloc</code> par nœud)</td>
+                <td class="r-col"><code>Vec&lt;Process&gt;</code> (tableau contigu)</td>
+                <td><span class="win win-r">Rust 5-21× plus rapide</span> (localité cache)</td>
+            </tr>
+            <tr>
+                <td>Dispatch</td>
+                <td class="c-col">Pointeurs de fonction dans <code>g_op_tab[].f</code></td>
+                <td class="r-col"><code>match ir { 0 => ..., 15 => ... }</code></td>
+                <td>Équivalent (les deux sont O(1))</td>
+            </tr>
+            <tr>
+                <td>Lecture mémoire</td>
+                <td class="c-col"><code>*(int*)&bytes[0]</code> (type punning, UB)</td>
+                <td class="r-col"><code>i32::from_be_bytes()</code> (safe)</td>
+                <td><span class="win win-r">Rust</span> (pas d'UB)</td>
+            </tr>
+            <tr>
+                <td>Gestion erreurs</td>
+                <td class="c-col">Codes de retour <code>-1</code>, <code>ft_printf_fd(2,...)</code></td>
+                <td class="r-col"><code>Result&lt;T, E&gt;</code> + <code>?</code> + <code>thiserror</code></td>
+                <td><span class="win win-r">Rust</span> (impossible d'oublier)</td>
+            </tr>
+            <tr>
+                <td>Fork insertion</td>
+                <td class="c-col">Insère immédiatement dans la liste</td>
+                <td class="r-col">Buffer <code>new_processes</code>, insère après le cycle</td>
+                <td><span class="win win-c">C</span> (comportement natif du sujet)</td>
+            </tr>
+            <tr>
+                <td>Débordement entier</td>
+                <td class="c-col">UB en C standard</td>
+                <td class="r-col"><code>wrapping_add()</code> / <code>wrapping_sub()</code></td>
+                <td><span class="win win-r">Rust</span> (comportement défini)</td>
+            </tr>
+            <tr>
+                <td>Taille binaire</td>
+                <td class="c-col"><strong>231 Ko</strong></td>
+                <td class="r-col">1.2 Mo</td>
+                <td><span class="win win-c">C</span> (5× plus petit)</td>
+            </tr>
+            <tr>
+                <td>Architecture</td>
+                <td class="c-col">Monolithique + <code>libft</code></td>
+                <td class="r-col">4 crates (<code>common</code>, <code>asm</code>, <code>vm</code>, <code>disasm</code>)</td>
+                <td><span class="win win-r">Rust</span> (modulaire)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Pourquoi le Rust est 5-21× plus rapide ?</h3>
+    <div class="intro-grid">
+        <div class="intro-card">
+            <div class="icon">🧱</div>
+            <div class="title">Vec&lt;Process&gt; vs liste chaînée</div>
+            <div class="desc">Le Rust stocke les processus dans un tableau contigu en mémoire. Le CPU peut précharger les données (cache lines). Le C utilise des nœuds éparpillés avec <code>malloc</code> individuel = cache misses constants.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">♻️</div>
+            <div class="title">Pas de malloc/free par fork</div>
+            <div class="desc">Le C alloue et libère un nœud de liste chaînée pour chaque <code>fork</code> et chaque zombie tué. Le Rust utilise un <code>Vec</code> qui recycle la mémoire via <code>retain_mut</code>.</div>
+        </div>
+        <div class="intro-card">
+            <div class="icon">⚡</div>
+            <div class="title">Optimisations LLVM</div>
+            <div class="desc">Le compilateur Rust (backend LLVM) est plus agressif : inlining automatique, vectorisation SIMD, élimination de code mort. Même avec <code>-O2</code>, GCC ne matche pas LLVM sur cette base de code.</div>
+        </div>
+    </div>
+
+    
+    <h3>Benchmarks reproductibles — Mesurer, ne pas affirmer</h3>
+    <p>Pour reproduire ces mesures sur votre propre implémentation, utilisez le protocole suivant. Les résultats varient selon le matériel, le compilateur et les flags d'optimisation, mais les ordres de grandeur et les ratios doivent rester cohérents.</p>
+    
+    <div class="formal-spec" data-level="noyau"><span class="fs-label">Protocole de benchmark</span>
+<span class="fs-let">let</span> BINARY = "./corewar"                    <span class="fs-comment"># votre exécutable</span>
+<span class="fs-let">let</span> CHAMP1 = "champions/carapace.cor"       <span class="fs-comment"># champion de référence</span>
+<span class="fs-let">let</span> CHAMP2 = "champions/helltrain.cor"      <span class="fs-comment"># second champion</span>
+
+<span class="fs-comment"># 1. Temps d'exécution (wall-clock)</span>
+$ time $BINARY $CHAMP1 $CHAMP2
+
+<span class="fs-comment"># 2. Profiling par instruction (cycles par opcode)</span>
+$ valgrind --tool=callgrind $BINARY $CHAMP1 $CHAMP2
+$ kcachegrind callgrind.out.*
+
+<span class="fs-comment"># 3. Cache misses (perf Linux)</span>
+$ perf stat -e cache-misses,cycles,instructions $BINARY $CHAMP1 $CHAMP2
+
+<span class="fs-comment"># 4. Fuzzing de l'assembleur (générer des .s aléatoires)</span>
+$ for i in $(seq 1 1000); do
+    python3 fuzz_asm.py > fuzz_$i.s
+    ./asm fuzz_$i.s 2>&1 | grep -c Error
+  done
+</div>
+
+    <table class="complexity-table">
+        <thead>
+            <tr><th>Métrique</th><th>C (GCC -O2)</th><th>Rust (--release)</th><th>Ratio</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Partie 1v1 (moy. 10 runs)</td><td>~2.1s</td><td>~0.15s</td><td class="ct-on">14×</td></tr>
+            <tr><td>Partie fork-heavy (64 processus)</td><td>~8.5s</td><td>~0.4s</td><td class="ct-on">21×</td></tr>
+            <tr><td>Partie lean (2 processus)</td><td>~1.8s</td><td>~0.35s</td><td class="ct-o1">5×</td></tr>
+            <tr><td>kill_zombies (1000 processus)</td><td>~3ms</td><td>~0.02ms</td><td class="ct-on">150×</td></tr>
+            <tr><td>Cache misses L1 (partie fork)</td><td>~45% miss rate</td><td>~2% miss rate</td><td class="ct-on2">22×</td></tr>
+            <tr><td>Instructions par cycle (IPC)</td><td>~0.8</td><td>~2.4</td><td class="ct-o1">3×</td></tr>
+        </tbody>
+    </table>
+    <p><em>Conditions : Intel i7-12700K, 32GB DDR4, Linux 6.x, GCC 12.2 -O2, Rust 1.70 --release, champions : carapace.cor vs helltrain.cor, MEM_SIZE=4096, CYCLE_TO_DIE=1536. Les mesures sont indicatives et dépendent de votre implémentation.</em></p>
+
+    <h3>Fuzzing de la VM — Trouver les bugs par l'exploration aléatoire</h3>
+    <p>Le fuzzing est la technique la plus efficace pour découvrir les bugs de votre VM et de votre assembleur. Le principe : générer des champions aléatoires (ou muter des champions existants) et vérifier que la VM ne crash pas, ne boucle pas infiniment, et produit un résultat déterministe.</p>
+    
+    <div class="formal-spec" data-level="noyau"><span class="fs-label">Stratégies de fuzzing</span>
+<span class="fs-comment"># 1. Fuzzing de l'assembleur : générer des .s syntaxiquement valides</span>
+<span class="fs-comment">#    - Opcodes aléatoires parmi les 16</span>
+<span class="fs-comment">#    - Paramètres valides (registres 1-16, direct %N, indirect N)</span>
+<span class="fs-comment">#    - Labels aléatoires (références avant/arrière)</span>
+<span class="fs-comment">#    Vérifier : pas de crash, pas de leak, pas de .cor corrompu</span>
+
+<span class="fs-comment"># 2. Fuzzing de la VM : générer des .cor aléatoires</span>
+<span class="fs-comment">#    - Header valide (magic = 0xea83f3, nom, comment)</span>
+<span class="fs-comment">#    - Bytecode aléatoire (opcode 0-255)</span>
+<span class="fs-comment">#    Vérifier : pas de segfault, pas de UB, déterminisme</span>
+
+<span class="fs-comment"># 3. Mutation testing : muter des champions existants</span>
+<span class="fs-comment">#    - Flip 1 bit aléatoire dans le .cor</span>
+<span class="fs-comment">#    - Insérer/supprimer un octet</span>
+<span class="fs-comment">#    - Remplacer un opcode par un autre</span>
+<span class="fs-comment">#    Vérifier : même comportement ou crash propre</span>
+
+<span class="fs-comment"># 4. Test de déterminisme</span>
+$ md5sum <($BINARY -d 0 $C1 $C2 | tail -1) \
+        <($BINARY -d 0 $C1 $C2 | tail -1)
+<span class="fs-comment"># Les deux hashs doivent être identiques</span>
+</div>
+    <p>L'objectif du fuzzing n'est pas de faire gagner votre champion, mais de <strong>garantir la robustesse de votre VM</strong>. Un champion aléatoire est l'équivalent d'un utilisateur malveillant qui essaie de casser votre programme. Si votre VM survit à 10 000 champions aléatoires sans crash ni comportement indéfini, elle est probablement robuste.</p>
+
+<h3>Micro-optimisation extrême — Les secrets des VM performantes</h3>
+
+    <h3>Kill zombies — La différence algorithmique</h3>
+    <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <div class="code-header">
+            <span class="lang">kill_zombies</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-kill')">C — O(N²)</button>
+                <button class="code-tab" onclick="showCode(this,'r-kill')">Rust — O(N)</button>
+            </div>
+        </div>
+        <pre id="c-kill" class="active"><code><span class="cm">// C — parcours de liste + suppression de nœud</span>
+<span class="kw">void</span> <span class="fn">kill_zombies</span>(t_vm *vm, t_list *process, <span class="ty">int</span> check) {
+    <span class="kw">while</span> (process) {
+        <span class="kw">if</span> (!P->live_count || vm->cycle_to_die < <span class="num">11</span>) {
+            <span class="cm">// Supprimer le nœud de la liste chaînée</span>
+            <span class="cm">// + free() le nœud et le processus</span>
+            <span class="cm">// Complexité : O(N) par suppression × N processus</span>
+            vm->process_alive--;
+        }
+        P->live_count = <span class="num">11</span>;
+        process = process->next;
+    }
+}</code></pre>
+        <pre id="r-kill"><code><span class="cm">// Rust — retain_mut en O(N) total</span>
+<span class="kw">fn</span> <span class="fn">kill_zombies</span>(&<span class="kw">mut self</span>, check: <span class="ty">bool</span>) {
+    <span class="kw">if</span> <span class="kw">self</span>.cycles > <span class="num">11</span> && check {
+        <span class="kw">let</span> cycle_to_die = <span class="kw">self</span>.cycle_to_die;
+        <span class="kw">self</span>.processes.<span class="fn">retain_mut</span>(|p| {
+            <span class="kw">if</span> p.live_count == <span class="num">11</span> || cycle_to_die < <span class="num">11</span> { <span class="kw">false</span> }
+            <span class="kw">else</span> { p.live_count = <span class="num">11</span>; <span class="kw">true</span> }
+        });
+        <span class="kw">self</span>.process_alive = <span class="kw">self</span>.processes.<span class="fn">len</span>() <span class="kw">as</span> <span class="ty">i32</span>;
+    }
+}</code></pre>
+    </div>
+</div>
+</section>
+
+</section>
+
 <!-- Section 12: Ligne de commande -->
 <section id="cli" class="reveal">
 <div class="container">
@@ -2636,6 +2647,7 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
 
 </div>
 </section>
+
 
 <!-- Section 13: Stratégie de champion -->
 <section id="strategie" class="reveal">
@@ -2969,108 +2981,6 @@ cargo run --release -p corewar-disasm champion.cor</code></pre>
 </div>
 </section>
 
-<!-- Section 15: Guide de débogage -->
-<section id="debug" class="reveal">
-<div class="container">
-    <h2><span class="num">15</span> Guide de débogage</h2>
-    <p>Le projet Corewar est truffé de subtilités qui rendent le débogage difficile. Un champion qui "ne marche pas" peut avoir des dizaines de causes possibles : mauvais encodage, mauvaise résolution de labels, oubli de <code>mem_mod()</code>, endianness inversé, carry non maîtrisé... Voici une méthodologie structurée pour diagnostiquer et corriger les problèmes.</p>
-
-    <h3>Méthodologie de débogage en 4 étapes</h3>
-
-    <div class="lifecycle">
-        <div class="lc-step">
-            <div class="lc-num fetch">1</div>
-            <div class="lc-content">
-                <div class="lc-title">Valider l'assembleur avec le désassembleur</div>
-                <div class="lc-desc">Compilez votre champion avec votre assembleur, puis désassemblez le <code>.cor</code> obtenu. Le code source reconstruit doit correspondre exactement à l'original. Si ce n'est pas le cas, le bug est dans l'assembleur. Testez avec le champion "zork" du sujet comme cas de référence.</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num decode">2</div>
-            <div class="lc-content">
-                <div class="lc-title">Comparer le bytecode avec une référence</div>
-                <div class="lc-desc">Utilisez un assembleur de référence (celui d'un autre étudiant, ou celui fourni) pour compiler le même fichier <code>.s</code>. Comparez les deux fichiers <code>.cor</code> octet par octet avec <code>hexdump -C champion.cor | head -50</code> ou <code>cmp -l ref.cor votre.cor</code>. Toute différence indique un bug d'encodage.</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num wait">3</div>
-            <div class="lc-content">
-                <div class="lc-title">Utiliser le dump mémoire de la VM</div>
-                <div class="lc-desc">Lancez la VM avec l'option <code>-dump N</code> pour afficher l'état de l'arène après N cycles. Vérifiez que les champions sont chargés aux bonnes adresses, que les instructions s'exécutent correctement, et que les écritures mémoire sont au bon endroit. Commencez avec un petit nombre de cycles (10, 50, 100) et augmentez progressivement.</div>
-            </div>
-        </div>
-        <div class="lc-step">
-            <div class="lc-num exec">4</div>
-            <div class="lc-content">
-                <div class="lc-title">Tracer l'exécution pas à pas</div>
-                <div class="lc-desc">Utilisez le simulateur interactif (section 14) ou le mode ncurses (<code>-d</code>) pour suivre l'exécution cycle par cycle. Vérifiez le PC, les registres, le carry, et l'OCP à chaque étape. Si le PC saute à une adresse inattendue, l'OCP est probablement mal décodé.</div>
-            </div>
-        </div>
-    </div>
-
-    <h3>Erreurs les plus fréquentes par composant</h3>
-
-    <h4>Assembleur</h4>
-    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
-        <li><strong>MAGIC number incorrect</strong> : vérifiez que le header commence par <code>0x00EA83F3</code> en Big Endian</li>
-        <li><strong>PROG_SIZE faux</strong> : la taille dans le header doit être exactement le nombre d'octets de bytecode (sans le header)</li>
-        <li><strong>Labels non résolus</strong> : un label référencé mais pas défini provoque une erreur. Vérifiez l'orthographe et les caractères autorisés</li>
-        <li><strong>OCP manquant ou incorrect</strong> : les instructions avec OCP doivent avoir l'OCP calculé correctement (voir section 7)</li>
-        <li><strong>Offset de label inversé</strong> : l'offset est <code>label_pos - instruction_pos</code>, pas l'inverse. Un offset négatif est valide (saut en arrière)</li>
-    </ul>
-
-    <h4>Machine Virtuelle</h4>
-    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
-        <li><strong>Segfault à l'exécution</strong> : presque toujours un <code>mem_mod()</code> oublié. Vérifiez CHAQUE accès au tableau <code>arena[]</code></li>
-        <li><strong>Little Endian au lieu de Big Endian</strong> : en C, ne JAMAIS faire <code>*(int*)&amp;bytes</code> sur x86. Construire la valeur explicitement octet par octet</li>
-        <li><strong>Carry toujours à 0</strong> : vérifiez que <code>live</code> ne modifie PAS le carry, et que les instructions qui le modifient utilisent bien la règle "carry = (résultat == 0)"</li>
-        <li><strong>CYCLE_TO_DIE ne diminue pas</strong> : vérifiez que <code>nlives</code> est correctement incrémenté par chaque <code>live</code>, et remis à 0 après chaque vérification</li>
-        <li><strong>Processus zombies qui ne meurent pas</strong> : vérifiez que <code>live_count</code> est remis à 0 APRÈS la vérification, pas avant</li>
-    </ul>
-
-    <h4>Champion</h4>
-    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
-        <li><strong>zjmp ne saute jamais</strong> : le carry n'est pas à 1. Ajoutez <code>ld %0, rX</code> avant chaque <code>zjmp</code></li>
-        <li><strong>sti écrit au mauvais endroit</strong> : n'oubliez pas le <code>+3</code> dans l'adresse de store_at (voir section 11)</li>
-        <li><strong>Le champion meurt immédiatement</strong> : il ne fait pas de <code>live %N</code> où N est son numéro de joueur</li>
-        <li><strong>fork ne va pas assez loin</strong> : <code>fork</code> applique IDX_MOD (max ±512). Utilisez <code>lfork</code> pour les sauts longs</li>
-    </ul>
-
-    <h3>Outils de diagnostic</h3>
-
-    <div class="code-wrapper">
-        <div class="code-header"><span class="lang">Commandes de diagnostic</span></div>
-        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
-        <pre style="display:block"><code><span class="cm"># Vérifier le header d'un fichier .cor</span>
-hexdump -C champion.cor | head -10
-
-<span class="cm"># Comparer deux fichiers .cor octet par octet</span>
-cmp -l reference.cor votre.cor
-
-<span class="cm"># Désassembler un champion</span>
-./disassembler champion.cor
-
-<span class="cm"># Dump la mémoire après 1000 cycles</span>
-./corewar -dump 1000 champion1.cor champion2.cor
-
-<span class="cm"># Lancer en mode visuel ncurses</span>
-./corewar -d champion1.cor champion2.cor
-
-<span class="cm"># Vérifier la taille du bytecode (sans le header de 2192 octets)</span>
-ls -l champion.cor   <span class="cm"># taille_fichier - 2192 = taille_bytecode</span>
-xxd -s 136 champion.cor | head -5  <span class="cm"># PROG_SIZE est à l'offset 136</span></code></pre>
-    </div>
-
-    <div class="insight-box" data-level="noyau">
-        <div class="ib-title">💡 La règle d'or du débogage Corewar</div>
-        <div class="ib-content">
-            Testez toujours avec le champion "zork" du sujet en premier. C'est le cas de référence : si votre VM ne gère pas zork correctement, aucune chance de gérer des champions plus complexes. Ensuite, testez avec un champion qui ne fait que <code>live</code> en boucle (voir section 13). Enfin, testez avec deux champions identiques pour vérifier que le chargement et l'exécution sont symétriques. Ne passez aux champions complexes que quand les cas simples fonctionnent parfaitement.
-        </div>
-<p class="cross-ref" data-level="approfondissement"><em>→ Approfondissement : L'Analyse Interprocédurale — voir <a href="#theorie-compilateurs">Partie B — H5</a></em></p>
-    </div>
-
-</div>
-</section>
 
 <!-- ══════════════════════════════════════════════════════════════ -->
 <section id="simulateur" class="reveal">
@@ -3148,6 +3058,110 @@ xxd -s 136 champion.cor | head -5  <span class="cm"># PROG_SIZE est à l'offset 
         <span class="tt-val" id="ttVal"></span> &nbsp;
         <span class="tt-owner" id="ttOwner"></span>
     </div>
+</div>
+</section>
+
+
+<!-- Section 15: Guide de débogage -->
+<section id="debug" class="reveal">
+<div class="container">
+    <h2><span class="num">15</span> Guide de débogage</h2>
+    <p>Le projet Corewar est truffé de subtilités qui rendent le débogage difficile. Un champion qui "ne marche pas" peut avoir des dizaines de causes possibles : mauvais encodage, mauvaise résolution de labels, oubli de <code>mem_mod()</code>, endianness inversé, carry non maîtrisé... Voici une méthodologie structurée pour diagnostiquer et corriger les problèmes.</p>
+
+    <h3>Méthodologie de débogage en 4 étapes</h3>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+            <div class="lc-content">
+                <div class="lc-title">Valider l'assembleur avec le désassembleur</div>
+                <div class="lc-desc">Compilez votre champion avec votre assembleur, puis désassemblez le <code>.cor</code> obtenu. Le code source reconstruit doit correspondre exactement à l'original. Si ce n'est pas le cas, le bug est dans l'assembleur. Testez avec le champion "zork" du sujet comme cas de référence.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title">Comparer le bytecode avec une référence</div>
+                <div class="lc-desc">Utilisez un assembleur de référence (celui d'un autre étudiant, ou celui fourni) pour compiler le même fichier <code>.s</code>. Comparez les deux fichiers <code>.cor</code> octet par octet avec <code>hexdump -C champion.cor | head -50</code> ou <code>cmp -l ref.cor votre.cor</code>. Toute différence indique un bug d'encodage.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Utiliser le dump mémoire de la VM</div>
+                <div class="lc-desc">Lancez la VM avec l'option <code>-dump N</code> pour afficher l'état de l'arène après N cycles. Vérifiez que les champions sont chargés aux bonnes adresses, que les instructions s'exécutent correctement, et que les écritures mémoire sont au bon endroit. Commencez avec un petit nombre de cycles (10, 50, 100) et augmentez progressivement.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Tracer l'exécution pas à pas</div>
+                <div class="lc-desc">Utilisez le simulateur interactif (section 14) ou le mode ncurses (<code>-d</code>) pour suivre l'exécution cycle par cycle. Vérifiez le PC, les registres, le carry, et l'OCP à chaque étape. Si le PC saute à une adresse inattendue, l'OCP est probablement mal décodé.</div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Erreurs les plus fréquentes par composant</h3>
+
+    <h4>Assembleur</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>MAGIC number incorrect</strong> : vérifiez que le header commence par <code>0x00EA83F3</code> en Big Endian</li>
+        <li><strong>PROG_SIZE faux</strong> : la taille dans le header doit être exactement le nombre d'octets de bytecode (sans le header)</li>
+        <li><strong>Labels non résolus</strong> : un label référencé mais pas défini provoque une erreur. Vérifiez l'orthographe et les caractères autorisés</li>
+        <li><strong>OCP manquant ou incorrect</strong> : les instructions avec OCP doivent avoir l'OCP calculé correctement (voir section 7)</li>
+        <li><strong>Offset de label inversé</strong> : l'offset est <code>label_pos - instruction_pos</code>, pas l'inverse. Un offset négatif est valide (saut en arrière)</li>
+    </ul>
+
+    <h4>Machine Virtuelle</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>Segfault à l'exécution</strong> : presque toujours un <code>mem_mod()</code> oublié. Vérifiez CHAQUE accès au tableau <code>arena[]</code></li>
+        <li><strong>Little Endian au lieu de Big Endian</strong> : en C, ne JAMAIS faire <code>*(int*)&amp;bytes</code> sur x86. Construire la valeur explicitement octet par octet</li>
+        <li><strong>Carry toujours à 0</strong> : vérifiez que <code>live</code> ne modifie PAS le carry, et que les instructions qui le modifient utilisent bien la règle "carry = (résultat == 0)"</li>
+        <li><strong>CYCLE_TO_DIE ne diminue pas</strong> : vérifiez que <code>nlives</code> est correctement incrémenté par chaque <code>live</code>, et remis à 0 après chaque vérification</li>
+        <li><strong>Processus zombies qui ne meurent pas</strong> : vérifiez que <code>live_count</code> est remis à 0 APRÈS la vérification, pas avant</li>
+    </ul>
+
+    <h4>Champion</h4>
+    <ul style="margin:12px 0 12px 24px;color:var(--text-muted);line-height:2">
+        <li><strong>zjmp ne saute jamais</strong> : le carry n'est pas à 1. Ajoutez <code>ld %0, rX</code> avant chaque <code>zjmp</code></li>
+        <li><strong>sti écrit au mauvais endroit</strong> : n'oubliez pas le <code>+3</code> dans l'adresse de store_at (voir section 10)</li>
+        <li><strong>Le champion meurt immédiatement</strong> : il ne fait pas de <code>live %N</code> où N est son numéro de joueur</li>
+        <li><strong>fork ne va pas assez loin</strong> : <code>fork</code> applique IDX_MOD (max ±512). Utilisez <code>lfork</code> pour les sauts longs</li>
+    </ul>
+
+    <h3>Outils de diagnostic</h3>
+
+    <div class="code-wrapper">
+        <div class="code-header"><span class="lang">Commandes de diagnostic</span></div>
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <pre style="display:block"><code><span class="cm"># Vérifier le header d'un fichier .cor</span>
+hexdump -C champion.cor | head -10
+
+<span class="cm"># Comparer deux fichiers .cor octet par octet</span>
+cmp -l reference.cor votre.cor
+
+<span class="cm"># Désassembler un champion</span>
+./disassembler champion.cor
+
+<span class="cm"># Dump la mémoire après 1000 cycles</span>
+./corewar -dump 1000 champion1.cor champion2.cor
+
+<span class="cm"># Lancer en mode visuel ncurses</span>
+./corewar -d champion1.cor champion2.cor
+
+<span class="cm"># Vérifier la taille du bytecode (sans le header de 2192 octets)</span>
+ls -l champion.cor   <span class="cm"># taille_fichier - 2192 = taille_bytecode</span>
+xxd -s 136 champion.cor | head -5  <span class="cm"># PROG_SIZE est à l'offset 136</span></code></pre>
+    </div>
+
+    <div class="insight-box" data-level="noyau">
+        <div class="ib-title">💡 La règle d'or du débogage Corewar</div>
+        <div class="ib-content">
+            Testez toujours avec le champion "zork" du sujet en premier. C'est le cas de référence : si votre VM ne gère pas zork correctement, aucune chance de gérer des champions plus complexes. Ensuite, testez avec un champion qui ne fait que <code>live</code> en boucle (voir section 13). Enfin, testez avec deux champions identiques pour vérifier que le chargement et l'exécution sont symétriques. Ne passez aux champions complexes que quand les cas simples fonctionnent parfaitement.
+        </div>
+<p class="cross-ref" data-level="approfondissement"><em>→ Approfondissement : L'Analyse Interprocédurale — voir <a href="#theorie-compilateurs">Partie B — H5</a></em></p>
+    </div>
+
 </div>
 </section>
 <!-- ══════════════════════════════════════════════════════════════ -->
@@ -5523,7 +5537,7 @@ async function downloadPDF() {
 <div class="insight-box" data-level="approfondissement">
         <div class="ib-title">📖 Suite logique</div>
         <div class="ib-content">
-            Vous connaissez maintenant les 16 instructions. Mais comment sont-elles encodées en bytecode ? Passez à la <a href="#encoding">section 7 — Encodage</a> pour comprendre le format .cor, puis à la <a href="#syntaxe">section 10 — Syntaxe du .s</a> pour la référence complète du langage assembleur.
+            Vous connaissez maintenant les 16 instructions. Mais comment sont-elles encodées en bytecode ? Passez à la <a href="#encoding">section 7 — Encodage</a> pour comprendre le format .cor, puis à la <a href="#syntaxe">section 8 — Syntaxe du .s</a> pour la référence complète du langage assembleur.
         </div>
     </div>
 
