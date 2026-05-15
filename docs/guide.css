@@ -3454,6 +3454,66 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
 .collapse-header[data-level] { margin: 10px 0; }
 .code-wrapper[data-level] { margin: 16px 0; }
 
+/* ═══════════════════════════════════════════════════════════════════
+   LEVEL RIBBON — Colored left margin band showing current reading level
+   🔵 Noyau / 🟡 Compréhension / 🔴 Approfondissement
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* The ribbon is a fixed vertical strip on the left edge */
+#level-ribbon {
+    position: fixed;
+    left: 0;
+    top: 56px; /* below nav */
+    bottom: 0;
+    width: 4px;
+    z-index: 98;
+    pointer-events: none;
+    transition: background 0.4s ease;
+    background: var(--level-noyau); /* default */
+}
+#level-ribbon.level-noyau { background: var(--level-noyau); box-shadow: 0 0 12px rgba(59, 130, 246, 0.3), 2px 0 8px rgba(59, 130, 246, 0.15); }
+#level-ribbon.level-comprehension { background: var(--level-comprehension); box-shadow: 0 0 12px rgba(245, 158, 11, 0.3), 2px 0 8px rgba(245, 158, 11, 0.15); }
+#level-ribbon.level-approfondissement { background: var(--level-approfondissement); box-shadow: 0 0 12px rgba(239, 68, 68, 0.3), 2px 0 8px rgba(239, 68, 68, 0.15); }
+
+/* Floating level indicator badge (bottom-left) */
+#level-indicator {
+    position: fixed;
+    bottom: 24px;
+    left: 16px;
+    z-index: 98;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.4s ease;
+    backdrop-filter: blur(8px);
+}
+#level-indicator.visible {
+    opacity: 1;
+}
+#level-indicator.level-noyau {
+    color: var(--level-noyau);
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+}
+#level-indicator.level-comprehension {
+    color: var(--level-comprehension);
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}
+#level-indicator.level-approfondissement {
+    color: var(--level-approfondissement);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
+
 /* Mobile adjustments */
 @media (max-width: 800px) {
     #level-filter {
@@ -3463,5 +3523,14 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
     .filter-btn {
         padding: 2px 7px;
         font-size: 0.58rem;
+    }
+    #level-ribbon {
+        width: 3px;
+    }
+    #level-indicator {
+        bottom: 12px;
+        left: 10px;
+        font-size: 0.55rem;
+        padding: 3px 8px;
     }
 }

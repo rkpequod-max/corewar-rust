@@ -16,6 +16,10 @@
 <!-- Film Grain (static, no SVG filter) -->
 <div id="film-grain"></div>
 
+<!-- Level Ribbon (colored left margin band) -->
+<div id="level-ribbon" class="level-noyau"></div>
+<div id="level-indicator" class="level-noyau">Noyau</div>
+
 <!-- Level Filter Bar -->
 <div id="level-filter">
     <span class="filter-label">Profondeur</span>
@@ -3647,15 +3651,23 @@ function setEndianView(mode, btn) {
    SCROLL REVEAL (CSS-only, no GSAP)
    ═══════════════════════════════════════ */
 (function() {
-    const reveals = document.querySelectorAll('.reveal');
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) { entry.target.classList.add('visible'); }
-        });
-    }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
-    reveals.forEach(el => observer.observe(el));
-    // Fallback: make all sections visible after 2s even if observer fails
-    setTimeout(function() { reveals.forEach(function(el) { el.classList.add('visible'); }); }, 2000);
+    function initReveal() {
+        var reveals = document.querySelectorAll('.reveal:not(.visible)');
+        var observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) { entry.target.classList.add('visible'); }
+            });
+        }, { threshold: 0.05, rootMargin: '0px 0px -50px 0px' });
+        reveals.forEach(el => observer.observe(el));
+    }
+    // Init once for elements already in DOM
+    initReveal();
+    // Re-init after DOM is fully loaded (catches Partie B sections parsed after this script)
+    if (document.readyState !== 'complete') {
+        document.addEventListener('DOMContentLoaded', initReveal);
+    }
+    // Fallback: make all sections visible after 3s even if observer misses them
+    setTimeout(function() { document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { el.classList.add('visible'); }); }, 3000);
 })();
 
 /* ═══════════════════════════════════════
@@ -3689,6 +3701,72 @@ function resetLevels() {
             }
         } catch(e) {}
     });
+})();
+
+/* ═══════════════════════════════════════
+   LEVEL RIBBON — Detect current level on scroll
+   ═══════════════════════════════════════ */
+(function() {
+    var ribbon = document.getElementById('level-ribbon');
+    var indicator = document.getElementById('level-indicator');
+    if (!ribbon || !indicator) return;
+
+    var levelLabels = {
+        'noyau': 'Noyau',
+        'comprehension': 'Compréhension',
+        'approfondissement': 'Approfondissement'
+    };
+    var levelPriority = { 'approfondissement': 3, 'comprehension': 2, 'noyau': 1 };
+    var currentLevel = 'noyau';
+    var hideTimeout = null;
+
+    function detectCurrentLevel() {
+        var viewportMid = window.innerHeight * 0.4;
+        var bestLevel = null;
+        var bestTop = Infinity;
+
+        // Find the [data-level] element closest to the middle of the viewport
+        var elements = document.querySelectorAll('[data-level]');
+        for (var i = 0; i < elements.length; i++) {
+            var el = elements[i];
+            // Skip hidden elements
+            if (el.offsetHeight === 0) continue;
+            var rect = el.getBoundingClientRect();
+            var elMid = rect.top + rect.height / 2;
+            var dist = Math.abs(elMid - viewportMid);
+            if (dist < bestTop) {
+                bestTop = dist;
+                bestLevel = el.getAttribute('data-level');
+            }
+        }
+
+        if (bestLevel && bestLevel !== currentLevel) {
+            currentLevel = bestLevel;
+            // Update ribbon
+            ribbon.className = 'level-' + currentLevel;
+            // Update indicator
+            indicator.className = 'visible level-' + currentLevel;
+            indicator.textContent = levelLabels[currentLevel] || currentLevel;
+            // Auto-hide indicator after 2s
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(function() {
+                indicator.classList.remove('visible');
+            }, 2500);
+        }
+    }
+
+    // Throttle scroll detection
+    var scrollTimer = null;
+    window.addEventListener('scroll', function() {
+        if (scrollTimer) return;
+        scrollTimer = setTimeout(function() {
+            detectCurrentLevel();
+            scrollTimer = null;
+        }, 80);
+    }, { passive: true });
+
+    // Initial detection
+    setTimeout(detectCurrentLevel, 500);
 })();
 
 /* ═══════════════════════════════════════
