@@ -24,6 +24,16 @@
             --accent: var(--ray);
             --mono: 'IBM Plex Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace;
             --sans: 'Inter', system-ui, -apple-system, sans-serif;
+            /* 3-level reading system */
+            --level-noyau: #3b82f6;
+            --level-noyau-bg: rgba(59, 130, 246, 0.06);
+            --level-noyau-border: rgba(59, 130, 246, 0.35);
+            --level-comprehension: #f59e0b;
+            --level-comprehension-bg: rgba(245, 158, 11, 0.05);
+            --level-comprehension-border: rgba(245, 158, 11, 0.30);
+            --level-approfondissement: #ef4444;
+            --level-approfondissement-bg: rgba(239, 68, 68, 0.05);
+            --level-approfondissement-border: rgba(239, 68, 68, 0.30);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
         html { scroll-behavior: smooth; }
@@ -3258,3 +3268,200 @@
 .complexity-table .ct-on { color: var(--yellow); }
 .complexity-table .ct-on2 { color: var(--orange); }
 .complexity-table .ct-exp { color: var(--red); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   3-LEVEL READING SYSTEM
+   🔵 Noyau — Ce qu'il faut implémenter (sans quoi ça ne compile pas)
+   🟡 Compréhension — Pourquoi ça fonctionne ainsi (lien CS)
+   🔴 Approfondissement — Théorie, historique, comparaisons (renvoie à Partie B)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Level markers — colored left border + subtle background */
+[data-level="noyau"] {
+    border-left: 3px solid var(--level-noyau) !important;
+    background: var(--level-noyau-bg) !important;
+    padding-left: 14px !important;
+    margin-left: -4px !important;
+    border-radius: 0 4px 4px 0 !important;
+}
+[data-level="comprehension"] {
+    border-left: 3px solid var(--level-comprehension) !important;
+    background: var(--level-comprehension-bg) !important;
+    padding-left: 14px !important;
+    margin-left: -4px !important;
+    border-radius: 0 4px 4px 0 !important;
+}
+[data-level="approfondissement"] {
+    border-left: 3px solid var(--level-approfondissement) !important;
+    background: var(--level-approfondissement-bg) !important;
+    padding-left: 14px !important;
+    margin-left: -4px !important;
+    border-radius: 0 4px 4px 0 !important;
+}
+
+/* Level badge (inline indicator) */
+.level-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+    font-weight: 600;
+}
+.level-badge.noyau {
+    color: var(--level-noyau);
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.level-badge.comprehension {
+    color: var(--level-comprehension);
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.level-badge.approfondissement {
+    color: var(--level-approfondissement);
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* Level section marker (before h2 in Partie A) */
+.level-section-marker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+.level-section-marker .lsm-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.level-section-marker.noyau .lsm-dot { background: var(--level-noyau); box-shadow: 0 0 6px var(--level-noyau); }
+.level-section-marker.noyau { color: var(--level-noyau); }
+.level-section-marker.comprehension .lsm-dot { background: var(--level-comprehension); box-shadow: 0 0 6px var(--level-comprehension); }
+.level-section-marker.comprehension { color: var(--level-comprehension); }
+.level-section-marker.approfondissement .lsm-dot { background: var(--level-approfondissement); box-shadow: 0 0 6px var(--level-approfondissement); }
+.level-section-marker.approfondissement { color: var(--level-approfondissement); }
+
+/* Filter bar */
+#level-filter {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    z-index: 99;
+    background: rgba(3,5,8,0.88);
+    border-bottom: 1px solid var(--border);
+    padding: 4px 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    backdrop-filter: blur(8px);
+    transition: transform 0.3s ease;
+}
+#level-filter.hidden {
+    transform: translateY(-100%);
+}
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+.filter-btn:hover { background: rgba(255,255,255,0.03); }
+.filter-btn.active { border-color: currentColor; }
+.filter-btn .fb-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.filter-btn.noyau .fb-dot { background: var(--level-noyau); }
+.filter-btn.noyau.active { color: var(--level-noyau); background: rgba(59, 130, 246, 0.08); border-color: var(--level-noyau); }
+.filter-btn.comprehension .fb-dot { background: var(--level-comprehension); }
+.filter-btn.comprehension.active { color: var(--level-comprehension); background: rgba(245, 158, 11, 0.08); border-color: var(--level-comprehension); }
+.filter-btn.approfondissement .fb-dot { background: var(--level-approfondissement); }
+.filter-btn.approfondissement.active { color: var(--level-approfondissement); background: rgba(239, 68, 68, 0.08); border-color: var(--level-approfondissement); }
+#level-filter .filter-label {
+    color: var(--text-muted);
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-right: 4px;
+}
+
+/* When a level is filtered out, dim it heavily */
+body.level-hide-noyau [data-level="noyau"] {
+    opacity: 0.15;
+    max-height: 0;
+    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    transition: all 0.3s ease;
+}
+body.level-hide-comprehension [data-level="comprehension"] {
+    opacity: 0.15;
+    max-height: 0;
+    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    transition: all 0.3s ease;
+}
+body.level-hide-approfondissement [data-level="approfondissement"] {
+    opacity: 0.15;
+    max-height: 0;
+    overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    transition: all 0.3s ease;
+}
+
+/* Insight-boxes: apply level color to ib-title too */
+[data-level="noyau"] .ib-title { color: var(--level-noyau) !important; }
+[data-level="comprehension"] .ib-title { color: var(--level-comprehension) !important; }
+[data-level="approfondissement"] .ib-title { color: var(--level-approfondissement) !important; }
+
+/* Cross-refs are always approfondissement level */
+.cross-ref { border-left-color: var(--level-approfondissement) !important; }
+
+/* Ensure level markers don't break existing box styles */
+.insight-box[data-level] { margin: 12px 0; }
+.warning-box[data-level] { margin: 12px 0; }
+.collapse-header[data-level] { margin: 10px 0; }
+.code-wrapper[data-level] { margin: 16px 0; }
+
+/* Mobile adjustments */
+@media (max-width: 800px) {
+    #level-filter {
+        padding: 3px 10px;
+        gap: 4px;
+    }
+    .filter-btn {
+        padding: 2px 7px;
+        font-size: 0.58rem;
+    }
+}
