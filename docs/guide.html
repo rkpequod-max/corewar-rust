@@ -3664,48 +3664,92 @@ function setEndianView(mode, btn) {
 })();
 
 /* ═══════════════════════════════════════
-   LEVEL INDICATOR — Detect current reading level on scroll
-   Badge in the #level-filter bar shows 🔵/🟡/🔴 + level name
+   LEVEL INDICATOR — Section-based depth detection
+   Badge shows the dominant level of the current section (not individual elements)
+   This gives a smooth, progressive depth indicator instead of chaotic jumping.
    ═══════════════════════════════════════ */
 (function() {
     var indicator = document.getElementById('level-indicator');
     if (!indicator) return;
-    var dotEl = indicator.querySelector('.li-dot');
     var textEl = indicator.querySelector('.li-text');
 
     var levelConfig = {
-        'noyau':           { icon: '\uD83D\uDD35', label: 'Noyau' },
-        'comprehension':   { icon: '\uD83D\uDFE1', label: 'Compréhension' },
+        'noyau':             { icon: '\uD83D\uDD35', label: 'Noyau' },
+        'comprehension':     { icon: '\uD83D\uDFE1', label: 'Compréhension' },
         'approfondissement': { icon: '\uD83D\uDD34', label: 'Approfondissement' }
     };
+
+    /* Pre-compute the dominant level for each <section>.
+       Count [data-level] elements and pick the most frequent.
+       Sections with no data-level elements inherit from their nearest predecessor. */
+    var sectionMap = []; // [{element, dominantLevel}, ...]
+
+    function computeSectionLevels() {
+        var sections = document.querySelectorAll('section[id]');
+        var lastLevel = 'noyau'; // default for sections before any tagged content
+        sectionMap = [];
+
+        for (var i = 0; i < sections.length; i++) {
+            var sec = sections[i];
+            var counts = { noyau: 0, comprehension: 0, approfondissement: 0 };
+            var tagged = sec.querySelectorAll('[data-level]');
+            for (var j = 0; j < tagged.length; j++) {
+                var lvl = tagged[j].getAttribute('data-level');
+                if (counts.hasOwnProperty(lvl)) counts[lvl]++;
+            }
+
+            var dominant = null;
+            var maxCount = 0;
+            for (var k in counts) {
+                if (counts[k] > maxCount) { maxCount = counts[k]; dominant = k; }
+            }
+
+            if (maxCount === 0) {
+                // No tagged elements — inherit from previous section
+                dominant = lastLevel;
+            }
+
+            sectionMap.push({ element: sec, dominantLevel: dominant });
+            lastLevel = dominant;
+        }
+    }
+
+    /* Find which section currently occupies the viewport center */
+    function findCurrentSectionIndex() {
+        var viewportMid = window.innerHeight * 0.4;
+        var bestIdx = -1;
+        var bestDist = Infinity;
+
+        for (var i = 0; i < sectionMap.length; i++) {
+            var rect = sectionMap[i].element.getBoundingClientRect();
+            // Use the start of the section as reference point
+            var secTop = rect.top;
+            var dist = Math.abs(secTop - viewportMid);
+            if (dist < bestDist && rect.bottom > 0) {
+                bestDist = dist;
+                bestIdx = i;
+            }
+        }
+        return bestIdx;
+    }
+
     var currentLevel = 'noyau';
 
     function detectCurrentLevel() {
-        var viewportMid = window.innerHeight * 0.4;
-        var bestLevel = null;
-        var bestTop = Infinity;
+        var idx = findCurrentSectionIndex();
+        if (idx < 0) return;
 
-        var elements = document.querySelectorAll('[data-level]');
-        for (var i = 0; i < elements.length; i++) {
-            var el = elements[i];
-            if (el.offsetHeight === 0) continue;
-            var rect = el.getBoundingClientRect();
-            var elMid = rect.top + rect.height / 2;
-            var dist = Math.abs(elMid - viewportMid);
-            if (dist < bestTop) {
-                bestTop = dist;
-                bestLevel = el.getAttribute('data-level');
-            }
-        }
-
-        if (bestLevel && bestLevel !== currentLevel) {
-            currentLevel = bestLevel;
+        var lvl = sectionMap[idx].dominantLevel;
+        if (lvl && lvl !== currentLevel) {
+            currentLevel = lvl;
             indicator.className = 'level-' + currentLevel;
             var cfg = levelConfig[currentLevel];
             if (textEl && cfg) textEl.textContent = cfg.icon + ' ' + cfg.label;
-            if (dotEl) dotEl.style.background = '';
         }
     }
+
+    // Pre-compute section levels
+    computeSectionLevels();
 
     var scrollTimer = null;
     window.addEventListener('scroll', function() {
