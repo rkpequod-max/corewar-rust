@@ -19,9 +19,10 @@
 <!-- Level Filter Bar -->
 <div id="level-filter">
     <span class="filter-label">Profondeur</span>
-    <button class="filter-btn noyau active" onclick="toggleLevel('noyau')" title="Noyau : ce qu'il faut implémenter"><span class="fb-dot"></span>Noyau</button>
-    <button class="filter-btn comprehension active" onclick="toggleLevel('comprehension')" title="Compréhension : pourquoi ça fonctionne ainsi"><span class="fb-dot"></span>Compréhension</button>
-    <button class="filter-btn approfondissement active" onclick="toggleLevel('approfondissement')" title="Approfondissement : théorie, historique, comparaisons"><span class="fb-dot"></span>Approfondissement</button>
+    <button class="filter-btn noyau active" onclick="toggleLevel('noyau')" title="Noyau : ce qu'il faut implémenter (sans quoi ça ne compile pas)"><span class="fb-dot"></span>Noyau</button>
+    <button class="filter-btn comprehension active" onclick="toggleLevel('comprehension')" title="Compréhension : pourquoi ça fonctionne ainsi (lien CS)"><span class="fb-dot"></span>Compréhension</button>
+    <button class="filter-btn approfondissement active" onclick="toggleLevel('approfondissement')" title="Approfondissement : théorie, historique, comparaisons (renvoie à Partie B)"><span class="fb-dot"></span>Approfondissement</button>
+    <button class="filter-btn" onclick="resetLevels()" title="Afficher tous les niveaux" style="margin-left:auto;opacity:0.5;font-size:0.6rem">Tout afficher</button>
 </div>
 
 <!-- Nav -->
@@ -3667,6 +3668,14 @@ function toggleLevel(level) {
     document.body.classList.toggle('level-hide-' + level, !isActive);
     // Save preference
     try { localStorage.setItem('level-' + level, isActive ? '1' : '0'); } catch(e) {}
+}
+function resetLevels() {
+    ['noyau', 'comprehension', 'approfondissement'].forEach(function(level) {
+        var btn = document.querySelector('.filter-btn.' + level);
+        if (btn) btn.classList.add('active');
+        document.body.classList.remove('level-hide-' + level);
+        try { localStorage.setItem('level-' + level, '1'); } catch(e) {}
+    });
 }
 // Restore filter preferences on load
 (function() {
