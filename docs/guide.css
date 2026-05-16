@@ -3908,3 +3908,159 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
         height: 6px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* BIBLIOGRAPHIE                                                 */
+/* ═══════════════════════════════════════════════════════════════ */
+.biblio-section {
+    padding: 48px 0 64px;
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+}
+.biblio-section h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 36px;
+    letter-spacing: 0.02em;
+}
+.biblio-section h2 .num {
+    font-size: 1.2rem;
+    margin-right: 8px;
+}
+
+.biblio-partie {
+    margin-bottom: 48px;
+    padding: 28px 32px;
+    border-radius: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+.biblio-a {
+    border-left: 3px solid var(--ray);
+}
+.biblio-b {
+    border-left: 3px solid var(--violet);
+}
+
+.bp-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.bp-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.biblio-a .bp-label {
+    color: var(--ray);
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+}
+.biblio-b .bp-label {
+    color: var(--violet);
+    background: rgba(155, 89, 255, 0.1);
+    border: 1px solid rgba(155, 89, 255, 0.25);
+}
+.bp-header h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.bp-graph {
+    text-align: center;
+    margin: 24px 0;
+}
+.bp-graph img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.bp-refs {
+    list-style: decimal;
+    padding-left: 24px;
+    margin: 0;
+}
+.bp-refs li {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-left: 6px;
+}
+.bp-refs li strong {
+    color: var(--text);
+    font-weight: 600;
+}
+.bp-refs li em {
+    color: var(--text);
+    font-style: italic;
+}
+
+/* ── Nier theme overrides ── */
+[data-theme="nier"] .biblio-section {
+    border-top-color: var(--border);
+}
+[data-theme="nier"] .biblio-partie {
+    background: var(--card);
+    border-color: var(--border);
+}
+[data-theme="nier"] .biblio-a {
+    border-left-color: var(--red);
+}
+[data-theme="nier"] .biblio-b {
+    border-left-color: var(--purple);
+}
+[data-theme="nier"] .biblio-a .bp-label {
+    color: var(--red);
+    background: rgba(232, 64, 80, 0.08);
+    border-color: rgba(232, 64, 80, 0.2);
+}
+[data-theme="nier"] .biblio-b .bp-label {
+    color: var(--purple);
+    background: rgba(136, 102, 221, 0.08);
+    border-color: rgba(136, 102, 221, 0.2);
+}
+
+/* ── Âme dans l'eau theme overrides ── */
+[data-theme="ame"] .biblio-partie {
+    background: var(--card);
+    border-color: var(--border);
+}
+[data-theme="ame"] .biblio-a {
+    border-left-color: var(--electric);
+}
+[data-theme="ame"] .biblio-b {
+    border-left-color: var(--violet);
+}
+[data-theme="ame"] .biblio-a .bp-label {
+    color: var(--electric);
+    background: rgba(0, 212, 255, 0.08);
+    border-color: rgba(0, 212, 255, 0.2);
+}
+[data-theme="ame"] .biblio-b .bp-label {
+    color: var(--violet);
+    background: rgba(155, 89, 255, 0.08);
+    border-color: rgba(155, 89, 255, 0.2);
+}
+
+/* ── Responsive ── */
+@media (max-width: 800px) {
+    .biblio-section { padding: 32px 0 48px; }
+    .biblio-partie { padding: 18px 16px; }
+    .bp-header h3 { font-size: 1rem; }
+    .bp-refs li { font-size: 0.82rem; }
+}
