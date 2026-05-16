@@ -1805,12 +1805,12 @@
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             backdrop-filter: blur(4px);
         }
-        /* Subtle water-surface gradient on top edge */
+        /* Subtle water-surface gradient on top edge — very faint */
         [data-theme="ame"] .summary-card::before {
-            background: linear-gradient(90deg, rgba(30,91,216,0.25), rgba(0,206,209,0.3), rgba(30,91,216,0.25));
+            background: linear-gradient(90deg, rgba(30,91,216,0.12), rgba(0,206,209,0.15), rgba(30,91,216,0.12));
             background-size: 200% 100%;
             height: 1px;
-            animation: summaryGradientSweep 6s ease-in-out infinite;
+            animation: summaryGradientSweep 8s ease-in-out infinite;
         }
         [data-theme="ame"] .summary-card::after {
             background: linear-gradient(135deg,
@@ -1833,10 +1833,20 @@
         [data-theme="ame"] .summary-card:nth-child(3):hover { border-bottom-color: rgba(26,42,108,0.5); }
         [data-theme="ame"] .summary-card:nth-child(4):hover { border-bottom-color: rgba(153,0,0,0.4); }
         /* Value text — clean, no glow */
-        [data-theme="ame"] .summary-card:nth-child(1) .value { color: #1E5BD8; }
-        [data-theme="ame"] .summary-card:nth-child(2) .value { color: #00CED1; }
-        [data-theme="ame"] .summary-card:nth-child(3) .value { color: #2E4A8B; }
-        [data-theme="ame"] .summary-card:nth-child(4) .value { color: #C83030; }
+        [data-theme="ame"] .summary-card .value { text-shadow: none; }
+        [data-theme="ame"] .summary-card:nth-child(1) .value { color: #6A9AE0; }
+        [data-theme="ame"] .summary-card:nth-child(2) .value { color: #40C8C8; }
+        [data-theme="ame"] .summary-card:nth-child(3) .value { color: #5A7AAA; }
+        [data-theme="ame"] .summary-card:nth-child(4) .value { color: #D86060; }
+        /* Override base neon box-shadow with subdued depth */
+        [data-theme="ame"] .summary-card:nth-child(1),
+        [data-theme="ame"] .summary-card:nth-child(2),
+        [data-theme="ame"] .summary-card:nth-child(3),
+        [data-theme="ame"] .summary-card:nth-child(4) { box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+        [data-theme="ame"] .summary-card:nth-child(1):hover,
+        [data-theme="ame"] .summary-card:nth-child(2):hover,
+        [data-theme="ame"] .summary-card:nth-child(3):hover,
+        [data-theme="ame"] .summary-card:nth-child(4):hover { box-shadow: 0 8px 25px rgba(0,0,0,0.6); }
         [data-theme="ame"] .summary-card .label {
             color: #4A7AAA;
             letter-spacing: 2px;
