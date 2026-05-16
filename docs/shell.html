@@ -407,6 +407,120 @@ a, button, .ctrl-btn, select, input, textarea {
 .asm-status-dot.error{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.5)}
 .asm-status-dot.checking{background:var(--yellow);animation:statusPulse 0.6s ease-in-out infinite}
 @keyframes statusPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* ══ ÂME: INTERACTIVE WATER RIPPLE ══ */
+[data-theme="ame"] .water-ripple {
+    position: fixed;
+    border: 1px solid rgba(0,206,209,0.35);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9990;
+    animation: ameWaterRippleExpand 1.5s ease-out forwards;
+    box-shadow: 0 0 8px rgba(0,206,209,0.15), inset 0 0 8px rgba(0,206,209,0.08);
+}
+[data-theme="ame"] .water-ripple-inner {
+    position: fixed;
+    border: 1px solid rgba(30,91,216,0.2);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9990;
+    animation: ameWaterRippleExpand 1.8s ease-out 0.15s forwards;
+}
+@keyframes ameWaterRippleExpand {
+    0% { width: 0; height: 0; opacity: 0.7; }
+    100% { width: 300px; height: 300px; opacity: 0; }
+}
+
+/* ══ ÂME: UNDERWATER GOD RAYS ══ */
+#god-rays {
+    position: fixed; top: -20%; left: 0; width: 100%; height: 140%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+    opacity: 0; transition: opacity 1s ease;
+}
+[data-theme="ame"] #god-rays { opacity: 1; }
+.god-ray {
+    position: absolute; top: -10%; height: 120%;
+    transform-origin: top center;
+}
+[data-theme="ame"] .god-ray {
+    background: linear-gradient(180deg,
+        rgba(30,91,216,0.06) 0%,
+        rgba(0,206,209,0.04) 30%,
+        rgba(30,91,216,0.02) 60%,
+        transparent 100%
+    );
+}
+[data-theme="ame"] .gr-1 { left: 8%; width: 80px; transform: rotate(-8deg); animation: ameGodRaySway1 18s ease-in-out infinite; }
+[data-theme="ame"] .gr-2 { left: 25%; width: 60px; transform: rotate(5deg); animation: ameGodRaySway2 22s ease-in-out infinite; }
+[data-theme="ame"] .gr-3 { left: 45%; width: 100px; transform: rotate(-3deg); animation: ameGodRaySway1 25s ease-in-out infinite; animation-delay: -5s; }
+[data-theme="ame"] .gr-4 { left: 65%; width: 50px; transform: rotate(7deg); animation: ameGodRaySway2 20s ease-in-out infinite; animation-delay: -8s; }
+[data-theme="ame"] .gr-5 { left: 82%; width: 70px; transform: rotate(-5deg); animation: ameGodRaySway1 23s ease-in-out infinite; animation-delay: -12s; }
+@keyframes ameGodRaySway1 {
+    0%, 100% { transform: rotate(-8deg); opacity: 0.5; }
+    25% { transform: rotate(-4deg); opacity: 0.8; }
+    50% { transform: rotate(-10deg); opacity: 0.6; }
+    75% { transform: rotate(-6deg); opacity: 0.9; }
+}
+@keyframes ameGodRaySway2 {
+    0%, 100% { transform: rotate(5deg); opacity: 0.6; }
+    30% { transform: rotate(8deg); opacity: 0.85; }
+    60% { transform: rotate(3deg); opacity: 0.5; }
+    80% { transform: rotate(6deg); opacity: 0.75; }
+}
+
+/* ══ ÂME: DYNAMIC FLOATING BUBBLES ══ */
+#bubble-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+    opacity: 0; transition: opacity 1s ease;
+}
+[data-theme="ame"] #bubble-container { opacity: 1; }
+.ame-bubble {
+    position: absolute; bottom: -30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%,
+        rgba(0,206,209,0.15) 0%,
+        rgba(30,91,216,0.08) 50%,
+        rgba(0,206,209,0.03) 100%
+    );
+    border: 1px solid rgba(0,206,209,0.12);
+    box-shadow: 0 0 6px rgba(0,206,209,0.08), inset 0 0 4px rgba(0,206,209,0.05);
+    animation: ameBubbleRise linear forwards;
+}
+.ame-bubble::after {
+    content: '';
+    position: absolute; top: 20%; left: 25%;
+    width: 30%; height: 20%;
+    border-radius: 50%;
+    background: rgba(200,218,240,0.15);
+}
+@keyframes ameBubbleRise {
+    0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+    10% { opacity: 0.6; }
+    50% { opacity: 0.4; }
+    90% { opacity: 0.15; }
+    100% { transform: translateY(-110vh) translateX(var(--drift)) scale(var(--scale-end)); opacity: 0; }
+}
+
+/* ══ ÂME: WATER SURFACE WAVE ══ */
+#water-surface {
+    position: fixed; top: 48px; left: 0; width: 100%; height: 35px;
+    pointer-events: none; z-index: 99;
+    opacity: 0; transition: opacity 1s ease;
+    overflow: hidden;
+}
+[data-theme="ame"] #water-surface { opacity: 1; }
+#water-surface svg { width: 200%; height: 100%; display: block; }
+#water-surface .wave { animation: ameWaveFlow 8s linear infinite; }
+#water-surface .wave-2 { animation-duration: 12s; animation-direction: reverse; }
+#water-surface .wave-3 { animation-duration: 16s; }
+[data-theme="ame"] #water-surface .wave-1 { fill: rgba(30,91,216,0.08); }
+[data-theme="ame"] #water-surface .wave-2 { fill: rgba(0,206,209,0.05); }
+[data-theme="ame"] #water-surface .wave-3 { fill: rgba(30,91,216,0.04); }
+@keyframes ameWaveFlow {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
 </style>
 </head>
 <body>
@@ -414,6 +528,16 @@ a, button, .ctrl-btn, select, input, textarea {
 <div id="film-grain"></div>
 <!-- Scan Lines -->
 <div id="scan-lines"></div>
+<!-- Underwater God Rays (Âme theme) -->
+<div id="god-rays">
+    <div class="god-ray gr-1"></div>
+    <div class="god-ray gr-2"></div>
+    <div class="god-ray gr-3"></div>
+    <div class="god-ray gr-4"></div>
+    <div class="god-ray gr-5"></div>
+</div>
+<!-- Dynamic Bubbles (Âme theme) -->
+<div id="bubble-container"></div>
 
 <!-- NAV -->
 <nav class="nav">
@@ -425,6 +549,14 @@ a, button, .ctrl-btn, select, input, textarea {
   </div>
   <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata">☀</button>
 </nav>
+<!-- Water Surface Wave (Âme theme) -->
+<div id="water-surface">
+    <svg viewBox="0 0 1440 60" preserveAspectRatio="none">
+        <path class="wave wave-1" d="M0,30 C240,10 480,50 720,30 C960,10 1200,50 1440,30 L1440,60 L0,60 Z" fill="rgba(30,91,216,0.06)"/>
+        <path class="wave wave-2" d="M0,35 C200,15 440,55 720,35 C1000,15 1240,55 1440,35 L1440,60 L0,60 Z" fill="rgba(0,206,209,0.04)"/>
+        <path class="wave wave-3" d="M0,40 C180,25 420,55 720,40 C1020,25 1260,55 1440,40 L1440,60 L0,60 Z" fill="rgba(30,91,216,0.03)"/>
+    </svg>
+</div>
 
 <!-- MAIN -->
 <div class="main">
@@ -2502,6 +2634,89 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'cw-theme' && e.newValue && THEMES.indexOf(e.newValue) !== -1) {
             applyTheme(e.newValue);
         }
+    });
+})();
+</script>
+
+<script>
+// ── Âme: Interactive Water Effects ──
+(function() {
+    // Click ripple
+    document.addEventListener('click', function(e) {
+        if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        var ripple = document.createElement('div');
+        ripple.className = 'water-ripple';
+        ripple.style.left = (e.clientX - 150) + 'px';
+        ripple.style.top = (e.clientY - 150) + 'px';
+        document.body.appendChild(ripple);
+        var ripple2 = document.createElement('div');
+        ripple2.className = 'water-ripple-inner';
+        ripple2.style.left = (e.clientX - 150) + 'px';
+        ripple2.style.top = (e.clientY - 150) + 'px';
+        document.body.appendChild(ripple2);
+        setTimeout(function() { ripple.remove(); }, 1500);
+        setTimeout(function() { ripple2.remove(); }, 2000);
+    });
+
+    // Dynamic floating bubbles
+    var container = null;
+    var intervalId = null;
+
+    function createBubble() {
+        if (!container || document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        var bubble = document.createElement('div');
+        bubble.className = 'ame-bubble';
+        var size = 6 + Math.random() * 24;
+        var left = Math.random() * 100;
+        var duration = 12 + Math.random() * 20;
+        var drift = (Math.random() - 0.5) * 80;
+        var scaleEnd = 0.6 + Math.random() * 0.6;
+        bubble.style.width = size + 'px';
+        bubble.style.height = size + 'px';
+        bubble.style.left = left + '%';
+        bubble.style.setProperty('--drift', drift + 'px');
+        bubble.style.setProperty('--scale-end', scaleEnd);
+        bubble.style.animationDuration = duration + 's';
+        container.appendChild(bubble);
+        setTimeout(function() { if (bubble.parentNode) bubble.remove(); }, duration * 1000);
+    }
+
+    function startBubbles() {
+        container = document.getElementById('bubble-container');
+        if (!container) return;
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(createBubble, 2500 + Math.random() * 3000);
+        for (var i = 0; i < 4; i++) setTimeout(createBubble, i * 800);
+    }
+
+    var obs = new MutationObserver(function() {
+        var isAme = document.documentElement.getAttribute('data-theme') === 'ame';
+        if (isAme && !intervalId) startBubbles();
+        else if (!isAme && intervalId) { clearInterval(intervalId); intervalId = null; if (container) container.innerHTML = ''; }
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.documentElement.getAttribute('data-theme') === 'ame') startBubbles();
+
+    // Caustic cursor trail
+    var lastTime = 0;
+    document.addEventListener('mousemove', function(e) {
+        if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        var now = Date.now();
+        if (now - lastTime < 100) return;
+        lastTime = now;
+        var dot = document.createElement('div');
+        dot.style.cssText = 'position:fixed;pointer-events:none;z-index:9989;border-radius:50%;' +
+            'width:' + (3 + Math.random() * 5) + 'px;height:' + (3 + Math.random() * 5) + 'px;' +
+            'left:' + (e.clientX - 3) + 'px;top:' + (e.clientY - 3) + 'px;' +
+            'background:radial-gradient(circle,rgba(0,206,209,0.35) 0%,rgba(30,91,216,0.15) 60%,transparent 100%);' +
+            'box-shadow:0 0 6px rgba(0,206,209,0.2);' +
+            'transition:opacity 1.2s ease,transform 1.2s ease;opacity:0.7;';
+        document.body.appendChild(dot);
+        requestAnimationFrame(function() {
+            dot.style.opacity = '0';
+            dot.style.transform = 'scale(0.3) translateY(-15px)';
+        });
+        setTimeout(function() { dot.remove(); }, 1300);
     });
 })();
 </script>
