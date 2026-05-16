@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#040710;--surface:#0a0f1c;--surface2:#111828;--border:#151e35;
@@ -197,48 +198,71 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
     color: #C4362B;
 }
 
-/* ── NIER AUTOMATA LIGHT THEME ── */
+/* ── NIER AUTOMATA IMMERSIVE THEME v5.0 ── */
 [data-theme="nier"] {
-    --bg: #F5F0E8;
-    --surface: #FFFFFF;
-    --surface2: #F8F5EF;
-    --border: #D4CFC6;
-    --cyan: #C4362B;
-    --blue: #3A6EA5;
-    --red: #C4362B;
-    --green: #4A7C59;
-    --yellow: #B8860B;
-    --purple: #7B5EA7;
-    --orange: #C47025;
-    --pink: #A83232;
-    --electric: #3A6EA5;
-    --violet: #7B5EA7;
-    --text: #1A1A1A;
-    --text2: #5A554E;
-    --text3: #8A847C;
-    --p1: #3A6EA5;
-    --p2: #C4362B;
-    --p3: #4A7C59;
-    --p4: #B8860B;
+    --bg: #F5F0E8; --surface: #FFFFFF; --surface2: #F8F5EF;
+    --border: #D4CFC6; --cyan: #C4362B; --blue: #3A6EA5; --red: #C4362B;
+    --green: #4A7C59; --yellow: #B8860B; --purple: #7B5EA7; --orange: #C47025;
+    --pink: #A83232; --electric: #3A6EA5; --violet: #7B5EA7;
+    --text: #1A1A1A; --text2: #5A554E; --text3: #8A847C;
+    --p1: #3A6EA5; --p2: #C4362B; --p3: #4A7C59; --p4: #B8860B;
+    --nier-heading: 'Cinzel', 'Playfair Display', serif;
+    --nier-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
 }
-[data-theme="nier"] .nav { background: rgba(245,240,232,0.92); border-bottom-color: rgba(212,207,198,0.8); }
-[data-theme="nier"] .nav-logo { color: #C4362B; }
-[data-theme="nier"] .nav-links a { color: #6B6560; }
-[data-theme="nier"] .nav-links a:hover { color: #C4362B; background: rgba(196,54,43,0.06); }
+/* Grain de parchemin */
+[data-theme="nier"] body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.5;
+}
+[data-theme="nier"] body::after { background: none; }
+/* Scan lines */
+[data-theme="nier"]::after {
+    content: ''; position: fixed; inset: 0; z-index: 2; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.02) 3px, rgba(0,0,0,0.02) 4px);
+}
+/* ::selection & focus */
+[data-theme="nier"] ::selection { background: rgba(196,54,43,0.25); color: #1A1A1A; }
+[data-theme="nier"] :focus-visible { outline: 2px solid #C4362B; outline-offset: 2px; }
+/* Scrollbar */
+[data-theme="nier"] ::-webkit-scrollbar { width: 6px; }
+[data-theme="nier"] ::-webkit-scrollbar-track { background: #EDE8DF; }
+[data-theme="nier"] ::-webkit-scrollbar-thumb { background: #8B2519; border-radius: 0; }
+[data-theme="nier"] { scrollbar-color: #8B2519 #EDE8DF; scrollbar-width: thin; }
+/* Hide other theme effects */
+[data-theme="nier"] #film-grain { display: none; }
+[data-theme="nier"] #scan-lines { display: none; }
+[data-theme="nier"] #nier-bg { display: none !important; }
+[data-theme="nier"] #god-rays { display: none; }
+[data-theme="nier"] #biolum-container { display: none; }
+/* Navigation — Terminal YoRHa */
+[data-theme="nier"] .nav { background: rgba(26,26,26,0.95); border-bottom: 1px solid #C4362B; }
+[data-theme="nier"] .nav-logo { color: #C4362B; font-family: var(--nier-heading); letter-spacing: 0.15em; text-shadow: none; }
+[data-theme="nier"] .nav-links a { color: #D4CFC6; position: relative; }
+[data-theme="nier"] .nav-links a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1px; background: #C4362B; transition: width 0.3s; }
+[data-theme="nier"] .nav-links a:hover { color: #C4362B; background: transparent; }
+[data-theme="nier"] .nav-links a:hover::after { width: 100%; }
+/* Shell UI */
 [data-theme="nier"] .ctrl-bar { background: #F8F5EF; border-top-color: #D4CFC6; }
-[data-theme="nier"] .ctrl-btn { background: #FFFFFF; border-color: #D4CFC6; color: #1A1A1A; }
+[data-theme="nier"] .ctrl-btn { background: #FFFFFF; border-color: #D4CFC6; color: #1A1A1A; border-radius: 0; }
 [data-theme="nier"] .ctrl-btn:hover { border-color: #C4362B; color: #C4362B; }
 [data-theme="nier"] .ctrl-btn.active { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
 [data-theme="nier"] .left { border-right-color: #D4CFC6; }
 [data-theme="nier"] .right { background: #FFFFFF; }
-[data-theme="nier"] .arena-canvas-wrap { background: #F5F0E8; border-color: #D4CFC6; box-shadow: 0 0 15px rgba(196,54,43,0.08), 0 0 30px rgba(196,54,43,0.03); }
+[data-theme="nier"] .arena-canvas-wrap { background: #F5F0E8; border-color: #D4CFC6; border-radius: 0; box-shadow: 0 0 15px rgba(196,54,43,0.08), 0 0 30px rgba(196,54,43,0.03); }
 [data-theme="nier"] .arena-canvas-wrap::after { background: linear-gradient(135deg, rgba(196,54,43,0.1), rgba(58,110,165,0.08), rgba(196,54,43,0.05), transparent); }
-[data-theme="nier"] .info-section h3 { color: #6B6560; }
-[data-theme="nier"] #film-grain { display: none; }
-[data-theme="nier"] body::after { background: none; }
-[data-theme="nier"] .arena-fs-toolbar { background: #FFFFFF; border-bottom-color: #D4CFC6; }
+[data-theme="nier"] .info-section h3 { color: #6B6560; font-family: var(--nier-heading); letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.72rem; }
+[data-theme="nier"] body { background-image: none; }
+[data-theme="nier"] .arena-fs-toolbar { background: rgba(26,26,26,0.95); border-bottom-color: #C4362B; }
 [data-theme="nier"] .arena-fs-controls { background: #F8F5EF; border-top-color: #D4CFC6; }
 [data-theme="nier"] .arena-fs-sidebar { background: #FFFFFF; border-left-color: #D4CFC6; }
+[data-theme="nier"] .editor-area { background: #1A1A1A; color: #D4CFC6; border-color: #3A3A3A; border-radius: 0; border-left: 2px solid #C4362B; font-family: var(--nier-mono); }
+[data-theme="nier"] .asm-btn { border-color: #C4362B; color: #C4362B; border-radius: 0; }
+[data-theme="nier"] .asm-btn:hover { background: #C4362B; color: #F5F0E8; }
+[data-theme="nier"] .asm-btn.primary { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
+[data-theme="nier"] .term-wrap::before { background: linear-gradient(90deg, transparent, rgba(196,54,43,0.3), transparent); }
+[data-theme="nier"] .ctrl-group { background: rgba(196,54,43,0.03); border-radius: 0; }
+[data-theme="nier"] .info-section::before { background: linear-gradient(180deg, transparent, rgba(196,54,43,0.2), transparent); }
 
 /* ── ÂME DANS L'EAU THEME ── */
 [data-theme="ame"] {
@@ -576,7 +600,7 @@ a, button, .ctrl-btn, select, input, textarea {
     z-index: 0; pointer-events: none; display: none;
 }
 [data-theme="ame"] #underwater-bg { display: block; }
-[data-theme="nier"] #nier-bg { display: block; }
+[data-theme="nier"] #nier-bg { display: none !important; }
 html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
 
 [data-theme="ame"].webgl body::before { background: none !important; animation: none !important; }
@@ -3173,5 +3197,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <div id="theme-transition"></div>
+<script src="nier-immersive.js"></script>
 </body>
 </html>

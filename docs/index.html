@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="nier-hacking-game-v2.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap');
 
         :root {
             /* ══ RAYON VERT PALETTE — Cinematic Neon ══ */
@@ -1093,91 +1094,170 @@
             color: #C4362B;
         }
 
-        /* ══ NIER AUTOMATA LIGHT THEME ══ */
+        /* ══ NIER AUTOMATA IMMERSIVE THEME v5.0 ══ */
         [data-theme="nier"] {
-            --bg: #F5F0E8;
-            --bg2: #EDE8DF;
-            --card: #FFFFFF;
-            --card2: #F8F5EF;
-            --border: #D4CFC6;
-            --border-light: #C8C2B8;
-            --text: #1A1A1A;
-            --text-dim: #6B6560;
-            --ray: #C4362B;
-            --ray-dim: rgba(196,54,43,0.10);
-            --ray-glow: rgba(196,54,43,0.30);
-            --pink: #A83232;
-            --pink-dim: rgba(168,50,50,0.08);
-            --pink-glow: rgba(168,50,50,0.20);
-            --electric: #3A6EA5;
-            --electric-dim: rgba(58,110,165,0.08);
-            --electric-glow: rgba(58,110,165,0.25);
-            --violet: #7B5EA7;
-            --blue: #3A6EA5;
-            --blue-deep: #2C4F7C;
-            --red: #C4362B;
-            --green: #4A7C59;
-            --yellow: #B8860B;
-            --purple: #7B5EA7;
-            --orange: #C47025;
-            --ivory: #1A1A1A;
-            --code-bg: #F0ECE4;
-            --accent: var(--ray);
+            --bg: #F5F0E8; --bg2: #EDE8DF; --card: #FFFFFF; --card2: #F8F5EF;
+            --border: #D4CFC6; --border-light: #C8C2B8;
+            --text: #1A1A1A; --text-dim: #6B6560;
+            --ray: #C4362B; --ray-dim: rgba(196,54,43,0.10); --ray-glow: rgba(196,54,43,0.30);
+            --pink: #A83232; --pink-dim: rgba(168,50,50,0.08); --pink-glow: rgba(168,50,50,0.20);
+            --electric: #3A6EA5; --electric-dim: rgba(58,110,165,0.08); --electric-glow: rgba(58,110,165,0.25);
+            --violet: #7B5EA7; --blue: #3A6EA5; --blue-deep: #2C4F7C;
+            --red: #C4362B; --green: #4A7C59; --yellow: #B8860B; --purple: #7B5EA7; --orange: #C47025;
+            --ivory: #1A1A1A; --code-bg: #F0ECE4; --accent: var(--ray);
+            /* NieR Typography */
+            --nier-heading: 'Cinzel', 'Playfair Display', serif;
+            --nier-subheading: 'EB Garamond', 'Georgia', serif;
+            --nier-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
         }
         [data-theme="nier"] body { background: #F5F0E8; }
+
+        /* Couche 1 — Grain de parchemin */
         [data-theme="nier"] body::before {
+            content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
             background:
                 radial-gradient(ellipse at 20% 50%, rgba(196,54,43,0.03) 0%, transparent 55%),
                 radial-gradient(ellipse at 80% 25%, rgba(58,110,165,0.03) 0%, transparent 50%),
                 radial-gradient(ellipse at 50% 85%, rgba(196,54,43,0.02) 0%, transparent 45%);
         }
         [data-theme="nier"] body::after {
-            background: none;
+            content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.5;
         }
+
+        /* Couche 3 — Scan lines */
+        [data-theme="nier"]::after {
+            content: ''; position: fixed; inset: 0; z-index: 2; pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.02) 3px, rgba(0,0,0,0.02) 4px);
+        }
+
+        /* Hide other theme effects */
         [data-theme="nier"] #starfield { display: none; }
         [data-theme="nier"] #film-grain { display: none; }
         [data-theme="nier"] #scan-lines { display: none; }
-        [data-theme="nier"] nav {
-            background: rgba(245,240,232,0.92);
-            border-bottom-color: rgba(212,207,198,0.8);
+        [data-theme="nier"] #nier-bg { display: none !important; }
+
+        /* ::selection + focus */
+        [data-theme="nier"] ::selection { background: rgba(196,54,43,0.25); color: #1A1A1A; }
+        [data-theme="nier"] :focus-visible { outline: 2px solid #C4362B; outline-offset: 2px; }
+
+        /* Scrollbar */
+        [data-theme="nier"] ::-webkit-scrollbar { width: 6px; }
+        [data-theme="nier"] ::-webkit-scrollbar-track { background: #EDE8DF; }
+        [data-theme="nier"] ::-webkit-scrollbar-thumb { background: #8B2519; border-radius: 0; }
+        [data-theme="nier"] { scrollbar-color: #8B2519 #EDE8DF; scrollbar-width: thin; }
+
+        /* Typography */
+        [data-theme="nier"] h1, [data-theme="nier"] h2 {
+            font-family: var(--nier-heading); letter-spacing: 0.12em; text-transform: uppercase;
+            text-shadow: 1px 1px 0 rgba(196,54,43,0.15);
         }
-        [data-theme="nier"] nav .logo { color: #C4362B; text-shadow: none; }
-        [data-theme="nier"] nav a { color: #6B6560; }
-        [data-theme="nier"] nav a:hover { color: #C4362B; background: rgba(196,54,43,0.06); }
+        [data-theme="nier"] h3, [data-theme="nier"] h4 { font-family: var(--nier-subheading); letter-spacing: 0.04em; }
+        [data-theme="nier"] pre, [data-theme="nier"] code, [data-theme="nier"] .terminal-body { font-family: var(--nier-mono); }
+
+        /* Navigation — Terminal YoRHa */
+        [data-theme="nier"] nav {
+            background: rgba(26,26,26,0.95); border-bottom: 1px solid #C4362B; backdrop-filter: none;
+        }
+        [data-theme="nier"] nav .logo { color: #C4362B; text-shadow: none; font-family: var(--nier-heading); letter-spacing: 0.15em; }
+        [data-theme="nier"] nav a { color: #D4CFC6; position: relative; }
+        [data-theme="nier"] nav a::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1px;
+            background: #C4362B; transition: width 0.3s ease;
+        }
+        [data-theme="nier"] nav a:hover { color: #C4362B; background: transparent; }
+        [data-theme="nier"] nav a:hover::after { width: 100%; }
+
+        /* Hero */
         [data-theme="nier"] .hero::before {
             background:
                 radial-gradient(ellipse at 25% 50%, rgba(196,54,43,0.04) 0%, transparent 50%),
                 radial-gradient(ellipse at 75% 30%, rgba(58,110,165,0.03) 0%, transparent 50%);
         }
-        [data-theme="nier"] .hero::after {
-            background: none;
-        }
-        [data-theme="nier"] .hero h1 { color: #1A1A1A; }
-        [data-theme="nier"] .hero h1 .accent { color: #C4362B; text-shadow: 0 0 20px rgba(196,54,43,0.3); }
+        [data-theme="nier"] .hero::after { display: none; }
+        [data-theme="nier"] .hero h1 { color: #1A1A1A; font-family: var(--nier-heading); }
+        [data-theme="nier"] .hero h1 .accent { color: #C4362B; text-shadow: 1px 1px 0 rgba(196,54,43,0.2), 0 0 20px rgba(196,54,43,0.3); }
         [data-theme="nier"] .hero-scan {
             background: linear-gradient(90deg, transparent 0%, rgba(196,54,43,0.15) 30%, rgba(58,110,165,0.2) 50%, rgba(196,54,43,0.15) 70%, transparent 100%);
         }
-        [data-theme="nier"] .light-beam.green { background: linear-gradient(180deg, transparent 0%, rgba(196,54,43,0.03) 15%, rgba(196,54,43,0.12) 35%, rgba(196,54,43,0.24) 50%, rgba(196,54,43,0.12) 65%, rgba(196,54,43,0.03) 85%, transparent 100%); }
-        [data-theme="nier"] .light-beam.green::after { background: linear-gradient(180deg, transparent 0%, rgba(196,54,43,0.01) 25%, rgba(196,54,43,0.02) 50%, rgba(196,54,43,0.01) 75%, transparent 100%); }
-        [data-theme="nier"] .light-beam.pink { background: linear-gradient(180deg, transparent 0%, rgba(168,50,50,0.015) 20%, rgba(168,50,50,0.08) 45%, rgba(168,50,50,0.14) 55%, rgba(168,50,50,0.08) 65%, rgba(168,50,50,0.015) 80%, transparent 100%); }
-        [data-theme="nier"] .light-beam.pink::after { background: linear-gradient(180deg, transparent 0%, rgba(168,50,50,0.005) 25%, rgba(168,50,50,0.01) 50%, rgba(168,50,50,0.005) 75%, transparent 100%); }
-        [data-theme="nier"] .light-beam.blue { background: linear-gradient(180deg, transparent 0%, rgba(58,110,165,0.015) 20%, rgba(58,110,165,0.08) 40%, rgba(58,110,165,0.16) 55%, rgba(58,110,165,0.08) 70%, rgba(58,110,165,0.015) 85%, transparent 100%); }
-        [data-theme="nier"] .light-beam.blue::after { background: linear-gradient(180deg, transparent 0%, rgba(58,110,165,0.005) 25%, rgba(58,110,165,0.01) 50%, rgba(58,110,165,0.005) 75%, transparent 100%); }
-        [data-theme="nier"] .lens-flare { background: radial-gradient(circle, rgba(196,54,43,0.1) 0%, rgba(58,110,165,0.05) 30%, rgba(168,50,50,0.02) 60%, transparent 70%); }
-        [data-theme="nier"] .badge { border-color: #D4CFC6; background: #FFFFFF; }
+        [data-theme="nier"] .light-beam.green, [data-theme="nier"] .light-beam.pink, [data-theme="nier"] .light-beam.blue { display: none; }
+        [data-theme="nier"] .lens-flare { display: none; }
+
+        /* Badges */
+        [data-theme="nier"] .badge { border-color: #D4CFC6; background: #FFFFFF; border-radius: 0; }
         [data-theme="nier"] .badge-c { color: #3A6EA5; border-color: rgba(58,110,165,0.3); }
         [data-theme="nier"] .badge-r { color: #C4362B; border-color: rgba(196,54,43,0.3); }
         [data-theme="nier"] .badge-42 { color: #4A7C59; border-color: rgba(74,124,89,0.3); }
-        [data-theme="nier"] .cta-primary { background: #C4362B; color: #F5F0E8; border-color: #C4362B; }
-        [data-theme="nier"] .cta-primary:hover { background: #A02E24; }
-        [data-theme="nier"] .cta-ghost { border-color: #1A1A1A; color: #1A1A1A; }
+
+        /* CTA — YoRHa scan effect */
+        [data-theme="nier"] .cta-primary {
+            background: #C4362B; color: #F5F0E8; border-color: #C4362B;
+            position: relative; overflow: hidden; transition: none;
+        }
+        [data-theme="nier"] .cta-primary::after {
+            content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%);
+            transition: none;
+        }
+        [data-theme="nier"] .cta-primary:hover { background: #A02E24; text-shadow: 0 0 8px rgba(196,54,43,0.4); }
+        [data-theme="nier"] .cta-primary:hover::after { top: 100%; transition: top 0.4s ease; }
+        [data-theme="nier"] .cta-ghost { border-color: #1A1A1A; color: #1A1A1A; transition: none; }
         [data-theme="nier"] .cta-ghost:hover { background: #1A1A1A; color: #F5F0E8; }
-        [data-theme="nier"] .terminal-window { background: #1A1A1A; border-color: #3A3A3A; border-left-color: #C4362B; border-radius: 0; box-shadow: 0 8px 40px rgba(0,0,0,0.15); }
-        [data-theme="nier"] .terminal-bar { background: #2A2A2A; }
-        [data-theme="nier"] .terminal-body { color: #D4CFC6; }
+
+        /* Terminal — CRT scanlines + phosphor hover + pulsing border */
+        @keyframes nierTerminalBorderPulse { 0%,100%{border-left-color:rgba(196,54,43,0.5)} 50%{border-left-color:rgba(196,54,43,1)} }
+        [data-theme="nier"] .terminal-window {
+            background: #1A1A1A; border-color: #3A3A3A; border-left: 2px solid #C4362B;
+            border-radius: 0; position: relative;
+            animation: nierTerminalBorderPulse 4s ease-in-out infinite;
+            transition: box-shadow 0.3s;
+        }
+        [data-theme="nier"] .terminal-window:hover {
+            box-shadow: 0 0 20px rgba(196,54,43,0.05), inset 0 0 60px rgba(0,0,0,0.1);
+        }
+        [data-theme="nier"] .terminal-window::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(0,0,0,0.06) 1px, rgba(0,0,0,0.06) 2px);
+        }
+        [data-theme="nier"] .terminal-bar { background: #2A2A2A; border-radius: 0; }
+        [data-theme="nier"] .terminal-body { color: #D4CFC6; font-family: var(--nier-mono); }
+        @keyframes nierPromptBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
         [data-theme="nier"] .terminal-body .cmd { color: #C4362B; }
+        [data-theme="nier"] .terminal-body .prompt::after {
+            content: '█'; color: #C4362B; animation: nierPromptBlink 1s step-end infinite;
+            font-size: 0.85em; margin-left: 2px;
+        }
         [data-theme="nier"] .terminal-body .flag { color: #3A6EA5; }
         [data-theme="nier"] .terminal-body .out { color: #D4CFC6; }
+
+        /* Feature cards — pulsing crimson border */
+        @keyframes nierBorderPulse { 0%,100%{border-left-color:rgba(196,54,43,0.7)} 50%{border-left-color:rgba(196,54,43,1)} }
+        [data-theme="nier"] .feature-card {
+            background: #FFFFFF; border-color: #D4CFC6; border-left: 3px solid #C4362B;
+            animation: nierBorderPulse 3s ease-in-out infinite;
+        }
+        [data-theme="nier"] .feature-card:hover {
+            border-color: rgba(196,54,43,0.3); border-left-color: #C4362B;
+            box-shadow: -4px 0 12px rgba(196,54,43,0.15), 0 8px 30px rgba(0,0,0,0.08);
+        }
+        [data-theme="nier"] .feature-card .fc-icon { color: #C4362B; }
+        [data-theme="nier"] .stat-val { color: #C4362B; font-variant-numeric: tabular-nums; }
+
+        /* Footer — YoRHa credits style */
+        @keyframes nierMarquee { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+        [data-theme="nier"] footer {
+            background: #1A1A1A; color: #6B6560; border-top: 1px solid #C4362B;
+            position: relative; overflow: hidden;
+        }
+        [data-theme="nier"] footer a { color: #8A847C; }
+        [data-theme="nier"] footer a:hover { color: #C4362B; }
+        [data-theme="nier"] footer::after {
+            content: 'YoRHa Force de Déploiement  ◆  Unité 2B  ◆  Unité 9S  ◆  Unité A2  ◆  POD 042  ◆  POD 153  ◆  Bunker  ◆  Conseil YoRHa';
+            position: absolute; bottom: 4px; left: 0; white-space: nowrap;
+            font-family: 'Courier New', monospace; font-size: 0.55rem; color: rgba(196,54,43,0.15);
+            letter-spacing: 0.15em; animation: nierMarquee 60s linear infinite;
+        }
         /* ══ NIER — Redesigned Block Overrides ══ */
         [data-theme="nier"] .video-card {
             background: #FFFFFF;
@@ -2233,7 +2313,7 @@
             z-index: 0; pointer-events: none; display: none;
         }
         [data-theme="ame"] #underwater-bg { display: block; }
-        [data-theme="nier"] #nier-bg { display: block; }
+        [data-theme="nier"] #nier-bg { display: none !important; }
         html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
         
         /* When WebGL is active, shader replaces CSS atmosphere */
@@ -3429,5 +3509,6 @@
 </script>
 
 <div id="theme-transition"></div>
+<script src="nier-immersive.js"></script>
 </body>
 </html>
