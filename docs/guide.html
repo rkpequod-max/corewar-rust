@@ -1479,6 +1479,83 @@ champion.cor → [VM: load_champions()] → Arena (4096 bytes)
         </tbody>
     </table>
 
+    <h3>Le contrat central : la structure <code>t_op</code></h3>
+    <p>La table ci-dessus est la vue <em>donnée</em>. Ce que l'assembleur et la VM doivent réellement implémenter, c'est la <strong>structure <code>t_op</code></strong> définie dans <code>op.h</code> — le contrat qui lie l'assembleur à la VM. Chaque instruction est une entrée dans un tableau <code>op_tab[17]</code> (index 0 inutilisé, opcodes 1-16). Voici cette structure en C et en Rust :</p>
+
+    <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <div class="code-header">
+            <span class="lang">t_op — Le contrat assembleur ↔ VM</span>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="showCode(this,'c-top')">C (op.h)</button>
+                <button class="code-tab" onclick="showCode(this,'r-top')">Rust</button>
+            </div>
+        </div>
+        <pre id="c-top" class="active"><code><span class="cm">// C — include/op.h</span>
+<span class="kw">typedef struct</span> <span class="ty">s_op</span>
+{
+    <span class="ty">char</span>  *name;           <span class="cm">// "live", "ld", "st", ...</span>
+    <span class="ty">int</span>   opcode;          <span class="cm">// 1–16</span>
+    <span class="ty">int</span>   nb_params;       <span class="cm">// 1, 2 ou 3</span>
+    <span class="ty">int</span>   param_types[3];  <span class="cm">// masque T_REG|T_DIR|T_IND par param</span>
+    <span class="ty">int</span>   cycles;          <span class="cm">// durée en cycles (10, 5, 25, ...)</span>
+    <span class="ty">int</span>   has_ocp;         <span class="cm">// 1 = instruction a un OCP, 0 = sans OCP</span>
+    <span class="ty">int</span>   dir_size;        <span class="cm">// 2 ou 4 (taille d'un paramètre %direct)</span>
+    <span class="ty">int</span>   modify_carry;    <span class="cm">// 1 = modifie le carry, 0 = non</span>
+    <span class="ty">void</span>  (*f)(<span class="ty">vm_t</span>*, <span class="ty">process_t</span>*); <span class="cm">// pointeur vers le handler VM</span>
+} <span class="ty">t_op</span>;
+
+<span class="cm">// Constantes de type (masks pour param_types)</span>
+<span class="kw">#define</span> <span class="fn">T_REG</span>  1    <span class="cm">// 0b01 — registre (r1–r16)</span>
+<span class="kw">#define</span> <span class="fn">T_DIR</span>  2    <span class="cm">// 0b10 — direct (%valeur ou %:label)</span>
+<span class="kw">#define</span> <span class="fn">T_IND</span>  4    <span class="cm">// 0b100 — indirect (valeur ou :label)</span>
+
+<span class="cm">// Le tableau global (index 0 = entrée vide, opcodes 1-16)</span>
+<span class="kw">extern</span> <span class="ty">t_op</span> op_tab[17];</code></pre>
+        <pre id="r-top"><code><span class="cm">// Rust — corewar-common/src/op.rs</span>
+<span class="kw">pub struct</span> <span class="ty">Op</span> {
+    <span class="kw">pub</span> name:         &<span class="ky">str</span>,          <span class="cm">// "live", "ld", ...</span>
+    <span class="kw">pub</span> opcode:       <span class="ty">u8</span>,            <span class="cm">// 1–16</span>
+    <span class="kw">pub</span> nb_params:    <span class="ty">u8</span>,            <span class="cm">// 1, 2 ou 3</span>
+    <span class="kw">pub</span> param_types:  [<span class="ty">u8</span>; 3],        <span class="cm">// T_REG|T_DIR|T_IND par param</span>
+    <span class="kw">pub</span> cycles:       <span class="ty">u32</span>,           <span class="cm">// durée en cycles</span>
+    <span class="kw">pub</span> has_ocp:      <span class="ty">bool</span>,          <span class="cm">// true = instruction a un OCP</span>
+    <span class="kw">pub</span> dir_size:     <span class="ty">u8</span>,            <span class="cm">// 2 ou 4</span>
+    <span class="kw">pub</span> modify_carry: <span class="ty">bool</span>,          <span class="cm">// true = modifie le carry</span>
+    <span class="cm">// Le handler est implémenté via match sur l'opcode</span>
+    <span class="cm">// (Rust n'utilise pas de pointeurs de fonction nus)</span>
+}
+
+<span class="kw">pub const</span> T_REG: <span class="ty">u8</span> = 1;   <span class="cm">// 0b01</span>
+<span class="kw">pub const</span> T_DIR: <span class="ty">u8</span> = 2;   <span class="cm">// 0b10</span>
+<span class="kw">pub const</span> T_IND: <span class="ty">u8</span> = 4;   <span class="cm">// 0b100</span>
+
+<span class="kw">pub static</span> OP_TABLE: [<span class="ty">Op</span>; 17] = [
+    <span class="cm">/* 0 */</span> Op { name: "", opcode: 0, .. },
+    <span class="cm">/* 1 */</span> Op { name: "live",  opcode: 1,  nb_params: 1, param_types: [T_DIR, 0, 0],
+                   cycles: 10,  has_ocp: false, dir_size: 4, modify_carry: false },
+    <span class="cm">// ... opcodes 2–16 (voir table ci-dessus)</span>
+];</code></pre>
+    </div>
+
+    <div class="insight-box" data-level="comprehension">
+        <div class="ib-title">📖 Comment l'assembleur et la VM utilisent chaque champ</div>
+        <div class="ib-content">
+            <p>Chaque champ de <code>t_op</code> est utilisé à un moment précis du pipeline :</p>
+            <ul>
+                <li><strong><code>name</code></strong> — L'assembleur l'utilise pour le parser : quand il lit le mnémonique <code>sti</code>, il cherche l'entrée dont <code>name == "sti"</code>. La VM l'utilise uniquement pour l'affichage de débogage.</li>
+                <li><strong><code>opcode</code></strong> — L'assembleur l'écrit comme premier octet de chaque instruction dans le bytecode. La VM l'utilise pour le dispatch : <code>op_tab[opcode].f(vm, proc)</code>.</li>
+                <li><strong><code>nb_params</code></strong> — L'assembleur l'utilise pour valider le nombre d'arguments dans le source. La VM l'utilise pour savoir combien de groupes de 2 bits lire dans l'OCP.</li>
+                <li><strong><code>param_types</code></strong> — L'assembleur l'utilise pour valider le type de chaque argument (est-ce que <code>sti</code> accepte un indirect en paramètre 1 ? Non → erreur). La VM l'utilise pour valider l'OCP : si un bit de l'OCP annonce un type non présent dans <code>param_types</code>, l'instruction est invalide et le PC avance sans exécuter.</li>
+                <li><strong><code>cycles</code></strong> — Uniquement la VM : après avoir décodé l'instruction, le processus attend <code>cycles - 1</code> cycles avant de l'exécuter (le décodage compte pour 1 cycle).</li>
+                <li><strong><code>has_ocp</code></strong> — L'assembleur l'utilise pour savoir s'il doit calculer et écrire un OCP. La VM l'utilise pour savoir si elle doit lire un octet OCP après l'opcode, ou passer directement aux paramètres.</li>
+                <li><strong><code>dir_size</code></strong> — L'assembleur l'utilise pour savoir si un paramètre direct est encodé sur 2 ou 4 octets. La VM l'utilise pour la même chose à la lecture. C'est ce qui distingue <code>ld %42</code> (4 octets) de <code>ldi %42</code> (2 octets).</li>
+                <li><strong><code>modify_carry</code></strong> — Uniquement la VM : après exécution de l'instruction, si <code>modify_carry == 1</code>, le carry est mis à jour selon le résultat (1 si résultat nul, 0 sinon). Sinon le carry reste inchangé.</li>
+            </ul>
+            <p>Le champ <code>param_types</code> utilise un <strong>masque binaire</strong> : si <code>param_types[0] = T_REG | T_DIR | T_IND = 7</code>, le paramètre 1 accepte tous les types. Si <code>param_types[2] = T_REG = 1</code>, le paramètre 3 n'accepte qu'un registre. La validation dans la VM est un simple <code>if (ocp_type &amp; op_tab[opcode].param_types[i]) == 0</code> — si le type annoncé par l'OCP n'est pas dans le masque autorisé, l'instruction est rejetée.</p>
+        </div>
+    </div>
+
     <h3>Instructions clés en détail</h3>
 
 
@@ -1867,6 +1944,57 @@ live: live  %1
 <span class="num">07x06</span> <span class="str">0x64</span> <span class="num">07x01</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x01</span>  <span class="cm">← and r1,%0,r1</span>
 <span class="num">07x01</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x00</span> <span class="num">07x01</span>                <span class="cm">← live %1</span>
 <span class="num">07x09</span> <span class="num">07xff</span> <span class="num">07xfb</span>                          <span class="cm">← zjmp %:live  (−5 = 0xFFFB)</span></code></pre>
+    </div>
+
+    <h3>Hexdump annoté de zork.cor</h3>
+    <p>Voici le fichier <code>zork.cor</code> complet tel que <code>xxd</code> le produirait. Chaque champ est annoté à son offset réel — c'est ce que votre assembleur doit produire et ce que votre VM doit lire :</p>
+    <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <div class="code-header"><span class="lang">xxd zork.cor — Hexdump annoté</span></div>
+        <pre style="display:block"><code><span class="cm"># ─── HEADER (2192 octets) ───────────────────────────────────────</span>
+<span class="cm">#  Offset    Octets                              Champ</span>
+  0x0000  <span class="str">00 ea 83 f3</span>                        <span class="cm">← MAGIC_NUMBER (0xEA83F3, big-endian)</span>
+  0x0004  <span class="num">7a 6f 72 6b</span> 00 00 00 00 00 00 00 00  <span class="cm">← PROG_NAME "zork" + padding</span>
+  ...     <span class="cm">(128 octets au total, complétés de nulls)</span>
+  0x0084  00 00 00 00                          <span class="cm">← PADDING (4 null bytes)</span>
+  0x0088  <span class="str">00 00 00 17</span>                        <span class="cm">← PROG_SIZE = 23 octets (0x17, big-endian)</span>
+  0x008C  <span class="num">6a 75 73 74</span> 20 61 20 62 61 73 69 63  <span class="cm">← COMMENT "just a basic living prog"</span>
+  ...     <span class="cm">(2048 octets au total, complétés de nulls)</span>
+  0x088C  00 00 00 00                          <span class="cm">← PADDING (4 null bytes)</span>
+
+<span class="cm"># ─── BYTECODE (23 octets, offset 0x0890) ───────────────────────</span>
+<span class="cm">#  Offset    Octets                              Décomposition</span>
+  0x0890  <span class="str">0b</span>                                <span class="cm">← opcode sti (11)</span>
+  0x0891  <span class="str">68</span>                                <span class="cm">← OCP : 01 10 10 00 (r1, %dir, %dir)</span>
+  0x0892  <span class="num">01</span>                                <span class="cm">← param 1 : r1 (1 octet registre)</span>
+  0x0893  <span class="num">00 0f</span>                              <span class="cm">← param 2 : %:live = 15 (2 octets, dir_size=2)</span>
+  0x0895  <span class="num">00 01</span>                              <span class="cm">← param 3 : %1 (2 octets, dir_size=2)</span>
+
+  0x0897  <span class="str">06</span>                                <span class="cm">← opcode and (6)</span>
+  0x0898  <span class="str">64</span>                                <span class="cm">← OCP : 01 10 01 00 (r1, %dir, r1)</span>
+  0x0899  <span class="num">01</span>                                <span class="cm">← param 1 : r1</span>
+  0x089A  <span class="num">00 00 00 00</span>                        <span class="cm">← param 2 : %0 (4 octets, dir_size=4)</span>
+  0x089E  <span class="num">01</span>                                <span class="cm">← param 3 : r1</span>
+
+  0x089F  <span class="str">01</span>                                <span class="cm">← opcode live (1) — pas d'OCP</span>
+  0x08A0  <span class="num">00 00 00 01</span>                        <span class="cm">← param 1 : %1 (4 octets, dir_size=4)</span>
+
+  0x08A4  <span class="str">09</span>                                <span class="cm">← opcode zjmp (9) — pas d'OCP</span>
+  0x08A5  <span class="num">ff fb</span>                              <span class="cm">← param 1 : %:live = −5 (0xFFFB, 2 octets signé)</span>
+<span class="cm">#                                                          total = 23 octets</span></code></pre>
+    </div>
+    <div class="insight-box" data-level="comprehension">
+        <div class="ib-title">📖 Comment vérifier votre hexdump</div>
+        <div class="ib-content">
+            <p>Pour vérifier que votre assembleur produit le bon fichier, utilisez ces commandes :</p>
+            <ul>
+                <li><code>xxd zork.cor | head -5</code> — voir le début du header (vérifier le magic number)</li>
+                <li><code>xxd -s 0x0088 -l 4 zork.cor</code> — lire PROG_SIZE à l'offset 136 (0x88)</li>
+                <li><code>xxd -s 0x0890 zork.cor</code> — voir uniquement le bytecode (après le header de 2192 octets)</li>
+                <li><code>ls -l zork.cor</code> — la taille totale doit être 2192 + PROG_SIZE (ici 2192 + 23 = 2215)</li>
+            </ul>
+            <p>L'erreur la plus courante est un décalage d'un octet dans le header : si PROG_SIZE est à l'offset 0x0087 au lieu de 0x0088, c'est que vous avez oublié un null de padding quelque part. La deuxième erreur la plus courante est l'<strong>endianness</strong> : tous les champs multi-octets du .cor sont en <strong>big-endian</strong> (octet de poids fort en premier). Si votre PROG_SIZE affiche <code>17 00 00 00</code> au lieu de <code>00 00 00 17</code>, vous avez écrit en little-endian.</p>
+        </div>
     </div>
 
     <h3>Calcul de l'OCP en code</h3>
@@ -3136,6 +3264,132 @@ cmp -l reference.cor votre.cor
 ls -l champion.cor   <span class="cm"># taille_fichier - 2192 = taille_bytecode</span>
 xxd -s 136 champion.cor | head -5  <span class="cm"># PROG_SIZE est à l'offset 136</span></code></pre>
     </div>
+
+    <h3>Méthodologie de test progressive</h3>
+    <p>Le débogage est <em>réactif</em> : on cherche un bug après qu'il est apparu. Le test progressif est <em>proactif</em> : on valide chaque brique avant de passer à la suivante, pour éviter que les bugs ne s'accumulent. Voici l'ordre recommandé pour tester votre VM, instruction par instruction :</p>
+
+    <div class="lifecycle">
+        <div class="lc-step">
+            <div class="lc-num fetch">1</div>
+            <div class="lc-content">
+                <div class="lc-title">Chargement et <code>live</code> seul</div>
+                <div class="lc-desc">Avant toute instruction, validez le chargement : le bytecode est-il copié au bon endroit ? Le PC initial est-il correct ? Ensuite, testez <code>live %1</code> en boucle. C'est l'instruction la plus simple (pas d'OCP, pas de registre, pas de mémoire). Vérifiez : le processus reste en vie (<code>live_count</code> est incrémenté), <code>nlives</code> augmente, le carry ne change pas.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">2</div>
+            <div class="lc-content">
+                <div class="lc-title"><code>zjmp</code> et le carry</div>
+                <div class="lc-desc">Testez <code>zjmp %:label</code> avec carry=1 (le saut doit se faire), puis carry=0 (le saut ne doit PAS se faire). Pour mettre le carry à 1, utilisez <code>sub r1, r1, r2</code> (0-0=0 → carry=1). Pour le mettre à 0, utilisez <code>ld %1, r1</code> (résultat non nul → carry=0). C'est le premier test qui vérifie la chaîne complète : décodage → exécution → mise à jour du PC.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">3</div>
+            <div class="lc-content">
+                <div class="lc-title">Instructions avec OCP : <code>ld</code>, <code>st</code></div>
+                <div class="lc-desc">Testez <code>ld %42, r1</code> puis vérifiez que <code>r1 == 42</code>. Testez <code>st r1, r2</code> puis vérifiez que <code>r2 == r1</code>. Ces deux instructions valident le décodage de l'OCP, la lecture des paramètres, et l'écriture dans les registres. Testez aussi les types indirects : <code>ld 42, r1</code> (indirect — lit à l'adresse PC+42%IDX_MOD).</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">4</div>
+            <div class="lc-content">
+                <div class="lc-title">Opérations arithmétiques et logiques</div>
+                <div class="lc-desc">Testez <code>add r1, r2, r3</code>, <code>sub r1, r2, r3</code>, <code>and</code>, <code>or</code>, <code>xor</code>. Vérifiez le résultat ET le carry. Testez avec des valeurs connues : <code>ld %5, r1 / ld %3, r2 / add r1, r2, r3</code> → r3 doit valoir 8, carry=0. Testez <code>sub r1, r1, r3</code> → r3=0, carry=1.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num fetch">5</div>
+            <div class="lc-content">
+                <div class="lc-title">Adressement indirect : <code>ldi</code>, <code>sti</code></div>
+                <div class="lc-desc">C'est le moment où la plupart des bugs apparaissent. Testez <code>sti r1, %10, %5</code> → écrit r1 à l'adresse (PC + (10+5) % IDX_MOD). Vérifiez avec un dump mémoire. Testez <code>ldi %10, r2, r1</code> → lit à l'adresse (PC + (10 + r2) % IDX_MOD) et charge dans r1. Vérifiez que IDX_MOD est appliqué.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num decode">6</div>
+            <div class="lc-content">
+                <div class="lc-title"><code>fork</code> et les processus multiples</div>
+                <div class="lc-desc">Testez <code>fork %:label</code> : un nouveau processus doit être créé avec PC = (parent_PC + label_offset) % IDX_MOD. Vérifiez que les deux processus s'exécutent en round-robin, que le processus enfant a les mêmes registres que le parent au moment du fork, et que <code>live_count</code> est hérité.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num wait">7</div>
+            <div class="lc-content">
+                <div class="lc-title">Variantes longues : <code>lld</code>, <code>lldi</code>, <code>lfork</code></div>
+                <div class="lc-desc">Ces instructions sont les mêmes que <code>ld</code>, <code>ldi</code>, <code>fork</code> mais sans IDX_MOD. Testez avec des adresses supérieures à 512 pour voir la différence : <code>fork %1000</code> saute à (PC+1000)%IDX_MOD, mais <code>lfork %1000</code> saute à (PC+1000)%MEM_SIZE sans IDX_MOD.</div>
+            </div>
+        </div>
+        <div class="lc-step">
+            <div class="lc-num exec">8</div>
+            <div class="lc-content">
+                <div class="lc-title">Interactions et champion complet</div>
+                <div class="lc-desc">Testez le champion zork (4 instructions qui interagissent : sti → écrit, and → met carry à 0 puis à 1, live → signale en vie, zjmp → boucle). Puis testez deux champions identiques, puis un champion qui bombe contre un champion qui survit. Chaque interaction entre instructions (carry → zjmp, sti → mémoire → ldi) est un potentiel bug caché.</div>
+            </div>
+        </div>
+    </div>
+
+    <h4>Fichiers .s de test minimaux</h4>
+    <p>Pour chaque étape, voici le fichier de test minimal. Chacun ne teste qu'un seul comportement :</p>
+
+    <div class="code-wrapper">
+        <button class="copy-btn" onclick="copyCode(this)">Copier</button>
+        <div class="code-header"><span class="lang">Fichiers de test progressifs</span></div>
+        <pre style="display:block"><code><span class="cm"># ─── test_live.s — Étape 1 : live seul ────────────────────────</span>
+.name <span class="str">"test_live"</span>
+.comment <span class="str">"live only"</span>
+loop:  live %1
+       zjmp %:loop
+
+<span class="cm"># ─── test_zjmp.s — Étape 2 : carry → zjmp ───────────────────</span>
+.name <span class="str">"test_zjmp"</span>
+.comment <span class="str">"zjmp with carry"</span>
+       sub r1, r1, r2     <span class="cm"># 0 - 0 = 0 → carry = 1</span>
+       zjmp %:jump         <span class="cm"># carry=1 → saute</span>
+       live %1             <span class="cm"># ne doit PAS être exécuté</span>
+jump:  live %2             <span class="cm"># doit être exécuté</span>
+       zjmp %:jump         <span class="cm"># boucle infinie</span>
+
+<span class="cm"># ─── test_ld_st.s — Étape 3 : ld + st avec OCP ──────────────</span>
+.name <span class="str">"test_ld_st"</span>
+.comment <span class="str">"ld and st"</span>
+       ld %42, r1          <span class="cm"># r1 = 42</span>
+       st r1, r2           <span class="cm"># r2 = r1 = 42</span>
+loop:  live %1
+       zjmp %:loop
+
+<span class="cm"># ─── test_sti.s — Étape 5 : sti (adressement indirect) ──────</span>
+.name <span class="str">"test_sti"</span>
+.comment <span class="str">"sti addressing"</span>
+       ld %0x42, r1        <span class="cm"># valeur à écrire</span>
+       sti r1, %10, %5     <span class="cm"># écrit r1 à PC + (10+5) % IDX_MOD</span>
+loop:  live %1
+       zjmp %:loop         <span class="cm"># vérifier avec -dump que 0x42 est à la bonne adresse</span></code></pre>
+    </div>
+
+    <h4>Checklist des cas limites</h4>
+    <p>Ces cas limites sont les plus fréquemment oubliés et les plus susceptibles de révéler des bugs silencieux. Testez-les un par un dès que votre VM passe l'étape correspondante :</p>
+
+    <table class="op-table" style="font-size:0.88em">
+        <thead>
+            <tr><th>Catégorie</th><th>Cas limite</th><th>Comportement attendu</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Opcode</td><td>Opcode 0x00 (invalide)</td><td>PC avance de 1 octet, aucune instruction exécutée</td></tr>
+            <tr><td>Opcode</td><td>Opcode &gt; 16 (invalide)</td><td>PC avance de 1 octet, aucune instruction exécutée</td></tr>
+            <tr><td>OCP</td><td>OCP avec type non autorisé</td><td>Instruction invalide, PC avance sans exécuter</td></tr>
+            <tr><td>OCP</td><td>OCP tous à 00 (aucun paramètre)</td><td>Instruction invalide, PC avance</td></tr>
+            <tr><td>Registre</td><td>r0 (numéro invalide)</td><td>Instruction invalide si lu comme registre</td></tr>
+            <tr><td>Registre</td><td>r17 (hors limites)</td><td>Instruction invalide si lu comme registre</td></tr>
+            <tr><td>Adresse</td><td>Adresse négative après IDX_MOD</td><td>Normaliser dans [0, MEM_SIZE[</td></tr>
+            <tr><td>Adresse</td><td>Wrap-around (&gt; MEM_SIZE)</td><td>Normaliser avec % MEM_SIZE</td></tr>
+            <tr><td>Carry</td><td>zjmp avec carry=0</td><td>Ne saute PAS, PC avance normalement</td></tr>
+            <tr><td>Carry</td><td>live ne modifie PAS le carry</td><td>Carry inchangé après live</td></tr>
+            <tr><td>Mémoire</td><td>Écriture à l'adresse 0 (début de l'arène)</td><td>Écriture normale, pas de segfault</td></tr>
+            <tr><td>Mémoire</td><td>Écriture qui écrase une instruction existante</td><td>Écrasement silencieux (c'est le jeu)</td></tr>
+            <tr><td>Processus</td><td>Fork avec offset 0</td><td>Processus enfant commence au même PC que le parent</td></tr>
+            <tr><td>Endianness</td><td>Valeur direct 0x00000001 dans le bytecode</td><td>Lue comme 1 en Big-Endian, pas 16 777 216 en Little</td></tr>
+            <tr><td>sti</td><td>Deux index négatifs : sti r1, %-1000, %-1000</td><td>Tester la « bug-for-bug compatibility » avec la VM de Zaz</td></tr>
+        </tbody>
+    </table>
 
     <div class="insight-box" data-level="noyau">
         <div class="ib-title">💡 La règle d'or du débogage Corewar</div>
