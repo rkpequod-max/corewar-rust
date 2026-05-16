@@ -4080,3 +4080,16 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
     .bp-header h3 { font-size: 1rem; }
     .bp-refs li { font-size: 0.82rem; }
 }
+/* ══ WebGL Canvas Styles (for guide.html) ══ */
+#underwater-bg, #rayon-bg, #nier-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none; display: none;
+}
+[data-theme="ame"] #underwater-bg { display: block; }
+[data-theme="nier"] #nier-bg { display: block; }
+html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
+
+[data-theme="ame"].webgl body::before { background: none !important; animation: none !important; }
+[data-theme="ame"].webgl #god-rays { display: none !important; }
+[data-theme="nier"].webgl body::before, [data-theme="nier"].webgl body::after { background: none !important; }
+html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after { background: none !important; }

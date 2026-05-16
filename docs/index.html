@@ -2228,14 +2228,19 @@
         }
 
         /* ══ REALISTIC UNDERWATER SHADER (WebGL canvas) ══ */
-        #underwater-bg {
+        #underwater-bg, #rayon-bg, #nier-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0; pointer-events: none; display: none;
         }
         [data-theme="ame"] #underwater-bg { display: block; }
-        /* When WebGL is active, shader replaces CSS atmosphere + god rays */
+        [data-theme="nier"] #nier-bg { display: block; }
+        html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
+        
+        /* When WebGL is active, shader replaces CSS atmosphere */
         [data-theme="ame"].webgl body::before { background: none !important; animation: none !important; }
         [data-theme="ame"].webgl #god-rays { display: none !important; }
+        [data-theme="nier"].webgl body::before, [data-theme="nier"].webgl body::after { background: none !important; }
+        html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after { background: none !important; }
         /* Subtle current drift — content sways imperceptibly */
         [data-theme="ame"] .container {
             animation: ameCurrentDrift 30s ease-in-out infinite;
@@ -2414,7 +2419,9 @@
 </head>
 <body>
 
-<!-- Realistic Underwater Background (Âme theme — WebGL shader) -->
+<!-- Background WebGL Shaders -->
+<canvas id="rayon-bg"></canvas>
+<canvas id="nier-bg"></canvas>
 <canvas id="underwater-bg"></canvas>
 
 <!-- Starfield (CSS-only, no canvas) -->
@@ -3240,6 +3247,184 @@
     });
 
     window.addEventListener('resize', function() { if (animId) resize(); });
+})();
+</script>
+
+<script>
+// ── WebGL Shaders for Rayon Vert and Nier Automata ──
+(function() {
+    function initShader(canvasId, themeName, fsSource) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        var gl = canvas.getContext('webgl', { alpha: false, antialias: false, preserveDrawingBuffer: false, powerPreference: 'low-power' });
+        if (!gl) return;
+        
+        var VS = 'attribute vec2 aPosition;void main(){gl_Position=vec4(aPosition,0.0,1.0);}';
+        
+        function compile(src, type) {
+            var s = gl.createShader(type);
+            gl.shaderSource(s, src);
+            gl.compileShader(s);
+            if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+                console.warn('[' + canvasId + ']', gl.getShaderInfoLog(s));
+                gl.deleteShader(s); return null;
+            }
+            return s;
+        }
+
+        var vs = compile(VS, gl.VERTEX_SHADER);
+        var fs = compile(fsSource, gl.FRAGMENT_SHADER);
+        if (!vs || !fs) return;
+
+        var prog = gl.createProgram();
+        gl.attachShader(prog, vs);
+        gl.attachShader(prog, fs);
+        gl.linkProgram(prog);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+        gl.useProgram(prog);
+
+        var buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        var aPos = gl.getAttribLocation(prog, 'aPosition');
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        var uTime = gl.getUniformLocation(prog, 'uTime');
+        var uRes = gl.getUniformLocation(prog, 'uResolution');
+
+        function resize() {
+            var dpr = Math.min(window.devicePixelRatio || 1, 1);
+            var w = Math.floor(window.innerWidth * dpr);
+            var h = Math.floor(window.innerHeight * dpr);
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w; canvas.height = h;
+                gl.viewport(0, 0, w, h);
+            }
+        }
+
+        var animId = null;
+        var t0 = 0;
+
+        function render(now) {
+            if (!t0) t0 = now;
+            resize();
+            gl.uniform1f(uTime, (now - t0) / 1000);
+            gl.uniform2f(uRes, canvas.width, canvas.height);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            animId = requestAnimationFrame(render);
+        }
+
+        function isThemeActive() {
+            var current = document.documentElement.getAttribute('data-theme');
+            if (themeName === 'rayon') return (!current || current === 'rayon');
+            return current === themeName;
+        }
+
+        function start() {
+            if (animId) return;
+            canvas.style.display = 'block';
+            document.documentElement.classList.add('webgl');
+            t0 = 0;
+            animId = requestAnimationFrame(render);
+        }
+
+        function stop() {
+            if (animId) { cancelAnimationFrame(animId); animId = null; }
+            canvas.style.display = 'none';
+        }
+
+        var obs = new MutationObserver(function() {
+            if (isThemeActive()) start();
+            else stop();
+        });
+        obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        if (isThemeActive()) start();
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) stop();
+            else if (isThemeActive()) start();
+        });
+        window.addEventListener('resize', function() { if (animId) resize(); });
+    }
+
+    // ── Rayon Vert Shader (Lasers & Fog) ──
+    var fsRayon = [
+        'precision mediump float;',
+        'uniform float uTime;',
+        'uniform vec2 uResolution;',
+        'vec2 hash2(vec2 p) {',
+        '  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));',
+        '  return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);',
+        '}',
+        'float noise(vec2 p) {',
+        '  vec2 i = floor(p); vec2 f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);',
+        '  return mix(mix(dot(hash2(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0)),',
+        '                 dot(hash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),',
+        '             mix(dot(hash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)),',
+        '                 dot(hash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);',
+        '}',
+        'float fbm(vec2 uv) {',
+        '  float f = 0.0; float w = 0.5;',
+        '  mat2 m = mat2(1.6, 1.2, -1.2, 1.6);',
+        '  for (int i = 0; i < 4; i++) { f += w * noise(uv); uv = m * uv + uTime * 0.1; w *= 0.5; }',
+        '  return f;',
+        '}',
+        'void main() {',
+        '  vec2 uv = gl_FragCoord.xy / uResolution;',
+        '  vec3 col = vec3(0.02, 0.03, 0.02);',
+        '  // Fog layer',
+        '  float fog = fbm(uv * 2.0 + vec2(uTime * 0.03, uTime * 0.08));',
+        '  col += vec3(0.05, 0.15, 0.08) * fog * 0.5;',
+        '  // Scanning Lasers',
+        '  float scanTime = uTime * 0.3;',
+        '  float pos1 = 0.5 + sin(scanTime)*0.4;',
+        '  float pos2 = 0.5 + cos(scanTime*0.7)*0.4;',
+        '  float l1 = exp(-pow(abs(uv.y - pos1), 2.0) * 2000.0);',
+        '  float l2 = exp(-pow(abs(uv.x - pos2), 2.0) * 2000.0);',
+        '  float lb1 = exp(-pow(abs(uv.y - pos1), 2.0) * 100.0) * 0.25;',
+        '  float lb2 = exp(-pow(abs(uv.x - pos2), 2.0) * 100.0) * 0.25;',
+        '  float intensity = (l1 + l2 + lb1 + lb2) * (0.6 + 0.4 * fog);',
+        '  col += vec3(0.1, 0.9, 0.3) * intensity;',
+        '  // Vignette',
+        '  float vig = length((uv - 0.5) * vec2(1.2, 0.8));',
+        '  col *= smoothstep(1.1, 0.2, vig);',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+    ].join('\n');
+
+    // ── Nier Automata Shader (Hacking Grid) ──
+    var fsNier = [
+        'precision mediump float;',
+        'uniform float uTime;',
+        'uniform vec2 uResolution;',
+        'void main() {',
+        '  vec2 uv = gl_FragCoord.xy / uResolution;',
+        '  vec2 uvCentered = uv * 2.0 - 1.0;',
+        '  uvCentered.x *= uResolution.x / uResolution.y;',
+        '  float z = 1.0 / max(abs(uvCentered.y + 0.2), 0.01);',
+        '  vec2 p = vec2(uvCentered.x * z, z) * 4.0;',
+        '  p.y -= uTime * 2.0;',
+        '  vec2 gridUV = fract(p);',
+        '  float lineW = 0.06 * z;',
+        '  float grid = smoothstep(lineW, lineW + 0.01, gridUV.x) * smoothstep(lineW, lineW + 0.01, gridUV.y);',
+        '  grid = 1.0 - grid;',
+        '  float horizonFade = smoothstep(0.0, 0.4, abs(uvCentered.y + 0.2));',
+        '  grid *= horizonFade;',
+        '  vec3 col = vec3(0.96, 0.94, 0.91);',
+        '  vec3 gridCol = mix(vec3(0.42, 0.39, 0.37), vec3(0.76, 0.21, 0.17), smoothstep(0.95, 1.0, sin(p.x * 2.0 + uTime)));',
+        '  col = mix(col, gridCol, grid * 0.35);',
+        '  // Scanlines',
+        '  col -= sin(uv.y * 600.0) * 0.03;',
+        '  // Vignette',
+        '  float vig = length(uv - 0.5);',
+        '  col -= vig * 0.15;',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+    ].join('\n');
+
+    initShader('rayon-bg', 'rayon', fsRayon);
+    initShader('nier-bg', 'nier', fsNier);
 })();
 </script>
 
