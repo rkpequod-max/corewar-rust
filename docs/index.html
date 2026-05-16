@@ -1686,14 +1686,15 @@
 
         /* ── Terminal Window ── */
         [data-theme="ame"] .terminal-window {
-            background: rgba(5,8,20,0.94);
-            border-color: #152A55;
-            border-left-color: #1E5BD8;
+            background: rgba(6,12,30,0.85);
+            border: 1px solid rgba(21,42,85,0.5);
+            border-left: 3px solid rgba(30,91,216,0.4);
             border-radius: 8px;
-            box-shadow: 0 12px 50px rgba(0,0,0,0.6), 0 0 1px rgba(30,91,216,0.2), 0 0 15px rgba(30,91,216,0.1), 0 0 40px rgba(0,206,209,0.04);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
         }
         [data-theme="ame"] .terminal-window::before {
-            background: linear-gradient(90deg, transparent, #1E5BD8, #00CED1, #990000, transparent);
+            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.3), rgba(0,206,209,0.2), transparent);
         }
         [data-theme="ame"] .terminal-bar {
             background: rgba(7,11,26,0.92);
@@ -1710,7 +1711,7 @@
         }
         [data-theme="ame"] .terminal-body .cmd { color: #00CED1; }
         [data-theme="ame"] .terminal-body .flag { color: #D4A050; }
-        [data-theme="ame"] .terminal-body .result { color: #00CED1; text-shadow: 0 0 6px rgba(0,206,209,0.2); }
+        [data-theme="ame"] .terminal-body .result { color: #00CED1; }
         [data-theme="ame"] .terminal-body .comment { color: #2A4A6A; }
         [data-theme="ame"] .terminal-body .typing-cursor {
             background: #1E5BD8;
@@ -1719,97 +1720,101 @@
 
         /* ── Video Cards ── */
         [data-theme="ame"] .video-card {
-            background: rgba(8,14,38,0.75);
-            border: 1px solid #152A55;
-            border-left: 3px solid #1E5BD8;
+            background: rgba(6,12,30,0.7);
+            border: 1px solid rgba(21,42,85,0.5);
+            border-left: 3px solid rgba(30,91,216,0.4);
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(30,91,216,0.08), 0 0 30px rgba(0,206,209,0.03);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(4px);
         }
         [data-theme="ame"] .video-card::before {
-            background: linear-gradient(90deg, #1E5BD8, #00CED1, #990000);
+            background: linear-gradient(90deg, rgba(30,91,216,0.3), rgba(0,206,209,0.4), rgba(30,91,216,0.3));
+            height: 1px;
         }
         [data-theme="ame"] .video-card::after {
-            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.06), rgba(0,206,209,0.03), transparent);
+            background: linear-gradient(90deg, transparent, rgba(0,206,209,0.03), transparent);
         }
         [data-theme="ame"] .video-card:hover {
-            border-color: #1E5BD8;
-            border-left-color: #1E5BD8;
-            box-shadow: 0 0 40px rgba(30,91,216,0.15), 0 0 80px rgba(0,206,209,0.06), 0 0 15px rgba(30,91,216,0.35);
-            transform: translateY(-4px);
+            border-color: rgba(30,91,216,0.25);
+            border-left-color: rgba(0,206,209,0.6);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,206,209,0.08);
+            transform: translateY(-3px);
         }
         [data-theme="ame"] .video-card .caption { color: #4A6A90; }
         [data-theme="ame"] .video-card .caption strong {
             color: #1E5BD8;
-            text-shadow: 0 0 8px rgba(30,91,216,0.4), 0 0 16px rgba(0,206,209,0.1);
         }
 
         /* ── Crate Cards ── */
         [data-theme="ame"] .crate-card {
-            background: rgba(8,14,38,0.75);
-            border: 1px solid #152A55;
-            border-left: 3px solid #00CED1;
+            background: rgba(6,12,30,0.7);
+            border: 1px solid rgba(21,42,85,0.5);
+            border-left: 3px solid rgba(0,206,209,0.35);
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 8px rgba(0,206,209,0.08), 0 0 30px rgba(30,91,216,0.03);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(4px);
         }
         [data-theme="ame"] .crate-card::before {
-            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.06), rgba(0,206,209,0.04), transparent);
+            background: linear-gradient(90deg, transparent, rgba(0,206,209,0.04), transparent);
         }
         [data-theme="ame"] .crate-card::after {
             background: linear-gradient(135deg,
-                rgba(30,91,216,0.04) 0%, rgba(0,206,209,0.03) 50%, rgba(153,0,0,0.02) 100%
+                rgba(30,91,216,0.03) 0%, rgba(0,206,209,0.02) 50%, transparent 100%
             );
         }
         [data-theme="ame"] .crate-card:hover {
-            border-color: rgba(30,91,216,0.35);
-            border-left-color: #00CED1;
-            box-shadow: 0 0 30px rgba(30,91,216,0.12), 0 0 60px rgba(0,206,209,0.06), 0 0 12px rgba(0,206,209,0.25);
-            transform: translateY(-4px);
+            border-color: rgba(30,91,216,0.2);
+            border-left-color: rgba(0,206,209,0.5);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,206,209,0.06);
+            transform: translateY(-3px);
         }
         [data-theme="ame"] .crate-card .name {
             color: #1E5BD8;
-            text-shadow: 0 0 12px rgba(30,91,216,0.3), 0 0 24px rgba(0,206,209,0.1);
         }
 
         /* ── Summary Cards ── */
         [data-theme="ame"] .summary-card {
-            background: rgba(8,14,38,0.75);
-            border: 1px solid #152A55;
+            background: rgba(6,12,30,0.7);
+            border: 1px solid rgba(21,42,85,0.5);
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 10px rgba(30,91,216,0.06), 0 0 30px rgba(0,206,209,0.02);
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(4px);
         }
-        /* Animated wave-like gradient top edge */
+        /* Subtle water-surface gradient on top edge */
         [data-theme="ame"] .summary-card::before {
-            background: linear-gradient(90deg, #1E5BD8, #00CED1, #990000, #1E5BD8);
+            background: linear-gradient(90deg, rgba(30,91,216,0.25), rgba(0,206,209,0.3), rgba(30,91,216,0.25));
             background-size: 200% 100%;
+            height: 1px;
             animation: summaryGradientSweep 6s ease-in-out infinite;
         }
         [data-theme="ame"] .summary-card::after {
             background: linear-gradient(135deg,
-                rgba(30,91,216,0.04) 0%, rgba(0,206,209,0.03) 50%, rgba(153,0,0,0.02) 100%
+                rgba(0,206,209,0.02) 0%, transparent 100%
             );
         }
         [data-theme="ame"] .summary-card:hover {
-            border-color: rgba(30,91,216,0.35);
-            box-shadow: 0 0 30px rgba(30,91,216,0.12), 0 0 60px rgba(0,206,209,0.05);
+            border-color: rgba(30,91,216,0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
             transform: translateY(-2px);
         }
-        /* Per-card depth-color glow — cinematic spotlights */
-        [data-theme="ame"] .summary-card:nth-child(1) { box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 12px rgba(30,91,216,0.12), 0 0 30px rgba(30,91,216,0.04); }
-        [data-theme="ame"] .summary-card:nth-child(2) { box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 12px rgba(0,206,209,0.12), 0 0 30px rgba(0,206,209,0.04); }
-        [data-theme="ame"] .summary-card:nth-child(3) { box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 12px rgba(26,42,108,0.12), 0 0 30px rgba(26,42,108,0.04); }
-        [data-theme="ame"] .summary-card:nth-child(4) { box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 12px rgba(153,0,0,0.10), 0 0 30px rgba(153,0,0,0.03); }
-        [data-theme="ame"] .summary-card:nth-child(1):hover { box-shadow: 0 0 30px rgba(30,91,216,0.18), 0 0 60px rgba(30,91,216,0.08), 0 0 100px rgba(0,206,209,0.03); }
-        [data-theme="ame"] .summary-card:nth-child(2):hover { box-shadow: 0 0 30px rgba(0,206,209,0.18), 0 0 60px rgba(0,206,209,0.08), 0 0 100px rgba(30,91,216,0.03); }
-        [data-theme="ame"] .summary-card:nth-child(3):hover { box-shadow: 0 0 30px rgba(26,42,108,0.18), 0 0 60px rgba(26,42,108,0.08); }
-        [data-theme="ame"] .summary-card:nth-child(4):hover { box-shadow: 0 0 30px rgba(153,0,0,0.15), 0 0 60px rgba(153,0,0,0.06); }
-        /* Value text-shadow — cinematic glow */
-        [data-theme="ame"] .summary-card:nth-child(1) .value { text-shadow: 0 0 15px rgba(30,91,216,0.5), 0 0 30px rgba(30,91,216,0.2), 0 0 60px rgba(0,206,209,0.08); color: #E0EAF8; }
-        [data-theme="ame"] .summary-card:nth-child(2) .value { text-shadow: 0 0 15px rgba(0,206,209,0.5), 0 0 30px rgba(0,206,209,0.2), 0 0 60px rgba(30,91,216,0.08); color: #E0EAF8; }
-        [data-theme="ame"] .summary-card:nth-child(3) .value { text-shadow: 0 0 15px rgba(26,42,108,0.5), 0 0 30px rgba(26,42,108,0.2); color: #E0EAF8; }
-        [data-theme="ame"] .summary-card:nth-child(4) .value { text-shadow: 0 0 15px rgba(153,0,0,0.45), 0 0 30px rgba(153,0,0,0.15); color: #E0EAF8; }
+        /* Per-card depth shading — subtle, no glow */
+        [data-theme="ame"] .summary-card:nth-child(1) { border-bottom: 2px solid rgba(30,91,216,0.2); }
+        [data-theme="ame"] .summary-card:nth-child(2) { border-bottom: 2px solid rgba(0,206,209,0.2); }
+        [data-theme="ame"] .summary-card:nth-child(3) { border-bottom: 2px solid rgba(26,42,108,0.25); }
+        [data-theme="ame"] .summary-card:nth-child(4) { border-bottom: 2px solid rgba(153,0,0,0.2); }
+        /* Per-card hover: water ripple feel */
+        [data-theme="ame"] .summary-card:nth-child(1):hover { border-bottom-color: rgba(30,91,216,0.5); }
+        [data-theme="ame"] .summary-card:nth-child(2):hover { border-bottom-color: rgba(0,206,209,0.5); }
+        [data-theme="ame"] .summary-card:nth-child(3):hover { border-bottom-color: rgba(26,42,108,0.5); }
+        [data-theme="ame"] .summary-card:nth-child(4):hover { border-bottom-color: rgba(153,0,0,0.4); }
+        /* Value text — clean, no glow */
+        [data-theme="ame"] .summary-card:nth-child(1) .value { color: #1E5BD8; }
+        [data-theme="ame"] .summary-card:nth-child(2) .value { color: #00CED1; }
+        [data-theme="ame"] .summary-card:nth-child(3) .value { color: #2E4A8B; }
+        [data-theme="ame"] .summary-card:nth-child(4) .value { color: #C83030; }
         [data-theme="ame"] .summary-card .label {
             color: #4A7AAA;
             letter-spacing: 2px;
@@ -1818,53 +1823,47 @@
         /* ── Controls Table ── */
         [data-theme="ame"] .controls-table th,
         [data-theme="ame"] .controls-table td {
-            border-bottom: 1px solid rgba(21,42,85,0.5);
+            border-bottom: 1px solid rgba(21,42,85,0.4);
             color: #C8DAF0;
         }
         [data-theme="ame"] .controls-table thead tr::after {
-            background: #1E5BD8;
-            box-shadow: 0 0 8px rgba(30,91,216,0.4), 0 0 20px rgba(0,206,209,0.15);
+            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.3), rgba(0,206,209,0.2), transparent);
             height: 1px;
         }
         [data-theme="ame"] .controls-table td:first-child {
             color: #1E5BD8;
-            text-shadow: 0 0 8px rgba(30,91,216,0.3), 0 0 20px rgba(0,206,209,0.1);
         }
         [data-theme="ame"] .controls-table tbody tr::after {
-            background: #1E5BD8;
-            box-shadow: 0 0 6px rgba(30,91,216,0.4);
+            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.15), transparent);
         }
         [data-theme="ame"] .controls-table tbody tr:nth-child(even) td {
-            background: rgba(30,91,216,0.02);
+            background: rgba(30,91,216,0.015);
         }
         [data-theme="ame"] .controls-table tr:hover td {
-            background: rgba(30,91,216,0.06);
+            background: rgba(0,206,209,0.03);
         }
 
         /* ── Bench Table ── */
         [data-theme="ame"] .bench-table th,
         [data-theme="ame"] .bench-table td {
-            border-bottom: 1px solid rgba(21,42,85,0.5);
+            border-bottom: 1px solid rgba(21,42,85,0.4);
             color: #C8DAF0;
         }
         [data-theme="ame"] .bench-table thead tr::after {
-            background: #1E5BD8;
-            box-shadow: 0 0 8px rgba(30,91,216,0.4), 0 0 20px rgba(0,206,209,0.15);
+            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.3), rgba(0,206,209,0.2), transparent);
             height: 1px;
         }
         [data-theme="ame"] .bench-table td:first-child {
             color: #1E5BD8;
-            text-shadow: 0 0 8px rgba(30,91,216,0.2), 0 0 20px rgba(0,206,209,0.08);
         }
         [data-theme="ame"] .bench-table tbody tr::after {
-            background: #1E5BD8;
-            box-shadow: 0 0 6px rgba(30,91,216,0.4);
+            background: linear-gradient(90deg, transparent, rgba(30,91,216,0.15), transparent);
         }
         [data-theme="ame"] .bench-table tbody tr:nth-child(even) td {
-            background: rgba(30,91,216,0.02);
+            background: rgba(30,91,216,0.015);
         }
         [data-theme="ame"] .bench-table tr:hover td {
-            background: rgba(30,91,216,0.06);
+            background: rgba(0,206,209,0.03);
         }
         [data-theme="ame"] .fast { color: #00CED1; }
         [data-theme="ame"] .slow { color: #990000; }
@@ -1872,18 +1871,17 @@
         /* ── Code Block ── */
         [data-theme="ame"] .code-block {
             background: rgba(3,6,15,0.94);
-            border: 1px solid #152A55;
+            border: 1px solid rgba(21,42,85,0.5);
             border-radius: 8px;
             clip-path: none;
             color: #00CED1;
         }
         [data-theme="ame"] .code-block::before {
-            background: linear-gradient(180deg, #1E5BD8, #00CED1, #990000);
-            width: 3px;
-            box-shadow: 0 0 10px rgba(30,91,216,0.4), 0 0 20px rgba(0,206,209,0.2), 0 0 40px rgba(30,91,216,0.08);
+            background: linear-gradient(90deg, rgba(30,91,216,0.25), rgba(0,206,209,0.3), rgba(30,91,216,0.25));
+            height: 1px;
         }
         [data-theme="ame"] .code-block::after {
-            display: none;
+            background: linear-gradient(135deg, rgba(0,206,209,0.02) 0%, transparent 100%);
         }
         [data-theme="ame"] .code-block .comment { color: #2A4A6A; }
         [data-theme="ame"] .code-block .prompt { color: #1E5BD8; }
@@ -1935,13 +1933,14 @@
 
         /* ── Feature Cards ── */
         [data-theme="ame"] .feature-card {
-            background: rgba(8,14,38,0.7);
-            border-color: #152A55;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: rgba(6,12,30,0.7);
+            border: 1px solid rgba(21,42,85,0.5);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
         }
         [data-theme="ame"] .feature-card:hover {
-            border-color: rgba(30,91,216,0.3);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 15px rgba(30,91,216,0.08);
+            border-color: rgba(30,91,216,0.2);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
         }
         [data-theme="ame"] .feature-card .fc-icon { color: #1E5BD8; }
         [data-theme="ame"] .stat-val { color: #1E5BD8; }
@@ -1965,13 +1964,13 @@
         [data-theme="ame"] p { color: #4A6A90; }
         [data-theme="ame"] strong { color: #C8DAF0; }
         [data-theme="ame"] a { color: #1E5BD8; }
-        [data-theme="ame"] a:hover { text-shadow: 0 0 10px rgba(30,91,216,0.3); }
+        [data-theme="ame"] a:hover { color: #00CED1; }
         [data-theme="ame"] section { border-bottom-color: rgba(21,42,85,0.5); }
         [data-theme="ame"] .section-label { color: #4A6A90; letter-spacing: 4px; }
 
         /* ── Utility classes ── */
         [data-theme="ame"] .green { color: #00CED1; }
-        [data-theme="ame"] .ray { color: #1E5BD8; text-shadow: 0 0 10px rgba(30,91,216,0.3); }
+        [data-theme="ame"] .ray { color: #1E5BD8; }
         [data-theme="ame"] .red { color: #990000; }
 
         /* ── Footer ── */
@@ -1980,7 +1979,7 @@
             border-top-color: #152A55;
         }
         [data-theme="ame"] footer a { color: #1E5BD8; }
-        [data-theme="ame"] footer a:hover { text-shadow: 0 0 10px rgba(30,91,216,0.3); }
+        [data-theme="ame"] footer a:hover { color: #00CED1; }
 
         /* ── Theme Toggle ── */
         [data-theme="ame"] .theme-toggle {
@@ -2107,20 +2106,22 @@
             100% { transform: translateY(-110vh) translateX(var(--drift)) scale(var(--scale-end)); opacity: 0; }
         }
 
-        /* ══ 3D FLOATING TILT ON CARDS ══ */
+        /* ══ WATER BOB ON CARDS ══ */
         [data-theme="ame"] .video-card,
         [data-theme="ame"] .crate-card,
         [data-theme="ame"] .summary-card,
         [data-theme="ame"] .feature-card {
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease, border-color 0.4s ease;
-            transform-style: preserve-3d;
-            perspective: 800px;
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.5s ease, box-shadow 0.5s ease;
         }
         [data-theme="ame"] .video-card:hover,
         [data-theme="ame"] .crate-card:hover,
         [data-theme="ame"] .summary-card:hover,
         [data-theme="ame"] .feature-card:hover {
-            transform: translateY(-4px) scale(1.01);
+            animation: ameWaterBob 2s ease-in-out infinite;
+        }
+        @keyframes ameWaterBob {
+            0%, 100% { transform: translateY(-3px); }
+            50% { transform: translateY(-5px); }
         }
 
         /* ══ WATER SURFACE WAVE ══ */
@@ -2144,91 +2145,6 @@
         @keyframes waveFlow {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
-        }
-
-        /* ══ SEAWEED SILHOUETTES ══ */
-        #seaweed-layer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
-            pointer-events: none; z-index: 1;
-            opacity: 0; transition: opacity 1.5s ease;
-        }
-        [data-theme="ame"] #seaweed-layer { opacity: 1; }
-        .seaweed-svg {
-            width: 100%; height: 100%; display: block;
-        }
-        [data-theme="ame"] .sw { stroke-linecap: round; }
-        [data-theme="ame"] .sw-1 { animation: seaweedSway 7s ease-in-out infinite; transform-origin: 60px 200px; }
-        [data-theme="ame"] .sw-2 { animation: seaweedSway2 9s ease-in-out infinite; transform-origin: 120px 200px; animation-delay: -1s; }
-        [data-theme="ame"] .sw-3 { animation: seaweedSway 11s ease-in-out infinite; transform-origin: 200px 200px; animation-delay: -3s; }
-        [data-theme="ame"] .sw-4 { animation: seaweedSway2 8s ease-in-out infinite; transform-origin: 320px 200px; animation-delay: -2s; }
-        [data-theme="ame"] .sw-5 { animation: seaweedSway 10s ease-in-out infinite; transform-origin: 480px 200px; animation-delay: -4s; }
-        [data-theme="ame"] .sw-6 { animation: seaweedSway2 12s ease-in-out infinite; transform-origin: 600px 200px; animation-delay: -5s; }
-        [data-theme="ame"] .sw-7 { animation: seaweedSway 9s ease-in-out infinite; transform-origin: 750px 200px; animation-delay: -6s; }
-        [data-theme="ame"] .sw-8 { animation: seaweedSway2 11s ease-in-out infinite; transform-origin: 900px 200px; animation-delay: -3s; }
-        [data-theme="ame"] .sw-9 { animation: seaweedSway 8s ease-in-out infinite; transform-origin: 1050px 200px; animation-delay: -7s; }
-        [data-theme="ame"] .sw-10 { animation: seaweedSway2 10s ease-in-out infinite; transform-origin: 1200px 200px; animation-delay: -2s; }
-        [data-theme="ame"] .sw-11 { animation: seaweedSway 13s ease-in-out infinite; transform-origin: 1350px 200px; animation-delay: -8s; }
-        @keyframes seaweedSway {
-            0%, 100% { transform: rotate(-3deg) scaleY(1); }
-            30% { transform: rotate(2deg) scaleY(1.02); }
-            60% { transform: rotate(-1.5deg) scaleY(0.98); }
-            80% { transform: rotate(1deg) scaleY(1.01); }
-        }
-        @keyframes seaweedSway2 {
-            0%, 100% { transform: rotate(2deg) scaleY(1); }
-            25% { transform: rotate(-2.5deg) scaleY(0.98); }
-            50% { transform: rotate(1.5deg) scaleY(1.03); }
-            75% { transform: rotate(-1deg) scaleY(0.99); }
-        }
-
-        /* ══ WATER REFLECTION ON CARDS ══ */
-        [data-theme="ame"] .video-card::before,
-        [data-theme="ame"] .crate-card::before {
-            content: '';
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(
-                105deg,
-                transparent 20%,
-                rgba(0,206,209,0.04) 35%,
-                rgba(30,91,216,0.06) 42%,
-                rgba(0,206,209,0.04) 50%,
-                transparent 65%
-            );
-            background-size: 300% 100%;
-            background-position: 100% 0;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-            pointer-events: none;
-            z-index: 2;
-            border-radius: 2px;
-        }
-        [data-theme="ame"] .video-card:hover::before,
-        [data-theme="ame"] .crate-card:hover::before {
-            opacity: 1;
-            animation: waterReflectionSweep 2s ease-in-out infinite;
-        }
-        @keyframes waterReflectionSweep {
-            0% { background-position: 100% 0; }
-            100% { background-position: -100% 0; }
-        }
-
-        /* Water mirror effect on summary cards */
-        [data-theme="ame"] .summary-card {
-            position: relative;
-            overflow: hidden;
-        }
-        [data-theme="ame"] .summary-card::before {
-            content: '';
-            position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,206,209,0.06), rgba(30,91,216,0.04), transparent);
-            transition: left 0.8s ease, opacity 0.5s ease;
-            opacity: 0;
-            z-index: 1;
-        }
-        [data-theme="ame"] .summary-card:hover::before {
-            left: 150%;
-            opacity: 1;
-            animation: waterReflectionSweep 2.5s ease-in-out infinite;
         }
 
         /* ══ BIOLUMINESCENT PARTICLES ══ */
@@ -2758,23 +2674,6 @@
     <a href="https://github.com/rkpequod-max/corewar-rust/blob/main/LICENSE" target="_blank">Tous droits reserves</a>
 </footer>
 
-<!-- Seaweed Silhouettes (Âme theme) -->
-<div id="seaweed-layer">
-    <svg class="seaweed-svg" viewBox="0 0 1440 200" preserveAspectRatio="none">
-        <path class="sw sw-1" d="M60,200 Q70,160 55,120 Q40,80 60,40 Q75,10 65,0" fill="none" stroke="rgba(0,206,209,0.12)" stroke-width="3"/>
-        <path class="sw sw-2" d="M120,200 Q110,170 125,140 Q140,110 120,70 Q105,35 115,10" fill="none" stroke="rgba(30,91,216,0.10)" stroke-width="2.5"/>
-        <path class="sw sw-3" d="M200,200 Q215,165 195,130 Q180,95 200,55 Q215,25 205,5" fill="none" stroke="rgba(0,206,209,0.08)" stroke-width="2"/>
-        <path class="sw sw-4" d="M320,200 Q305,170 320,135 Q340,100 320,65 Q305,30 315,5" fill="none" stroke="rgba(30,91,216,0.09)" stroke-width="2.5"/>
-        <path class="sw sw-5" d="M480,200 Q495,165 475,130 Q460,95 480,55 Q498,20 488,0" fill="none" stroke="rgba(0,206,209,0.11)" stroke-width="3"/>
-        <path class="sw sw-6" d="M600,200 Q585,170 600,135 Q618,100 600,60 Q585,25 595,5" fill="none" stroke="rgba(30,91,216,0.07)" stroke-width="2"/>
-        <path class="sw sw-7" d="M750,200 Q765,165 745,125 Q730,90 750,50 Q768,18 755,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
-        <path class="sw sw-8" d="M900,200 Q885,165 900,130 Q918,95 900,55 Q885,25 895,5" fill="none" stroke="rgba(30,91,216,0.08)" stroke-width="2"/>
-        <path class="sw sw-9" d="M1050,200 Q1065,170 1045,130 Q1030,95 1050,55 Q1068,20 1055,0" fill="none" stroke="rgba(0,206,209,0.09)" stroke-width="3"/>
-        <path class="sw sw-10" d="M1200,200 Q1185,170 1200,135 Q1218,100 1200,60 Q1185,28 1195,5" fill="none" stroke="rgba(30,91,216,0.07)" stroke-width="2"/>
-        <path class="sw sw-11" d="M1350,200 Q1365,165 1345,125 Q1330,90 1350,50 Q1368,18 1355,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
-    </svg>
-</div>
-
 <!-- Bioluminescent Particles (Âme theme) -->
 <div id="biolum-container"></div>
 
@@ -3029,41 +2928,6 @@
     if (document.documentElement.getAttribute('data-theme') === 'ame') {
         startBubbles();
     }
-})();
-
-// ── Âme: 3D Tilt Effect on Cards ──
-(function() {
-    function handleTilt(e) {
-        if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
-        var card = e.currentTarget;
-        var rect = card.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        var centerX = rect.width / 2;
-        var centerY = rect.height / 2;
-        var rotateX = ((y - centerY) / centerY) * -4;
-        var rotateY = ((x - centerX) / centerX) * 4;
-        card.style.transform = 'translateY(-4px) scale(1.01) perspective(800px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg)';
-    }
-    function resetTilt(e) {
-        var card = e.currentTarget;
-        card.style.transform = '';
-    }
-    function initTilt() {
-        var cards = document.querySelectorAll('.video-card, .crate-card, .summary-card, .feature-card');
-        cards.forEach(function(card) {
-            card.removeEventListener('mousemove', handleTilt);
-            card.removeEventListener('mouseleave', resetTilt);
-            card.addEventListener('mousemove', handleTilt);
-            card.addEventListener('mouseleave', resetTilt);
-        });
-    }
-    initTilt();
-    // Re-init after theme changes
-    var obs = new MutationObserver(function() {
-        setTimeout(initTilt, 500);
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 })();
 
 // ── Âme: Caustic Cursor Trail ──

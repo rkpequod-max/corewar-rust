@@ -153,7 +153,7 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 /* ── ARENA NEON BORDER GLOW ── */
 .arena-canvas-wrap{box-shadow:0 0 15px rgba(6,182,212,0.15),0 0 30px rgba(6,182,212,0.05),inset 0 0 15px rgba(0,0,0,0.5);position:relative}
 .arena-canvas-wrap::after{content:'';position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;border-radius:7px;background:linear-gradient(135deg,rgba(0,255,136,0.2),rgba(0,212,255,0.15),rgba(255,45,120,0.1),transparent);z-index:-1;filter:blur(4px);animation:arenaGlow 6s ease-in-out infinite}
-@keyframes arenaGlow{0%,100%{opacity:0.4}50%{opacity:1}}
+@keyframes arenaGlow{0%,100%{opacity:0.15}50%{opacity:0.35}}
 /* ── CTRL BTN GLOW HOVER ── */
 .ctrl-btn.run:hover{border-color:var(--green);background:rgba(34,197,94,.15);box-shadow:0 0 15px rgba(34,197,94,0.3),0 0 30px rgba(34,197,94,0.1)}
 .ctrl-btn.pause:hover{border-color:var(--yellow);background:rgba(234,179,8,.15);box-shadow:0 0 15px rgba(234,179,8,0.3),0 0 30px rgba(234,179,8,0.1)}
@@ -265,7 +265,7 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
     --p4: #00CED1;
 }
 [data-theme="ame"] .nav { background: rgba(7,11,26,0.92); border-bottom-color: rgba(21,42,85,0.7); }
-[data-theme="ame"] .nav-logo { color: #1E5BD8; text-shadow: 0 0 20px rgba(30,91,216,0.6), 0 0 40px rgba(30,91,216,0.2), 0 0 80px rgba(30,91,216,0.1), 0 0 120px rgba(0,206,209,0.15); }
+[data-theme="ame"] .nav-logo { color: #1E5BD8; text-shadow: 0 0 20px rgba(30,91,216,0.3); }
 [data-theme="ame"] .nav-links a { color: #4A6A90; }
 [data-theme="ame"] .nav-links a:hover { color: #1E5BD8; background: rgba(30,91,216,0.08); }
 [data-theme="ame"] .ctrl-bar { background: rgba(7,11,26,0.92); border-top-color: #152A55; }
@@ -274,8 +274,8 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 [data-theme="ame"] .ctrl-btn.active { background: #1E5BD8; color: #070B1A; border-color: #1E5BD8; }
 [data-theme="ame"] .left { border-right-color: #152A55; }
 [data-theme="ame"] .right { background: rgba(7,11,26,0.85); }
-[data-theme="ame"] .arena-canvas-wrap { background: #060E1A; border-color: #152A55; border-radius: 8px; box-shadow: 0 0 15px rgba(30,91,216,0.12), 0 0 30px rgba(30,91,216,0.04), 0 0 40px rgba(0,206,209,0.06), inset 0 0 15px rgba(0,0,0,0.5); }
-[data-theme="ame"] .arena-canvas-wrap::after { background: linear-gradient(135deg, rgba(30,91,216,0.15), rgba(212,160,80,0.1), rgba(0,206,209,0.08), transparent); }
+[data-theme="ame"] .arena-canvas-wrap { background: #060E1A; border-color: rgba(21,42,85,0.5); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(0,0,0,0.5); }
+[data-theme="ame"] .arena-canvas-wrap::after { background: linear-gradient(135deg, rgba(30,91,216,0.06), rgba(0,206,209,0.04), transparent); }
 [data-theme="ame"] .info-section h3 { color: #4A6A90; }
 [data-theme="ame"] #film-grain { display: block; background-image: radial-gradient(circle at 20% 30%, rgba(30,91,216,0.03) 0%, transparent 1%), radial-gradient(circle at 60% 70%, rgba(30,91,216,0.02) 0%, transparent 1%), radial-gradient(circle at 80% 20%, rgba(212,160,80,0.02) 0%, transparent 1%), radial-gradient(circle at 40% 80%, rgba(30,91,216,0.02) 0%, transparent 1%); }
 [data-theme="ame"] body::after { background: radial-gradient(ellipse at center, transparent 40%, rgba(7,11,26,0.6) 100%); }
@@ -284,13 +284,13 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 [data-theme="ame"] .arena-fs-sidebar { background: rgba(7,11,26,0.85); border-left-color: #152A55; }
 [data-theme="ame"] .theme-toggle { border-color: #152A55; color: #4A6A90; }
 [data-theme="ame"] .theme-toggle:hover { border-color: #1E5BD8; color: #1E5BD8; }
-[data-theme="ame"] .term-wrap::before { background: linear-gradient(90deg, transparent, rgba(30,91,216,0.4), rgba(212,160,80,0.3), transparent); }
+[data-theme="ame"] .term-wrap::before { background: linear-gradient(90deg, transparent, rgba(30,91,216,0.25), rgba(0,206,209,0.15), transparent); }
 [data-theme="ame"] .asm-btn { border-color: #1E5BD8; color: #1E5BD8; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 [data-theme="ame"] .asm-btn:hover { background: #1E5BD8; color: #070B1A; }
 [data-theme="ame"] .editor-area { background: rgba(7,11,26,0.85); color: #00CED1; border-color: #152A55; border-radius: 8px; }
-[data-theme="ame"] .ctrl-btn.run:hover { border-color: #00CED1; background: rgba(0,206,209,0.15); box-shadow: 0 0 15px rgba(0,206,209,0.25), 0 0 30px rgba(0,206,209,0.08); }
-[data-theme="ame"] .ctrl-btn.pause:hover { border-color: #D4A050; background: rgba(212,160,80,0.15); box-shadow: 0 0 15px rgba(212,160,80,0.25), 0 0 30px rgba(212,160,80,0.08); }
-[data-theme="ame"] .ctrl-btn.reset:hover { border-color: #990000; background: rgba(153,0,0,0.15); box-shadow: 0 0 15px rgba(153,0,0,0.25), 0 0 30px rgba(153,0,0,0.08); }
+[data-theme="ame"] .ctrl-btn.run:hover { border-color: #00CED1; background: rgba(0,206,209,0.1); }
+[data-theme="ame"] .ctrl-btn.pause:hover { border-color: #D4A050; background: rgba(212,160,80,0.1); }
+[data-theme="ame"] .ctrl-btn.reset:hover { border-color: #990000; background: rgba(153,0,0,0.1); }
 [data-theme="ame"] .ctrl-group { background: rgba(30,91,216,0.05); border-radius: 8px; }
 [data-theme="ame"] body { background-image: radial-gradient(ellipse at 30% 50%, rgba(30,91,216,0.04) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(0,206,209,0.03) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(212,160,80,0.02) 0%, transparent 45%); }
 /* ── Âme Caustic Drift ── */
@@ -525,64 +525,7 @@ a, button, .ctrl-btn, select, input, textarea {
     100% { transform: translateX(-50%); }
 }
 
-/* ══ ÂME: SEAWEED SILHOUETTES ══ */
-#seaweed-layer {
-    position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
-    pointer-events: none; z-index: 1;
-    opacity: 0; transition: opacity 1.5s ease;
-}
-[data-theme="ame"] #seaweed-layer { opacity: 1; }
-.seaweed-svg { width: 100%; height: 100%; display: block; }
-[data-theme="ame"] .sw { stroke-linecap: round; }
-[data-theme="ame"] .sw-1 { animation: ameSeaweedSway 7s ease-in-out infinite; transform-origin: 60px 200px; }
-[data-theme="ame"] .sw-2 { animation: ameSeaweedSway2 9s ease-in-out infinite; transform-origin: 120px 200px; animation-delay: -1s; }
-[data-theme="ame"] .sw-3 { animation: ameSeaweedSway 11s ease-in-out infinite; transform-origin: 200px 200px; animation-delay: -3s; }
-[data-theme="ame"] .sw-4 { animation: ameSeaweedSway2 8s ease-in-out infinite; transform-origin: 320px 200px; animation-delay: -2s; }
-[data-theme="ame"] .sw-5 { animation: ameSeaweedSway 10s ease-in-out infinite; transform-origin: 480px 200px; animation-delay: -4s; }
-[data-theme="ame"] .sw-6 { animation: ameSeaweedSway 9s ease-in-out infinite; transform-origin: 750px 200px; animation-delay: -6s; }
-[data-theme="ame"] .sw-7 { animation: ameSeaweedSway2 8s ease-in-out infinite; transform-origin: 1050px 200px; animation-delay: -7s; }
-[data-theme="ame"] .sw-8 { animation: ameSeaweedSway 13s ease-in-out infinite; transform-origin: 1350px 200px; animation-delay: -8s; }
-@keyframes ameSeaweedSway {
-    0%, 100% { transform: rotate(-3deg) scaleY(1); }
-    30% { transform: rotate(2deg) scaleY(1.02); }
-    60% { transform: rotate(-1.5deg) scaleY(0.98); }
-    80% { transform: rotate(1deg) scaleY(1.01); }
-}
-@keyframes ameSeaweedSway2 {
-    0%, 100% { transform: rotate(2deg) scaleY(1); }
-    25% { transform: rotate(-2.5deg) scaleY(0.98); }
-    50% { transform: rotate(1.5deg) scaleY(1.03); }
-    75% { transform: rotate(-1deg) scaleY(0.99); }
-}
 
-/* ══ ÂME: WATER REFLECTION DISTORTION ══ */
-[data-theme="ame"] .arena-canvas-wrap::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(
-        105deg,
-        transparent 20%,
-        rgba(0,206,209,0.03) 35%,
-        rgba(30,91,216,0.05) 42%,
-        rgba(0,206,209,0.03) 50%,
-        transparent 65%
-    );
-    background-size: 300% 100%;
-    background-position: 100% 0;
-    opacity: 0;
-    transition: opacity 0.6s ease;
-    pointer-events: none;
-    z-index: 2;
-    border-radius: 8px;
-}
-[data-theme="ame"] .arena-canvas-wrap:hover::before {
-    opacity: 1;
-    animation: ameWaterReflectionSweep 2s ease-in-out infinite;
-}
-@keyframes ameWaterReflectionSweep {
-    0% { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
-}
 
 /* ══ ÂME: BIOLUMINESCENT PARTICLES ══ */
 #biolum-container {
@@ -2858,20 +2801,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.documentElement.getAttribute('data-theme') === 'ame') startBiolumParticles();
 })();
 </script>
-
-<!-- Seaweed Silhouettes (Âme theme) -->
-<div id="seaweed-layer">
-    <svg class="seaweed-svg" viewBox="0 0 1440 200" preserveAspectRatio="none">
-        <path class="sw sw-1" d="M60,200 Q70,160 55,120 Q40,80 60,40 Q75,10 65,0" fill="none" stroke="rgba(0,206,209,0.12)" stroke-width="3"/>
-        <path class="sw sw-2" d="M120,200 Q110,170 125,140 Q140,110 120,70 Q105,35 115,10" fill="none" stroke="rgba(30,91,216,0.10)" stroke-width="2.5"/>
-        <path class="sw sw-3" d="M200,200 Q215,165 195,130 Q180,95 200,55 Q215,25 205,5" fill="none" stroke="rgba(0,206,209,0.08)" stroke-width="2"/>
-        <path class="sw sw-4" d="M320,200 Q305,170 320,135 Q340,100 320,65 Q305,30 315,5" fill="none" stroke="rgba(30,91,216,0.09)" stroke-width="2.5"/>
-        <path class="sw sw-5" d="M480,200 Q495,165 475,130 Q460,95 480,55 Q498,20 488,0" fill="none" stroke="rgba(0,206,209,0.11)" stroke-width="3"/>
-        <path class="sw sw-6" d="M750,200 Q765,165 745,125 Q730,90 750,50 Q768,18 755,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
-        <path class="sw sw-7" d="M1050,200 Q1065,170 1045,130 Q1030,95 1050,55 Q1068,20 1055,0" fill="none" stroke="rgba(0,206,209,0.09)" stroke-width="3"/>
-        <path class="sw sw-8" d="M1350,200 Q1365,165 1345,125 Q1330,90 1350,50 Q1368,18 1355,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
-    </svg>
-</div>
 
 <!-- Bioluminescent Particles (Âme theme) -->
 <div id="biolum-container"></div>
