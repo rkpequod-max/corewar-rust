@@ -363,15 +363,18 @@ body{background-image:radial-gradient(ellipse at 30% 50%,rgba(0,212,255,0.03) 0%
 }
 
 @keyframes ameSubmersion {
-    0% { opacity: 0; background: transparent; transform: translateY(0); }
-    8% { opacity: 1; }
-    15% { background: rgba(7,11,26,0); transform: translateY(2px); }
-    25% { background: rgba(7,11,26,0.5); transform: translateY(-3px); }
-    35% { background: rgba(30,91,216,0.08); transform: translateY(2px); }
-    45% { background: rgba(7,11,26,0.85); transform: translateY(-1px); }
-    55% { background: rgba(7,11,26,0.9); transform: translateY(0); }
-    75% { background: rgba(7,11,26,0.7); }
-    100% { background: rgba(7,11,26,0); opacity: 0; transform: translateY(0); }
+    0% { opacity: 0; background: transparent; transform: translateY(0) scale(1); }
+    5% { opacity: 1; }
+    12% { background: rgba(7,11,26,0); transform: translateY(3px) scale(1); }
+    20% { background: rgba(30,91,216,0.06); transform: translateY(-4px) scale(1.01); box-shadow: inset 0 0 100px rgba(0,206,209,0.08); }
+    30% { background: rgba(7,11,26,0.5); transform: translateY(2px) scale(1); }
+    40% { background: rgba(30,91,216,0.12); transform: translateY(-2px); box-shadow: inset 0 0 200px rgba(0,206,209,0.15); }
+    50% { background: rgba(7,11,26,0.9); transform: translateY(0) scale(0.99); }
+    60% { background: rgba(7,11,26,1); box-shadow: inset 0 0 300px rgba(30,91,216,0.1); }
+    70% { background: rgba(7,11,26,0.95); }
+    80% { background: rgba(7,11,26,0.7); box-shadow: inset 0 0 100px rgba(0,206,209,0.03); }
+    90% { background: rgba(7,11,26,0.3); }
+    100% { background: rgba(7,11,26,0); opacity: 0; transform: translateY(0) scale(1); box-shadow: none; }
 }
 
 /* ── CUSTOM CURSORS ── */
@@ -520,6 +523,90 @@ a, button, .ctrl-btn, select, input, textarea {
 @keyframes ameWaveFlow {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
+}
+
+/* ══ ÂME: SEAWEED SILHOUETTES ══ */
+#seaweed-layer {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 200px;
+    pointer-events: none; z-index: 1;
+    opacity: 0; transition: opacity 1.5s ease;
+}
+[data-theme="ame"] #seaweed-layer { opacity: 1; }
+.seaweed-svg { width: 100%; height: 100%; display: block; }
+[data-theme="ame"] .sw { stroke-linecap: round; }
+[data-theme="ame"] .sw-1 { animation: ameSeaweedSway 7s ease-in-out infinite; transform-origin: 60px 200px; }
+[data-theme="ame"] .sw-2 { animation: ameSeaweedSway2 9s ease-in-out infinite; transform-origin: 120px 200px; animation-delay: -1s; }
+[data-theme="ame"] .sw-3 { animation: ameSeaweedSway 11s ease-in-out infinite; transform-origin: 200px 200px; animation-delay: -3s; }
+[data-theme="ame"] .sw-4 { animation: ameSeaweedSway2 8s ease-in-out infinite; transform-origin: 320px 200px; animation-delay: -2s; }
+[data-theme="ame"] .sw-5 { animation: ameSeaweedSway 10s ease-in-out infinite; transform-origin: 480px 200px; animation-delay: -4s; }
+[data-theme="ame"] .sw-6 { animation: ameSeaweedSway 9s ease-in-out infinite; transform-origin: 750px 200px; animation-delay: -6s; }
+[data-theme="ame"] .sw-7 { animation: ameSeaweedSway2 8s ease-in-out infinite; transform-origin: 1050px 200px; animation-delay: -7s; }
+[data-theme="ame"] .sw-8 { animation: ameSeaweedSway 13s ease-in-out infinite; transform-origin: 1350px 200px; animation-delay: -8s; }
+@keyframes ameSeaweedSway {
+    0%, 100% { transform: rotate(-3deg) scaleY(1); }
+    30% { transform: rotate(2deg) scaleY(1.02); }
+    60% { transform: rotate(-1.5deg) scaleY(0.98); }
+    80% { transform: rotate(1deg) scaleY(1.01); }
+}
+@keyframes ameSeaweedSway2 {
+    0%, 100% { transform: rotate(2deg) scaleY(1); }
+    25% { transform: rotate(-2.5deg) scaleY(0.98); }
+    50% { transform: rotate(1.5deg) scaleY(1.03); }
+    75% { transform: rotate(-1deg) scaleY(0.99); }
+}
+
+/* ══ ÂME: WATER REFLECTION DISTORTION ══ */
+[data-theme="ame"] .arena-canvas-wrap::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 20%,
+        rgba(0,206,209,0.03) 35%,
+        rgba(30,91,216,0.05) 42%,
+        rgba(0,206,209,0.03) 50%,
+        transparent 65%
+    );
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 8px;
+}
+[data-theme="ame"] .arena-canvas-wrap:hover::before {
+    opacity: 1;
+    animation: ameWaterReflectionSweep 2s ease-in-out infinite;
+}
+@keyframes ameWaterReflectionSweep {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+/* ══ ÂME: BIOLUMINESCENT PARTICLES ══ */
+#biolum-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+    opacity: 0; transition: opacity 2s ease;
+}
+[data-theme="ame"] #biolum-container { opacity: 1; }
+.biolum-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ameBiolumDrift linear infinite, ameBiolumGlow 3s ease-in-out infinite;
+}
+@keyframes ameBiolumDrift {
+    0% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(var(--dx1), var(--dy1)) scale(1.2); }
+    50% { transform: translate(var(--dx2), var(--dy2)) scale(0.8); }
+    75% { transform: translate(var(--dx3), var(--dy3)) scale(1.1); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes ameBiolumGlow {
+    0%, 100% { opacity: 0.15; box-shadow: 0 0 4px var(--glow-color); }
+    50% { opacity: 0.6; box-shadow: 0 0 12px var(--glow-color), 0 0 24px var(--glow-color); }
 }
 </style>
 </head>
@@ -2718,8 +2805,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         setTimeout(function() { dot.remove(); }, 1300);
     });
+
+    // Bioluminescent particles
+    var biolumContainer = null;
+    var biolumRunning = false;
+
+    function createBiolumParticle() {
+        if (!biolumContainer) return;
+        var p = document.createElement('div');
+        p.className = 'biolum-particle';
+        var size = 2 + Math.random() * 6;
+        var x = Math.random() * 100;
+        var y = Math.random() * 100;
+        var duration = 15 + Math.random() * 25;
+        var glowDuration = 2 + Math.random() * 4;
+        var isCyan = Math.random() > 0.3;
+        var color = isCyan ? 'rgba(0,206,209,0.4)' : 'rgba(30,91,216,0.4)';
+        var glowColor = isCyan ? 'rgba(0,206,209,0.3)' : 'rgba(30,91,216,0.3)';
+        var range = 30 + Math.random() * 60;
+        p.style.cssText = 'width:' + size + 'px;height:' + size + 'px;' +
+            'left:' + x + '%;top:' + y + '%;' +
+            'background:radial-gradient(circle,' + color + ' 0%,transparent 70%);' +
+            '--glow-color:' + glowColor + ';' +
+            '--dx1:' + ((Math.random()-0.5)*range) + 'px;--dy1:' + ((Math.random()-0.5)*range) + 'px;' +
+            '--dx2:' + ((Math.random()-0.5)*range) + 'px;--dy2:' + ((Math.random()-0.5)*range) + 'px;' +
+            '--dx3:' + ((Math.random()-0.5)*range) + 'px;--dy3:' + ((Math.random()-0.5)*range) + 'px;' +
+            'animation-duration:' + duration + 's,' + glowDuration + 's;';
+        biolumContainer.appendChild(p);
+    }
+
+    function startBiolumParticles() {
+        biolumContainer = document.getElementById('biolum-container');
+        if (!biolumContainer) return;
+        for (var i = 0; i < 15; i++) createBiolumParticle();
+        biolumRunning = true;
+    }
+
+    function stopBiolumParticles() {
+        if (biolumContainer) biolumContainer.innerHTML = '';
+        biolumRunning = false;
+    }
+
+    // Reuse the existing MutationObserver to also manage bioluminescent particles
+    // But we already have one observer; let's add biolum logic to the theme check
+    var biolumObs = new MutationObserver(function() {
+        var isAme = document.documentElement.getAttribute('data-theme') === 'ame';
+        if (isAme && !biolumRunning) startBiolumParticles();
+        else if (!isAme && biolumRunning) stopBiolumParticles();
+    });
+    biolumObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    if (document.documentElement.getAttribute('data-theme') === 'ame') startBiolumParticles();
 })();
 </script>
+
+<!-- Seaweed Silhouettes (Âme theme) -->
+<div id="seaweed-layer">
+    <svg class="seaweed-svg" viewBox="0 0 1440 200" preserveAspectRatio="none">
+        <path class="sw sw-1" d="M60,200 Q70,160 55,120 Q40,80 60,40 Q75,10 65,0" fill="none" stroke="rgba(0,206,209,0.12)" stroke-width="3"/>
+        <path class="sw sw-2" d="M120,200 Q110,170 125,140 Q140,110 120,70 Q105,35 115,10" fill="none" stroke="rgba(30,91,216,0.10)" stroke-width="2.5"/>
+        <path class="sw sw-3" d="M200,200 Q215,165 195,130 Q180,95 200,55 Q215,25 205,5" fill="none" stroke="rgba(0,206,209,0.08)" stroke-width="2"/>
+        <path class="sw sw-4" d="M320,200 Q305,170 320,135 Q340,100 320,65 Q305,30 315,5" fill="none" stroke="rgba(30,91,216,0.09)" stroke-width="2.5"/>
+        <path class="sw sw-5" d="M480,200 Q495,165 475,130 Q460,95 480,55 Q498,20 488,0" fill="none" stroke="rgba(0,206,209,0.11)" stroke-width="3"/>
+        <path class="sw sw-6" d="M750,200 Q765,165 745,125 Q730,90 750,50 Q768,18 755,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
+        <path class="sw sw-7" d="M1050,200 Q1065,170 1045,130 Q1030,95 1050,55 Q1068,20 1055,0" fill="none" stroke="rgba(0,206,209,0.09)" stroke-width="3"/>
+        <path class="sw sw-8" d="M1350,200 Q1365,165 1345,125 Q1330,90 1350,50 Q1368,18 1355,0" fill="none" stroke="rgba(0,206,209,0.10)" stroke-width="2.5"/>
+    </svg>
+</div>
+
+<!-- Bioluminescent Particles (Âme theme) -->
+<div id="biolum-container"></div>
 
 <div id="theme-transition"></div>
 </body>
