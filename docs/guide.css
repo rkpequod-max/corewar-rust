@@ -4009,6 +4009,18 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
     color: var(--text);
     font-style: italic;
 }
+.bp-refs li .bp-sec {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: rgba(110,118,129,0.12);
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+}
 
 /* ── Nier theme overrides ── */
 [data-theme="nier"] .biblio-section {
