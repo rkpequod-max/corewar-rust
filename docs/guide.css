@@ -4476,7 +4476,7 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cockpit-g
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide > div[style*="max-width:900px"],
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero {
     position: relative;
-    z-index: 100;
+    z-index: 10000;
     background: rgba(3, 5, 8, 0.65);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -4485,6 +4485,10 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero {
     padding: 30px;
     margin-bottom: 24px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide nav,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide #sidebar {
+    z-index: 10000;
 }
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero {
     margin: 40px auto;
@@ -4578,7 +4582,7 @@ body.is-transitioning-to-index .guide-glass-wrapper {
 /* Fixes the restricted height issue in guide.html */
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper {
     position: relative;
-    z-index: 100;
+    z-index: 10000;
     max-width: 900px;
     margin: 40px auto;
     padding: 60px 40px;
