@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Wrap guide content to fix height issue
     const body = document.body;
-    const isRayon = body.getAttribute('data-theme') === 'rayon';
+    const isRayon = document.documentElement.getAttribute('data-theme') === 'rayon';
     
     // Find all main content divs
     const contentDivs = Array.from(body.children).filter(el => {
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const homeLinks = document.querySelectorAll('a[href="index.html"], a[href="shell.html"]');
     homeLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            if (document.body.getAttribute('data-theme') === 'rayon') {
+            if (document.documentElement.getAttribute('data-theme') === 'rayon') {
                 e.preventDefault();
                 // Play animation Pan Up
                 document.body.classList.add('is-transitioning-to-index');

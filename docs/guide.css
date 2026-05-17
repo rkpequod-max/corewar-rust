@@ -4443,38 +4443,38 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
 
 /* ══ MODE LECTURE (GUIDE) - THEME RAYON VERT ══ */
 /* Modification de la caméra pour transformer le sol en bureau de données */
-body.page-guide[data-theme="rayon"] .planet-atmosphere {
+html[data-theme="rayon"] body.page-guide .planet-atmosphere {
     /* La planète monte hors du champ de vision */
     top: -30%;
     transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5);
     opacity: 0.3;
 }
-body.page-guide[data-theme="rayon"] .sun-eclipse {
+html[data-theme="rayon"] body.page-guide .sun-eclipse {
     top: -20%;
 }
-body.page-guide[data-theme="rayon"] .cockpit-ceiling {
+html[data-theme="rayon"] body.page-guide .cockpit-ceiling {
     top: -15%; /* Cache le plafond hors champ */
 }
-body.page-guide[data-theme="rayon"] .cockpit-frame {
+html[data-theme="rayon"] body.page-guide .cockpit-frame {
     /* Le sol envahit l'écran */
     top: 0;
     height: 100%;
 }
-body.page-guide[data-theme="rayon"] .cockpit-frame::before,
-body.page-guide[data-theme="rayon"] .cockpit-frame::after {
+html[data-theme="rayon"] body.page-guide .cockpit-frame::before,
+html[data-theme="rayon"] body.page-guide .cockpit-frame::after {
     /* Redressement de l'angle pour faire un fond de lecture (de 70deg à 30deg) */
     transform: perspective(1000px) rotateX(30deg) translateY(-10%);
     width: 120%; left: -10%;
     box-shadow: 0 0 150px rgba(255,255,255,0.4), 0 0 200px rgba(0,212,255,0.2);
 }
-body.page-guide[data-theme="rayon"] .cockpit-glass {
+html[data-theme="rayon"] body.page-guide .cockpit-glass {
     background-color: rgba(3, 5, 8, 0.4); /* Assombrit légèrement l'éblouissement */
     z-index: 1; /* Derrière le contenu textuel (z-index de base) */
 }
 
 /* Glassmorphism sur le contenu du guide pour qu'il soit très lisible sur la lumière blanche */
-body.page-guide[data-theme="rayon"] > div[style*="max-width:900px"],
-body.page-guide[data-theme="rayon"] .hero {
+html[data-theme="rayon"] body.page-guide > div[style*="max-width:900px"],
+html[data-theme="rayon"] body.page-guide .hero {
     position: relative;
     z-index: 100;
     background: rgba(3, 5, 8, 0.65);
@@ -4486,20 +4486,20 @@ body.page-guide[data-theme="rayon"] .hero {
     margin-bottom: 24px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
 }
-body.page-guide[data-theme="rayon"] .hero {
+html[data-theme="rayon"] body.page-guide .hero {
     margin: 40px auto;
     max-width: 900px;
 }
-body.page-guide[data-theme="rayon"] h1,
-body.page-guide[data-theme="rayon"] h2,
-body.page-guide[data-theme="rayon"] h3,
-body.page-guide[data-theme="rayon"] p,
-body.page-guide[data-theme="rayon"] li {
+html[data-theme="rayon"] body.page-guide h1,
+html[data-theme="rayon"] body.page-guide h2,
+html[data-theme="rayon"] body.page-guide h3,
+html[data-theme="rayon"] body.page-guide p,
+html[data-theme="rayon"] body.page-guide li {
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
-body.page-guide[data-theme="rayon"] .hero-bg,
-body.page-guide[data-theme="rayon"] .hero-scan,
-body.page-guide[data-theme="rayon"] .hero-overlay {
+html[data-theme="rayon"] body.page-guide .hero-bg,
+html[data-theme="rayon"] body.page-guide .hero-scan,
+html[data-theme="rayon"] body.page-guide .hero-overlay {
     display: none; /* Nettoyage du header pour ne garder que le glassmorphism pur */
 }
 
@@ -4529,17 +4529,17 @@ body.page-guide[data-theme="rayon"] .hero-overlay {
     100% { top: -15%; }
 }
 
-body.page-guide[data-theme="rayon"] .cockpit-frame::before,
-body.page-guide[data-theme="rayon"] .cockpit-frame::after {
+html[data-theme="rayon"] body.page-guide .cockpit-frame::before,
+html[data-theme="rayon"] body.page-guide .cockpit-frame::after {
     animation: cameraPanDown 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
-body.page-guide[data-theme="rayon"] .planet-atmosphere {
+html[data-theme="rayon"] body.page-guide .planet-atmosphere {
     animation: planetRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
-body.page-guide[data-theme="rayon"] .sun-eclipse {
+html[data-theme="rayon"] body.page-guide .sun-eclipse {
     animation: planetRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; /* same logic */
 }
-body.page-guide[data-theme="rayon"] .cockpit-ceiling {
+html[data-theme="rayon"] body.page-guide .cockpit-ceiling {
     animation: ceilingRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
@@ -4576,7 +4576,7 @@ body.is-transitioning-to-index .guide-glass-wrapper {
 
 /* ====== NEW GUIDE CONTENT WRAPPER ====== */
 /* Fixes the restricted height issue in guide.html */
-body.page-guide[data-theme="rayon"] .guide-glass-wrapper {
+html[data-theme="rayon"] body.page-guide .guide-glass-wrapper {
     position: relative;
     z-index: 100;
     max-width: 900px;
@@ -4599,7 +4599,7 @@ body.page-guide[data-theme="rayon"] .guide-glass-wrapper {
 }
 
 /* Hide the old standalone blocks glassmorphism to avoid double-boxing */
-body.page-guide[data-theme="rayon"] > div[style*="max-width:900px"] {
+html[data-theme="rayon"] body.page-guide > div[style*="max-width:900px"] {
     background: transparent !important;
     backdrop-filter: none !important;
     border: none !important;
