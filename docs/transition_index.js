@@ -3,7 +3,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const guideLinks = document.querySelectorAll('a[href="guide.html"]');
     guideLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            if (document.documentElement.getAttribute('data-theme') === 'rayon') {
+            const t = document.documentElement.getAttribute('data-theme');
+            if (t === 'rayon' || !t) {
                 e.preventDefault();
                 // Play animation
                 document.body.classList.add('is-transitioning-to-guide');

@@ -2716,7 +2716,40 @@
         body[data-theme="rayon"] .cockpit-ceiling {
             animation: ceilingDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
-    </style>
+/* Entry animation for Rayon Vert Camera Pan */
+@keyframes cameraPanDown {
+    0% {
+        transform: perspective(800px) rotateX(70deg) translateY(0);
+        width: 60%; left: 20%;
+    }
+    100% {
+        transform: perspective(1000px) rotateX(30deg) translateY(-10%);
+        width: 120%; left: -10%;
+    }
+}
+@keyframes planetRise {
+    0% { top: 50%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+    100% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
+}
+@keyframes ceilingRise {
+    0% { top: 0; }
+    100% { top: -15%; }
+}
+
+/* ====== TRANSITIONS CINEMATIQUES VIA JAVASCRIPT ====== */
+/* Quand on part de index.html vers guide.html (Pan Down) */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::before,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::after {
+    animation: cameraPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .planet-atmosphere,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
+    animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-ceiling {
+    animation: ceilingRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+</style>
 </head>
 <body>
 
@@ -3840,6 +3873,6 @@
 
 <div id="theme-transition"></div>
 <script src="nier-immersive.js"></script>
-<script src="transition_index.js"></script>
+<script src="transition_index.js?v=5"></script>
 </body>
 </html>

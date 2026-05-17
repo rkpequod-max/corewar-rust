@@ -1,11 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
     // 1. Wrap guide content to fix height issue
     const body = document.body;
-    const isRayon = document.documentElement.getAttribute('data-theme') === 'rayon';
+    const theme = document.documentElement.getAttribute('data-theme');
+    const isRayon = theme === 'rayon' || !theme;
     
     // Find all main content divs
     const contentDivs = Array.from(body.children).filter(el => {
-        return el.tagName === 'DIV' && el.style.maxWidth === '900px';
+        if (el.tagName !== 'DIV') return false;
+        const style = el.getAttribute('style') || '';
+        return style.replace(/\s+/g, '').includes('max-width:900px');
     });
     
     if (contentDivs.length > 0) {
@@ -24,7 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const homeLinks = document.querySelectorAll('a[href="index.html"], a[href="shell.html"]');
     homeLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            if (document.documentElement.getAttribute('data-theme') === 'rayon') {
+            const t = document.documentElement.getAttribute('data-theme');
+            if (t === 'rayon' || !t) {
                 e.preventDefault();
                 // Play animation Pan Up
                 document.body.classList.add('is-transitioning-to-index');
