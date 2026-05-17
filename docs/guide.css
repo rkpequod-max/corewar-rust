@@ -4542,3 +4542,66 @@ body.page-guide[data-theme="rayon"] .sun-eclipse {
 body.page-guide[data-theme="rayon"] .cockpit-ceiling {
     animation: ceilingRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
+
+/* ====== TRANSITIONS CINEMATIQUES VIA JAVASCRIPT ====== */
+/* Quand on part de index.html vers guide.html (Pan Down) */
+body.is-transitioning-to-guide .cockpit-frame::before,
+body.is-transitioning-to-guide .cockpit-frame::after {
+    animation: cameraPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+body.is-transitioning-to-guide .planet-atmosphere,
+body.is-transitioning-to-guide .sun-eclipse {
+    animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+body.is-transitioning-to-guide .cockpit-ceiling {
+    animation: ceilingRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+/* Quand on part de guide.html vers index.html (Pan Up) */
+body.is-transitioning-to-index .cockpit-frame::before,
+body.is-transitioning-to-index .cockpit-frame::after {
+    animation: cameraPanUp 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+body.is-transitioning-to-index .planet-atmosphere,
+body.is-transitioning-to-index .sun-eclipse {
+    animation: planetDescend 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+body.is-transitioning-to-index .cockpit-ceiling {
+    animation: ceilingDescend 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+body.is-transitioning-to-index .guide-glass-wrapper {
+    transition: opacity 1s;
+    opacity: 0;
+}
+
+/* ====== NEW GUIDE CONTENT WRAPPER ====== */
+/* Fixes the restricted height issue in guide.html */
+body.page-guide[data-theme="rayon"] .guide-glass-wrapper {
+    position: relative;
+    z-index: 100;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 60px 40px;
+    min-height: 80vh; /* Fills the vertical space beautifully */
+    background: rgba(3, 5, 8, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.15);
+    color: #e0f0ff;
+    animation: fadeInGlass 1s ease-out forwards;
+}
+
+@keyframes fadeInGlass {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Hide the old standalone blocks glassmorphism to avoid double-boxing */
+body.page-guide[data-theme="rayon"] > div[style*="max-width:900px"] {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
