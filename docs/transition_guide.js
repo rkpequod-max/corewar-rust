@@ -6,9 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Find all main content divs
     const contentDivs = Array.from(body.children).filter(el => {
-        if (el.tagName !== 'DIV') return false;
-        const style = el.getAttribute('style') || '';
-        return style.replace(/\s+/g, '').includes('max-width:900px');
+        if (el.tagName === 'SECTION' || el.tagName === 'FOOTER') return true;
+        if (el.tagName === 'DIV') {
+            const style = el.getAttribute('style') || '';
+            return style.replace(/\s+/g, '').includes('max-width:900px');
+        }
+        return false;
     });
     
     if (contentDivs.length > 0) {

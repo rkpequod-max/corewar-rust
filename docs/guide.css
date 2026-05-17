@@ -4524,6 +4524,24 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero-over
         width: 120%; left: -10%;
     }
 }
+@keyframes cameraPanUp {
+    0% {
+        transform: perspective(1000px) rotateX(30deg) translateY(-10%);
+        width: 120%; left: -10%;
+    }
+    100% {
+        transform: perspective(800px) rotateX(70deg) translateY(0);
+        width: 60%; left: 20%;
+    }
+}
+@keyframes planetDescend {
+    0% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
+    100% { top: 50%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+}
+@keyframes ceilingDescend {
+    0% { top: -15%; }
+    100% { top: 0; }
+}
 @keyframes planetRise {
     0% { top: 50%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
     100% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
