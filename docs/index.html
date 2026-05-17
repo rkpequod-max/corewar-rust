@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="view-transition" content="same-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corewar — Rust</title>
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -2683,6 +2684,37 @@
         @keyframes scanRipple {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
+        }
+        /* Entry animation for Rayon Vert Camera Pan (Return from Guide) */
+        @keyframes cameraPanUp {
+            0% {
+                transform: perspective(1000px) rotateX(30deg) translateY(-10%);
+                width: 120%; left: -10%;
+            }
+            100% {
+                transform: perspective(800px) rotateX(70deg) translateY(0);
+                width: 60%; left: 20%;
+            }
+        }
+        @keyframes planetDescend {
+            0% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
+            100% { top: 50%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+        }
+        @keyframes ceilingDescend {
+            0% { top: -15%; }
+            100% { top: 0; }
+        }
+
+        body[data-theme="rayon"] .cockpit-frame::before,
+        body[data-theme="rayon"] .cockpit-frame::after {
+            animation: cameraPanUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        body[data-theme="rayon"] .planet-atmosphere,
+        body[data-theme="rayon"] .sun-eclipse {
+            animation: planetDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        body[data-theme="rayon"] .cockpit-ceiling {
+            animation: ceilingDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
     </style>
 </head>
