@@ -4,9 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const theme = document.documentElement.getAttribute('data-theme');
     const isRayon = theme === 'rayon' || !theme;
     
-    // Find all main content divs
+    // Find all main content divs and sections
     const contentDivs = Array.from(body.children).filter(el => {
         if (el.tagName === 'SECTION' || el.tagName === 'FOOTER') return true;
+        if (el.id === 'partie-b' || el.classList.contains('part-divider')) return true;
         if (el.tagName === 'DIV') {
             const style = el.getAttribute('style') || '';
             return style.replace(/\s+/g, '').includes('max-width:900px');

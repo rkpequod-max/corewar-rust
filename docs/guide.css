@@ -3875,6 +3875,11 @@
     backdrop-filter: blur(8px);
     transition: transform 0.3s ease;
 }
+@media (min-width: 1101px) {
+    #level-filter {
+        left: 250px;
+    }
+}
 #level-filter.hidden {
     transform: translateY(-100%);
 }
@@ -4441,6 +4446,11 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
 [data-theme="ame"] .cockpit-pillar-left,
 [data-theme="ame"] .cockpit-pillar-right { display: none; }
 
+html:not([data-theme="nier"]):not([data-theme="ame"]) {
+    --text: #e2e8f0;
+    --text-muted: #a3b3cc;
+}
+
 /* ══ MODE LECTURE (GUIDE) - THEME RAYON VERT ══ */
 /* Modification de la caméra pour transformer le sol en bureau de données */
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .planet-atmosphere {
@@ -4487,7 +4497,9 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero {
     box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide nav,
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide #sidebar {
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide #sidebar,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide #level-filter,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide #back-to-top {
     z-index: 10000;
 }
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero {

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Corewar — Guide Pedagogique Complet</title>
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-    <link rel="stylesheet" href="guide.css?v=6">
+    <link rel="stylesheet" href="guide.css?v=7">
 </head>
 <body class="page-guide">
 <!-- Cockpit Camera Wrapper (Parallax System) -->
@@ -4118,14 +4118,27 @@ window.addEventListener('scroll', function() {
 // Sidebar scrollspy
 function updateSidebarActive() {
     const links = document.querySelectorAll('#sidebar .sb-link');
+    const validTargets = new Set();
+    links.forEach(l => {
+        const href = l.getAttribute('href');
+        if (href && href.startsWith('#')) {
+            validTargets.add(href.slice(1));
+        }
+    });
+
     let current = '';
-    document.querySelectorAll('section[id]').forEach(s => {
-        if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    const scrollY = window.scrollY;
+    
+    document.querySelectorAll('section[id], h3[id]').forEach(el => {
+        if (!validTargets.has(el.id)) return;
+        
+        const top = el.getBoundingClientRect().top + scrollY;
+        const threshold = el.tagName === 'H3' ? 120 : 100;
+        if (scrollY >= top - threshold) {
+            current = el.id;
+        }
     });
-    // Also check for h3 ids within sections
-    document.querySelectorAll('h3[id]').forEach(h => {
-        if (window.scrollY >= h.offsetTop - 120) current = h.id;
-    });
+    
     links.forEach(l => {
         l.classList.toggle('active', l.getAttribute('href') === '#' + current);
     });
@@ -7198,6 +7211,6 @@ while (!halt) {
 })();
 </script>
 <script src="nier-immersive.js"></script>
-<script src="transition_guide.js?v=6"></script>
+<script src="transition_guide.js?v=7"></script>
 </body>
 </html>
