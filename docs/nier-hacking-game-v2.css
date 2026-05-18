@@ -72,7 +72,7 @@
    ═══════════════════════════════ */
 #nier-hack-canvas {
     display:block; width:100%; max-width:960px; height:auto;
-    background:#0A0A12; cursor:crosshair;
+    background:#1A1A22; cursor:crosshair;
     border-left:1px solid #333; border-right:1px solid #333;
     /* Smooth canvas transform reset for glitch */
     transition: transform 0.05s ease-out;
@@ -289,20 +289,24 @@
 #nier-hack-wrapper:fullscreen,
 #nier-hack-wrapper:-webkit-full-screen {
     max-width:none; background:#0A0A0A;
-    display:flex; flex-direction:column; justify-content:center; padding:0;
+    display:flex; flex-direction:column; justify-content:flex-start; padding:0;
+    overflow:hidden;
 }
 #nier-hack-wrapper:fullscreen #nier-hack-hud,
-#nier-hack-wrapper:-webkit-full-screen #nier-hack-hud { border-radius:0; }
+#nier-hack-wrapper:-webkit-full-screen #nier-hack-hud { border-radius:0; flex-shrink:0; position:relative; z-index:30; }
 #nier-hack-wrapper:fullscreen #nier-hack-controls,
-#nier-hack-wrapper:-webkit-full-screen #nier-hack-controls { border-radius:0; }
+#nier-hack-wrapper:-webkit-full-screen #nier-hack-controls { border-radius:0; flex-shrink:0; }
 #nier-hack-wrapper:fullscreen #nier-hack-canvas,
 #nier-hack-wrapper:-webkit-full-screen #nier-hack-canvas {
-    max-width:none; border:none; flex:1; width:100%;
+    max-width:none; border:none; flex:1 1 auto; width:100%; min-height:0;
 }
 #nier-hack-wrapper:fullscreen .section-label,
 #nier-hack-wrapper:fullscreen h2,
 #nier-hack-wrapper:-webkit-full-screen .section-label,
 #nier-hack-wrapper:-webkit-full-screen h2 { display:none; }
+/* Canvas container must flex in fullscreen */
+#nier-hack-wrapper:fullscreen > div,
+#nier-hack-wrapper:-webkit-full-screen > div { flex:1 1 auto; min-height:0; position:relative; display:flex; flex-direction:column; }
 
 /* ═══════════════════════════════
    GLITCH OVERLAY — canvas distortion + chromatic aberration

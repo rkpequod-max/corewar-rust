@@ -109,13 +109,16 @@
     let pauseMenu, pauseItems, pauseIdx = 0;
     let pauseWasActive = false;
 
-    /* ══════════════ AUDIO MANAGER ══════════════ */
+    /* ══════════════ AUDIO MANAGER ══════════════
+       Uses simple <audio> elements for SFX — much more reliable
+       than Web Audio API fetch+decode which silently fails.       */
     const AudioManager = (function () {
-        let ctx = null;
         let bgm = null;
-        const sfxBuffers = {};
+        const sfxPool = {};   // name → [Audio, Audio, ...] object pool
+        const sfxIndex = {};  // name → next pool index (round-robin)
         let isMuted = false;
         let isInitialized = false;
+        const POOL_SIZE = 4;  // concurrent instances per SFX
 
         const sfxFiles = {
             player_shoot: 'YoRHaHackingGame/sound/sfx/player_shoot.wav',
@@ -135,63 +138,61 @@
                 if (isInitialized) return;
                 isMuted = localStorage.getItem('nh_muted') === 'true';
                 this.updateMuteUI();
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                if (AudioContextClass) { ctx = new AudioContextClass(); }
+
+                /* BGM — single <audio> element */
                 bgm = new Audio();
                 bgm.src = 'YoRHaHackingGame/sound/bgm/Fortress_of_Lies.ogg';
                 bgm.loop = true; bgm.volume = 0.4; bgm.muted = isMuted;
-                let sfxLoaded = false;
-                const loadAllSFX = () => {
-                    if (sfxLoaded) return;
-                    sfxLoaded = true;
-                    for (const name in sfxFiles) { this.loadSFX(name, sfxFiles[name]); }
-                };
-                const unlock = () => {
-                    if (ctx && ctx.state === 'suspended') {
-                        ctx.resume().then(() => { loadAllSFX.call(this); removeUnlockListeners(); });
-                    } else {
-                        loadAllSFX.call(this);
-                        removeUnlockListeners();
+
+                /* SFX — pre-create pool of <audio> elements for each sound.
+                   This avoids the Web Audio API fetch+decode issues entirely. */
+                for (const name in sfxFiles) {
+                    sfxPool[name] = [];
+                    sfxIndex[name] = 0;
+                    for (let i = 0; i < POOL_SIZE; i++) {
+                        const a = new Audio();
+                        a.src = sfxFiles[name];
+                        a.volume = name === 'player_shoot' ? 0.4 : (name === 'type' ? 0.3 : 0.7);
+                        a.muted = isMuted;
+                        a.preload = 'auto';
+                        sfxPool[name].push(a);
                     }
-                };
-                const removeUnlockListeners = () => {
-                    document.removeEventListener('click', unlock);
-                    document.removeEventListener('keydown', unlock);
-                };
-                document.addEventListener('click', unlock);
-                document.addEventListener('keydown', unlock);
-                if (ctx && ctx.state === 'running') { loadAllSFX.call(this); }
+                }
+
                 isInitialized = true;
-            },
-            loadSFX: function (name, path) {
-                if (!ctx) return;
-                fetch(path)
-                    .then(response => response.arrayBuffer())
-                    .then(arrayBuffer => { return new Promise((resolve, reject) => { ctx.decodeAudioData(arrayBuffer, resolve, reject); }); })
-                    .then(audioBuffer => { sfxBuffers[name] = audioBuffer; })
-                    .catch(err => console.warn('[NH Audio] Failed to load/decode SFX:', path, err));
             },
             playBGM: function () {
                 if (!bgm) return; bgm.muted = isMuted;
-                bgm.play().catch(err => { console.log('[NH Audio] BGM playback waiting for user interaction:', err); });
+                bgm.play().catch(() => {});
             },
             stopBGM: function () { if (!bgm) return; bgm.pause(); bgm.currentTime = 0; },
-            resumeContext: function () { if (ctx && ctx.state === 'suspended') { ctx.resume(); } },
+            resumeContext: function () { /* no-op — not using Web Audio API */ },
             playSFX: function (name) {
-                if (isMuted || !ctx) return;
-                if (ctx.state === 'suspended') { ctx.resume(); }
-                if (!sfxBuffers[name]) {
-                    if (sfxFiles[name]) { this.loadSFX(name, sfxFiles[name]); }
-                    return;
+                if (isMuted || !sfxPool[name]) return;
+                const pool = sfxPool[name];
+                const idx = sfxIndex[name];
+                const a = pool[idx % pool.length];
+                sfxIndex[name] = idx + 1;
+                /* Reset and play — clone approach for overlapping sounds */
+                try {
+                    a.currentTime = 0;
+                    a.muted = isMuted;
+                    a.play().catch(() => {});
+                } catch(e) {
+                    /* If play fails (e.g. still loading), try a fresh Audio */
+                    const b = new Audio(a.src);
+                    b.volume = a.volume; b.muted = isMuted;
+                    b.play().catch(() => {});
                 }
-                const source = ctx.createBufferSource(); source.buffer = sfxBuffers[name];
-                const gainNode = ctx.createGain();
-                gainNode.gain.value = name === 'player_shoot' ? 0.8 : (name === 'type' ? 0.6 : 1.5);
-                source.connect(gainNode); gainNode.connect(ctx.destination); source.start(0);
             },
             toggleMute: function () {
                 isMuted = !isMuted; localStorage.setItem('nh_muted', isMuted);
-                if (bgm) { bgm.muted = isMuted; } this.updateMuteUI();
+                if (bgm) { bgm.muted = isMuted; }
+                /* Update all SFX pool elements */
+                for (const name in sfxPool) {
+                    sfxPool[name].forEach(a => { a.muted = isMuted; });
+                }
+                this.updateMuteUI();
             },
             updateMuteUI: function () {
                 const btn = document.getElementById('nh-mute');
@@ -365,10 +366,10 @@
             renderer.shadowMap.type = THREE.PCFShadowMap; // PCF is faster than PCFSoft
 
             /* Cinematic 3D Lighting — dark dramatic atmosphere */
-            ambientLight = new THREE.AmbientLight(0x1A1A2A, 0.3);
+            ambientLight = new THREE.AmbientLight(0x404050, 0.6);
             scene.add(ambientLight);
 
-            dirLight = new THREE.DirectionalLight(0xCCCCCC, 0.4);
+            dirLight = new THREE.DirectionalLight(0xCCCCCC, 0.7);
             dirLight.position.set(MAZE_W*CELL/2, 20, MAZE_H*CELL/2 + 10);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 1024;
@@ -383,11 +384,11 @@
             scene.add(dirLight);
 
             /* Subtle hemisphere fill for richer 3D look */
-            const hemiLight = new THREE.HemisphereLight(0x222244, 0x0A0A12, 0.15);
+            const hemiLight = new THREE.HemisphereLight(0x444455, 0x222233, 0.3);
             scene.add(hemiLight);
 
             /* Player follow light for dramatic uplight */
-            const playerLight = new THREE.PointLight(0x4488FF, 1.5, 8);
+            const playerLight = new THREE.PointLight(0x4488FF, 2.0, 10);
             playerLight.position.set(MAZE_W*CELL/2, 1, MAZE_H*CELL/2);
             scene.add(playerLight);
             window._playerLight = playerLight;
@@ -462,7 +463,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshLambertMaterial({color:0x080810});
+        const fm = new THREE.MeshPhongMaterial({color:0x888890, specular:0x444444, shininess:60});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -471,8 +472,8 @@
 
         /* Grid overlay — merged into 3 Line objects for performance (1 draw call each) */
         gridGroup = new THREE.Group();
-        const lineMat = new THREE.LineBasicMaterial({color:0x334455, transparent:true, opacity:0.4});
-        const lineMatDim = new THREE.LineBasicMaterial({color:0x1A2233, transparent:true, opacity:0.15});
+        const lineMat = new THREE.LineBasicMaterial({color:0x333333, transparent:true, opacity:0.5});
+        const lineMatDim = new THREE.LineBasicMaterial({color:0x555555, transparent:true, opacity:0.2});
 
         /* Standard grid lines — collect all points then merge */
         const brightPts = [], dimPts = [];
@@ -507,7 +508,7 @@
         }
 
         /* Hexagonal sub-grid — merged into a single LineSegments */
-        const hexMat = new THREE.LineBasicMaterial({color:0x223344, transparent:true, opacity:0.06});
+        const hexMat = new THREE.LineBasicMaterial({color:0x666666, transparent:true, opacity:0.08});
         const hexSize = CELL * 0.5;
         const hexH = hexSize * Math.sqrt(3);
         const hexSegs = [];
@@ -532,7 +533,7 @@
         /* Central circle decoration */
         const circPts = [];
         const circR = Math.min(mazeW, mazeH) * 0.35;
-        const circMat = new THREE.LineBasicMaterial({color:0x334455, transparent:true, opacity:0.15});
+        const circMat = new THREE.LineBasicMaterial({color:0x555555, transparent:true, opacity:0.2});
         for(let i=0;i<=64;i++){
             const a = (i/64)*Math.PI*2;
             circPts.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR, 0.008, mazeH/2 + Math.sin(a)*circR));
@@ -671,7 +672,7 @@
         /* A) Main hull — OctahedronGeometry stretched to diamond ship */
         const hullGeo = new THREE.OctahedronGeometry(0.18, 1);
         hullGeo.scale(1.2, 0.8, 2.0);
-        const hullMat = new THREE.MeshPhongMaterial({color:0xDDDDDD, emissive:0xC4362B, emissiveIntensity:0.15, flatShading:true});
+        const hullMat = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.1, flatShading:true});
         const hull = new THREE.Mesh(hullGeo, hullMat);
         hull.castShadow = true;
         group.add(hull);
@@ -949,7 +950,7 @@
             mesh:m,
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
-            life:3.5,
+            life:30,
             damage: damage,
             piercing: piercing,
             piercedTargets: [],
