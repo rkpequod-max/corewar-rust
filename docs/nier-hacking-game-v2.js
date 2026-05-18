@@ -97,7 +97,7 @@
     let enemyGlows = [];
 
     /* Shared geos & mats */
-    let geoBullet, geoEBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
+    let geoBullet, geoEBullet, geoBeamGlow, matPBullet, matPBeamGlow, matEBullet, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
@@ -128,6 +128,7 @@
             enemy_explode: 'YoRHaHackingGame/sound/sfx/enemy_explode.wav',
             core_broken: 'YoRHaHackingGame/sound/sfx/core_broken.wav',
             player_explode: 'YoRHaHackingGame/sound/sfx/player_explode.wav',
+            bullet_cancel: 'YoRHaHackingGame/sound/sfx/contact.wav',
             button_select: 'YoRHaHackingGame/sound/sfx/button_select.wav',
             button_enter: 'YoRHaHackingGame/sound/sfx/button_enter.wav',
             type: 'YoRHaHackingGame/sound/sfx/type.wav'
@@ -400,10 +401,12 @@
             const texEnemy = getTex('YoRHaHackingGame/sprites/enemy1_new.png');
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
-            /* Shared resources — 3D bullet geometry visible from all angles */
-            geoBullet  = new THREE.SphereGeometry(0.12, 6, 6);  // player bullet size
+            /* Shared resources — player beam + enemy bullet geometry */
+            geoBullet  = new THREE.SphereGeometry(0.08, 6, 6);   // player bullet core — small bright sphere
             geoEBullet = new THREE.SphereGeometry(0.22, 8, 8);   // enemy bullets — bigger and more visible
             matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
+            matPBeamGlow = new THREE.MeshBasicMaterial({color: 0xAABBFF, transparent: true, opacity: 0.35});  // beam glow
+            geoBeamGlow = new THREE.SphereGeometry(0.16, 4, 4);  // shared glow halo for player bullets
             matEBullet = new THREE.MeshBasicMaterial({color: 0xFF4400});  // brighter red-orange for visibility through fog
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
 
@@ -964,9 +967,19 @@
         m.position.set(x,0.25,z);
         m.scale.set(scale, scale, scale);
         scene.add(m);
+
+        /* Player beam glow halo — soft light around the bullet */
+        let glowMesh = null;
+        if(isPlayer){
+            glowMesh = new THREE.Mesh(geoBeamGlow, matPBeamGlow);
+            glowMesh.position.copy(m.position);
+            scene.add(glowMesh);
+        }
+
         const arr=isPlayer?pBullets:eBullets;
         arr.push({
             mesh:m,
+            glowMesh: glowMesh,
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
             life: isPlayer ? 30 : 999,   // enemy bullets never expire by time — only wall/player hit
@@ -982,9 +995,16 @@
     function spawnBulletTrail(x, z, isPlayer){
         if(particles.length >= MAX_PARTICLES) return; // respect cap
         const m = new THREE.Mesh(geoTrail, isPlayer ? matTrailPlayer : matTrailEnemy);
-        m.position.set(x, 0.12, z);
-        scene.add(m);
-        particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.12, ml:0.12});
+        m.position.set(x, 0.15, z);
+        if(isPlayer){
+            /* Player beam trail — bigger, brighter, longer lasting */
+            m.scale.set(2.0, 1, 2.0);
+            scene.add(m);
+            particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.22, ml:0.22});
+        } else {
+            scene.add(m);
+            particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.12, ml:0.12});
+        }
     }
 
     /* ══════════════ HIT SPARKS ══════════════ */
@@ -1613,12 +1633,14 @@
         /* Player bullets */
         for(let i=pBullets.length-1;i>=0;i--){
             const b=pBullets[i];b.mesh.position.x+=b.vx*dt;b.mesh.position.z+=b.vz*dt;b.life-=dt;
+            /* Move beam glow with bullet */
+            if(b.glowMesh) b.glowMesh.position.copy(b.mesh.position);
 
             /* Bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
             if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
                 spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, true);
-                b.trailT = 0.06; // slightly slower spawn rate
+                b.trailT = 0.04; // faster trail for beam effect
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
@@ -1626,6 +1648,7 @@
                     spawnP(b.mesh.position.x,b.mesh.position.z,C_GRIDDIM,2);
                     spawnHitSparks(b.mesh.position.x, b.mesh.position.z, 0xAAAAAA, Math.atan2(b.vx, -b.vz));
                 }
+                if(b.glowMesh)scene.remove(b.glowMesh);
                 scene.remove(b.mesh);pBullets.splice(i,1);continue;
             }
 
@@ -1660,6 +1683,7 @@
                                 shields.splice(k, 1);
                             }
                             if(!b.piercing){
+                                if(b.glowMesh)scene.remove(b.glowMesh);
                                 scene.remove(b.mesh); pBullets.splice(i, 1); shieldHit = true; break;
                             } else {
                                 b.piercedTargets.push(s.mesh.uuid);
@@ -1713,6 +1737,7 @@
                         else if(remaining === 0 && curLvl < LEVELS.length - 1) podSay("Sector cleared. Proceeding to next area.", 3);
                     }
                     if(!b.piercing){
+                        if(b.glowMesh)scene.remove(b.glowMesh);
                         scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
                     } else {
                         b.piercedTargets.push(e.mesh.uuid);
@@ -1726,13 +1751,18 @@
             for(let k=eBullets.length-1; k>=0; k--){
                 const eb = eBullets[k];
                 if(d2(b.mesh.position.x, b.mesh.position.z, eb.mesh.position.x, eb.mesh.position.z) < 0.28){
-                    /* Destroy enemy bullet */
-                    spawnP(eb.mesh.position.x, eb.mesh.position.z, 0xFF6600, 3);
-                    spawnHitSparks(eb.mesh.position.x, eb.mesh.position.z, 0xFF4400, Math.atan2(eb.vx, -eb.vz));
+                    /* Small explosion effect on enemy bullet death */
+                    const bx = eb.mesh.position.x, bz = eb.mesh.position.z;
+                    const bColor = eb.mesh.material.color ? eb.mesh.material.color.getHex() : 0xFF4400;
+                    spawnRingEffect(bx, bz);
+                    spawnP(bx, bz, bColor, 4);
+                    spawnP(bx, bz, 0xFFFFFF, 2);
+                    spawnHitSparks(bx, bz, bColor, Math.atan2(eb.vx, -eb.vz));
                     scene.remove(eb.mesh); eBullets.splice(k, 1);
-                    AudioManager.playSFX('enemy_hit');
+                    AudioManager.playSFX('bullet_cancel');
                     /* Also destroy the player bullet (unless piercing) */
                     if(!b.piercing){
+                        if(b.glowMesh)scene.remove(b.glowMesh);
                         scene.remove(b.mesh); pBullets.splice(i, 1);
                         eBulletHit = true; break;
                     }
@@ -1876,7 +1906,7 @@
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
-        pBullets.forEach(b=>{scene.remove(b.mesh);});pBullets=[];
+        pBullets.forEach(b=>{if(b.glowMesh)scene.remove(b.glowMesh);scene.remove(b.mesh);});pBullets=[];
         eBullets.forEach(b=>{scene.remove(b.mesh);});eBullets=[];
         particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();});particles=[];
         powerups.forEach(p=>{scene.remove(p.mesh);p.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});powerups=[];
