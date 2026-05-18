@@ -34,8 +34,8 @@
     const C_BG       = 0x0A0A12;  // Dark void background
     const C_GRID     = 0x334455;  // Dim blue-gray grid
     const C_GRIDDIM  = 0x1A2233;  // Even dimmer grid
-    const C_WALL     = 0x1A1A2A;  // Dark walls with slight blue tint
-    const C_WALLTOP  = 0xFF4400;  // Orange glowing wall tops (YoRHa accent)
+    const C_WALL     = 0xFF0000;  // Bright red walls
+    const C_WALLTOP  = 0xFF0000;  // Bright red wall tops
     const C_PLAYER   = 0xFFFFFF;
     const C_ENEMY    = 0x000000;
     const C_ENEMYEMT = 0xFF6600;
@@ -422,9 +422,9 @@
             /* Enhanced wall materials */
             geoWallH   = new THREE.BoxGeometry(CELL+0.15, 0.6, 0.15);
             geoWallV   = new THREE.BoxGeometry(0.15, 0.6, CELL+0.15);
-            matWall    = new THREE.MeshPhongMaterial({color:C_WALL, emissive:0xFF4400, emissiveIntensity:0.15});
-            matWallTop = new THREE.MeshPhongMaterial({color:C_WALLTOP, emissive:0xFF4400, emissiveIntensity:0.8});
-            matWallEdge = new THREE.LineBasicMaterial({color:0xFF4400, transparent:true, opacity:0.7});
+            matWall    = new THREE.MeshPhongMaterial({color:C_WALL, emissive:0xFF0000, emissiveIntensity:0.5});
+            matWallTop = new THREE.MeshPhongMaterial({color:C_WALLTOP, emissive:0xFF0000, emissiveIntensity:1.0});
+            matWallEdge = new THREE.LineBasicMaterial({color:0xFF0000, transparent:true, opacity:0.9});
 
             geoPlayer = new THREE.PlaneGeometry(0.45, 0.45);
             geoPlayer.rotateX(-Math.PI/2);
@@ -469,7 +469,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.7, specular:0xFFFFFF, shininess:500, reflectivity: 1.0});
+        const fm = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:1.2, specular:0xFFFFFF, shininess:1000, reflectivity: 1.0});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -593,7 +593,7 @@
         }
 
         /* Border */
-        const bMat=new THREE.MeshLambertMaterial({color:0x1A1A2A, emissive:0xFF4400, emissiveIntensity:0.08});
+        const bMat=new THREE.MeshLambertMaterial({color:0xFF0000, emissive:0xFF0000, emissiveIntensity:0.3});
         const bH=new THREE.BoxGeometry(mazeW+0.3,0.3,0.1);
         const bV=new THREE.BoxGeometry(0.1,0.3,mazeH+0.3);
         let m;
