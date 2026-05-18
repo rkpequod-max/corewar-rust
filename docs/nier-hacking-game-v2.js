@@ -20,7 +20,7 @@
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
     const BULLET_SPEED = 14;
-    const ENEMY_BULLET_SPEED = 1.8;   // slow, big, numerous bullets
+    const ENEMY_BULLET_SPEED = 0.9;   // 2x slower — big, slow, numerous like original
     const SHOOT_CD = 0.11;
     const MAX_HP = 100;
     const INVULN_T = 0.6;
@@ -97,7 +97,7 @@
     let enemyGlows = [];
 
     /* Shared geos & mats */
-    let geoBullet, geoEBullet, matPBullet, matEBullet, matPBeamGlow, matEBullets, geoParticle, matHeavyBullet;
+    let geoBullet, geoEBullet, geoBeamGlow, matPBullet, matEBullet, matPBeamGlow, matEBullets, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
@@ -402,11 +402,12 @@
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
             /* Shared resources — player beam + enemy bullet geometry */
-            geoBullet  = new THREE.CylinderGeometry(0.02, 0.02, 0.6, 4);  // player beam — thin cylinder (laser beam)
-            geoBullet.rotateX(Math.PI/2);  // orient along Z axis (forward)
-            geoEBullet = new THREE.SphereGeometry(0.35, 8, 8);   // enemy bullets — 3x bigger!
-            matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent: true, opacity: 0.95});
-            matPBeamGlow = new THREE.MeshBasicMaterial({color: 0xCCDDFF, transparent: true, opacity: 0.3});  // beam glow
+            geoBullet  = new THREE.SphereGeometry(0.08, 6, 6);   // player bullet — small bright sphere
+            geoEBullet = new THREE.SphereGeometry(0.35, 8, 8);   // enemy bullets — big and visible
+            matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
+            matPBeamGlow = new THREE.MeshBasicMaterial({color: 0xCCDDFF, transparent: true, opacity: 0.4});  // beam glow (shared, not per-bullet)
+            /* Shared beam glow geometry — reused for all player bullets */
+            geoBeamGlow = new THREE.SphereGeometry(0.15, 4, 4);  // soft glow around player bullet
             /* Enemy bullet colors — variety like original game */
             matEBullets = [
                 new THREE.MeshBasicMaterial({color: 0xFF2200}),   // red
@@ -975,21 +976,14 @@
         const geo = isPlayer ? geoBullet : geoEBullet;
         const m=new THREE.Mesh(geo,mat);
         m.position.set(x,0.25,z);
-        /* Rotate player beam to face shooting direction */
-        if(isPlayer){
-            m.rotation.y = -angle;
-        }
         m.scale.set(scale, scale, scale);
         scene.add(m);
 
-        /* Player beam glow halo */
+        /* Player beam glow — soft halo around bullet using shared geometry */
         let glowMesh = null;
         if(isPlayer){
-            const glowGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.65, 4);
-            glowGeo.rotateX(Math.PI/2);
-            glowMesh = new THREE.Mesh(glowGeo, matPBeamGlow);
+            glowMesh = new THREE.Mesh(geoBeamGlow, matPBeamGlow);
             glowMesh.position.copy(m.position);
-            glowMesh.rotation.copy(m.rotation);
             scene.add(glowMesh);
         }
 
@@ -1012,9 +1006,15 @@
     function spawnBulletTrail(x, z, isPlayer){
         if(particles.length >= MAX_PARTICLES) return; // respect cap
         const m = new THREE.Mesh(geoTrail, isPlayer ? matTrailPlayer : matTrailEnemy);
-        m.position.set(x, 0.12, z);
+        m.position.set(x, 0.15, z);
         scene.add(m);
-        particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.12, ml:0.12});
+        if(isPlayer){
+            /* Player beam trail — bigger, brighter, longer lasting for laser beam effect */
+            m.scale.set(1.5, 1, 1.5);
+            particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.2, ml:0.2});
+        } else {
+            particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.12, ml:0.12});
+        }
     }
 
     /* ══════════════ HIT SPARKS ══════════════ */
@@ -1131,33 +1131,35 @@
         AudioManager.playSFX('enemy_shoot');
         const ex=e.pos.x,ez=e.pos.z,a=Math.atan2(playerPos.x-ex,-(playerPos.z-ez));
 
-        /* Core type: rotating muzzle system — inspired by enemy_type_0C.gd */
+        /* Core type: rotating muzzle system — symmetric circular patterns like original */
         if(e.type === "core" && e.mesh.userData.muzzGroup){
             const muzzDeg = e.mesh.userData.muzzDeg || 0;
             const muzzRad = muzzDeg * Math.PI / 180;
             const bulletType = e.mesh.userData.muzzBulletType || 1;
 
-            for(let i=0; i<4 && eBullets.length<MAX_EBULLETS; i++){
-                const angle = muzzRad + (i / 4) * Math.PI * 2;
-                const mx = ex + Math.cos(angle) * 0.38;
-                const mz = ez + Math.sin(angle) * 0.38;
-
-                if(bulletType === 1){
-                    /* Type 1: Standard aimed bullets from each muzzle toward player */
-                    const aimAngle = Math.atan2(playerPos.x - mx, -(playerPos.z - mz));
-                    mkBullet(mx, mz, aimAngle, ENEMY_BULLET_SPEED * 0.8, false);
-                } else {
-                    /* Type 2: Spread burst from each muzzle (reduced from 3 to 2 for perf) */
-                    for(let s=-1;s<=1;s+=2){
-                        if(eBullets.length >= MAX_EBULLETS) break;
-                        mkBullet(mx, mz, angle + s*0.25, ENEMY_BULLET_SPEED * 0.65, false);
-                    }
+            if(bulletType === 1){
+                /* Type 1: Perfect ring from center — evenly spaced in a circle */
+                const n = 8;
+                for(let i=0; i<n && eBullets.length<MAX_EBULLETS; i++){
+                    const ringAngle = muzzRad + (i / n) * Math.PI * 2;
+                    mkBullet(ex, ez, ringAngle, ENEMY_BULLET_SPEED, false);
+                }
+            } else {
+                /* Type 2: Double ring — two concentric circles, offset */
+                const n1 = 6, n2 = 6;
+                for(let i=0; i<n1 && eBullets.length<MAX_EBULLETS; i++){
+                    const ringAngle = muzzRad + (i / n1) * Math.PI * 2;
+                    mkBullet(ex, ez, ringAngle, ENEMY_BULLET_SPEED, false);
+                }
+                for(let i=0; i<n2 && eBullets.length<MAX_EBULLETS; i++){
+                    const ringAngle = muzzRad + ((i + 0.5) / n2) * Math.PI * 2;
+                    mkBullet(ex, ez, ringAngle, ENEMY_BULLET_SPEED * 0.7, false);
                 }
             }
 
             /* Count shots and switch bullet type */
             e.muzzleShootCount = (e.muzzleShootCount || 0) + 1;
-            if(e.muzzleShootCount >= 5){
+            if(e.muzzleShootCount >= 3){
                 e.muzzleShootCount = 0;
                 e.mesh.userData.muzzBulletType = bulletType === 1 ? 2 : 1;
             }
@@ -1165,11 +1167,47 @@
         }
 
         switch(e.pat){
-            case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);mkBullet(ex,ez,a+0.08,ENEMY_BULLET_SPEED*0.95,false);break;
-            case"burst":for(let i=-2;i<=2;i++)mkBullet(ex,ez,a+i*0.12,ENEMY_BULLET_SPEED,false);break;
-            case"ring":{const n=Math.min(12+curLvl*2, 24);for(let i=0;i<n&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.6,false);break;}
-            case"spiral":for(let i=0;i<8&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,a+i*0.35,ENEMY_BULLET_SPEED*0.75,false);break;
-            case"wall":{const p=a+Math.PI/2;for(let i=-4;i<=4&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex+Math.sin(p)*i*0.3,ez-Math.cos(p)*i*0.3,a,ENEMY_BULLET_SPEED*0.5,false);break;}
+            /* All patterns are symmetric and circular like the original NieR hacking game */
+            case"aimed":{
+                /* Aimed pair: 2 bullets in a V formation toward player */
+                mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);
+                break;
+            }
+            case"burst":{
+                /* Symmetric 3-bullet fan centered on player direction */
+                const spread = 0.2;
+                for(let i=-1;i<=1;i++) mkBullet(ex,ez,a+i*spread,ENEMY_BULLET_SPEED,false);
+                break;
+            }
+            case"ring":{
+                /* Perfect ring — evenly spaced circle, rotating each salvo */
+                const n=Math.min(8+curLvl*2, 20);
+                const ringOff = e.pp || 0; // rotate each ring
+                for(let i=0;i<n&&eBullets.length<MAX_EBULLETS;i++){
+                    mkBullet(ex,ez,ringOff+(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.7,false);
+                }
+                break;
+            }
+            case"spiral":{
+                /* Symmetric spiral — 3 arms evenly spaced */
+                const arms = 3;
+                for(let arm=0;arm<arms;arm++){
+                    const baseA = (arm/arms)*Math.PI*2 + a;
+                    for(let i=0;i<3&&eBullets.length<MAX_EBULLETS;i++){
+                        mkBullet(ex,ez,baseA+i*0.15,ENEMY_BULLET_SPEED*(1-i*0.15),false);
+                    }
+                }
+                break;
+            }
+            case"wall":{
+                /* Symmetric wall — line perpendicular to player direction */
+                const perp=a+Math.PI/2;
+                const half = 3;
+                for(let i=-half;i<=half&&eBullets.length<MAX_EBULLETS;i++){
+                    mkBullet(ex+Math.sin(perp)*i*0.4,ez-Math.cos(perp)*i*0.4,a,ENEMY_BULLET_SPEED*0.8,false);
+                }
+                break;
+            }
         }
     }
 
@@ -1658,7 +1696,7 @@
                     spawnP(b.mesh.position.x,b.mesh.position.z,C_GRIDDIM,2);
                     spawnHitSparks(b.mesh.position.x, b.mesh.position.z, 0xAAAAAA, Math.atan2(b.vx, -b.vz));
                 }
-                if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
+                if(b.glowMesh)scene.remove(b.glowMesh);
                 scene.remove(b.mesh);pBullets.splice(i,1);continue;
             }
 
@@ -1693,7 +1731,7 @@
                                 shields.splice(k, 1);
                             }
                             if(!b.piercing){
-                                if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
+                                if(b.glowMesh)scene.remove(b.glowMesh);
                                 scene.remove(b.mesh); pBullets.splice(i, 1); shieldHit = true; break;
                             } else {
                                 b.piercedTargets.push(s.mesh.uuid);
@@ -1747,7 +1785,7 @@
                         else if(remaining === 0 && curLvl < LEVELS.length - 1) podSay("Sector cleared. Proceeding to next area.", 3);
                     }
                     if(!b.piercing){
-                        if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
+                        if(b.glowMesh)scene.remove(b.glowMesh);
                         scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
                     } else {
                         b.piercedTargets.push(e.mesh.uuid);
@@ -1778,7 +1816,7 @@
                     AudioManager.playSFX('bullet_cancel');
                     /* Also destroy the player bullet (unless piercing) */
                     if(!b.piercing){
-                        if(b.glowMesh){ scene.remove(b.glowMesh); b.glowMesh.geometry.dispose(); }
+                        if(b.glowMesh)scene.remove(b.glowMesh);
                         scene.remove(b.mesh); pBullets.splice(i, 1);
                         eBulletHit = true; break;
                     }
@@ -1922,7 +1960,7 @@
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
-        pBullets.forEach(b=>{if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}scene.remove(b.mesh);});pBullets=[];
+        pBullets.forEach(b=>{if(b.glowMesh)scene.remove(b.glowMesh);scene.remove(b.mesh);});pBullets=[];
         eBullets.forEach(b=>{scene.remove(b.mesh);});eBullets=[];
         particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();});particles=[];
         powerups.forEach(p=>{scene.remove(p.mesh);p.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});powerups=[];
