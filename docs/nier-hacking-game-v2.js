@@ -20,7 +20,7 @@
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
     const BULLET_SPEED = 14;
-    const ENEMY_BULLET_SPEED = 2.5;   // slower but bigger bullets
+    const ENEMY_BULLET_SPEED = 1.8;   // slow, big, numerous bullets
     const SHOOT_CD = 0.11;
     const MAX_HP = 100;
     const INVULN_T = 0.6;
@@ -28,7 +28,7 @@
     const DASH_DURATION = 0.15;
     const DASH_COOLDOWN = 1.5;
     const MAX_PARTICLES = 120;   // hard cap to prevent frame drops
-    const MAX_EBULLETS = 120;    // more enemy bullets on screen (bigger, slower, more numerous)
+    const MAX_EBULLETS = 200;    // lots of enemy bullets on screen
 
     /* Nier palette — dark dramatic theme */
     const C_BG       = 0x0A0A12;  // Dark void background
@@ -48,14 +48,14 @@
     const C_GOLD     = 0xFFD700;
 
     const LEVELS = [
-        { name:"SECTOR A", enemies:3,  hpMul:1,   spdMul:1,   shootRate:2.8, patterns:["aimed"], types:["scout","scout","core"] },
-        { name:"SECTOR B", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:2.4, patterns:["aimed","burst"], types:["scout","scout","drone","core"] },
-        { name:"SECTOR C", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:2.0, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"] },
-        { name:"SECTOR D", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:1.8, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"] },
-        { name:"SECTOR E", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:1.6, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"] },
-        { name:"SECTOR F", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:1.4, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR G", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:1.2, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR Ω", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:1.0, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR A", enemies:3,  hpMul:1,   spdMul:1,   shootRate:2.0, patterns:["aimed"], types:["scout","scout","core"] },
+        { name:"SECTOR B", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:1.7, patterns:["aimed","burst"], types:["scout","scout","drone","core"] },
+        { name:"SECTOR C", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:1.4, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"] },
+        { name:"SECTOR D", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:1.2, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"] },
+        { name:"SECTOR E", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:1.0, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"] },
+        { name:"SECTOR F", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:0.9, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR G", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:0.8, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR Ω", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:0.6, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"] },
     ];
 
     /* ══════════════ STATE ══════════════ */
@@ -97,7 +97,7 @@
     let enemyGlows = [];
 
     /* Shared geos & mats */
-    let geoBullet, geoEBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
+    let geoBullet, geoEBullet, matPBullet, matEBullet, matPBeamGlow, matEBullets, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
@@ -128,6 +128,7 @@
             enemy_explode: 'YoRHaHackingGame/sound/sfx/enemy_explode.wav',
             core_broken: 'YoRHaHackingGame/sound/sfx/core_broken.wav',
             player_explode: 'YoRHaHackingGame/sound/sfx/player_explode.wav',
+            bullet_cancel: 'YoRHaHackingGame/sound/sfx/contact.wav',
             button_select: 'YoRHaHackingGame/sound/sfx/button_select.wav',
             button_enter: 'YoRHaHackingGame/sound/sfx/button_enter.wav',
             type: 'YoRHaHackingGame/sound/sfx/type.wav'
@@ -400,11 +401,22 @@
             const texEnemy = getTex('YoRHaHackingGame/sprites/enemy1_new.png');
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
-            /* Shared resources — 3D bullet geometry visible from all angles */
-            geoBullet  = new THREE.SphereGeometry(0.12, 6, 6);  // player bullet size
-            geoEBullet = new THREE.SphereGeometry(0.22, 8, 8);   // enemy bullets — bigger and more visible
-            matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
-            matEBullet = new THREE.MeshBasicMaterial({color: 0xFF4400});  // brighter red-orange for visibility through fog
+            /* Shared resources — player beam + enemy bullet geometry */
+            geoBullet  = new THREE.CylinderGeometry(0.02, 0.02, 0.6, 4);  // player beam — thin cylinder (laser beam)
+            geoBullet.rotateX(Math.PI/2);  // orient along Z axis (forward)
+            geoEBullet = new THREE.SphereGeometry(0.35, 8, 8);   // enemy bullets — 3x bigger!
+            matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent: true, opacity: 0.95});
+            matPBeamGlow = new THREE.MeshBasicMaterial({color: 0xCCDDFF, transparent: true, opacity: 0.3});  // beam glow
+            /* Enemy bullet colors — variety like original game */
+            matEBullets = [
+                new THREE.MeshBasicMaterial({color: 0xFF2200}),   // red
+                new THREE.MeshBasicMaterial({color: 0xFF6600}),   // orange
+                new THREE.MeshBasicMaterial({color: 0xFFAA00}),   // amber
+                new THREE.MeshBasicMaterial({color: 0xFF0088}),   // magenta
+                new THREE.MeshBasicMaterial({color: 0xCC00FF}),   // purple
+                new THREE.MeshBasicMaterial({color: 0x00CCFF}),   // cyan
+            ];
+            matEBullet = matEBullets[0]; // default
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
 
             geoParticle= new THREE.PlaneGeometry(0.08, 0.08);
@@ -952,7 +964,7 @@
     function mkBullet(x,z,angle,speed,isPlayer, damage, piercing){
         damage = damage || 1;
         piercing = piercing || false;
-        let mat=isPlayer?matPBullet:matEBullet;
+        let mat=isPlayer?matPBullet:matEBullets[Math.floor(Math.random()*matEBullets.length)];
         let scale = 1;
         if(isPlayer && playerUpgrade === "heavy"){
             mat = matHeavyBullet;
@@ -960,13 +972,31 @@
             damage = 2;
             piercing = true;
         }
-        const m=new THREE.Mesh(isPlayer?geoBullet:geoEBullet,mat);
+        const geo = isPlayer ? geoBullet : geoEBullet;
+        const m=new THREE.Mesh(geo,mat);
         m.position.set(x,0.25,z);
+        /* Rotate player beam to face shooting direction */
+        if(isPlayer){
+            m.rotation.y = -angle;
+        }
         m.scale.set(scale, scale, scale);
         scene.add(m);
+
+        /* Player beam glow halo */
+        let glowMesh = null;
+        if(isPlayer){
+            const glowGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.65, 4);
+            glowGeo.rotateX(Math.PI/2);
+            glowMesh = new THREE.Mesh(glowGeo, matPBeamGlow);
+            glowMesh.position.copy(m.position);
+            glowMesh.rotation.copy(m.rotation);
+            scene.add(glowMesh);
+        }
+
         const arr=isPlayer?pBullets:eBullets;
         arr.push({
             mesh:m,
+            glowMesh: glowMesh,
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
             life: isPlayer ? 30 : 999,   // enemy bullets never expire by time — only wall/player hit
@@ -1135,11 +1165,11 @@
         }
 
         switch(e.pat){
-            case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);break;
-            case"burst":for(let i=-1;i<=1;i++)mkBullet(ex,ez,a+i*0.15,ENEMY_BULLET_SPEED,false);break;
-            case"ring":{const n=Math.min(8+curLvl*2, 16);for(let i=0;i<n&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.65,false);break;}
-            case"spiral":for(let i=0;i<5&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,a+i*0.4,ENEMY_BULLET_SPEED*0.8,false);break;
-            case"wall":{const p=a+Math.PI/2;for(let i=-3;i<=3&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex+Math.sin(p)*i*0.35,ez-Math.cos(p)*i*0.35,a,ENEMY_BULLET_SPEED*0.55,false);break;}
+            case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);mkBullet(ex,ez,a+0.08,ENEMY_BULLET_SPEED*0.95,false);break;
+            case"burst":for(let i=-2;i<=2;i++)mkBullet(ex,ez,a+i*0.12,ENEMY_BULLET_SPEED,false);break;
+            case"ring":{const n=Math.min(12+curLvl*2, 24);for(let i=0;i<n&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.6,false);break;}
+            case"spiral":for(let i=0;i<8&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,a+i*0.35,ENEMY_BULLET_SPEED*0.75,false);break;
+            case"wall":{const p=a+Math.PI/2;for(let i=-4;i<=4&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex+Math.sin(p)*i*0.3,ez-Math.cos(p)*i*0.3,a,ENEMY_BULLET_SPEED*0.5,false);break;}
         }
     }
 
@@ -1613,6 +1643,8 @@
         /* Player bullets */
         for(let i=pBullets.length-1;i>=0;i--){
             const b=pBullets[i];b.mesh.position.x+=b.vx*dt;b.mesh.position.z+=b.vz*dt;b.life-=dt;
+            /* Move beam glow with bullet */
+            if(b.glowMesh){b.glowMesh.position.copy(b.mesh.position);}
 
             /* Bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
@@ -1626,6 +1658,7 @@
                     spawnP(b.mesh.position.x,b.mesh.position.z,C_GRIDDIM,2);
                     spawnHitSparks(b.mesh.position.x, b.mesh.position.z, 0xAAAAAA, Math.atan2(b.vx, -b.vz));
                 }
+                if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
                 scene.remove(b.mesh);pBullets.splice(i,1);continue;
             }
 
@@ -1660,6 +1693,7 @@
                                 shields.splice(k, 1);
                             }
                             if(!b.piercing){
+                                if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
                                 scene.remove(b.mesh); pBullets.splice(i, 1); shieldHit = true; break;
                             } else {
                                 b.piercedTargets.push(s.mesh.uuid);
@@ -1713,6 +1747,7 @@
                         else if(remaining === 0 && curLvl < LEVELS.length - 1) podSay("Sector cleared. Proceeding to next area.", 3);
                     }
                     if(!b.piercing){
+                        if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}
                         scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
                     } else {
                         b.piercedTargets.push(e.mesh.uuid);
@@ -1725,14 +1760,25 @@
             let eBulletHit = false;
             for(let k=eBullets.length-1; k>=0; k--){
                 const eb = eBullets[k];
-                if(d2(b.mesh.position.x, b.mesh.position.z, eb.mesh.position.x, eb.mesh.position.z) < 0.28){
-                    /* Destroy enemy bullet */
-                    spawnP(eb.mesh.position.x, eb.mesh.position.z, 0xFF6600, 3);
-                    spawnHitSparks(eb.mesh.position.x, eb.mesh.position.z, 0xFF4400, Math.atan2(eb.vx, -eb.vz));
+                const hitDist = isPlayer ? 0.45 : 0.28;
+                if(d2(b.mesh.position.x, b.mesh.position.z, eb.mesh.position.x, eb.mesh.position.z) < hitDist){
+                    /* Dramatic bullet cancel effect — like original NieR */
+                    const bx = eb.mesh.position.x, bz = eb.mesh.position.z;
+                    const bColor = eb.mesh.material.color.getHex();
+                    /* Flash ring expanding outward */
+                    spawnRingEffect(bx, bz);
+                    /* Death burst particles in bullet's color */
+                    spawnDeathBurst(bx, bz, bColor, 6);
+                    spawnDeathBurst(bx, bz, 0xFFFFFF, 3);
+                    /* Hit sparks */
+                    spawnHitSparks(bx, bz, bColor, Math.atan2(eb.vx, -eb.vz));
+                    /* Screen micro-flash */
+                    screenFlash = 0.08;
                     scene.remove(eb.mesh); eBullets.splice(k, 1);
-                    AudioManager.playSFX('enemy_hit');
+                    AudioManager.playSFX('bullet_cancel');
                     /* Also destroy the player bullet (unless piercing) */
                     if(!b.piercing){
+                        if(b.glowMesh){ scene.remove(b.glowMesh); b.glowMesh.geometry.dispose(); }
                         scene.remove(b.mesh); pBullets.splice(i, 1);
                         eBulletHit = true; break;
                     }
@@ -1876,7 +1922,7 @@
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
-        pBullets.forEach(b=>{scene.remove(b.mesh);});pBullets=[];
+        pBullets.forEach(b=>{if(b.glowMesh){scene.remove(b.glowMesh);b.glowMesh.geometry.dispose();}scene.remove(b.mesh);});pBullets=[];
         eBullets.forEach(b=>{scene.remove(b.mesh);});eBullets=[];
         particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();});particles=[];
         powerups.forEach(p=>{scene.remove(p.mesh);p.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});powerups=[];
