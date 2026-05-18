@@ -1680,7 +1680,7 @@
 
         /* Shoot */
         shootT-=dt;
-        if(mouseDown&&shootT<=0){
+        if((mouseDown||keys["KeyE"])&&shootT<=0){
             if(playerUpgrade === "triple"){
                 mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, BULLET_SPEED, true);
                 mkBullet(playerPos.x, playerPos.z, playerAngle, BULLET_SPEED, true);
