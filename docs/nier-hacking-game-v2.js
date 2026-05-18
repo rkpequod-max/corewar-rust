@@ -27,8 +27,8 @@
     const DASH_SPEED = 15.0;
     const DASH_DURATION = 0.15;
     const DASH_COOLDOWN = 1.5;
-    const MAX_PARTICLES = 120;   // hard cap to prevent frame drops
-    const MAX_EBULLETS = 120;    // more enemy bullets on screen (bigger, slower, more numerous)
+    const MAX_PARTICLES = 60;   // hard cap to prevent frame drops
+    const MAX_EBULLETS = 80;    // more enemy bullets on screen (bigger, slower, more numerous)
 
     /* Authentic NieR:Automata palette — sepia and warm grey minimalist theme */
     const C_BG       = 0x4d4b43;  // Warm dark sepia-grey background void
@@ -986,10 +986,17 @@
     }
 
     /* ══════════════ PARTICLES ══════════════ */
+    /* Material cache to avoid creating new materials every frame */
+    const _particleMatCache = {};
+    function getPMat(color){
+        if(!_particleMatCache[color]) _particleMatCache[color] = new THREE.MeshBasicMaterial({color,transparent:true,opacity:1});
+        return _particleMatCache[color].clone();
+    }
+
     function spawnP(x,z,color,n){
         n = Math.min(n, MAX_PARTICLES - particles.length); // respect cap
         for(let i=0;i<n;i++){
-            const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1});
+            const mat = getPMat(color);
             const m=new THREE.Mesh(geoParticle,mat);
             m.position.set(x,0.1+Math.random()*0.2,z);
             scene.add(m);
@@ -1211,8 +1218,10 @@
                 }
 
                 /* Emissive particle sparks and ring releases */
-                if(Math.random() < 0.25){
+                if(Math.random() < 0.12){
                     spawnHitSparks(e.pos.x, e.pos.z, 0xFF6600, Math.random() * Math.PI * 2);
+                }
+                if(Math.random() < 0.06){
                     spawnRingEffect(e.pos.x, e.pos.z);
                 }
 
@@ -1225,8 +1234,8 @@
                     spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 10);
                     spawnDeathBurst(e.pos.x, e.pos.z, 0xFFCC00, 8);
 
-                    /* Spawn 15 slowly drifting cyber debris shards in slow-motion */
-                    for(let i=0; i<15; i++){
+                    /* Spawn 6 slowly drifting cyber debris shards in slow-motion */
+                    for(let i=0; i<6; i++){
                         const ang = Math.random() * Math.PI * 2;
                         const spd = 1.5 + Math.random() * 2.5;
                         spawnShard(e.pos.x, e.pos.z, ang, spd);
@@ -1482,19 +1491,27 @@
     }
 
     /* ── DASH AFTERIMAGE ── */
+    /* Shared afterimage geometry */
+    let geoAfterimage = null;
+    let matAfterimageCore = null;
+    let matAfterimageWire = null;
+
     function spawnAfterimage(px, pz, angle){
-        const geo = new THREE.OctahedronGeometry(0.12, 0);
-        geo.scale(1, 0.5, 1.6);
-        const mat = new THREE.MeshBasicMaterial({color:0x00FFFF, transparent:true, opacity:0.45});
-        const m = new THREE.Mesh(geo, mat);
+        if(!geoAfterimage){
+            geoAfterimage = new THREE.OctahedronGeometry(0.12, 0);
+            geoAfterimage.scale(1, 0.5, 1.6);
+            matAfterimageCore = new THREE.MeshBasicMaterial({color:0x00FFFF, transparent:true, opacity:0.45});
+            matAfterimageWire = new THREE.MeshBasicMaterial({color:0x88FFFF, wireframe:true, transparent:true, opacity:0.6});
+        }
+        const mat = matAfterimageCore.clone();
+        const m = new THREE.Mesh(geoAfterimage, mat);
         m.position.set(px, 0.15, pz);
         m.rotation.y = -angle;
         scene.add(m);
         particles.push({mesh:m, mat, vx:0, vy:0, vz:0, life:0.3, ml:0.3});
 
-        /* Vector wireframe outline shell for premium high-fidelity ghost trail */
-        const wireMat = new THREE.MeshBasicMaterial({color:0x88FFFF, wireframe:true, transparent:true, opacity:0.6});
-        const wireM = new THREE.Mesh(geo, wireMat);
+        const wireMat = matAfterimageWire.clone();
+        const wireM = new THREE.Mesh(geoAfterimage, wireMat);
         wireM.position.set(px, 0.15, pz);
         wireM.rotation.y = -angle;
         scene.add(wireM);
@@ -1643,10 +1660,17 @@
     }
 
     /* ── CYBER SHARDS (FOR SLOW-MO CORE COLLAPSE) ── */
+    /* Shared shard geometry */
+    let geoShard = null;
+    let matShard = null;
+
     function spawnShard(x, z, angle, speed){
-        const geo = new THREE.BoxGeometry(0.06, 0.06, 0.15);
-        const mat = new THREE.MeshBasicMaterial({color: 0xFF8800, transparent: true, opacity: 0.9});
-        const mesh = new THREE.Mesh(geo, mat);
+        if(!geoShard){
+            geoShard = new THREE.BoxGeometry(0.06, 0.06, 0.15);
+            matShard = new THREE.MeshBasicMaterial({color: 0xFF8800, transparent: true, opacity: 0.9});
+        }
+        const mat = matShard.clone();
+        const mesh = new THREE.Mesh(geoShard, mat);
         mesh.position.set(x, 0.15, z);
         mesh.rotation.y = angle;
         scene.add(mesh);
@@ -2097,18 +2121,9 @@
 
             /* Bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
-            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
-                if(b.isLaser && geoLaserTrail && matLaserTrail){
-                    /* Reuse shared geometry & material for laser trail — no GC storm */
-                    const mat = matLaserTrail.clone();
-                    const mesh = new THREE.Mesh(geoLaserTrail, mat);
-                    mesh.position.set(b.mesh.position.x, 0.1, b.mesh.position.z);
-                    scene.add(mesh);
-                    particles.push({mesh, mat, vx: 0, vy: 0, vz: 0, life: 0.35, ml: 0.35});
-                } else {
-                    spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, true);
-                }
-                b.trailT = 0.04;
+            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.5){
+                spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, true);
+                b.trailT = 0.06;
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
@@ -2263,9 +2278,9 @@
 
             /* Enemy bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
-            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
+            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.5){
                 spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, false);
-                b.trailT = 0.07;
+                b.trailT = 0.10;
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){scene.remove(b.mesh);eBullets.splice(i,1);continue;}
@@ -2303,7 +2318,8 @@
                 /* Dispose geometry only if not a shared one */
                 if(p.mesh.geometry && p.mesh.geometry !== geoParticle && p.mesh.geometry !== geoTrail &&
                    p.mesh.geometry !== geoSpark && p.mesh.geometry !== geoDeathSmall && p.mesh.geometry !== geoDeathMed &&
-                   p.mesh.geometry !== geoRingEffect && p.mesh.geometry !== geoLaserTrail){
+                   p.mesh.geometry !== geoRingEffect && p.mesh.geometry !== geoLaserTrail &&
+                   p.mesh.geometry !== geoAfterimage && p.mesh.geometry !== geoShard){
                     p.mesh.geometry.dispose();
                 }
                 if(p.mat && p.mat !== matTrailPlayer && p.mat !== matTrailEnemy && p.mat !== matLaserTrail){
