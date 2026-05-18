@@ -27,6 +27,8 @@
     const DASH_SPEED = 15.0;
     const DASH_DURATION = 0.15;
     const DASH_COOLDOWN = 1.5;
+    const MAX_PARTICLES = 120;   // hard cap to prevent frame drops
+    const MAX_EBULLETS = 60;     // cap enemy bullets on screen
 
     /* Nier palette */
     const C_BG       = 0xE6E6E6;
@@ -98,6 +100,9 @@
     let geoBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
+    /* Shared geos for particles (avoid per-spawn allocation) */
+    let geoTrail, geoSpark, geoDeathSmall, geoDeathMed, geoGlowCircle;
+    let matTrailPlayer, matTrailEnemy;
 
     /* DOM */
     let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, fsBtn, flashEl, muteBtn, viewBtn;
@@ -342,7 +347,7 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(960, 540, false);
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.type = THREE.PCFShadowMap; // PCF is faster than PCFSoft
 
             /* Cinematic 3D Lighting */
             ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.6);
@@ -351,8 +356,8 @@
             dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.85);
             dirLight.position.set(MAZE_W*CELL/2, 20, MAZE_H*CELL/2 + 10);
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
             dirLight.shadow.camera.near = 0.5;
             dirLight.shadow.camera.far = 45;
             const d = 16;
@@ -397,6 +402,19 @@
             geoPlayer = new THREE.PlaneGeometry(0.45, 0.45);
             geoPlayer.rotateX(-Math.PI/2);
 
+            /* Shared particle geometries — reuse across all spawns */
+            geoTrail = new THREE.PlaneGeometry(0.04, 0.04);
+            geoTrail.rotateX(-Math.PI/2);
+            geoSpark = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+            geoDeathSmall = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+            geoDeathMed = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+            geoGlowCircle = new THREE.CircleGeometry(0.5, 12); // lower segments for perf
+            geoGlowCircle.rotateX(-Math.PI/2);
+
+            /* Shared trail materials — only 2, reused forever */
+            matTrailPlayer = new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent:true, opacity:0.35});
+            matTrailEnemy = new THREE.MeshBasicMaterial({color: 0xFF4400, transparent:true, opacity:0.35});
+
             window._matEnemy = new THREE.MeshBasicMaterial({map: texEnemy, color: 0xFF6600, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
             window._matBlock = new THREE.MeshBasicMaterial({map: texBlockA, color: 0xFF3300, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
             window._matCore = new THREE.MeshBasicMaterial({map: texCore, color: 0x1A1A1A, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
@@ -431,39 +449,64 @@
         floorMesh.receiveShadow = true;
         scene.add(floorMesh);
 
-        /* Hexagonal grid overlay — subtle, like Nier hacking arenas */
+        /* Grid overlay — merged into 3 Line objects for performance (1 draw call each) */
         gridGroup = new THREE.Group();
         const lineMat = new THREE.LineBasicMaterial({color:C_GRID, transparent:true, opacity:0.5});
         const lineMatDim = new THREE.LineBasicMaterial({color:C_GRIDDIM, transparent:true, opacity:0.3});
-        /* Standard grid lines */
+
+        /* Standard grid lines — collect all points then merge */
+        const brightPts = [], dimPts = [];
         for(let x=0;x<=MAZE_W;x++){
-            const pts=[new THREE.Vector3(x*CELL,0.01,0),new THREE.Vector3(x*CELL,0.01,mazeH)];
-            const g=new THREE.BufferGeometry().setFromPoints(pts);
-            gridGroup.add(new THREE.Line(g, x%4===0?lineMat:lineMatDim));
+            const arr = x%4===0 ? brightPts : dimPts;
+            arr.push(new THREE.Vector3(x*CELL,0.01,0), new THREE.Vector3(x*CELL,0.01,mazeH));
         }
         for(let y=0;y<=MAZE_H;y++){
-            const pts=[new THREE.Vector3(0,0.01,y*CELL),new THREE.Vector3(mazeW,0.01,y*CELL)];
-            const g=new THREE.BufferGeometry().setFromPoints(pts);
-            gridGroup.add(new THREE.Line(g, y%4===0?lineMat:lineMatDim));
+            const arr = y%4===0 ? brightPts : dimPts;
+            arr.push(new THREE.Vector3(0,0.01,y*CELL), new THREE.Vector3(mazeW,0.01,y*CELL));
+        }
+        /* Build merged line segments using NaN breaks */
+        const brightSegs = [];
+        for(let i=0;i<brightPts.length;i+=2){
+            brightSegs.push(brightPts[i].x, brightPts[i].y, brightPts[i].z);
+            brightSegs.push(brightPts[i+1].x, brightPts[i+1].y, brightPts[i+1].z);
+        }
+        const dimSegs = [];
+        for(let i=0;i<dimPts.length;i+=2){
+            dimSegs.push(dimPts[i].x, dimPts[i].y, dimPts[i].z);
+            dimSegs.push(dimPts[i+1].x, dimPts[i+1].y, dimPts[i+1].z);
+        }
+        if(brightSegs.length > 0){
+            const bGeo = new THREE.BufferGeometry();
+            bGeo.setAttribute('position', new THREE.Float32BufferAttribute(brightSegs, 3));
+            gridGroup.add(new THREE.LineSegments(bGeo, lineMat));
+        }
+        if(dimSegs.length > 0){
+            const dGeo = new THREE.BufferGeometry();
+            dGeo.setAttribute('position', new THREE.Float32BufferAttribute(dimSegs, 3));
+            gridGroup.add(new THREE.LineSegments(dGeo, lineMatDim));
         }
 
-        /* Hexagonal sub-grid — very subtle */
+        /* Hexagonal sub-grid — merged into a single LineSegments */
         const hexMat = new THREE.LineBasicMaterial({color:0xBBBBBB, transparent:true, opacity:0.08});
         const hexSize = CELL * 0.5;
         const hexH = hexSize * Math.sqrt(3);
+        const hexSegs = [];
         for(let row = -1; row < MAZE_H * 2 + 2; row++){
             for(let col = -1; col < MAZE_W * 2 + 2; col++){
                 const cx = col * hexSize * 1.5;
                 const cz = row * hexH + (col % 2 ? hexH * 0.5 : 0);
-                const pts = [];
                 for(let i = 0; i < 6; i++){
-                    const a = Math.PI / 3 * i - Math.PI / 6;
-                    pts.push(new THREE.Vector3(cx + hexSize*0.4*Math.cos(a), 0.005, cz + hexSize*0.4*Math.sin(a)));
+                    const a1 = Math.PI / 3 * i - Math.PI / 6;
+                    const a2 = Math.PI / 3 * ((i+1)%6) - Math.PI / 6;
+                    hexSegs.push(cx + hexSize*0.4*Math.cos(a1), 0.005, cz + hexSize*0.4*Math.sin(a1));
+                    hexSegs.push(cx + hexSize*0.4*Math.cos(a2), 0.005, cz + hexSize*0.4*Math.sin(a2));
                 }
-                pts.push(pts[0].clone());
-                const hg = new THREE.BufferGeometry().setFromPoints(pts);
-                gridGroup.add(new THREE.Line(hg, hexMat));
             }
+        }
+        if(hexSegs.length > 0){
+            const hexGeo = new THREE.BufferGeometry();
+            hexGeo.setAttribute('position', new THREE.Float32BufferAttribute(hexSegs, 3));
+            gridGroup.add(new THREE.LineSegments(hexGeo, hexMat));
         }
 
         /* Central circle decoration */
@@ -474,55 +517,52 @@
             const a = (i/64)*Math.PI*2;
             circPts.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR, 0.008, mazeH/2 + Math.sin(a)*circR));
         }
-        const circGeo = new THREE.BufferGeometry().setFromPoints(circPts);
-        gridGroup.add(new THREE.Line(circGeo, circMat));
+        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circPts), circMat));
         /* Inner ring */
         const circPts2 = [];
         for(let i=0;i<=64;i++){
             const a = (i/64)*Math.PI*2;
             circPts2.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR*0.7, 0.008, mazeH/2 + Math.sin(a)*circR*0.7));
         }
-        const circGeo2 = new THREE.BufferGeometry().setFromPoints(circPts2);
-        gridGroup.add(new THREE.Line(circGeo2, circMat));
+        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circPts2), circMat));
 
         scene.add(gridGroup);
 
-        /* Enhanced walls — body + glowing top cap + base edge line */
+        /* Enhanced walls — body + glowing top cap + base edge lines (merged into 1 draw call) */
         const geoWallTopH = new THREE.BoxGeometry(CELL+0.15, 0.04, 0.18);
         const geoWallTopV = new THREE.BoxGeometry(0.18, 0.04, CELL+0.15);
+        const edgeSegs = []; // collect all edge segments for merging
 
         for(let y=0;y<MAZE_H;y++) for(let x=0;x<MAZE_W;x++){
             const c=mazeGrid[y][x], wx=x*CELL, wz=y*CELL;
             if(c.t){
                 const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-                /* Top cap */
                 const tc=new THREE.Mesh(geoWallTopH,matWallTop);tc.position.set(wx+HALF,0.61,wz);scene.add(tc);wallMeshes.push(tc);
-                /* Base glow line */
-                const lp=[new THREE.Vector3(wx-0.07,0.01,wz),new THREE.Vector3(wx+CELL+0.07,0.01,wz)];
-                const lg=new THREE.BufferGeometry().setFromPoints(lp);
-                scene.add(new THREE.Line(lg,matWallEdge));wallMeshes.push(new THREE.Line(lg,matWallEdge));
+                edgeSegs.push(wx-0.07,0.01,wz, wx+CELL+0.07,0.01,wz);
             }
             if(c.l){
                 const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
                 const tc=new THREE.Mesh(geoWallTopV,matWallTop);tc.position.set(wx,0.61,wz+HALF);scene.add(tc);wallMeshes.push(tc);
-                const lp=[new THREE.Vector3(wx,0.01,wz-0.07),new THREE.Vector3(wx,0.01,wz+CELL+0.07)];
-                const lg=new THREE.BufferGeometry().setFromPoints(lp);
-                scene.add(new THREE.Line(lg,matWallEdge));wallMeshes.push(new THREE.Line(lg,matWallEdge));
+                edgeSegs.push(wx,0.01,wz-0.07, wx,0.01,wz+CELL+0.07);
             }
             if(y===MAZE_H-1&&c.b){
                 const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz+CELL);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
                 const tc=new THREE.Mesh(geoWallTopH,matWallTop);tc.position.set(wx+HALF,0.61,wz+CELL);scene.add(tc);wallMeshes.push(tc);
-                const lp=[new THREE.Vector3(wx-0.07,0.01,wz+CELL),new THREE.Vector3(wx+CELL+0.07,0.01,wz+CELL)];
-                const lg=new THREE.BufferGeometry().setFromPoints(lp);
-                scene.add(new THREE.Line(lg,matWallEdge));wallMeshes.push(new THREE.Line(lg,matWallEdge));
+                edgeSegs.push(wx-0.07,0.01,wz+CELL, wx+CELL+0.07,0.01,wz+CELL);
             }
             if(x===MAZE_W-1&&c.r){
                 const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx+CELL,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
                 const tc=new THREE.Mesh(geoWallTopV,matWallTop);tc.position.set(wx+CELL,0.61,wz+HALF);scene.add(tc);wallMeshes.push(tc);
-                const lp=[new THREE.Vector3(wx+CELL,0.01,wz-0.07),new THREE.Vector3(wx+CELL,0.01,wz+CELL+0.07)];
-                const lg=new THREE.BufferGeometry().setFromPoints(lp);
-                scene.add(new THREE.Line(lg,matWallEdge));wallMeshes.push(new THREE.Line(lg,matWallEdge));
+                edgeSegs.push(wx+CELL,0.01,wz-0.07, wx+CELL,0.01,wz+CELL+0.07);
             }
+        }
+        /* Merge all wall edge lines into one LineSegments draw call */
+        if(edgeSegs.length > 0){
+            const edgeGeo = new THREE.BufferGeometry();
+            edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgeSegs, 3));
+            const edgeMesh = new THREE.LineSegments(edgeGeo, matWallEdge);
+            scene.add(edgeMesh);
+            wallMeshes.push(edgeMesh);
         }
 
         /* Border */
@@ -541,7 +581,7 @@
 
     /* ══════════════ AMBIENT PARTICLES ══════════════ */
     function spawnAmbientParticles(){
-        const count = 25;
+        const count = 15; // reduced from 25 for performance
         const mazeW = MAZE_W*CELL, mazeH = MAZE_H*CELL;
         for(let i=0;i<count;i++){
             const geo = new THREE.PlaneGeometry(0.04, 0.04);
@@ -579,19 +619,26 @@
     }
 
     /* ══════════════ ENEMY FLOOR GLOW ══════════════ */
+    const _glowMat = new THREE.MeshBasicMaterial({color:0xFF4400, transparent:true, opacity:0.08});
     function updateEnemyGlows(){
-        /* Remove old glows */
-        enemyGlows.forEach(g=>{scene.remove(g); if(g.geometry)g.geometry.dispose(); if(g.material)g.material.dispose();});
-        enemyGlows=[];
-        /* Add new glows */
-        for(const e of enemies){
-            const geo = new THREE.CircleGeometry(0.5, 16);
-            geo.rotateX(-Math.PI/2);
-            const mat = new THREE.MeshBasicMaterial({color:0xFF4400, transparent:true, opacity:0.08});
-            const glow = new THREE.Mesh(geo, mat);
-            glow.position.set(e.pos.x, 0.005, e.pos.z);
-            scene.add(glow);
-            enemyGlows.push(glow);
+        /* Remove excess glows */
+        while(enemyGlows.length > enemies.length){
+            const g = enemyGlows.pop();
+            scene.remove(g);
+            if(g.geometry) g.geometry.dispose();
+        }
+        /* Reuse or create glows to match enemy count */
+        for(let i=0; i<enemies.length; i++){
+            if(i < enemyGlows.length){
+                /* Reuse existing glow — just update position */
+                enemyGlows[i].position.set(enemies[i].pos.x, 0.005, enemies[i].pos.z);
+            } else {
+                /* Create new glow using shared geometry */
+                const glow = new THREE.Mesh(geoGlowCircle, _glowMat);
+                glow.position.set(enemies[i].pos.x, 0.005, enemies[i].pos.z);
+                scene.add(glow);
+                enemyGlows.push(glow);
+            }
         }
     }
 
@@ -892,38 +939,37 @@
 
     /* ══════════════ BULLET TRAILS ══════════════ */
     function spawnBulletTrail(x, z, isPlayer){
-        const geo = new THREE.PlaneGeometry(0.04, 0.04);
-        geo.rotateX(-Math.PI/2);
-        const mat = new THREE.MeshBasicMaterial({color: isPlayer ? 0xFFFFFF : 0xFF4400, transparent:true, opacity:0.4});
-        const m = new THREE.Mesh(geo, mat);
+        if(particles.length >= MAX_PARTICLES) return; // respect cap
+        const m = new THREE.Mesh(geoTrail, isPlayer ? matTrailPlayer : matTrailEnemy);
         m.position.set(x, 0.12, z);
         scene.add(m);
-        particles.push({mesh:m, mat, vx:0, vy:0, vz:0, life:0.15, ml:0.15});
+        particles.push({mesh:m, mat:m.material, vx:0, vy:0, vz:0, life:0.12, ml:0.12});
     }
 
     /* ══════════════ HIT SPARKS ══════════════ */
     function spawnHitSparks(x, z, color, angle){
-        for(let i=0;i<5;i++){
-            const geo = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+        const count = Math.min(3, MAX_PARTICLES - particles.length); // 3 instead of 5, capped
+        for(let i=0;i<count;i++){
             const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
-            const m = new THREE.Mesh(geo, mat);
+            const m = new THREE.Mesh(geoSpark, mat);
             m.position.set(x, 0.15+Math.random()*0.15, z);
             scene.add(m);
             const spreadAngle = angle + (Math.random()-0.5)*1.2;
             const speed = 4 + Math.random()*6;
-            particles.push({mesh:m, mat, vx:Math.sin(spreadAngle)*speed, vy:2+Math.random()*3, vz:-Math.cos(spreadAngle)*speed, life:0.2+Math.random()*0.2, ml:0.4, rotSpeed:(Math.random()-0.5)*15});
+            particles.push({mesh:m, mat, vx:Math.sin(spreadAngle)*speed, vy:2+Math.random()*3, vz:-Math.cos(spreadAngle)*speed, life:0.2+Math.random()*0.15, ml:0.35, rotSpeed:(Math.random()-0.5)*12});
         }
     }
 
     /* ══════════════ PARTICLES ══════════════ */
     function spawnP(x,z,color,n){
+        n = Math.min(n, MAX_PARTICLES - particles.length); // respect cap
         for(let i=0;i<n;i++){
             const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1});
             const m=new THREE.Mesh(geoParticle,mat);
             m.position.set(x,0.1+Math.random()*0.2,z);
             scene.add(m);
             const a=Math.random()*Math.PI*2, s=1+Math.random()*3;
-            particles.push({mesh:m,mat,vx:Math.sin(a)*s,vy:0.5+Math.random()*1.5,vz:Math.cos(a)*s,life:0.3+Math.random()*0.3,ml:0.6});
+            particles.push({mesh:m,mat,vx:Math.sin(a)*s,vy:0.5+Math.random()*1.5,vz:Math.cos(a)*s,life:0.25+Math.random()*0.2,ml:0.45});
         }
     }
 
@@ -1009,6 +1055,8 @@
 
     /* ══════════════ ENEMY AI ══════════════ */
     function eShoot(e){
+        /* Cap enemy bullets to prevent lag on later levels */
+        if(eBullets.length >= MAX_EBULLETS) return;
         AudioManager.playSFX('enemy_shoot');
         const ex=e.pos.x,ez=e.pos.z,a=Math.atan2(playerPos.x-ex,-(playerPos.z-ez));
 
@@ -1018,7 +1066,7 @@
             const muzzRad = muzzDeg * Math.PI / 180;
             const bulletType = e.mesh.userData.muzzBulletType || 1;
 
-            for(let i=0; i<4; i++){
+            for(let i=0; i<4 && eBullets.length<MAX_EBULLETS; i++){
                 const angle = muzzRad + (i / 4) * Math.PI * 2;
                 const mx = ex + Math.cos(angle) * 0.38;
                 const mz = ez + Math.sin(angle) * 0.38;
@@ -1028,8 +1076,9 @@
                     const aimAngle = Math.atan2(playerPos.x - mx, -(playerPos.z - mz));
                     mkBullet(mx, mz, aimAngle, ENEMY_BULLET_SPEED * 0.8, false);
                 } else {
-                    /* Type 2: Spread burst from each muzzle */
-                    for(let s=-1;s<=1;s++){
+                    /* Type 2: Spread burst from each muzzle (reduced from 3 to 2 for perf) */
+                    for(let s=-1;s<=1;s+=2){
+                        if(eBullets.length >= MAX_EBULLETS) break;
                         mkBullet(mx, mz, angle + s*0.25, ENEMY_BULLET_SPEED * 0.65, false);
                     }
                 }
@@ -1047,9 +1096,9 @@
         switch(e.pat){
             case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);break;
             case"burst":for(let i=-1;i<=1;i++)mkBullet(ex,ez,a+i*0.15,ENEMY_BULLET_SPEED,false);break;
-            case"ring":{const n=8+curLvl*2;for(let i=0;i<n;i++)mkBullet(ex,ez,(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.65,false);break;}
-            case"spiral":for(let i=0;i<5;i++)mkBullet(ex,ez,a+i*0.4,ENEMY_BULLET_SPEED*0.8,false);break;
-            case"wall":{const p=a+Math.PI/2;for(let i=-3;i<=3;i++)mkBullet(ex+Math.sin(p)*i*0.35,ez-Math.cos(p)*i*0.35,a,ENEMY_BULLET_SPEED*0.55,false);break;}
+            case"ring":{const n=Math.min(8+curLvl*2, 16);for(let i=0;i<n&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,(i/n)*Math.PI*2,ENEMY_BULLET_SPEED*0.65,false);break;}
+            case"spiral":for(let i=0;i<5&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex,ez,a+i*0.4,ENEMY_BULLET_SPEED*0.8,false);break;
+            case"wall":{const p=a+Math.PI/2;for(let i=-3;i<=3&&eBullets.length<MAX_EBULLETS;i++)mkBullet(ex+Math.sin(p)*i*0.35,ez-Math.cos(p)*i*0.35,a,ENEMY_BULLET_SPEED*0.55,false);break;}
         }
     }
 
@@ -1253,16 +1302,19 @@
 
     /* ── DEATH PARTICLES ── */
     function spawnDeathBurst(x, z, color, count){
+        count = Math.min(count, MAX_PARTICLES - particles.length); // respect cap
         for(let i = 0; i < count; i++){
-            const size = 0.12 + Math.random() * 0.22;
-            const geo = new THREE.BoxGeometry(size, size, size);
+            const useSmall = Math.random() < 0.6;
+            const geo = useSmall ? geoDeathSmall : geoDeathMed;
             const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
             const m = new THREE.Mesh(geo, mat);
+            const s = 0.5 + Math.random() * 1.0;
+            m.scale.set(s, s, s);
             m.position.set(x, 0.1 + Math.random() * 0.3, z);
             scene.add(m);
             const angle = Math.random() * Math.PI * 2;
-            const speed = 3 + Math.random() * 8;
-            particles.push({mesh:m, mat, vx:Math.sin(angle)*speed, vy:1.5+Math.random()*4, vz:Math.cos(angle)*speed, life:0.6+Math.random()*0.8, ml:1.4, rotSpeed:(Math.random()-0.5)*12});
+            const speed = 3 + Math.random() * 7;
+            particles.push({mesh:m, mat, vx:Math.sin(angle)*speed, vy:1.5+Math.random()*3.5, vz:Math.cos(angle)*speed, life:0.5+Math.random()*0.6, ml:1.1, rotSpeed:(Math.random()-0.5)*10});
         }
     }
 
@@ -1519,11 +1571,11 @@
         for(let i=pBullets.length-1;i>=0;i--){
             const b=pBullets[i];b.mesh.position.x+=b.vx*dt;b.mesh.position.z+=b.vz*dt;b.life-=dt;
 
-            /* Bullet trail */
+            /* Bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
-            if(b.trailT <= 0){
+            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
                 spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, true);
-                b.trailT = 0.04;
+                b.trailT = 0.06; // slightly slower spawn rate
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
@@ -1602,10 +1654,10 @@
                         } else {
                             AudioManager.playSFX('enemy_explode');
                         }
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, 20);
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0x1A1A1A, 15);
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 8);
-                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFFCC00, 6);
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, e.type==="core"?10:5);
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0x1A1A1A, e.type==="core"?6:3);
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFF0000, 3);
+                        spawnDeathBurst(e.pos.x, e.pos.z, 0xFFCC00, 2);
                         flashScreen();
                         const chance = e.type === "core" ? 1.0 : (e.type === "drone" ? 0.4 : 0.2);
                         if(Math.random() < chance) spawnPowerup(e.pos.x, e.pos.z);
@@ -1631,11 +1683,11 @@
         for(let i=eBullets.length-1;i>=0;i--){
             const b=eBullets[i];b.mesh.position.x+=b.vx*dt;b.mesh.position.z+=b.vz*dt;b.life-=dt;
 
-            /* Enemy bullet trail */
+            /* Enemy bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
-            if(b.trailT <= 0){
+            if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
                 spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, false);
-                b.trailT = 0.05;
+                b.trailT = 0.07;
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){scene.remove(b.mesh);eBullets.splice(i,1);continue;}
