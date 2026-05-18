@@ -125,6 +125,7 @@
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
     let geoTrail, geoSpark, geoDeathSmall, geoDeathMed, geoGlowCircle;
+    let geoRingEffect, geoLaserTrail, matLaserTrail;
     let matTrailPlayer, matTrailEnemy;
 
     /* DOM */
@@ -203,10 +204,7 @@
                     a.muted = isMuted;
                     a.play().catch(() => {});
                 } catch(e) {
-                    /* If play fails (e.g. still loading), try a fresh Audio */
-                    const b = new Audio(a.src);
-                    b.volume = a.volume; b.muted = isMuted;
-                    b.play().catch(() => {});
+                    /* Silently skip — avoid creating orphan Audio objects that leak memory */
                 }
             },
             toggleMute: function () {
@@ -545,6 +543,12 @@
             geoDeathMed = new THREE.BoxGeometry(0.22, 0.22, 0.22);
             geoGlowCircle = new THREE.CircleGeometry(0.5, 12); // lower segments for perf
             geoGlowCircle.rotateX(-Math.PI/2);
+
+            /* Shared geometries for ring effects & laser trails — prevent GC storm */
+            geoRingEffect = new THREE.TorusGeometry(0.1, 0.02, 4, 16);
+            geoLaserTrail = new THREE.PlaneGeometry(0.12, 0.12);
+            geoLaserTrail.rotateX(-Math.PI/2);
+            matLaserTrail = new THREE.MeshBasicMaterial({color: 0x00FFFF, transparent: true, opacity: 0.65});
 
             /* Shared trail materials — only 2, reused forever */
             matTrailPlayer = new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent:true, opacity:0.35});
@@ -968,7 +972,10 @@
     function spawnHitSparks(x, z, color, angle){
         const count = Math.min(3, MAX_PARTICLES - particles.length); // 3 instead of 5, capped
         for(let i=0;i<count;i++){
-            const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+            /* Reuse shared geometry; create material only once per color via cache */
+            if(!window._sparkMats) window._sparkMats = {};
+            if(!window._sparkMats[color]) window._sparkMats[color] = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+            const mat = window._sparkMats[color].clone();
             const m = new THREE.Mesh(geoSpark, mat);
             m.position.set(x, 0.15+Math.random()*0.15, z);
             scene.add(m);
@@ -1447,7 +1454,10 @@
         for(let i = 0; i < count; i++){
             const useSmall = Math.random() < 0.6;
             const geo = useSmall ? geoDeathSmall : geoDeathMed;
-            const mat = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+            /* Clone from cached material to avoid creating from scratch every frame */
+            if(!window._deathMats) window._deathMats = {};
+            if(!window._deathMats[color]) window._deathMats[color] = new THREE.MeshBasicMaterial({color, transparent:true, opacity:1});
+            const mat = window._deathMats[color].clone();
             const m = new THREE.Mesh(geo, mat);
             const s = 0.5 + Math.random() * 1.0;
             m.scale.set(s, s, s);
@@ -1461,9 +1471,9 @@
 
     /* ── SPAWN RING EFFECT ── */
     function spawnRingEffect(x, z){
-        const geo = new THREE.TorusGeometry(0.1, 0.02, 4, 16);
+        if(!geoRingEffect) return; // safety
         const mat = new THREE.MeshBasicMaterial({color:0xFF6600, transparent:true, opacity:0.8});
-        const ring = new THREE.Mesh(geo, mat);
+        const ring = new THREE.Mesh(geoRingEffect, mat);
         ring.rotation.x = Math.PI/2;
         ring.position.set(x, 0.05, z);
         scene.add(ring);
@@ -2088,12 +2098,10 @@
             /* Bullet trail — throttled to reduce particle count */
             b.trailT -= dt;
             if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.7){
-                if(b.isLaser){
-                    /* High-fidelity glowing cyan laser trail particle */
-                    const geo = new THREE.PlaneGeometry(0.12, 0.12);
-                    geo.rotateX(-Math.PI/2);
-                    const mat = new THREE.MeshBasicMaterial({color: 0x00FFFF, transparent: true, opacity: 0.65});
-                    const mesh = new THREE.Mesh(geo, mat);
+                if(b.isLaser && geoLaserTrail && matLaserTrail){
+                    /* Reuse shared geometry & material for laser trail — no GC storm */
+                    const mat = matLaserTrail.clone();
+                    const mesh = new THREE.Mesh(geoLaserTrail, mat);
                     mesh.position.set(b.mesh.position.x, 0.1, b.mesh.position.z);
                     scene.add(mesh);
                     particles.push({mesh, mat, vx: 0, vy: 0, vz: 0, life: 0.35, ml: 0.35});
@@ -2292,7 +2300,13 @@
             }
             if(p.life<=0){
                 scene.remove(p.mesh);
-                if(p.mat && p.mat !== matTrailPlayer && p.mat !== matTrailEnemy){
+                /* Dispose geometry only if not a shared one */
+                if(p.mesh.geometry && p.mesh.geometry !== geoParticle && p.mesh.geometry !== geoTrail &&
+                   p.mesh.geometry !== geoSpark && p.mesh.geometry !== geoDeathSmall && p.mesh.geometry !== geoDeathMed &&
+                   p.mesh.geometry !== geoRingEffect && p.mesh.geometry !== geoLaserTrail){
+                    p.mesh.geometry.dispose();
+                }
+                if(p.mat && p.mat !== matTrailPlayer && p.mat !== matTrailEnemy && p.mat !== matLaserTrail){
                     p.mat.dispose();
                 }
                 particles.splice(i,1);
