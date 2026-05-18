@@ -140,10 +140,17 @@
                 bgm = new Audio();
                 bgm.src = 'YoRHaHackingGame/sound/bgm/Fortress_of_Lies.ogg';
                 bgm.loop = true; bgm.volume = 0.4; bgm.muted = isMuted;
-                for (const name in sfxFiles) { this.loadSFX(name, sfxFiles[name]); }
+                /* Defer SFX loading until context is resumed (browser autoplay policy) */
+                const loadAllSFX = () => {
+                    for (const name in sfxFiles) { this.loadSFX(name, sfxFiles[name]); }
+                };
                 const unlock = () => {
-                    if (ctx && ctx.state === 'suspended') { ctx.resume().then(removeUnlockListeners); }
-                    else { removeUnlockListeners(); }
+                    if (ctx && ctx.state === 'suspended') {
+                        ctx.resume().then(() => { loadAllSFX.call(this); removeUnlockListeners(); });
+                    } else {
+                        loadAllSFX.call(this);
+                        removeUnlockListeners();
+                    }
                 };
                 const removeUnlockListeners = () => {
                     document.removeEventListener('click', unlock);
@@ -151,6 +158,8 @@
                 };
                 document.addEventListener('click', unlock);
                 document.addEventListener('keydown', unlock);
+                /* Also try loading immediately if context is already running */
+                if (ctx && ctx.state === 'running') { loadAllSFX.call(this); }
                 isInitialized = true;
             },
             loadSFX: function (name, path) {
@@ -449,31 +458,21 @@
         floorMesh.receiveShadow = true;
         scene.add(floorMesh);
 
-        /* Grid overlay — merged into 3 Line objects for performance (1 draw call each) */
+        /* Grid overlay — clean black grid lines on light gray, faithful to original.
+           Merged into LineSegments for performance (1 draw call per material). */
         gridGroup = new THREE.Group();
-        const lineMat = new THREE.LineBasicMaterial({color:C_GRID, transparent:true, opacity:0.5});
-        const lineMatDim = new THREE.LineBasicMaterial({color:C_GRIDDIM, transparent:true, opacity:0.3});
+        const lineMat = new THREE.LineBasicMaterial({color:0x333333, transparent:true, opacity:0.6});
+        const lineMatDim = new THREE.LineBasicMaterial({color:0x999999, transparent:true, opacity:0.25});
 
-        /* Standard grid lines — collect all points then merge */
-        const brightPts = [], dimPts = [];
+        /* Collect grid line segments */
+        const brightSegs = [], dimSegs = [];
         for(let x=0;x<=MAZE_W;x++){
-            const arr = x%4===0 ? brightPts : dimPts;
-            arr.push(new THREE.Vector3(x*CELL,0.01,0), new THREE.Vector3(x*CELL,0.01,mazeH));
+            const arr = x%4===0 ? brightSegs : dimSegs;
+            arr.push(x*CELL, 0.01, 0, x*CELL, 0.01, mazeH);
         }
         for(let y=0;y<=MAZE_H;y++){
-            const arr = y%4===0 ? brightPts : dimPts;
-            arr.push(new THREE.Vector3(0,0.01,y*CELL), new THREE.Vector3(mazeW,0.01,y*CELL));
-        }
-        /* Build merged line segments using NaN breaks */
-        const brightSegs = [];
-        for(let i=0;i<brightPts.length;i+=2){
-            brightSegs.push(brightPts[i].x, brightPts[i].y, brightPts[i].z);
-            brightSegs.push(brightPts[i+1].x, brightPts[i+1].y, brightPts[i+1].z);
-        }
-        const dimSegs = [];
-        for(let i=0;i<dimPts.length;i+=2){
-            dimSegs.push(dimPts[i].x, dimPts[i].y, dimPts[i].z);
-            dimSegs.push(dimPts[i+1].x, dimPts[i+1].y, dimPts[i+1].z);
+            const arr = y%4===0 ? brightSegs : dimSegs;
+            arr.push(0, 0.01, y*CELL, mazeW, 0.01, y*CELL);
         }
         if(brightSegs.length > 0){
             const bGeo = new THREE.BufferGeometry();
@@ -486,83 +485,26 @@
             gridGroup.add(new THREE.LineSegments(dGeo, lineMatDim));
         }
 
-        /* Hexagonal sub-grid — merged into a single LineSegments */
-        const hexMat = new THREE.LineBasicMaterial({color:0xBBBBBB, transparent:true, opacity:0.08});
-        const hexSize = CELL * 0.5;
-        const hexH = hexSize * Math.sqrt(3);
-        const hexSegs = [];
-        for(let row = -1; row < MAZE_H * 2 + 2; row++){
-            for(let col = -1; col < MAZE_W * 2 + 2; col++){
-                const cx = col * hexSize * 1.5;
-                const cz = row * hexH + (col % 2 ? hexH * 0.5 : 0);
-                for(let i = 0; i < 6; i++){
-                    const a1 = Math.PI / 3 * i - Math.PI / 6;
-                    const a2 = Math.PI / 3 * ((i+1)%6) - Math.PI / 6;
-                    hexSegs.push(cx + hexSize*0.4*Math.cos(a1), 0.005, cz + hexSize*0.4*Math.sin(a1));
-                    hexSegs.push(cx + hexSize*0.4*Math.cos(a2), 0.005, cz + hexSize*0.4*Math.sin(a2));
-                }
-            }
-        }
-        if(hexSegs.length > 0){
-            const hexGeo = new THREE.BufferGeometry();
-            hexGeo.setAttribute('position', new THREE.Float32BufferAttribute(hexSegs, 3));
-            gridGroup.add(new THREE.LineSegments(hexGeo, hexMat));
-        }
-
-        /* Central circle decoration */
-        const circPts = [];
-        const circR = Math.min(mazeW, mazeH) * 0.35;
-        const circMat = new THREE.LineBasicMaterial({color:C_GRIDDIM, transparent:true, opacity:0.12});
-        for(let i=0;i<=64;i++){
-            const a = (i/64)*Math.PI*2;
-            circPts.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR, 0.008, mazeH/2 + Math.sin(a)*circR));
-        }
-        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circPts), circMat));
-        /* Inner ring */
-        const circPts2 = [];
-        for(let i=0;i<=64;i++){
-            const a = (i/64)*Math.PI*2;
-            circPts2.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR*0.7, 0.008, mazeH/2 + Math.sin(a)*circR*0.7));
-        }
-        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circPts2), circMat));
-
         scene.add(gridGroup);
 
-        /* Enhanced walls — body + glowing top cap + base edge lines (merged into 1 draw call) */
-        const geoWallTopH = new THREE.BoxGeometry(CELL+0.15, 0.04, 0.18);
-        const geoWallTopV = new THREE.BoxGeometry(0.18, 0.04, CELL+0.15);
-        const edgeSegs = []; // collect all edge segments for merging
+        /* Walls — simple flat gray blocks matching the original game's aesthetic.
+           No glowing top caps, no red edge lines — just clean gray walls. */
+        const edgeSegs = [];
 
         for(let y=0;y<MAZE_H;y++) for(let x=0;x<MAZE_W;x++){
             const c=mazeGrid[y][x], wx=x*CELL, wz=y*CELL;
             if(c.t){
-                const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-                const tc=new THREE.Mesh(geoWallTopH,matWallTop);tc.position.set(wx+HALF,0.61,wz);scene.add(tc);wallMeshes.push(tc);
-                edgeSegs.push(wx-0.07,0.01,wz, wx+CELL+0.07,0.01,wz);
+                const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
             }
             if(c.l){
-                const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-                const tc=new THREE.Mesh(geoWallTopV,matWallTop);tc.position.set(wx,0.61,wz+HALF);scene.add(tc);wallMeshes.push(tc);
-                edgeSegs.push(wx,0.01,wz-0.07, wx,0.01,wz+CELL+0.07);
+                const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx,0.3,wz+HALF);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
             }
             if(y===MAZE_H-1&&c.b){
-                const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz+CELL);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-                const tc=new THREE.Mesh(geoWallTopH,matWallTop);tc.position.set(wx+HALF,0.61,wz+CELL);scene.add(tc);wallMeshes.push(tc);
-                edgeSegs.push(wx-0.07,0.01,wz+CELL, wx+CELL+0.07,0.01,wz+CELL);
+                const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz+CELL);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
             }
             if(x===MAZE_W-1&&c.r){
-                const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx+CELL,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-                const tc=new THREE.Mesh(geoWallTopV,matWallTop);tc.position.set(wx+CELL,0.61,wz+HALF);scene.add(tc);wallMeshes.push(tc);
-                edgeSegs.push(wx+CELL,0.01,wz-0.07, wx+CELL,0.01,wz+CELL+0.07);
+                const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx+CELL,0.3,wz+HALF);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
             }
-        }
-        /* Merge all wall edge lines into one LineSegments draw call */
-        if(edgeSegs.length > 0){
-            const edgeGeo = new THREE.BufferGeometry();
-            edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgeSegs, 3));
-            const edgeMesh = new THREE.LineSegments(edgeGeo, matWallEdge);
-            scene.add(edgeMesh);
-            wallMeshes.push(edgeMesh);
         }
 
         /* Border */
@@ -570,12 +512,12 @@
         const bH=new THREE.BoxGeometry(mazeW+0.3,0.3,0.1);
         const bV=new THREE.BoxGeometry(0.1,0.3,mazeH+0.3);
         let m;
-        m=new THREE.Mesh(bH,bMat);m.position.set(mazeW/2,0.15,-0.05);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bH,bMat);m.position.set(mazeW/2,0.15,mazeH+0.05);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bV,bMat);m.position.set(-0.05,0.15,mazeH/2);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bV,bMat);m.position.set(mazeW+0.05,0.15,mazeH/2);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bH,bMat);m.position.set(mazeW/2,0.15,-0.05);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bH,bMat);m.position.set(mazeW/2,0.15,mazeH+0.05);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bV,bMat);m.position.set(-0.05,0.15,mazeH/2);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bV,bMat);m.position.set(mazeW+0.05,0.15,mazeH/2);m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
 
-        /* Ambient floating data fragments */
+        /* Ambient floating data fragments — very sparse, subtle */
         spawnAmbientParticles();
     }
 
@@ -648,82 +590,54 @@
 
         const group = new THREE.Group();
 
-        /* A) Main hull — OctahedronGeometry stretched to diamond ship */
-        const hullGeo = new THREE.OctahedronGeometry(0.18, 1);
-        hullGeo.scale(1, 0.5, 1.6);
-        const hullMat = new THREE.MeshPhongMaterial({color:0xDDDDDD, emissive:0xC4362B, emissiveIntensity:0.15, flatShading:true});
+        /* Player ship — faithful to original Nier Automata hacking game:
+           Sleek white arrowhead/triangle with dark cockpit circle.
+           Flat 2D aesthetic on a PlaneGeometry, no 3D extrusions. */
+
+        /* A) Main hull — sharp arrowhead triangle using custom Shape */
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0.42);        // nose tip
+        shape.lineTo(-0.22, -0.28);    // bottom-left
+        shape.lineTo(-0.06, -0.18);    // inner-left notch
+        shape.lineTo(0, -0.22);        // tail center
+        shape.lineTo(0.06, -0.18);     // inner-right notch
+        shape.lineTo(0.22, -0.28);     // bottom-right
+        shape.closePath();
+
+        const hullGeo = new THREE.ShapeGeometry(shape);
+        hullGeo.rotateX(-Math.PI/2);
+        const hullMat = new THREE.MeshBasicMaterial({color:0xDDDDDD, side:THREE.DoubleSide});
         const hull = new THREE.Mesh(hullGeo, hullMat);
-        hull.castShadow = true;
         group.add(hull);
         group.userData.hull = hull;
 
-        /* B) Two wing extensions with red emissive tips */
-        const wingGeo = new THREE.BoxGeometry(0.28, 0.02, 0.08);
-        const wingMat = new THREE.MeshPhongMaterial({color:0xAAAAAA, emissive:0x333333, emissiveIntensity:0.05});
-        const leftWing = new THREE.Mesh(wingGeo, wingMat);
-        leftWing.position.set(-0.22, 0, -0.05);
-        leftWing.rotation.z = -0.15;
-        group.add(leftWing);
+        /* B) Dark cockpit circle at center — iconic detail from original */
+        const cockpitGeo = new THREE.CircleGeometry(0.05, 12);
+        cockpitGeo.rotateX(-Math.PI/2);
+        const cockpitMat = new THREE.MeshBasicMaterial({color:0x1A1A1A, side:THREE.DoubleSide});
+        const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+        cockpit.position.y = 0.005;
+        group.add(cockpit);
 
-        const rightWing = new THREE.Mesh(wingGeo, wingMat);
-        rightWing.position.set(0.22, 0, -0.05);
-        rightWing.rotation.z = 0.15;
-        group.add(rightWing);
+        /* C) Thin outline for definition — very subtle */
+        const edgesGeo = new THREE.EdgesGeometry(hullGeo);
+        const edgesMat = new THREE.LineBasicMaterial({color:0x999999, transparent:true, opacity:0.4});
+        const outline = new THREE.LineSegments(edgesGeo, edgesMat);
+        outline.position.y = 0.003;
+        group.add(outline);
 
-        /* Red tips on wings */
-        const tipGeo = new THREE.BoxGeometry(0.06, 0.025, 0.06);
-        const tipMat = new THREE.MeshBasicMaterial({color:C_YORHA});
-        const leftTip = new THREE.Mesh(tipGeo, tipMat);
-        leftTip.position.set(-0.36, 0, -0.05);
-        group.add(leftTip);
-        const rightTip = new THREE.Mesh(tipGeo, tipMat);
-        rightTip.position.set(0.36, 0, -0.05);
-        group.add(rightTip);
-
-        /* C) Engine thrusters */
-        const thrusterGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.08, 6);
-        const thrusterMat = new THREE.MeshBasicMaterial({color:0x4488FF, transparent:true, opacity:0.8});
-        const thrusterLeft = new THREE.Mesh(thrusterGeo, thrusterMat);
-        thrusterLeft.position.set(-0.08, 0, -0.22);
-        thrusterLeft.rotation.x = Math.PI/2;
-        group.add(thrusterLeft);
-        group.userData.thrusterLeft = thrusterLeft;
-
-        const thrusterRight = new THREE.Mesh(thrusterGeo, thrusterMat.clone());
-        thrusterRight.position.set(0.08, 0, -0.22);
-        thrusterRight.rotation.x = Math.PI/2;
-        group.add(thrusterRight);
-        group.userData.thrusterRight = thrusterRight;
-
-        /* D) Support pods — two small octahedrons orbiting */
-        const podGeo = new THREE.OctahedronGeometry(0.04, 0);
-        const podMat = new THREE.MeshBasicMaterial({color:0x88AACC});
-        const leftPod = new THREE.Mesh(podGeo, podMat);
-        leftPod.position.set(-0.3, 0.08, -0.1);
-        group.add(leftPod);
-        group.userData.leftPod = leftPod;
-
-        const rightPod = new THREE.Mesh(podGeo, podMat.clone());
-        rightPod.position.set(0.3, 0.08, -0.1);
-        group.add(rightPod);
-        group.userData.rightPod = rightPod;
-
-        /* E) Shield indicator ring */
-        const shieldGeo = new THREE.TorusGeometry(0.35, 0.008, 4, 32);
-        const shieldMat = new THREE.MeshBasicMaterial({color:C_SHIELD, transparent:true, opacity:0.12});
-        const shieldRing = new THREE.Mesh(shieldGeo, shieldMat);
-        shieldRing.rotation.x = Math.PI/2;
-        group.add(shieldRing);
-        group.userData.shieldRing = shieldRing;
-        group.userData.shieldMat = shieldMat;
-
-        /* F) Core glow sphere */
-        const coreGeo = new THREE.SphereGeometry(0.05, 8, 8);
-        const coreMat = new THREE.MeshBasicMaterial({color:C_YORHA});
-        const coreGlow = new THREE.Mesh(coreGeo, coreMat);
-        group.add(coreGlow);
-        group.userData.coreGlow = coreGlow;
-        group.userData.coreMat = coreMat;
+        /* D) Small wing stabilizers — two tiny rectangles at the base */
+        const stabGeo = new THREE.PlaneGeometry(0.08, 0.04);
+        stabGeo.rotateX(-Math.PI/2);
+        const stabMat = new THREE.MeshBasicMaterial({color:0xAAAAAA, side:THREE.DoubleSide});
+        const leftStab = new THREE.Mesh(stabGeo, stabMat);
+        leftStab.position.set(-0.18, 0.003, 0.12);
+        leftStab.rotation.y = 0.3;
+        group.add(leftStab);
+        const rightStab = new THREE.Mesh(stabGeo, stabMat);
+        rightStab.position.set(0.18, 0.003, 0.12);
+        rightStab.rotation.y = -0.3;
+        group.add(rightStab);
 
         playerMesh = group;
         playerMesh.position.y = 0.15;
@@ -735,69 +649,83 @@
         const g = new THREE.Group();
 
         if(type === "scout"){
-            /* Type A - Scout: small, fast, single ring */
-            const bodyGeo = new THREE.OctahedronGeometry(0.12, 0);
-            const bodyMat = new THREE.MeshPhongMaterial({color:0x111111, emissive:0xFF6600, emissiveIntensity:0.3, flatShading:true});
+            /* Type A - Scout: small angular house/tent shape — faithful to original sprite */
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0.2);       // top point
+            shape.lineTo(-0.14, 0.06);   // upper-left
+            shape.lineTo(-0.14, -0.16);  // lower-left
+            shape.lineTo(0.14, -0.16);   // lower-right
+            shape.lineTo(0.14, 0.06);    // upper-right
+            shape.closePath();
+
+            const bodyGeo = new THREE.ShapeGeometry(shape);
+            bodyGeo.rotateX(-Math.PI/2);
+            const bodyMat = new THREE.MeshBasicMaterial({color:0x1A1A1A, side:THREE.DoubleSide});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.castShadow = true;
             g.add(body);
             g.userData.core = body;
 
-            /* Two small wing protrusions */
-            const wingGeo = new THREE.BoxGeometry(0.15, 0.015, 0.04);
-            const wingMat = new THREE.MeshBasicMaterial({color:0xFF6600, transparent:true, opacity:0.6});
-            const lw = new THREE.Mesh(wingGeo, wingMat);
-            lw.position.set(-0.12, 0, 0);
-            g.add(lw);
-            const rw = new THREE.Mesh(wingGeo, wingMat.clone());
-            rw.position.set(0.12, 0, 0);
-            g.add(rw);
-
-            /* Single ring */
-            const ringGeo = new THREE.TorusGeometry(0.2, 0.008, 4, 16);
-            const ringMat = new THREE.MeshBasicMaterial({color:0xFF6600, transparent:true, opacity:0.5, side:THREE.DoubleSide});
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI/2;
-            g.add(ring);
-            g.userData.rings = [ring];
+            /* Subtle orange edge outline */
+            const edgesGeo = new THREE.EdgesGeometry(bodyGeo);
+            const edgesMat = new THREE.LineBasicMaterial({color:0xFF6600, transparent:true, opacity:0.6});
+            const outline = new THREE.LineSegments(edgesGeo, edgesMat);
+            outline.position.y = 0.003;
+            g.add(outline);
+            g.userData.rings = [];
 
         } else if(type === "drone"){
-            /* Type B - Drone: medium, shielded, two rings at different tilts */
-            const bodyGeo = new THREE.IcosahedronGeometry(0.15, 0);
-            const bodyMat = new THREE.MeshPhongMaterial({color:0x333333, emissive:0xFF5500, emissiveIntensity:0.15, flatShading:true});
+            /* Type B - Drone: diamond/rhombus shape with shield blocks orbiting */
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0.22);
+            shape.lineTo(-0.16, 0);
+            shape.lineTo(0, -0.22);
+            shape.lineTo(0.16, 0);
+            shape.closePath();
+
+            const bodyGeo = new THREE.ShapeGeometry(shape);
+            bodyGeo.rotateX(-Math.PI/2);
+            const bodyMat = new THREE.MeshBasicMaterial({color:0x2A2A2A, side:THREE.DoubleSide});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.castShadow = true;
             g.add(body);
             g.userData.core = body;
 
-            /* Shield blocks — 3-4 small boxes orbiting */
+            /* Orange outline — thicker for drone */
+            const edgesGeo = new THREE.EdgesGeometry(bodyGeo);
+            const edgesMat = new THREE.LineBasicMaterial({color:0xFF5500, transparent:true, opacity:0.7});
+            const outline = new THREE.LineSegments(edgesGeo, edgesMat);
+            outline.position.y = 0.003;
+            g.add(outline);
+
+            /* Shield blocks — flat rectangles orbiting */
             g.userData.shieldMeshes = [];
             const shieldsGroup = new THREE.Group();
             g.add(shieldsGroup);
             g.userData.shieldsGroup = shieldsGroup;
             const numShields = curLvl >= 3 ? 4 : 3;
             const R = 0.45;
-            const shieldBoxGeo = new THREE.BoxGeometry(0.12, 0.06, 0.12);
-            const shieldBoxMat = new THREE.MeshPhongMaterial({color:0x444444, emissive:0xFF3300, emissiveIntensity:0.2});
+            const shieldGeo = new THREE.PlaneGeometry(0.15, 0.08);
+            shieldGeo.rotateX(-Math.PI/2);
+            const shieldMat = new THREE.MeshBasicMaterial({color:0x444444, side:THREE.DoubleSide});
             for(let i=0; i<numShields; i++){
                 const angle = (i / numShields) * Math.PI * 2;
-                const box = new THREE.Mesh(shieldBoxGeo, shieldBoxMat.clone());
+                const box = new THREE.Mesh(shieldGeo, shieldMat);
                 box.position.set(Math.cos(angle)*R, 0, Math.sin(angle)*R);
+                box.rotation.y = -angle;
                 shieldsGroup.add(box);
                 g.userData.shieldMeshes.push({mesh: box, hp: 2, angle: angle});
             }
 
-            /* Two rings at different tilts */
+            /* Two subtle ring outlines at different tilts */
             g.userData.rings = [];
-            const ringGeo = new THREE.TorusGeometry(0.25, 0.008, 4, 24);
-            const ringMat1 = new THREE.MeshBasicMaterial({color:0xFF5500, transparent:true, opacity:0.45, side:THREE.DoubleSide});
+            const ringGeo = new THREE.TorusGeometry(0.28, 0.005, 4, 24);
+            const ringMat1 = new THREE.MeshBasicMaterial({color:0xFF5500, transparent:true, opacity:0.3, side:THREE.DoubleSide});
             const ring1 = new THREE.Mesh(ringGeo, ringMat1);
             ring1.rotation.x = Math.PI/2;
             ring1.rotation.y = 0.3;
             g.add(ring1);
             g.userData.rings.push(ring1);
 
-            const ringMat2 = new THREE.MeshBasicMaterial({color:0xFF3300, transparent:true, opacity:0.3, side:THREE.DoubleSide});
+            const ringMat2 = new THREE.MeshBasicMaterial({color:0xFF3300, transparent:true, opacity:0.2, side:THREE.DoubleSide});
             const ring2 = new THREE.Mesh(ringGeo, ringMat2);
             ring2.rotation.x = Math.PI/2 + 0.5;
             ring2.rotation.z = 0.4;
@@ -805,19 +733,48 @@
             g.userData.rings.push(ring2);
 
         } else if(type === "core"){
-            /* Type C - Core: large boss with rotating muzzles */
-            const bodyGeo = new THREE.DodecahedronGeometry(0.22, 0);
-            const bodyMat = new THREE.MeshPhongMaterial({color:0x0A0A0A, emissive:0xFF6600, emissiveIntensity:0.2, flatShading:true});
+            /* Type C - Core: large dark square/cube shape — faithful to original enemy_type2 */
+            const shape = new THREE.Shape();
+            shape.moveTo(-0.2, -0.2);
+            shape.lineTo(0.2, -0.2);
+            shape.lineTo(0.2, 0.2);
+            shape.lineTo(-0.2, 0.2);
+            shape.closePath();
+
+            const bodyGeo = new THREE.ShapeGeometry(shape);
+            bodyGeo.rotateX(-Math.PI/2);
+            const bodyMat = new THREE.MeshBasicMaterial({color:0x0A0A0A, side:THREE.DoubleSide});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.castShadow = true;
             g.add(body);
             g.userData.core = body;
 
-            /* THREE orbital rings at different tilts */
+            /* Bright orange outline — the signature look of the core */
+            const edgesGeo = new THREE.EdgesGeometry(bodyGeo);
+            const edgesMat = new THREE.LineBasicMaterial({color:0xFF5500, transparent:true, opacity:0.8});
+            const outline = new THREE.LineSegments(edgesGeo, edgesMat);
+            outline.position.y = 0.003;
+            g.add(outline);
+            g.userData.outlineMat = edgesMat;
+
+            /* Inner diamond mark on core */
+            const innerShape = new THREE.Shape();
+            innerShape.moveTo(0, 0.08);
+            innerShape.lineTo(-0.08, 0);
+            innerShape.lineTo(0, -0.08);
+            innerShape.lineTo(0.08, 0);
+            innerShape.closePath();
+            const innerGeo = new THREE.ShapeGeometry(innerShape);
+            innerGeo.rotateX(-Math.PI/2);
+            const innerMat = new THREE.MeshBasicMaterial({color:0xFF6600, transparent:true, opacity:0.4, side:THREE.DoubleSide});
+            const innerMark = new THREE.Mesh(innerGeo, innerMat);
+            innerMark.position.y = 0.005;
+            g.add(innerMark);
+
+            /* Three orbital rings at different tilts */
             g.userData.rings = [];
             for(let i=0;i<3;i++){
-                const rg=new THREE.TorusGeometry(0.32+i*0.14, 0.015, 8, 32);
-                const rm=new THREE.MeshBasicMaterial({color:C_RING, transparent:true, opacity:0.6-i*0.15, side:THREE.DoubleSide});
+                const rg=new THREE.TorusGeometry(0.32+i*0.12, 0.006, 4, 32);
+                const rm=new THREE.MeshBasicMaterial({color:C_RING, transparent:true, opacity:0.35-i*0.08, side:THREE.DoubleSide});
                 const ring=new THREE.Mesh(rg,rm);
                 ring.rotation.x = Math.PI/2 + (Math.random()-0.5)*0.5;
                 ring.rotation.y = (Math.random()-0.5)*0.5;
@@ -833,33 +790,34 @@
                 g.userData.shieldsGroup = shieldsGroup;
                 const numShields = curLvl <= 1 ? 2 : (curLvl <= 3 ? 3 : 4);
                 const R = 0.55;
-                const shieldBoxGeo = new THREE.PlaneGeometry(0.25, 0.25);
+                const shieldBoxGeo = new THREE.PlaneGeometry(0.2, 0.2);
                 shieldBoxGeo.rotateX(-Math.PI/2);
                 for(let i=0; i<numShields; i++){
                     const angle = (i / numShields) * Math.PI * 2;
                     const box = new THREE.Mesh(shieldBoxGeo, window._matBlock.clone());
                     box.position.set(Math.cos(angle)*R, 0, Math.sin(angle)*R);
+                    box.rotation.y = -angle;
                     shieldsGroup.add(box);
                     g.userData.shieldMeshes.push({mesh: box, hp: 3, angle: angle});
                 }
             }
 
-            /* Rotating muzzle system — inspired by enemy_type_0C.gd */
+            /* Rotating muzzle system */
             const muzzGroup = new THREE.Group();
             g.add(muzzGroup);
             g.userData.muzzGroup = muzzGroup;
             g.userData.muzzDeg = 0;
-            g.userData.muzzSpeed = 100; // degrees per second, increases with damage
+            g.userData.muzzSpeed = 100;
             g.userData.muzzSwitchCount = 0;
-            g.userData.muzzBulletType = 1; // 1=aimed, 2=spread
+            g.userData.muzzBulletType = 1;
 
-            const muzzGeo = new THREE.CylinderGeometry(0.015, 0.025, 0.08, 4);
-            const muzzMat = new THREE.MeshBasicMaterial({color:0xFF3300});
+            const muzzGeo = new THREE.PlaneGeometry(0.04, 0.04);
+            muzzGeo.rotateX(-Math.PI/2);
+            const muzzMat = new THREE.MeshBasicMaterial({color:0xFF3300, side:THREE.DoubleSide});
             for(let i=0; i<4; i++){
                 const angle = (i / 4) * Math.PI * 2;
-                const muzz = new THREE.Mesh(muzzGeo, muzzMat.clone());
+                const muzz = new THREE.Mesh(muzzGeo, muzzMat);
                 muzz.position.set(Math.cos(angle)*0.38, 0, Math.sin(angle)*0.38);
-                muzz.rotation.x = Math.PI/2;
                 muzzGroup.add(muzz);
             }
         }
@@ -1001,8 +959,8 @@
                 upgradeTimeRemaining = 0;
                 playerUpgrade = "standard";
                 podSay("Subversion upgrade expired.", 3);
-                if(playerMesh && playerMesh.userData.coreMat) {
-                    playerMesh.userData.coreMat.color.setHex(C_YORHA);
+                if(playerMesh && playerMesh.userData.hull) {
+                    playerMesh.userData.hull.material.color.setHex(0xDDDDDD);
                 }
             }
         }
@@ -1033,8 +991,8 @@
                 const upgradeName = playerUpgrade === "triple" ? "TRIPLE-SPREAD FIRE" : "HEAVY PIERCING PLASMA";
                 podSay(`Subversion module collected. Weapon subversion active: ${upgradeName}.`, 4);
                 spawnDeathBurst(playerPos.x, playerPos.z, C_GOLD, 10);
-                if(playerMesh && playerMesh.userData.coreMat) {
-                    playerMesh.userData.coreMat.color.setHex(C_GOLD);
+                if(playerMesh && playerMesh.userData.hull) {
+                    playerMesh.userData.hull.material.color.setHex(C_GOLD);
                 }
                 break;
             }
@@ -1520,28 +1478,16 @@
         playerMesh.rotation.x = 0;
         playerMesh.rotation.z = 0;
 
-        /* Animate thrusters */
-        if(playerMesh.userData.thrusterLeft){
-            const flicker = 0.85 + Math.random() * 0.3;
-            playerMesh.userData.thrusterLeft.scale.z = flicker;
-            playerMesh.userData.thrusterRight.scale.z = 0.85 + Math.random() * 0.3;
+        /* Animate player hull — subtle hover bob in 3D mode */
+        if(playerMesh.userData.hull && is3D){
+            /* Slight scale pulse for alive feeling */
+            const pulse = 1.0 + Math.sin(time * 6.0) * 0.015;
+            playerMesh.userData.hull.scale.set(pulse, pulse, pulse);
         }
-        /* Animate support pods */
-        if(playerMesh.userData.leftPod && playerMesh.userData.rightPod){
-            playerMesh.userData.leftPod.position.y = 0.08 + Math.sin(time * 5.5) * 0.04;
-            playerMesh.userData.rightPod.position.y = 0.08 + Math.sin(time * 5.5 + Math.PI) * 0.04;
-        }
-        /* Shield ring rotation and opacity */
-        if(playerMesh.userData.shieldRing){
-            playerMesh.userData.shieldRing.rotation.z += dt * 0.5;
-            const shieldOp = invulnT > 0 ? 0.4 : 0.12;
-            playerMesh.userData.shieldMat.opacity += (shieldOp - playerMesh.userData.shieldMat.opacity) * 0.1;
-        }
-        /* Core glow color change for upgrade */
-        if(playerMesh.userData.coreMat){
-            const targetColor = playerUpgrade !== "standard" ? C_GOLD : C_YORHA;
-            const curColor = playerMesh.userData.coreMat.color.getHex();
-            if(curColor !== targetColor) playerMesh.userData.coreMat.color.setHex(targetColor);
+        /* Upgrade indicator — hull color changes */
+        if(playerMesh.userData.hull){
+            const targetColor = playerUpgrade !== "standard" ? C_GOLD : 0xDDDDDD;
+            playerMesh.userData.hull.material.color.setHex(targetColor);
         }
 
         /* Invuln flash */
@@ -1763,7 +1709,7 @@
         playerUpgrade = "standard"; upgradeTimeRemaining = 0;
         dashT = 0; dashCooldownT = 0;
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
-        if(playerMesh.userData.coreMat) playerMesh.userData.coreMat.color.setHex(C_YORHA);
+        if(playerMesh.userData.hull) playerMesh.userData.hull.material.color.setHex(0xDDDDDD);
         spawnEnemies();
         const cx=MAZE_W*CELL/2,cz=MAZE_H*CELL/2;
         camera.position.set(cx,30,cz);camera.lookAt(cx,0,cz);
