@@ -51,6 +51,8 @@
 
     /* ══════════════ STATE ══════════════ */
     let scene, camera, renderer, clock;
+    let cameraPersp, cameraOrtho, dirLight, ambientLight;
+    let is3D = true; // 3D Isometric View by default to wow the user!
     let playerMesh, playerPos = {x:0,z:0}, playerAngle = 0, playerHP = MAX_HP;
     let mazeGrid = null;
     let wallMeshes = [], floorMesh = null, gridGroup = null;
@@ -76,9 +78,142 @@
     let geoPlayer;
 
     /* DOM */
-    let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, fsBtn, flashEl;
+    let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, fsBtn, flashEl, muteBtn, viewBtn;
     let pauseMenu, pauseItems, pauseIdx = 0;
     let pauseWasActive = false;
+
+    /* ══════════════ AUDIO MANAGER ══════════════ */
+    const AudioManager = (function () {
+        let ctx = null;
+        let bgm = null;
+        const sfxBuffers = {};
+        let isMuted = false;
+        let isInitialized = false;
+
+        const sfxFiles = {
+            player_shoot: 'YoRHaHackingGame/sound/sfx/player_shoot.wav',
+            enemy_shoot: 'YoRHaHackingGame/sound/sfx/enemy_shoot.wav',
+            player_hit: 'YoRHaHackingGame/sound/sfx/player_hit.wav',
+            enemy_hit: 'YoRHaHackingGame/sound/sfx/enemy_hit.wav',
+            enemy_explode: 'YoRHaHackingGame/sound/sfx/enemy_explode.wav',
+            core_broken: 'YoRHaHackingGame/sound/sfx/core_broken.wav',
+            player_explode: 'YoRHaHackingGame/sound/sfx/player_explode.wav',
+            button_select: 'YoRHaHackingGame/sound/sfx/button_select.wav',
+            button_enter: 'YoRHaHackingGame/sound/sfx/button_enter.wav',
+            type: 'YoRHaHackingGame/sound/sfx/type.wav'
+        };
+
+        return {
+            init: function () {
+                if (isInitialized) return;
+
+                // Persist mute state
+                isMuted = localStorage.getItem('nh_muted') === 'true';
+                this.updateMuteUI();
+
+                // Create AudioContext
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    ctx = new AudioContextClass();
+                }
+
+                // Create BGM using HTML5 Audio (better for large streaming files)
+                bgm = new Audio();
+                bgm.src = 'YoRHaHackingGame/sound/bgm/Fortress_of_Lies.ogg';
+                bgm.loop = true;
+                bgm.volume = 0.4;
+                bgm.muted = isMuted;
+
+                // Pre-decode all SFX
+                for (const name in sfxFiles) {
+                    this.loadSFX(name, sfxFiles[name]);
+                }
+
+                // Interaction listener to resume audio context if suspended by browser autoplay policy
+                const unlock = () => {
+                    if (ctx && ctx.state === 'suspended') {
+                        ctx.resume().then(removeUnlockListeners);
+                    } else {
+                        removeUnlockListeners();
+                    }
+                };
+                const removeUnlockListeners = () => {
+                    document.removeEventListener('click', unlock);
+                    document.removeEventListener('keydown', unlock);
+                };
+                document.addEventListener('click', unlock);
+                document.addEventListener('keydown', unlock);
+
+                isInitialized = true;
+            },
+
+            loadSFX: function (name, path) {
+                if (!ctx) return;
+                fetch(path)
+                    .then(response => response.arrayBuffer())
+                    .then(arrayBuffer => {
+                        return new Promise((resolve, reject) => {
+                            ctx.decodeAudioData(arrayBuffer, resolve, reject);
+                        });
+                    })
+                    .then(audioBuffer => {
+                        sfxBuffers[name] = audioBuffer;
+                    })
+                    .catch(err => console.warn('[NH Audio] Failed to load/decode SFX:', path, err));
+            },
+
+            playBGM: function () {
+                if (!bgm) return;
+                bgm.muted = isMuted;
+                bgm.play().catch(err => {
+                    // Browser blocked autoplay; it will recover on interaction
+                    console.log('[NH Audio] BGM playback waiting for user interaction:', err);
+                });
+            },
+
+            stopBGM: function () {
+                if (!bgm) return;
+                bgm.pause();
+                bgm.currentTime = 0;
+            },
+
+            playSFX: function (name) {
+                if (isMuted || !ctx || !sfxBuffers[name]) return;
+
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                const source = ctx.createBufferSource();
+                source.buffer = sfxBuffers[name];
+
+                // Playback speed and volume tweaks for realism
+                const gainNode = ctx.createGain();
+                gainNode.gain.value = name === 'player_shoot' ? 0.35 : (name === 'type' ? 0.25 : 0.6);
+
+                source.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                source.start(0);
+            },
+
+            toggleMute: function () {
+                isMuted = !isMuted;
+                localStorage.setItem('nh_muted', isMuted);
+                if (bgm) {
+                    bgm.muted = isMuted;
+                }
+                this.updateMuteUI();
+            },
+
+            updateMuteUI: function () {
+                const btn = document.getElementById('nh-mute');
+                if (btn) {
+                    btn.textContent = isMuted ? '🔇' : '🔊';
+                    btn.title = isMuted ? 'Activer le son (M)' : 'Couper le son (M)';
+                }
+            }
+        };
+    })();
 
     /* ══════════════ MAZE ══════════════ */
     function genMaze(w, h) {
@@ -108,33 +243,60 @@
             scene.background = new THREE.Color(C_BG);
             /* No fog */
 
-            /* Top-down camera */
+            /* Dual Cameras */
             const aspect = 960/540;
             const sz = 10;
-            camera = new THREE.OrthographicCamera(-sz*aspect, sz*aspect, sz, -sz, 0.1, 100);
-            camera.position.set(MAZE_W*CELL/2, 30, MAZE_H*CELL/2);
-            camera.lookAt(MAZE_W*CELL/2, 0, MAZE_H*CELL/2);
+            cameraOrtho = new THREE.OrthographicCamera(-sz*aspect, sz*aspect, sz, -sz, 0.1, 100);
+            cameraOrtho.position.set(MAZE_W*CELL/2, 30, MAZE_H*CELL/2);
+            cameraOrtho.lookAt(MAZE_W*CELL/2, 0, MAZE_H*CELL/2);
+
+            cameraPersp = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            cameraPersp.position.set(MAZE_W*CELL/2, 7, MAZE_H*CELL/2 + 6);
+            cameraPersp.lookAt(MAZE_W*CELL/2, 0.5, MAZE_H*CELL/2);
+
+            // Set camera based on mode
+            camera = is3D ? cameraPersp : cameraOrtho;
 
             renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(960, 540, false);
-            renderer.shadowMap.enabled = false; /* flat = no shadows */
+            
+            // Enable high-fidelity soft shadow maps
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-            /* Flat lighting — ambient only for that 2D look */
-            scene.add(new THREE.AmbientLight(0xFFFFFF, 1.0));
+            /* Cinematic 3D Lighting */
+            ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.6); // Soft overall ambient
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.85); // Direct shadow caster
+            dirLight.position.set(MAZE_W*CELL/2, 20, MAZE_H*CELL/2 + 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 45;
+            
+            // Set orthographic shadow camera bounds to fit the hacking maze perfectly
+            const d = 16;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
 
             clock = new THREE.Clock();
 
             /* Shared resources */
-            geoBullet  = new THREE.BoxGeometry(0.12, 0.12, 0.12);
-            matPBullet = new THREE.MeshBasicMaterial({color:C_PBULLET});
-            matEBullet = new THREE.MeshBasicMaterial({color:C_EBULLET});
+            geoBullet  = new THREE.SphereGeometry(0.08, 8, 8); // Beautiful 3D spheres instead of flat boxes
+            matPBullet = new THREE.MeshBasicMaterial({color:C_PBULLET}); // Self-luminous
+            matEBullet = new THREE.MeshBasicMaterial({color:C_EBULLET}); // Self-luminous
             geoParticle= new THREE.BoxGeometry(0.06, 0.06, 0.06);
             geoWallH   = new THREE.BoxGeometry(CELL+0.15, 0.6, 0.15);
             geoWallV   = new THREE.BoxGeometry(0.15, 0.6, CELL+0.15);
-            matWall    = new THREE.MeshBasicMaterial({color:C_WALL});
+            matWall    = new THREE.MeshLambertMaterial({color:C_WALL}); // Soft matte shadow receiver/caster
 
-            /* Player triangle — flat shape */
+            /* Player fallback flat geometry */
             const shape = new THREE.Shape();
             shape.moveTo(0, 0.45);
             shape.lineTo(0.3, -0.3);
@@ -157,11 +319,12 @@
     function buildMaze(){
         clearMaze();
         /* Floor */
-        const fg = new THREE.PlaneGeometry(MAZE_W*CELL+2, MAZE_H*CELL+2);
-        const fm = new THREE.MeshBasicMaterial({color:C_BG});
+        const fg = new THREE.PlaneGeometry(MAZE_W*CELL+20, MAZE_H*CELL+20);
+        const fm = new THREE.MeshLambertMaterial({color:C_BG});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(MAZE_W*CELL/2, -0.01, MAZE_H*CELL/2);
+        floorMesh.receiveShadow = true;
         scene.add(floorMesh);
 
         /* Grid lines — bright white for the Nier look */
@@ -183,30 +346,97 @@
         /* Walls — white blocks, flat lit */
         for(let y=0;y<MAZE_H;y++) for(let x=0;x<MAZE_W;x++){
             const c=mazeGrid[y][x], wx=x*CELL, wz=y*CELL;
-            if(c.t){const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz);scene.add(m);wallMeshes.push(m);}
-            if(c.l){const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx,0.3,wz+HALF);scene.add(m);wallMeshes.push(m);}
-            if(y===MAZE_H-1&&c.b){const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz+CELL);scene.add(m);wallMeshes.push(m);}
-            if(x===MAZE_W-1&&c.r){const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx+CELL,0.3,wz+HALF);scene.add(m);wallMeshes.push(m);}
+            if(c.t){const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);}
+            if(c.l){const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);}
+            if(y===MAZE_H-1&&c.b){const m=new THREE.Mesh(geoWallH,matWall);m.position.set(wx+HALF,0.3,wz+CELL);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);}
+            if(x===MAZE_W-1&&c.r){const m=new THREE.Mesh(geoWallV,matWall);m.position.set(wx+CELL,0.3,wz+HALF);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);}
         }
 
         /* Border */
-        const bMat=new THREE.MeshBasicMaterial({color:0x808080});
+        const bMat=new THREE.MeshLambertMaterial({color:0x808080});
         const bH=new THREE.BoxGeometry(MAZE_W*CELL+0.3,0.3,0.1);
         const bV=new THREE.BoxGeometry(0.1,0.3,MAZE_H*CELL+0.3);
         let m;
-        m=new THREE.Mesh(bH,bMat);m.position.set(MAZE_W*CELL/2,0.15,-0.05);scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bH,bMat);m.position.set(MAZE_W*CELL/2,0.15,MAZE_H*CELL+0.05);scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bV,bMat);m.position.set(-0.05,0.15,MAZE_H*CELL/2);scene.add(m);wallMeshes.push(m);
-        m=new THREE.Mesh(bV,bMat);m.position.set(MAZE_W*CELL+0.05,0.15,MAZE_H*CELL/2);scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bH,bMat);m.position.set(MAZE_W*CELL/2,0.15,-0.05);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bH,bMat);m.position.set(MAZE_W*CELL/2,0.15,MAZE_H*CELL+0.05);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bV,bMat);m.position.set(-0.05,0.15,MAZE_H*CELL/2);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
+        m=new THREE.Mesh(bV,bMat);m.position.set(MAZE_W*CELL+0.05,0.15,MAZE_H*CELL/2);m.castShadow=true;m.receiveShadow=true;scene.add(m);wallMeshes.push(m);
     }
 
     /* ══════════════ PLAYER ══════════════ */
     function createPlayer(){
         if(playerMesh)scene.remove(playerMesh);
-        const mat=new THREE.MeshBasicMaterial({color:C_PLAYER, side:THREE.DoubleSide});
-        playerMesh=new THREE.Mesh(geoPlayer, mat);
-        playerMesh.rotation.x=-Math.PI/2;
-        playerMesh.position.y=0.05;
+        
+        // Build a highly detailed, tactical YoRHa interceptor fighter ship
+        const group = new THREE.Group();
+        
+        // 1. Sleek Charcoal Arrowhead Fuselage
+        const fuseGeo = new THREE.ConeGeometry(0.12, 0.6, 4);
+        fuseGeo.rotateX(Math.PI/2);
+        fuseGeo.rotateY(Math.PI/4); // Rotate 45deg to look like a sleek diamond arrowhead
+        const fuseMat = new THREE.MeshLambertMaterial({color: 0x333333}); // dark charcoal
+        const fuseMesh = new THREE.Mesh(fuseGeo, fuseMat);
+        fuseMesh.castShadow = true;
+        fuseMesh.receiveShadow = true;
+        group.add(fuseMesh);
+
+        // 2. YoRHa Sand-Beige Angled Wings
+        const wingMat = new THREE.MeshLambertMaterial({color: 0x98988f}); // YoRHa beige
+        
+        const leftWingGeo = new THREE.BoxGeometry(0.25, 0.03, 0.15);
+        leftWingGeo.rotateY(-Math.PI/6); // angle backwards
+        const leftWing = new THREE.Mesh(leftWingGeo, wingMat);
+        leftWing.position.set(-0.2, 0, 0.1);
+        leftWing.castShadow = true;
+        leftWing.receiveShadow = true;
+        group.add(leftWing);
+
+        const rightWingGeo = new THREE.BoxGeometry(0.25, 0.03, 0.15);
+        rightWingGeo.rotateY(Math.PI/6); // angle backwards
+        const rightWing = new THREE.Mesh(rightWingGeo, wingMat);
+        rightWing.position.set(0.2, 0, 0.1);
+        rightWing.castShadow = true;
+        rightWing.receiveShadow = true;
+        group.add(rightWing);
+
+        // 3. Glowing Core (orange/red energy center)
+        const coreGeo = new THREE.SphereGeometry(0.06, 8, 8);
+        const coreMat = new THREE.MeshBasicMaterial({color: 0xC4362B}); // terminal red/orange
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        coreMesh.position.set(0, 0.06, 0);
+        group.add(coreMesh);
+
+        // 4. Twin Floating Support Pods (mini helper drones)
+        const podGeo = new THREE.OctahedronGeometry(0.04, 0);
+        const podMat = new THREE.MeshLambertMaterial({color: 0x5a5a55});
+        
+        const leftPod = new THREE.Mesh(podGeo, podMat);
+        leftPod.position.set(-0.42, 0.08, -0.05);
+        leftPod.castShadow = true;
+        group.add(leftPod);
+        group.userData.leftPod = leftPod;
+
+        const rightPod = new THREE.Mesh(podGeo, podMat);
+        rightPod.position.set(0.42, 0.08, -0.05);
+        rightPod.castShadow = true;
+        group.add(rightPod);
+        group.userData.rightPod = rightPod;
+
+        // 5. Dynamic Cyan Energy Thruster Plume
+        const thrustGeo = new THREE.CylinderGeometry(0, 0.06, 0.28, 8);
+        thrustGeo.rotateX(Math.PI/2);
+        const thrustMat = new THREE.MeshBasicMaterial({
+            color: 0x00E1D9, // Glowing Cyan
+            transparent: true,
+            opacity: 0.8
+        });
+        const thrustMesh = new THREE.Mesh(thrustGeo, thrustMat);
+        thrustMesh.position.set(0, 0, 0.35); // positioned at the rear
+        group.add(thrustMesh);
+        group.userData.thruster = thrustMesh;
+
+        playerMesh = group;
+        playerMesh.position.y = 0.15;
         scene.add(playerMesh);
     }
 
@@ -214,29 +444,45 @@
     function mkEnemy(type){
         const g=new THREE.Group();
         if(type==="core"){
-            /* Black core with orange center + pulsing white rings */
-            const cg=new THREE.CircleGeometry(0.25,16);
-            const cm=new THREE.MeshBasicMaterial({color:C_ENEMY});
-            const core=new THREE.Mesh(cg,cm);core.rotation.x=-Math.PI/2;core.position.y=0.02;g.add(core);
+            /* Rotating 3D geodesic icosahedron core */
+            const cg=new THREE.IcosahedronGeometry(0.24, 1);
+            const cm=new THREE.MeshLambertMaterial({color:C_ENEMY});
+            const core=new THREE.Mesh(cg,cm);
+            core.position.y=0.25;
+            core.castShadow=true;
+            core.receiveShadow=true;
+            g.add(core);
             g.userData.core=core;
 
-            /* Orange center dot */
-            const og=new THREE.CircleGeometry(0.1,8);
+            /* Glowing orange/red core center dot */
+            const og=new THREE.SphereGeometry(0.12, 8, 8);
             const om=new THREE.MeshBasicMaterial({color:C_ENEMYEMT});
-            const od=new THREE.Mesh(og,om);od.rotation.x=-Math.PI/2;od.position.y=0.025;g.add(od);
+            const od=new THREE.Mesh(og,om);
+            od.position.y=0.25;
+            g.add(od);
             g.userData.orangeDot=od;
 
-            /* Concentric white rings */
+            /* Nesting 3D orbital rings (Torus Geometry) tilting and spinning in 3D space */
+            g.userData.rings = [];
             for(let i=0;i<3;i++){
-                const rg=new THREE.RingGeometry(0.28+i*0.12, 0.30+i*0.12, 24);
-                const rm=new THREE.MeshBasicMaterial({color:C_RING, transparent:true, opacity:0.5-i*0.12, side:THREE.DoubleSide});
-                const ring=new THREE.Mesh(rg,rm);ring.rotation.x=-Math.PI/2;ring.position.y=0.03;g.add(ring);
+                const rg=new THREE.TorusGeometry(0.32+i*0.14, 0.015, 8, 32);
+                const rm=new THREE.MeshBasicMaterial({color:C_RING, transparent:true, opacity:0.6-i*0.15, side:THREE.DoubleSide});
+                const ring=new THREE.Mesh(rg,rm);
+                ring.rotation.x = Math.PI/2 + (Math.random()-0.5)*0.5; // randomize tilt
+                ring.rotation.y = (Math.random()-0.5)*0.5;
+                ring.position.y=0.25;
+                g.add(ring);
+                g.userData.rings.push(ring);
             }
         } else {
-            /* Black square enemy */
-            const sg=new THREE.BoxGeometry(0.4,0.25,0.4);
-            const sm=new THREE.MeshBasicMaterial({color:C_ENEMY});
-            const sq=new THREE.Mesh(sg,sm);sq.position.y=0.12;g.add(sq);
+            /* Floating 3D box enemy slowly spinning on multiple axes */
+            const sg=new THREE.BoxGeometry(0.38, 0.38, 0.38);
+            const sm=new THREE.MeshLambertMaterial({color:C_ENEMY});
+            const sq=new THREE.Mesh(sg,sm);
+            sq.position.y=0.22;
+            sq.castShadow=true;
+            sq.receiveShadow=true;
+            g.add(sq);
             g.userData.core=sq;
         }
         return g;
@@ -298,6 +544,7 @@
 
     /* ══════════════ ENEMY AI ══════════════ */
     function eShoot(e){
+        AudioManager.playSFX('enemy_shoot');
         const ex=e.pos.x,ez=e.pos.z,a=Math.atan2(playerPos.x-ex,-(playerPos.z-ez));
         switch(e.pat){
             case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);break;
@@ -308,20 +555,44 @@
         }
     }
     function updEnemies(dt){
+        const time = clock ? clock.getElapsedTime() : 0;
         for(const e of enemies){
             e.pp+=dt*4;
-            /* Pulsing rings on core */
+            
+            // Hover bobbing in 3D
+            const hover = Math.sin(time * 3.5 + e.pos.x * 2.0) * 0.04;
+
             if(e.type==="core"){
-                const kids=e.mesh.children;
-                for(let i=3;i<kids.length;i++){ /* ring children start at index 3 */
-                    const s=1+Math.sin(e.pp+i*0.5)*0.1;
-                    kids[i].scale.set(s,s,s);
-                    if(kids[i].material) kids[i].material.opacity=Math.max(0,0.4-i*0.1+Math.sin(e.pp)*0.1);
+                // Rotate core icosahedron on two axes
+                if(e.mesh.userData.core){
+                    e.mesh.userData.core.position.y = 0.25 + hover;
+                    e.mesh.userData.core.rotation.y += dt * 0.8;
+                    e.mesh.userData.core.rotation.x += dt * 0.4;
                 }
-                /* Orange center pulse */
+                
+                // Pulsate and bob orange dot
                 if(e.mesh.userData.orangeDot){
-                    const s=0.8+Math.sin(e.pp*2)*0.3;
+                    e.mesh.userData.orangeDot.position.y = 0.25 + hover;
+                    const s = 0.8 + Math.sin(e.pp * 2) * 0.2;
                     e.mesh.userData.orangeDot.scale.set(s,s,s);
+                }
+
+                // Spin orbital rings on separate tilts
+                if(e.mesh.userData.rings){
+                    e.mesh.userData.rings.forEach((ring, idx) => {
+                        ring.position.y = 0.25 + hover;
+                        ring.rotation.x += dt * (0.2 + idx * 0.15);
+                        ring.rotation.y += dt * (0.35 - idx * 0.1);
+                        const s = 1 + Math.sin(e.pp + idx * 0.5) * 0.05;
+                        ring.scale.set(s,s,s);
+                    });
+                }
+            } else {
+                // Bob and spin the square enemy cube
+                if(e.mesh.userData.core){
+                    e.mesh.userData.core.position.y = 0.22 + hover;
+                    e.mesh.userData.core.rotation.y += dt * 1.4;
+                    e.mesh.userData.core.rotation.x += dt * 0.7;
                 }
             }
             /* Movement */
@@ -510,10 +781,13 @@
             // Typing effect
             if(podTypingIdx < podFullMsg.length){
                 podTypingTimer += dt;
+                let typed = false;
                 while(podTypingTimer >= POD_TYPE_SPEED && podTypingIdx < podFullMsg.length){
                     podTypingTimer -= POD_TYPE_SPEED;
                     podTypingIdx++;
+                    typed = true;
                 }
+                if(typed) AudioManager.playSFX('type');
                 const textEl = podEl ? podEl.querySelector('.nh-pod-text') : null;
                 if(textEl) textEl.textContent = podFullMsg.substring(0, podTypingIdx);
             } else {
@@ -544,14 +818,49 @@
         /* Pod dialogue timer */
         updPod(dt);
 
-        /* Camera shake */
-        const cx=MAZE_W*CELL/2, cz=MAZE_H*CELL/2;
-        if(shakeAmount>0){
-            camera.position.set(cx+(Math.random()-0.5)*shakeAmount, 30, cz+(Math.random()-0.5)*shakeAmount);
+        /* Camera selection & update */
+        if (is3D) {
+            camera = cameraPersp;
+            
+            // Third-person isometric offset
+            const camDist = 5.5;
+            const camHeight = 5.8;
+            
+            // Aiming bias: push camera slightly in the player's facing direction to feel incredibly premium!
+            let biasX = 0, biasZ = 0;
+            if (keys["ArrowUp"] || keys["KeyW"]) biasZ = -0.5;
+            if (keys["ArrowDown"] || keys["KeyS"]) biasZ = 0.5;
+            if (keys["ArrowLeft"] || keys["KeyA"]) biasX = -0.5;
+            if (keys["ArrowRight"] || keys["KeyD"]) biasX = 0.5;
+            
+            const targetCamX = playerPos.x + biasX;
+            const targetCamY = camHeight;
+            const targetCamZ = playerPos.z + camDist + biasZ;
+
+            // Smooth camera lag
+            camera.position.x += (targetCamX - camera.position.x) * 0.08;
+            camera.position.y += (targetCamY - camera.position.y) * 0.08;
+            camera.position.z += (targetCamZ - camera.position.z) * 0.08;
+
+            // Apply camera shake
+            if (shakeAmount > 0) {
+                camera.position.x += (Math.random() - 0.5) * shakeAmount;
+                camera.position.y += (Math.random() - 0.5) * shakeAmount;
+                camera.position.z += (Math.random() - 0.5) * shakeAmount;
+            }
+
+            camera.lookAt(playerPos.x, 0.4, playerPos.z);
         } else {
-            camera.position.set(cx, 30, cz);
+            camera = cameraOrtho;
+            const cx = MAZE_W * CELL / 2;
+            const cz = MAZE_H * CELL / 2;
+            if (shakeAmount > 0) {
+                camera.position.set(cx + (Math.random() - 0.5) * shakeAmount, 30, cz + (Math.random() - 0.5) * shakeAmount);
+            } else {
+                camera.position.set(cx, 30, cz);
+            }
+            camera.lookAt(cx, 0, cz);
         }
-        camera.lookAt(cx,0,cz);
 
         /* Player move */
         let dx=0,dz=0;
@@ -567,8 +876,24 @@
         if(keys["ArrowLeft"])ax=-1;if(keys["ArrowRight"])ax=1;
         if(ax||az)playerAngle=Math.atan2(ax,-az);
 
-        playerMesh.position.set(playerPos.x,0.05,playerPos.z);
-        playerMesh.rotation.z=-playerAngle;
+        const time = clock.getElapsedTime();
+        if (is3D) {
+            playerMesh.position.set(playerPos.x, 0.15 + Math.sin(time * 4.5) * 0.03, playerPos.z);
+        } else {
+            playerMesh.position.set(playerPos.x, 0.05, playerPos.z);
+        }
+        playerMesh.rotation.y = playerAngle;
+        playerMesh.rotation.x = 0;
+        playerMesh.rotation.z = 0;
+
+        // Animate tactical ship thruster scale flicker and floating support pods
+        if (playerMesh.userData.thruster) {
+            playerMesh.userData.thruster.scale.z = 0.85 + Math.random() * 0.3;
+        }
+        if (playerMesh.userData.leftPod && playerMesh.userData.rightPod) {
+            playerMesh.userData.leftPod.position.y = 0.08 + Math.sin(time * 5.5) * 0.04;
+            playerMesh.userData.rightPod.position.y = 0.08 + Math.sin(time * 5.5 + Math.PI) * 0.04;
+        }
 
         /* Invuln flash */
         if(invulnT>0){invulnT-=dt;playerMesh.visible=Math.floor(invulnT*12)%2===0;}
@@ -576,7 +901,11 @@
 
         /* Shoot */
         shootT-=dt;
-        if(mouseDown&&shootT<=0){mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);shootT=SHOOT_CD;}
+        if(mouseDown&&shootT<=0){
+            mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);
+            AudioManager.playSFX('player_shoot');
+            shootT=SHOOT_CD;
+        }
 
         /* Player bullets */
         for(let i=pBullets.length-1;i>=0;i--){
@@ -589,9 +918,15 @@
                 const e=enemies[j];
                 if(d2(b.mesh.position.x,b.mesh.position.z,e.pos.x,e.pos.z)<0.4){
                     e.hp--;spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);
+                    AudioManager.playSFX('enemy_hit');
                     /* Flash core white on hit */
                     if(e.mesh.userData.core){e.mesh.userData.core.material.color.setHex(0xFFFFFF);setTimeout(()=>{if(e.mesh.userData.core)e.mesh.userData.core.material.color.setHex(C_ENEMY);},60);}
                     if(e.hp<=0){
+                        if(e.type === "core"){
+                            AudioManager.playSFX('core_broken');
+                        } else {
+                            AudioManager.playSFX('enemy_explode');
+                        }
                         // Death burst — big explosion of particles
                         spawnDeathBurst(e.pos.x, e.pos.z, 0xFF6600, 20); // orange
                         spawnDeathBurst(e.pos.x, e.pos.z, 0x1A1A1A, 15); // dark (visible on light bg)
@@ -619,6 +954,7 @@
             if(invulnT<=0&&d2(b.mesh.position.x,b.mesh.position.z,playerPos.x,playerPos.z)<0.3){
                 playerHP-=10;invulnT=INVULN_T;
                 spawnP(playerPos.x,playerPos.z,C_EBULLET,5);
+                AudioManager.playSFX('player_hit');
                 flashScreen(); shake(0.3);
                 triggerGlitch(0.7, 0.4); // glitch on damage
                 scene.remove(b.mesh);eBullets.splice(i,1);
@@ -663,13 +999,14 @@
         overlay.classList.remove("hidden");overlay.style.pointerEvents="auto";
         const sc=score>0?'<div class="nh-ov-score">SCORE: '+score+'</div>':'';
         overlay.innerHTML='<div class="nh-ov-title">'+title+'</div><div class="nh-ov-sub">'+sub+'</div>'+sc+'<button class="nh-ov-btn" onclick="window._nhBtn()">'+btn+'</button>';
-        window._nhBtn=function(){try{fn();}catch(e){console.error("[NH]",e);}};
+        window._nhBtn=function(){try{AudioManager.playSFX('button_enter');fn();}catch(e){console.error("[NH]",e);}};
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function hideOv(){if(!overlay)return;overlay.classList.add("hidden");overlay.style.pointerEvents="none";overlay.innerHTML="";window._nhBtn=null;}
 
     /* ══════════════ GAME STATES ══════════════ */
     function startLvl(){
+        AudioManager.playBGM();
         clearBP();
         enemies.forEach(e=>{scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});
         enemies=[];
@@ -696,6 +1033,8 @@
     }
     function gameOver(){
         active=false;
+        AudioManager.stopBGM();
+        AudioManager.playSFX('player_explode');
         flashScreen();shake(0.6);
         triggerGlitch(1.0, 1.2);  // Longer, more intense glitch
         // Show glitched game over after dramatic delay
@@ -715,10 +1054,10 @@
         <div style="margin-top:20px;opacity:0;animation:nhGoFlicker 0.15s 1.5s forwards;"><div style="font-family:'Courier New',monospace;font-size:0.9rem;color:#C4362B;letter-spacing:0.2em;">SCORE: ${score}</div></div>
         <button class="nh-ov-btn" style="opacity:0;animation:nhGoFlicker 0.15s 1.8s forwards;margin-top:28px;" onclick="window._nhBtn()">RETRY</button>
         <style>
-        @keyframes nhGoFlicker{0%{opacity:0;transform:translateX(-5px)}25%{opacity:1;transform:translateX(3px)}50%{opacity:0.4;transform:translateX(-2px)}75%{opacity:0.9;transform:translateX(1px)}100%{opacity:1;transform:translateX(0)}}
+        @keyframes nhGoFlicker{0%{opacity:0;transform:translateX(-5px)}25%{opacity:1;transform:translateX(3px)}50%{opacity:04;transform:translateX(-2px)}75%{opacity:0.9;transform:translateX(1px)}100%{opacity:1;transform:translateX(0)}}
         @keyframes nhGoGlitch{0%{text-shadow:-3px 0 rgba(255,0,0,0.8),3px 0 rgba(0,80,255,0.8);transform:skewX(-2deg)}25%{text-shadow:3px 0 rgba(255,0,0,0.8),-3px 0 rgba(0,80,255,0.8);transform:skewX(1deg)}50%{text-shadow:-2px 0 rgba(255,0,0,0.6),2px 0 rgba(0,80,255,0.6);transform:skewX(-0.5deg)}100%{text-shadow:none;transform:skewX(0)}}
         </style>`;
-        window._nhBtn=function(){overlay.style.background="";try{startLvl();}catch(e){console.error("[NH]",e);}};
+        window._nhBtn=function(){overlay.style.background="";try{AudioManager.playSFX('button_enter');startLvl();}catch(e){console.error("[NH]",e);}};
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
@@ -740,9 +1079,20 @@
         if(!renderer||!canvas)return;
         const w=canvas.clientWidth||960,h=canvas.clientHeight||540;
         renderer.setSize(w,h,false);
-        const aspect=w/h,sz=10;
-        camera.left=-sz*aspect;camera.right=sz*aspect;camera.top=sz;camera.bottom=-sz;
-        camera.updateProjectionMatrix();
+        const aspect=w/h;
+
+        // Resize Orthographic Camera
+        if (cameraOrtho) {
+            const sz=10;
+            cameraOrtho.left=-sz*aspect;cameraOrtho.right=sz*aspect;cameraOrtho.top=sz;cameraOrtho.bottom=-sz;
+            cameraOrtho.updateProjectionMatrix();
+        }
+
+        // Resize Perspective Camera
+        if (cameraPersp) {
+            cameraPersp.aspect = aspect;
+            cameraPersp.updateProjectionMatrix();
+        }
     }
 
     /* ══════════════ RENDER ══════════════ */
@@ -764,6 +1114,7 @@
     }
     function pauseGame(){
         if(!active) return;
+        AudioManager.playSFX('button_enter');
         paused = true; active = false; mouseDown = false;
         for(var k in keys) keys[k] = false;
         pauseWasActive = true;
@@ -813,15 +1164,39 @@
         }
     }
 
+    function toggleViewMode(){
+        is3D = !is3D;
+        camera = is3D ? cameraPersp : cameraOrtho;
+        AudioManager.playSFX('button_select');
+        updateViewModeUI();
+        
+        // Trigger a satisfying glitch/camera shake on mode switch
+        shake(0.12);
+        triggerGlitch(0.18, 0.12);
+        
+        // Reforce projection adjustment
+        resizeR();
+    }
+
+    function updateViewModeUI(){
+        const btn = document.getElementById('nh-view');
+        if (btn) {
+            btn.textContent = is3D ? '3D' : '2D';
+            btn.title = is3D ? 'Basculer 2D/3D (V)' : 'Basculer 2D/3D (V)';
+        }
+    }
+
     /* ══════════════ INPUT ══════════════ */
     function onKD(e){
         keys[e.code]=true;
+        if(e.code==="KeyM"){e.preventDefault();AudioManager.toggleMute();return;}
+        if(e.code==="KeyV"){e.preventDefault();toggleViewMode();return;}
         /* Pause menu navigation */
         if(paused && pauseWasActive){
-            if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="KeyZ"){e.preventDefault();pauseIdx=(pauseIdx-1+pauseItems.length)%pauseItems.length;updPauseHL();return;}
-            if(e.code==="ArrowDown"||e.code==="KeyS"){e.preventDefault();pauseIdx=(pauseIdx+1)%pauseItems.length;updPauseHL();return;}
-            if(e.code==="Enter"||e.code==="Space"){e.preventDefault();pauseSelect();return;}
-            if(e.code==="KeyP"||e.code==="Escape"){e.preventDefault();resumeGame();return;}
+            if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="KeyZ"){e.preventDefault();pauseIdx=(pauseIdx-1+pauseItems.length)%pauseItems.length;updPauseHL();AudioManager.playSFX('button_select');return;}
+            if(e.code==="ArrowDown"||e.code==="KeyS"){e.preventDefault();pauseIdx=(pauseIdx+1)%pauseItems.length;updPauseHL();AudioManager.playSFX('button_select');return;}
+            if(e.code==="Enter"||e.code==="Space"){e.preventDefault();AudioManager.playSFX('button_enter');pauseSelect();return;}
+            if(e.code==="KeyP"||e.code==="Escape"){e.preventDefault();AudioManager.playSFX('button_enter');resumeGame();return;}
             return;
         }
         if(active && e.code.startsWith("Arrow")) e.preventDefault();
@@ -835,19 +1210,23 @@
     /* ══════════════ PUBLIC API ══════════════ */
     window.NierHackGame={
         init:function(){
+            AudioManager.init();
             canvas=document.getElementById("nier-hack-canvas");
             overlay=document.getElementById("nier-hack-overlay");
             hudHP=document.getElementById("nh-health");hudBar=document.getElementById("nh-bar");
             hudScore=document.getElementById("nh-score");hudLvl=document.getElementById("nh-level");
             hudEnm=document.getElementById("nh-enemies");hudName=document.getElementById("nh-level-name");
             fsBtn=document.getElementById("nh-fullscreen");flashEl=document.getElementById("nh-flash");
+            muteBtn=document.getElementById("nh-mute");
+            viewBtn=document.getElementById("nh-view");
             pauseMenu=document.getElementById("nh-pause");
+            updateViewModeUI();
             if(pauseMenu){
                 pauseItems=pauseMenu.querySelectorAll(".nh-pause-item");
                 /* Mouse interaction for pause items */
                 pauseItems.forEach(function(item,idx){
-                    item.addEventListener("mouseenter",function(){pauseIdx=idx;updPauseHL();});
-                    item.addEventListener("click",function(e){e.stopPropagation();pauseIdx=idx;updPauseHL();pauseSelect();});
+                    item.addEventListener("mouseenter",function(){pauseIdx=idx;updPauseHL();AudioManager.playSFX('button_select');});
+                    item.addEventListener("click",function(e){e.stopPropagation();pauseIdx=idx;updPauseHL();AudioManager.playSFX('button_enter');pauseSelect();});
                 });
             }
             if(!canvas){console.error("[NH] No canvas");return;}
@@ -859,6 +1238,8 @@
                 window.addEventListener("resize",function(){if(isFS)resizeR();});
                 document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement){isFS=false;if(fsBtn)fsBtn.textContent="⤒";resizeR();}});
                 if(fsBtn)fsBtn.addEventListener("click",function(e){e.stopPropagation();toggleFS();});
+                if(muteBtn)muteBtn.addEventListener("click",function(e){e.stopPropagation();AudioManager.toggleMute();});
+                if(viewBtn)viewBtn.addEventListener("click",function(e){e.stopPropagation();toggleViewMode();});
             }
             curLvl=0;score=0;mouseDown=false;paused=false;pauseWasActive=false;transitioning=false;
             hidePauseMenu();
@@ -872,6 +1253,7 @@
             if(document.documentElement.getAttribute("data-theme")==="nier")this.init();else this.destroy();
         },
         destroy:function(){
+            AudioManager.stopBGM();
             active=false;paused=false;pauseWasActive=false;if(rafId){cancelAnimationFrame(rafId);rafId=null;}
             mouseDown=false;for(var k in keys)keys[k]=false;
             hidePauseMenu();

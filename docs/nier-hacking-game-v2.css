@@ -47,13 +47,13 @@
     50%{ opacity:0.6; }
 }
 
-/* Fullscreen btn */
-#nh-fullscreen {
+/* Fullscreen & Mute buttons */
+#nh-fullscreen, #nh-mute, #nh-view {
     background:none; border:1px solid #333; color:#666;
     font-size:0.85rem; padding:1px 7px; cursor:pointer;
     border-radius:2px; transition:all 0.15s; line-height:1;
 }
-#nh-fullscreen:hover { background:#C4362B; border-color:#C4362B; color:#FFF; }
+#nh-fullscreen:hover, #nh-mute:hover, #nh-view:hover { background:#C4362B; border-color:#C4362B; color:#FFF; }
 
 /* ── Health bar — Nier style (thin, terminal) ── */
 .nh-bar-outer {
