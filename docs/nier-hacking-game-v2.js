@@ -2128,7 +2128,7 @@
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
                 if(b.life>0){
-                    spawnP(b.mesh.position.x,b.mesh.position.z,C_GRIDDIM,2);
+                    spawnP(b.mesh.position.x,b.mesh.position.z,0x555555,2);
                     spawnHitSparks(b.mesh.position.x, b.mesh.position.z, 0xAAAAAA, Math.atan2(b.vx, -b.vz));
                 }
                 if(b.glowMesh)scene.remove(b.glowMesh);
