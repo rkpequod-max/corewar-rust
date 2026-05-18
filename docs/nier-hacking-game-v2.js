@@ -1109,15 +1109,70 @@
     }
 
     /* ══════════════ COLLISION ══════════════ */
+    const WALL_MARGIN = 0.3;  // wall collision margin — must be larger than max displacement per frame
+    const PLAYER_RADIUS = 0.2;  // player collision radius
+
+    /* Core wall check — returns true if point (wx,wz) is inside a wall */
     function wallAt(wx,wz){
         if(!mazeGrid)return true;
         const cx=Math.floor(wx/CELL),cz=Math.floor(wz/CELL);
         if(cx<0||cx>=MAZE_W||cz<0||cz>=MAZE_H)return true;
-        const lx=wx-cx*CELL,lz=wz-cz*CELL,c=mazeGrid[cz][cx],m=0.2;
+        const c=mazeGrid[cz][cx];
+        /* If the cell itself is a solid wall or an impassable hole, it's blocked */
+        if(c.wall || c.hole) return true;
+        const lx=wx-cx*CELL,lz=wz-cz*CELL,m=WALL_MARGIN;
         if(lz<m&&c.t)return true; if(lz>CELL-m&&c.b)return true;
         if(lx<m&&c.l)return true; if(lx>CELL-m&&c.r)return true;
         return false;
     }
+
+    /* Circle-vs-wall check — tests multiple sample points around the player radius.
+       Prevents corner clipping and makes collision feel solid. */
+    function circleBlocked(cx,cz,radius){
+        if(wallAt(cx,cz)) return true;
+        const r = radius || PLAYER_RADIUS;
+        /* Check 8 perimeter points (cardinal + diagonal) */
+        if(wallAt(cx+r,cz)) return true;
+        if(wallAt(cx-r,cz)) return true;
+        if(wallAt(cx,cz+r)) return true;
+        if(wallAt(cx,cz-r)) return true;
+        if(wallAt(cx+r*0.7,cz+r*0.7)) return true;
+        if(wallAt(cx-r*0.7,cz+r*0.7)) return true;
+        if(wallAt(cx+r*0.7,cz-r*0.7)) return true;
+        if(wallAt(cx-r*0.7,cz-r*0.7)) return true;
+        return false;
+    }
+
+    /* Move with collision — slides along walls, prevents tunneling via sub-stepping */
+    function moveWithCollision(pos, dx, dz){
+        const stepSize = 0.15;  // max movement per sub-step (must be < WALL_MARGIN)
+        const totalDist = Math.sqrt(dx*dx + dz*dz);
+        if(totalDist < 0.001) return;
+        const steps = Math.max(1, Math.ceil(totalDist / stepSize));
+        const sx = dx / steps, sz = dz / steps;
+
+        for(let i = 0; i < steps; i++){
+            /* Try full step */
+            const nx = pos.x + sx, nz = pos.z + sz;
+            if(!circleBlocked(nx, nz)){
+                pos.x = nx; pos.z = nz;
+                continue;
+            }
+            /* Try X-only slide */
+            if(!circleBlocked(pos.x + sx, pos.z)){
+                pos.x += sx;
+                continue;
+            }
+            /* Try Z-only slide */
+            if(!circleBlocked(pos.x, pos.z + sz)){
+                pos.z += sz;
+                continue;
+            }
+            /* Fully blocked — stop */
+            break;
+        }
+    }
+
     function d2(ax,az,bx,bz){const dx=ax-bx,dz=az-bz;return Math.sqrt(dx*dx+dz*dz);}
 
     /* ══════════════ ENEMY AI ══════════════ */
@@ -1266,7 +1321,7 @@
                 e.mt=0.5+Math.random()*1.5;
             }
             const nx=e.pos.x+e.md.x*e.speed*dt,nz=e.pos.z+e.md.z*e.speed*dt;
-            if(!wallAt(nx,nz)){e.pos.x=nx;e.pos.z=nz;}else e.mt=0;
+            if(!wallAt(nx,nz)&&!wallAt(e.pos.x,nz)&&!wallAt(nx,e.pos.z)){e.pos.x=nx;e.pos.z=nz;}else e.mt=0;
             e.mesh.position.set(e.pos.x,0,e.pos.z);
 
             /* Shoot */
@@ -1558,15 +1613,13 @@
         /* Dash ability */
         if(dashT > 0){
             dashT -= dt;
-            const nx=playerPos.x+dashDir.x*DASH_SPEED*dt,nz=playerPos.z+dashDir.z*DASH_SPEED*dt;
-            if(!wallAt(nx,playerPos.z))playerPos.x=nx;if(!wallAt(playerPos.x,nz))playerPos.z=nz;
+            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*dt, dashDir.z*DASH_SPEED*dt);
             /* Spawn afterimages */
             if(Math.random() < 0.4) spawnAfterimage(playerPos.x, playerPos.z, playerAngle);
         } else {
             if(dx||dz){
                 const l=Math.sqrt(dx*dx+dz*dz);dx/=l;dz/=l;
-                const nx=playerPos.x+dx*PLAYER_SPEED*dt,nz=playerPos.z+dz*PLAYER_SPEED*dt;
-                if(!wallAt(nx,playerPos.z))playerPos.x=nx;if(!wallAt(playerPos.x,nz))playerPos.z=nz;
+                moveWithCollision(playerPos, dx*PLAYER_SPEED*dt, dz*PLAYER_SPEED*dt);
             }
         }
         if(dashCooldownT > 0) dashCooldownT -= dt;
