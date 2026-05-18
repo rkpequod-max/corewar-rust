@@ -20,7 +20,7 @@
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
     const BULLET_SPEED = 14;
-    const ENEMY_BULLET_SPEED = 10;    // 4x faster — fast dark bullets
+    const ENEMY_BULLET_SPEED = 3.3;    // 3x slower — slow dark bullets
     const SHOOT_CD = 0.11;
     const MAX_HP = 100;
     const INVULN_T = 0.6;
@@ -48,14 +48,14 @@
     const C_GOLD     = 0xFFD700;
 
     const LEVELS = [
-        { name:"SECTOR A", enemies:3,  hpMul:1,   spdMul:1,   shootRate:2.8, patterns:["aimed"], types:["scout","scout","core"] },
-        { name:"SECTOR B", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:2.4, patterns:["aimed","burst"], types:["scout","scout","drone","core"] },
-        { name:"SECTOR C", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:2.0, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"] },
-        { name:"SECTOR D", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:1.8, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"] },
-        { name:"SECTOR E", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:1.6, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"] },
-        { name:"SECTOR F", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:1.4, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR G", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:1.2, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR Ω", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:1.0, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR A", enemies:3,  hpMul:1,   spdMul:1,   shootRate:1.4, patterns:["aimed"], types:["scout","scout","core"] },
+        { name:"SECTOR B", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:1.2, patterns:["aimed","burst"], types:["scout","scout","drone","core"] },
+        { name:"SECTOR C", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:1.0, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"] },
+        { name:"SECTOR D", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:0.9, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"] },
+        { name:"SECTOR E", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:0.8, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"] },
+        { name:"SECTOR F", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:0.7, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR G", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:0.6, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"] },
+        { name:"SECTOR Ω", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:0.5, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"] },
     ];
 
     /* ══════════════ STATE ══════════════ */
@@ -469,7 +469,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshPhongMaterial({color:0xF0F0F0, emissive:0x222222, specular:0xFFFFFF, shininess:200, reflectivity: 1.0});
+        const fm = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.4, specular:0xFFFFFF, shininess:300, reflectivity: 1.0});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
