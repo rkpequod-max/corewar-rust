@@ -20,7 +20,7 @@
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
     const BULLET_SPEED = 14;
-    const ENEMY_BULLET_SPEED = 3.8;
+    const ENEMY_BULLET_SPEED = 2.5;   // slower but bigger bullets
     const SHOOT_CD = 0.11;
     const MAX_HP = 100;
     const INVULN_T = 0.6;
@@ -28,7 +28,7 @@
     const DASH_DURATION = 0.15;
     const DASH_COOLDOWN = 1.5;
     const MAX_PARTICLES = 120;   // hard cap to prevent frame drops
-    const MAX_EBULLETS = 60;     // cap enemy bullets on screen
+    const MAX_EBULLETS = 120;    // more enemy bullets on screen (bigger, slower, more numerous)
 
     /* Nier palette — dark dramatic theme */
     const C_BG       = 0x0A0A12;  // Dark void background
@@ -97,7 +97,7 @@
     let enemyGlows = [];
 
     /* Shared geos & mats */
-    let geoBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
+    let geoBullet, geoEBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
@@ -401,7 +401,8 @@
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
             /* Shared resources — 3D bullet geometry visible from all angles */
-            geoBullet  = new THREE.SphereGeometry(0.12, 6, 6);  // bigger bullets for visibility
+            geoBullet  = new THREE.SphereGeometry(0.12, 6, 6);  // player bullet size
+            geoEBullet = new THREE.SphereGeometry(0.22, 8, 8);   // enemy bullets — bigger and more visible
             matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
             matEBullet = new THREE.MeshBasicMaterial({color: 0xFF4400});  // brighter red-orange for visibility through fog
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
@@ -459,7 +460,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshPhongMaterial({color:0x888890, specular:0x444444, shininess:60});
+        const fm = new THREE.MeshPhongMaterial({color:0xDDDDDD, specular:0xAAAAAA, shininess:120, reflectivity: 1.0});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -959,7 +960,7 @@
             damage = 2;
             piercing = true;
         }
-        const m=new THREE.Mesh(geoBullet,mat);
+        const m=new THREE.Mesh(isPlayer?geoBullet:geoEBullet,mat);
         m.position.set(x,0.25,z);
         m.scale.set(scale, scale, scale);
         scene.add(m);
@@ -969,6 +970,7 @@
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
             life: isPlayer ? 30 : 999,   // enemy bullets never expire by time — only wall/player hit
+            isEnemyBullet: !isPlayer,
             damage: damage,
             piercing: piercing,
             piercedTargets: [],
@@ -1718,6 +1720,25 @@
                 }
             }
             if(hit)continue;
+
+            /* Player bullet vs enemy bullet collision — destroy enemy bullet on hit (like original game) */
+            let eBulletHit = false;
+            for(let k=eBullets.length-1; k>=0; k--){
+                const eb = eBullets[k];
+                if(d2(b.mesh.position.x, b.mesh.position.z, eb.mesh.position.x, eb.mesh.position.z) < 0.28){
+                    /* Destroy enemy bullet */
+                    spawnP(eb.mesh.position.x, eb.mesh.position.z, 0xFF6600, 3);
+                    spawnHitSparks(eb.mesh.position.x, eb.mesh.position.z, 0xFF4400, Math.atan2(eb.vx, -eb.vz));
+                    scene.remove(eb.mesh); eBullets.splice(k, 1);
+                    AudioManager.playSFX('enemy_hit');
+                    /* Also destroy the player bullet (unless piercing) */
+                    if(!b.piercing){
+                        scene.remove(b.mesh); pBullets.splice(i, 1);
+                        eBulletHit = true; break;
+                    }
+                }
+            }
+            if(eBulletHit) continue;
         }
 
         /* Enemy bullets */
@@ -1967,7 +1988,7 @@
         const btn = document.getElementById('nh-view');
         if (btn) {
             btn.textContent = is3D ? '3D' : '2D';
-            btn.title = is3D ? 'Basculer 2D/3D (V)' : 'Basculer 2D/3D (V)';
+            btn.title = is3D ? 'Basculer 2D/3D (O)' : 'Basculer 2D/3D (O)';
         }
     }
 
@@ -1975,7 +1996,11 @@
     function onKD(e){
         keys[e.code]=true;
         if(e.code==="KeyM"){e.preventDefault();AudioManager.toggleMute();return;}
-        if(e.code==="KeyV"){e.preventDefault();toggleViewMode();return;}
+        if(e.code==="KeyO"){e.preventDefault();toggleViewMode();return;}
+        /* Enter key activates overlay buttons (START / RETRY) */
+        if(e.code==="Enter" && window._nhBtn && overlay && !overlay.classList.contains("hidden")){
+            e.preventDefault(); window._nhBtn(); return;
+        }
         /* Dash — Space key */
         if(e.code==="Space" && active && dashCooldownT <= 0 && dashT <= 0){
             e.preventDefault();
