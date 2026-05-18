@@ -153,7 +153,7 @@
                     for (let i = 0; i < POOL_SIZE; i++) {
                         const a = new Audio();
                         a.src = sfxFiles[name];
-                        a.volume = name === 'player_shoot' ? 0.4 : (name === 'type' ? 0.3 : 0.7);
+                        a.volume = name === 'player_shoot' ? 0.4 : (name === 'type' ? 0.3 : (name === 'bullet_cancel' ? 0.25 : 0.7));
                         a.muted = isMuted;
                         a.preload = 'auto';
                         sfxPool[name].push(a);
@@ -469,7 +469,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.4, specular:0xFFFFFF, shininess:300, reflectivity: 1.0});
+        const fm = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.7, specular:0xFFFFFF, shininess:500, reflectivity: 1.0});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -1109,8 +1109,8 @@
     }
 
     /* ══════════════ COLLISION ══════════════ */
-    const WALL_MARGIN = 0.3;  // wall collision margin — must be larger than max displacement per frame
-    const PLAYER_RADIUS = 0.2;  // player collision radius
+    const WALL_MARGIN = 0.12;  // wall collision margin — matches visual wall half-thickness (0.075) + tiny buffer
+    const PLAYER_RADIUS = 0.15;  // player collision radius
 
     /* Core wall check — returns true if point (wx,wz) is inside a wall */
     function wallAt(wx,wz){
@@ -1126,26 +1126,28 @@
         return false;
     }
 
-    /* Circle-vs-wall check — tests multiple sample points around the player radius.
-       Prevents corner clipping and makes collision feel solid. */
+    /* Circle-vs-wall check — tests sample points around the player radius.
+       Prevents corner clipping while keeping collision tight to visual walls. */
     function circleBlocked(cx,cz,radius){
         if(wallAt(cx,cz)) return true;
         const r = radius || PLAYER_RADIUS;
-        /* Check 8 perimeter points (cardinal + diagonal) */
+        /* Check 4 cardinal points — sufficient for axis-aligned walls */
         if(wallAt(cx+r,cz)) return true;
         if(wallAt(cx-r,cz)) return true;
         if(wallAt(cx,cz+r)) return true;
         if(wallAt(cx,cz-r)) return true;
-        if(wallAt(cx+r*0.7,cz+r*0.7)) return true;
-        if(wallAt(cx-r*0.7,cz+r*0.7)) return true;
-        if(wallAt(cx+r*0.7,cz-r*0.7)) return true;
-        if(wallAt(cx-r*0.7,cz-r*0.7)) return true;
+        /* Check 4 diagonal points at 0.6 radius — catches corner cuts */
+        const d = r * 0.6;
+        if(wallAt(cx+d,cz+d)) return true;
+        if(wallAt(cx-d,cz+d)) return true;
+        if(wallAt(cx+d,cz-d)) return true;
+        if(wallAt(cx-d,cz-d)) return true;
         return false;
     }
 
     /* Move with collision — slides along walls, prevents tunneling via sub-stepping */
     function moveWithCollision(pos, dx, dz){
-        const stepSize = 0.15;  // max movement per sub-step (must be < WALL_MARGIN)
+        const stepSize = 0.12;  // max movement per sub-step (must be < WALL_MARGIN + PLAYER_RADIUS)
         const totalDist = Math.sqrt(dx*dx + dz*dz);
         if(totalDist < 0.001) return;
         const steps = Math.max(1, Math.ceil(totalDist / stepSize));
