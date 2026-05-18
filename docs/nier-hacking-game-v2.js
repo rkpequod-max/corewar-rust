@@ -344,7 +344,7 @@
         try {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(C_BG);
-            scene.fog = new THREE.FogExp2(C_BG, 0.04);
+            scene.fog = new THREE.FogExp2(C_BG, 0.015);  // lighter fog so bullets remain visible
 
             /* Dual Cameras */
             const aspect = 960/540;
@@ -387,11 +387,7 @@
             const hemiLight = new THREE.HemisphereLight(0x444455, 0x222233, 0.3);
             scene.add(hemiLight);
 
-            /* Player follow light for dramatic uplight */
-            const playerLight = new THREE.PointLight(0x4488FF, 2.0, 10);
-            playerLight.position.set(MAZE_W*CELL/2, 1, MAZE_H*CELL/2);
-            scene.add(playerLight);
-            window._playerLight = playerLight;
+            /* Player follow light — REMOVED per user request */
 
             clock = new THREE.Clock();
 
@@ -405,9 +401,9 @@
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
             /* Shared resources — 3D bullet geometry visible from all angles */
-            geoBullet  = new THREE.SphereGeometry(0.08, 6, 6);
+            geoBullet  = new THREE.SphereGeometry(0.12, 6, 6);  // bigger bullets for visibility
             matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
-            matEBullet = new THREE.MeshBasicMaterial({color: 0xFF2200});
+            matEBullet = new THREE.MeshBasicMaterial({color: 0xFF4400});  // brighter red-orange for visibility through fog
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
 
             geoParticle= new THREE.PlaneGeometry(0.08, 0.08);
@@ -669,36 +665,58 @@
 
         const group = new THREE.Group();
 
-        /* A) Main hull — OctahedronGeometry stretched to diamond ship */
-        const hullGeo = new THREE.OctahedronGeometry(0.18, 1);
-        hullGeo.scale(1.2, 0.8, 2.0);
-        const hullMat = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.1, flatShading:true});
+        /* A) Main hull — triangular arrow/chevron shape */
+        const hullShape = new THREE.Shape();
+        hullShape.moveTo(0, 0.5);        // nose tip (forward = +Z)
+        hullShape.lineTo(-0.35, -0.3);   // back-left
+        hullShape.lineTo(-0.12, -0.15);  // inner notch left
+        hullShape.lineTo(0, -0.25);      // tail center notch
+        hullShape.lineTo(0.12, -0.15);   // inner notch right
+        hullShape.lineTo(0.35, -0.3);    // back-right
+        hullShape.closePath();
+        const extrudeSettings = { depth: 0.12, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 1 };
+        const hullGeo = new THREE.ExtrudeGeometry(hullShape, extrudeSettings);
+        hullGeo.rotateX(-Math.PI/2);     // lay flat: Y-up → Z-forward
+        hullGeo.translate(0, 0, -0.1);   // center
+        const hullMat = new THREE.MeshPhongMaterial({color:0xFFFFFF, emissive:0xFFFFFF, emissiveIntensity:0.15, flatShading:true});
         const hull = new THREE.Mesh(hullGeo, hullMat);
         hull.castShadow = true;
         group.add(hull);
         group.userData.hull = hull;
 
-        /* B) Two wing extensions with red emissive tips */
-        const wingGeo = new THREE.BoxGeometry(0.28, 0.02, 0.08);
-        const wingMat = new THREE.MeshPhongMaterial({color:0xAAAAAA, emissive:0x333333, emissiveIntensity:0.05});
-        const leftWing = new THREE.Mesh(wingGeo, wingMat);
-        leftWing.position.set(-0.26, 0, -0.06);
-        leftWing.rotation.z = -0.15;
+        /* B) Two swept-back wing strakes — sharp angular lines */
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(0, 0.15);       // wing root front
+        wingShape.lineTo(-0.25, -0.15);  // wing tip
+        wingShape.lineTo(0, -0.1);       // wing root back
+        wingShape.closePath();
+        const wingExtSettings = { depth: 0.03, bevelEnabled: false };
+        const wingGeoL = new THREE.ExtrudeGeometry(wingShape, wingExtSettings);
+        wingGeoL.rotateX(-Math.PI/2);
+        wingGeoL.translate(-0.1, 0, -0.05);
+        const leftWing = new THREE.Mesh(wingGeoL, new THREE.MeshPhongMaterial({color:0xCCCCCC, emissive:0x222222, emissiveIntensity:0.05, flatShading:true}));
         group.add(leftWing);
 
-        const rightWing = new THREE.Mesh(wingGeo, wingMat);
-        rightWing.position.set(0.26, 0, -0.06);
-        rightWing.rotation.z = 0.15;
+        // Mirror wing for right side
+        const wingShapeR = new THREE.Shape();
+        wingShapeR.moveTo(0, 0.15);
+        wingShapeR.lineTo(0.25, -0.15);
+        wingShapeR.lineTo(0, -0.1);
+        wingShapeR.closePath();
+        const wingGeoR = new THREE.ExtrudeGeometry(wingShapeR, wingExtSettings);
+        wingGeoR.rotateX(-Math.PI/2);
+        wingGeoR.translate(0.1, 0, -0.05);
+        const rightWing = new THREE.Mesh(wingGeoR, new THREE.MeshPhongMaterial({color:0xCCCCCC, emissive:0x222222, emissiveIntensity:0.05, flatShading:true}));
         group.add(rightWing);
 
-        /* Red tips on wings */
+        /* Red tips on wing ends */
         const tipGeo = new THREE.BoxGeometry(0.06, 0.025, 0.06);
         const tipMat = new THREE.MeshBasicMaterial({color:C_YORHA});
         const leftTip = new THREE.Mesh(tipGeo, tipMat);
-        leftTip.position.set(-0.43, 0, -0.06);
+        leftTip.position.set(-0.32, 0, -0.12);
         group.add(leftTip);
         const rightTip = new THREE.Mesh(tipGeo, tipMat);
-        rightTip.position.set(0.43, 0, -0.06);
+        rightTip.position.set(0.32, 0, -0.12);
         group.add(rightTip);
 
         /* C) Engine thrusters */
@@ -950,7 +968,7 @@
             mesh:m,
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
-            life:30,
+            life: isPlayer ? 30 : 999,   // enemy bullets never expire by time — only wall/player hit
             damage: damage,
             piercing: piercing,
             piercedTargets: [],
@@ -1541,10 +1559,7 @@
         playerMesh.rotation.x = 0;
         playerMesh.rotation.z = 0;
 
-        /* Track player light to follow ship */
-        if(window._playerLight) {
-            window._playerLight.position.set(playerPos.x, 1.0, playerPos.z);
-        }
+        /* Player light tracking — REMOVED */
 
         /* Animate thrusters */
         if(playerMesh.userData.thrusterLeft){
