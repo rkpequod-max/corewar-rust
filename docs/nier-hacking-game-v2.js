@@ -1800,7 +1800,7 @@
             const canvasWrap = canvas.parentElement;
             if(canvasWrap) canvasWrap.appendChild(el);
         }
-        el.innerHTML = `<div style="font-size:0.6rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:nhTransIn 0.04s 0.02s ease-out forwards;">HACKING COMPLETE</div><div style="font-size:2rem;letter-spacing:0.35em;color:#000;text-transform:uppercase;font-weight:bold;opacity:0;animation:nhTransIn 0.04s 0.04s ease-out forwards;">${name} CLEARED</div><div style="margin-top:18px;width:80px;height:2px;background:#C4362B;opacity:0;animation:nhTransIn 0.04s 0.06s ease-out forwards;"></div><div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;margin-top:12px;opacity:0;animation:nhTransIn 0.04s 0.08s ease-out forwards;">INITIALIZING NEXT SECTOR...</div><style>@keyframes nhTransIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}</style>`;
+        el.innerHTML = `<div style="font-size:0.6rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:nhTransIn 0.1s 0.1s ease-out forwards;">HACKING COMPLETE</div><div style="font-size:2rem;letter-spacing:0.35em;color:#000;text-transform:uppercase;font-weight:bold;opacity:0;animation:nhTransIn 0.1s 0.15s ease-out forwards;">${name} CLEARED</div><div style="margin-top:18px;width:80px;height:2px;background:#C4362B;opacity:0;animation:nhTransIn 0.1s 0.2s ease-out forwards;"></div><div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;margin-top:12px;opacity:0;animation:nhTransIn 0.1s 0.25s ease-out forwards;">INITIALIZING NEXT SECTOR...</div><style>@keyframes nhTransIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}</style>`;
         let scanLine = el.querySelector('.nh-scan-line');
         if(!scanLine){
             scanLine = document.createElement('div');
@@ -1810,24 +1810,24 @@
         }
         el.style.opacity = "1"; el.style.pointerEvents = "auto";
         scanLine.style.top = '-3px';
-        scanLine.style.transition = 'top 0.15s ease-in-out';
+        scanLine.style.transition = 'top 0.4s ease-in-out';
         requestAnimationFrame(function(){
             requestAnimationFrame(function(){
                 scanLine.style.top = '100%';
             });
         });
         setTimeout(function(){
-            el.style.transition = "opacity 0.08s";
+            el.style.transition = "opacity 0.15s";
             el.style.opacity = "0";
             setTimeout(function(){
                 el.style.pointerEvents = "none";
-                el.style.transition = "opacity 0.08s";
+                el.style.transition = "opacity 0.15s";
                 scanLine.style.top = '-3px';
                 scanLine.style.transition = 'none';
                 transitioning = false;
                 callback();
-            }, 80);
-        }, 250);
+            }, 150);
+        }, 550);
     }
 
     /* ── POD 042 DIALOGUE ── */
