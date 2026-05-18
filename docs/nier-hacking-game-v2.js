@@ -30,12 +30,12 @@
     const MAX_PARTICLES = 120;   // hard cap to prevent frame drops
     const MAX_EBULLETS = 60;     // cap enemy bullets on screen
 
-    /* Nier palette */
-    const C_BG       = 0xE6E6E6;
-    const C_GRID     = 0xFFFFFF;
-    const C_GRIDDIM  = 0xD0D0D0;
-    const C_WALL     = 0xF0F0F0;
-    const C_WALLTOP  = 0xFAFAFA;
+    /* Nier palette — dark dramatic theme */
+    const C_BG       = 0x0A0A12;  // Dark void background
+    const C_GRID     = 0x334455;  // Dim blue-gray grid
+    const C_GRIDDIM  = 0x1A2233;  // Even dimmer grid
+    const C_WALL     = 0x1A1A2A;  // Dark walls with slight blue tint
+    const C_WALLTOP  = 0xFF4400;  // Orange glowing wall tops (YoRHa accent)
     const C_PLAYER   = 0xFFFFFF;
     const C_ENEMY    = 0x000000;
     const C_ENEMYEMT = 0xFF6600;
@@ -140,10 +140,19 @@
                 bgm = new Audio();
                 bgm.src = 'YoRHaHackingGame/sound/bgm/Fortress_of_Lies.ogg';
                 bgm.loop = true; bgm.volume = 0.4; bgm.muted = isMuted;
-                for (const name in sfxFiles) { this.loadSFX(name, sfxFiles[name]); }
+                let sfxLoaded = false;
+                const loadAllSFX = () => {
+                    if (sfxLoaded) return;
+                    sfxLoaded = true;
+                    for (const name in sfxFiles) { this.loadSFX(name, sfxFiles[name]); }
+                };
                 const unlock = () => {
-                    if (ctx && ctx.state === 'suspended') { ctx.resume().then(removeUnlockListeners); }
-                    else { removeUnlockListeners(); }
+                    if (ctx && ctx.state === 'suspended') {
+                        ctx.resume().then(() => { loadAllSFX.call(this); removeUnlockListeners(); });
+                    } else {
+                        loadAllSFX.call(this);
+                        removeUnlockListeners();
+                    }
                 };
                 const removeUnlockListeners = () => {
                     document.removeEventListener('click', unlock);
@@ -151,6 +160,7 @@
                 };
                 document.addEventListener('click', unlock);
                 document.addEventListener('keydown', unlock);
+                if (ctx && ctx.state === 'running') { loadAllSFX.call(this); }
                 isInitialized = true;
             },
             loadSFX: function (name, path) {
@@ -168,8 +178,12 @@
             stopBGM: function () { if (!bgm) return; bgm.pause(); bgm.currentTime = 0; },
             resumeContext: function () { if (ctx && ctx.state === 'suspended') { ctx.resume(); } },
             playSFX: function (name) {
-                if (isMuted || !ctx || !sfxBuffers[name]) return;
+                if (isMuted || !ctx) return;
                 if (ctx.state === 'suspended') { ctx.resume(); }
+                if (!sfxBuffers[name]) {
+                    if (sfxFiles[name]) { this.loadSFX(name, sfxFiles[name]); }
+                    return;
+                }
                 const source = ctx.createBufferSource(); source.buffer = sfxBuffers[name];
                 const gainNode = ctx.createGain();
                 gainNode.gain.value = name === 'player_shoot' ? 0.8 : (name === 'type' ? 0.6 : 1.5);
@@ -329,6 +343,7 @@
         try {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(C_BG);
+            scene.fog = new THREE.FogExp2(C_BG, 0.04);
 
             /* Dual Cameras */
             const aspect = 960/540;
@@ -349,11 +364,11 @@
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFShadowMap; // PCF is faster than PCFSoft
 
-            /* Cinematic 3D Lighting */
-            ambientLight = new THREE.AmbientLight(0xFFFFFF, 0.6);
+            /* Cinematic 3D Lighting — dark dramatic atmosphere */
+            ambientLight = new THREE.AmbientLight(0x1A1A2A, 0.3);
             scene.add(ambientLight);
 
-            dirLight = new THREE.DirectionalLight(0xFFFFFF, 0.85);
+            dirLight = new THREE.DirectionalLight(0xCCCCCC, 0.4);
             dirLight.position.set(MAZE_W*CELL/2, 20, MAZE_H*CELL/2 + 10);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 1024;
@@ -368,8 +383,14 @@
             scene.add(dirLight);
 
             /* Subtle hemisphere fill for richer 3D look */
-            const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xD0D0D0, 0.25);
+            const hemiLight = new THREE.HemisphereLight(0x222244, 0x0A0A12, 0.15);
             scene.add(hemiLight);
+
+            /* Player follow light for dramatic uplight */
+            const playerLight = new THREE.PointLight(0x4488FF, 1.5, 8);
+            playerLight.position.set(MAZE_W*CELL/2, 1, MAZE_H*CELL/2);
+            scene.add(playerLight);
+            window._playerLight = playerLight;
 
             clock = new THREE.Clock();
 
@@ -382,11 +403,10 @@
             const texEnemy = getTex('YoRHaHackingGame/sprites/enemy1_new.png');
             const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
 
-            /* Shared resources */
-            geoBullet  = new THREE.PlaneGeometry(0.24, 0.24);
-            geoBullet.rotateX(-Math.PI/2);
-            matPBullet = new THREE.MeshBasicMaterial({map: texPBullet, color: 0xFFFFFF, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
-            matEBullet = new THREE.MeshBasicMaterial({map: texEBullet, color: 0xFFFFFF, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            /* Shared resources — 3D bullet geometry visible from all angles */
+            geoBullet  = new THREE.SphereGeometry(0.08, 6, 6);
+            matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
+            matEBullet = new THREE.MeshBasicMaterial({color: 0xFF2200});
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
 
             geoParticle= new THREE.PlaneGeometry(0.08, 0.08);
@@ -395,9 +415,9 @@
             /* Enhanced wall materials */
             geoWallH   = new THREE.BoxGeometry(CELL+0.15, 0.6, 0.15);
             geoWallV   = new THREE.BoxGeometry(0.15, 0.6, CELL+0.15);
-            matWall    = new THREE.MeshPhongMaterial({color:C_WALL, emissive:0x333333, emissiveIntensity:0.03});
-            matWallTop = new THREE.MeshPhongMaterial({color:C_WALLTOP, emissive:0xFF5500, emissiveIntensity:0.04});
-            matWallEdge = new THREE.LineBasicMaterial({color:0xC4362B, transparent:true, opacity:0.35});
+            matWall    = new THREE.MeshPhongMaterial({color:C_WALL, emissive:0xFF4400, emissiveIntensity:0.15});
+            matWallTop = new THREE.MeshPhongMaterial({color:C_WALLTOP, emissive:0xFF4400, emissiveIntensity:0.8});
+            matWallEdge = new THREE.LineBasicMaterial({color:0xFF4400, transparent:true, opacity:0.7});
 
             geoPlayer = new THREE.PlaneGeometry(0.45, 0.45);
             geoPlayer.rotateX(-Math.PI/2);
@@ -440,9 +460,9 @@
         clearMaze();
         const mazeW = MAZE_W*CELL, mazeH = MAZE_H*CELL;
 
-        /* Floor — light gray base */
+        /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshLambertMaterial({color:C_BG});
+        const fm = new THREE.MeshLambertMaterial({color:0x080810});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -451,8 +471,8 @@
 
         /* Grid overlay — merged into 3 Line objects for performance (1 draw call each) */
         gridGroup = new THREE.Group();
-        const lineMat = new THREE.LineBasicMaterial({color:C_GRID, transparent:true, opacity:0.5});
-        const lineMatDim = new THREE.LineBasicMaterial({color:C_GRIDDIM, transparent:true, opacity:0.3});
+        const lineMat = new THREE.LineBasicMaterial({color:0x334455, transparent:true, opacity:0.4});
+        const lineMatDim = new THREE.LineBasicMaterial({color:0x1A2233, transparent:true, opacity:0.15});
 
         /* Standard grid lines — collect all points then merge */
         const brightPts = [], dimPts = [];
@@ -487,7 +507,7 @@
         }
 
         /* Hexagonal sub-grid — merged into a single LineSegments */
-        const hexMat = new THREE.LineBasicMaterial({color:0xBBBBBB, transparent:true, opacity:0.08});
+        const hexMat = new THREE.LineBasicMaterial({color:0x223344, transparent:true, opacity:0.06});
         const hexSize = CELL * 0.5;
         const hexH = hexSize * Math.sqrt(3);
         const hexSegs = [];
@@ -512,7 +532,7 @@
         /* Central circle decoration */
         const circPts = [];
         const circR = Math.min(mazeW, mazeH) * 0.35;
-        const circMat = new THREE.LineBasicMaterial({color:C_GRIDDIM, transparent:true, opacity:0.12});
+        const circMat = new THREE.LineBasicMaterial({color:0x334455, transparent:true, opacity:0.15});
         for(let i=0;i<=64;i++){
             const a = (i/64)*Math.PI*2;
             circPts.push(new THREE.Vector3(mazeW/2 + Math.cos(a)*circR, 0.008, mazeH/2 + Math.sin(a)*circR));
@@ -566,7 +586,7 @@
         }
 
         /* Border */
-        const bMat=new THREE.MeshLambertMaterial({color:0x808080});
+        const bMat=new THREE.MeshLambertMaterial({color:0x1A1A2A, emissive:0xFF4400, emissiveIntensity:0.08});
         const bH=new THREE.BoxGeometry(mazeW+0.3,0.3,0.1);
         const bV=new THREE.BoxGeometry(0.1,0.3,mazeH+0.3);
         let m;
@@ -586,7 +606,7 @@
         for(let i=0;i<count;i++){
             const geo = new THREE.PlaneGeometry(0.04, 0.04);
             geo.rotateX(-Math.PI/2);
-            const mat = new THREE.MeshBasicMaterial({color:0xDDDDDD, transparent:true, opacity:0.15+Math.random()*0.15, side:THREE.DoubleSide});
+            const mat = new THREE.MeshBasicMaterial({color:0x446688, transparent:true, opacity:0.2+Math.random()*0.3, side:THREE.DoubleSide});
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(Math.random()*mazeW, 0.05+Math.random()*0.5, Math.random()*mazeH);
             mesh.rotation.y = Math.random()*Math.PI*2;
@@ -650,7 +670,7 @@
 
         /* A) Main hull — OctahedronGeometry stretched to diamond ship */
         const hullGeo = new THREE.OctahedronGeometry(0.18, 1);
-        hullGeo.scale(1, 0.5, 1.6);
+        hullGeo.scale(1.2, 0.8, 2.0);
         const hullMat = new THREE.MeshPhongMaterial({color:0xDDDDDD, emissive:0xC4362B, emissiveIntensity:0.15, flatShading:true});
         const hull = new THREE.Mesh(hullGeo, hullMat);
         hull.castShadow = true;
@@ -661,12 +681,12 @@
         const wingGeo = new THREE.BoxGeometry(0.28, 0.02, 0.08);
         const wingMat = new THREE.MeshPhongMaterial({color:0xAAAAAA, emissive:0x333333, emissiveIntensity:0.05});
         const leftWing = new THREE.Mesh(wingGeo, wingMat);
-        leftWing.position.set(-0.22, 0, -0.05);
+        leftWing.position.set(-0.26, 0, -0.06);
         leftWing.rotation.z = -0.15;
         group.add(leftWing);
 
         const rightWing = new THREE.Mesh(wingGeo, wingMat);
-        rightWing.position.set(0.22, 0, -0.05);
+        rightWing.position.set(0.26, 0, -0.06);
         rightWing.rotation.z = 0.15;
         group.add(rightWing);
 
@@ -674,23 +694,23 @@
         const tipGeo = new THREE.BoxGeometry(0.06, 0.025, 0.06);
         const tipMat = new THREE.MeshBasicMaterial({color:C_YORHA});
         const leftTip = new THREE.Mesh(tipGeo, tipMat);
-        leftTip.position.set(-0.36, 0, -0.05);
+        leftTip.position.set(-0.43, 0, -0.06);
         group.add(leftTip);
         const rightTip = new THREE.Mesh(tipGeo, tipMat);
-        rightTip.position.set(0.36, 0, -0.05);
+        rightTip.position.set(0.43, 0, -0.06);
         group.add(rightTip);
 
         /* C) Engine thrusters */
         const thrusterGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.08, 6);
         const thrusterMat = new THREE.MeshBasicMaterial({color:0x4488FF, transparent:true, opacity:0.8});
         const thrusterLeft = new THREE.Mesh(thrusterGeo, thrusterMat);
-        thrusterLeft.position.set(-0.08, 0, -0.22);
+        thrusterLeft.position.set(-0.10, 0, -0.28);
         thrusterLeft.rotation.x = Math.PI/2;
         group.add(thrusterLeft);
         group.userData.thrusterLeft = thrusterLeft;
 
         const thrusterRight = new THREE.Mesh(thrusterGeo, thrusterMat.clone());
-        thrusterRight.position.set(0.08, 0, -0.22);
+        thrusterRight.position.set(0.10, 0, -0.28);
         thrusterRight.rotation.x = Math.PI/2;
         group.add(thrusterRight);
         group.userData.thrusterRight = thrusterRight;
@@ -699,12 +719,12 @@
         const podGeo = new THREE.OctahedronGeometry(0.04, 0);
         const podMat = new THREE.MeshBasicMaterial({color:0x88AACC});
         const leftPod = new THREE.Mesh(podGeo, podMat);
-        leftPod.position.set(-0.3, 0.08, -0.1);
+        leftPod.position.set(-0.36, 0.1, -0.12);
         group.add(leftPod);
         group.userData.leftPod = leftPod;
 
         const rightPod = new THREE.Mesh(podGeo, podMat.clone());
-        rightPod.position.set(0.3, 0.08, -0.1);
+        rightPod.position.set(0.36, 0.1, -0.12);
         group.add(rightPod);
         group.userData.rightPod = rightPod;
 
@@ -726,7 +746,7 @@
         group.userData.coreMat = coreMat;
 
         playerMesh = group;
-        playerMesh.position.y = 0.15;
+        playerMesh.position.y = 0.35;
         scene.add(playerMesh);
     }
 
@@ -736,7 +756,7 @@
 
         if(type === "scout"){
             /* Type A - Scout: small, fast, single ring */
-            const bodyGeo = new THREE.OctahedronGeometry(0.12, 0);
+            const bodyGeo = new THREE.OctahedronGeometry(0.18, 0);
             const bodyMat = new THREE.MeshPhongMaterial({color:0x111111, emissive:0xFF6600, emissiveIntensity:0.3, flatShading:true});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.castShadow = true;
@@ -763,7 +783,7 @@
 
         } else if(type === "drone"){
             /* Type B - Drone: medium, shielded, two rings at different tilts */
-            const bodyGeo = new THREE.IcosahedronGeometry(0.15, 0);
+            const bodyGeo = new THREE.IcosahedronGeometry(0.22, 0);
             const bodyMat = new THREE.MeshPhongMaterial({color:0x333333, emissive:0xFF5500, emissiveIntensity:0.15, flatShading:true});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.castShadow = true;
@@ -806,7 +826,7 @@
 
         } else if(type === "core"){
             /* Type C - Core: large boss with rotating muzzles */
-            const bodyGeo = new THREE.DodecahedronGeometry(0.22, 0);
+            const bodyGeo = new THREE.DodecahedronGeometry(0.32, 0);
             const bodyMat = new THREE.MeshPhongMaterial({color:0x0A0A0A, emissive:0xFF6600, emissiveIntensity:0.2, flatShading:true});
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.castShadow = true;
@@ -921,7 +941,7 @@
             piercing = true;
         }
         const m=new THREE.Mesh(geoBullet,mat);
-        m.position.set(x,0.15,z);
+        m.position.set(x,0.25,z);
         m.scale.set(scale, scale, scale);
         scene.add(m);
         const arr=isPlayer?pBullets:eBullets;
@@ -1120,7 +1140,7 @@
 
             if(e.type==="core"){
                 if(e.mesh.userData.core){
-                    e.mesh.userData.core.position.y = 0.25 + hover;
+                    e.mesh.userData.core.position.y = 0.5 + hover;
                     e.mesh.userData.core.rotation.y += dt * 0.8;
                 }
                 if(e.mesh.userData.rings){
@@ -1128,7 +1148,7 @@
                     const hpRatio = e.hp / e.maxHp;
                     const speedMul = 1 + (1 - hpRatio) * 2;
                     e.mesh.userData.rings.forEach((ring, idx) => {
-                        ring.position.y = 0.25 + hover;
+                        ring.position.y = 0.5 + hover;
                         ring.rotation.x += dt * (0.2 + idx * 0.15) * speedMul;
                         ring.rotation.y += dt * (0.35 - idx * 0.1) * speedMul;
                         const s = 1 + Math.sin(e.pp + idx * 0.5) * 0.05;
@@ -1136,7 +1156,7 @@
                     });
                 }
                 if(e.mesh.userData.shieldsGroup){
-                    e.mesh.userData.shieldsGroup.position.y = 0.25 + hover;
+                    e.mesh.userData.shieldsGroup.position.y = 0.5 + hover;
                     e.mesh.userData.shieldsGroup.rotation.y += dt * 1.5;
                 }
                 /* Rotating muzzle system — continuous rotation like enemy_type_0C.gd */
@@ -1146,7 +1166,7 @@
                     e.mesh.userData.muzzDeg = ((e.mesh.userData.muzzDeg || 0) + muzzSpeed * dt) % 360;
                     const muzzRad = e.mesh.userData.muzzDeg * Math.PI / 180;
 
-                    e.mesh.userData.muzzGroup.position.y = 0.25 + hover;
+                    e.mesh.userData.muzzGroup.position.y = 0.5 + hover;
                     /* Rotate the muzzle group visually */
                     e.mesh.userData.muzzGroup.rotation.y = muzzRad;
 
@@ -1159,17 +1179,17 @@
                 }
             } else if(e.type==="drone"){
                 if(e.mesh.userData.core){
-                    e.mesh.userData.core.position.y = 0.22 + hover;
+                    e.mesh.userData.core.position.y = 0.4 + hover;
                     e.mesh.userData.core.rotation.y += dt * 1.4;
                     e.mesh.userData.core.rotation.x += dt * 0.6;
                 }
                 if(e.mesh.userData.shieldsGroup){
-                    e.mesh.userData.shieldsGroup.position.y = 0.22 + hover;
+                    e.mesh.userData.shieldsGroup.position.y = 0.4 + hover;
                     e.mesh.userData.shieldsGroup.rotation.y += dt * 1.2;
                 }
                 if(e.mesh.userData.rings){
                     e.mesh.userData.rings.forEach((ring, idx) => {
-                        ring.position.y = 0.22 + hover;
+                        ring.position.y = 0.4 + hover;
                         ring.rotation.x += dt * (0.3 + idx * 0.2);
                         ring.rotation.z += dt * (0.2 - idx * 0.1);
                     });
@@ -1177,12 +1197,12 @@
             } else {
                 /* Scout */
                 if(e.mesh.userData.core){
-                    e.mesh.userData.core.position.y = 0.18 + hover;
+                    e.mesh.userData.core.position.y = 0.35 + hover;
                     e.mesh.userData.core.rotation.y += dt * 2.0;
                 }
                 if(e.mesh.userData.rings){
                     e.mesh.userData.rings.forEach((ring) => {
-                        ring.position.y = 0.18 + hover;
+                        ring.position.y = 0.35 + hover;
                         ring.rotation.z += dt * 3.0;
                     });
                 }
@@ -1512,13 +1532,18 @@
 
         /* Player mesh positioning and animation */
         if (is3D) {
-            playerMesh.position.set(playerPos.x, 0.15 + Math.sin(time * 4.5) * 0.03, playerPos.z);
+            playerMesh.position.set(playerPos.x, 0.35 + Math.sin(time * 4.5) * 0.03, playerPos.z);
         } else {
-            playerMesh.position.set(playerPos.x, 0.05, playerPos.z);
+            playerMesh.position.set(playerPos.x, 0.25, playerPos.z);
         }
         playerMesh.rotation.y = -playerAngle;
         playerMesh.rotation.x = 0;
         playerMesh.rotation.z = 0;
+
+        /* Track player light to follow ship */
+        if(window._playerLight) {
+            window._playerLight.position.set(playerPos.x, 1.0, playerPos.z);
+        }
 
         /* Animate thrusters */
         if(playerMesh.userData.thrusterLeft){

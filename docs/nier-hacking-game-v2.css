@@ -14,9 +14,9 @@
 }
 #nier-hack-wrapper .section-label {
     font-size:0.65rem; letter-spacing:0.4em; text-transform:uppercase;
-    color:#6B6560; margin-bottom:4px; font-family:'Courier New',monospace;
+    color:#88AACC; margin-bottom:4px; font-family:'Courier New',monospace;
 }
-#nier-hack-wrapper h2 { font-size:1.4rem; color:#1A1A1A; margin-bottom:16px; letter-spacing:0.05em; }
+#nier-hack-wrapper h2 { font-size:1.4rem; color:#D4CFC6; margin-bottom:16px; letter-spacing:0.05em; }
 #nier-hack-wrapper h2 .accent { color:#C4362B; }
 
 /* ═══════════════════════════════
@@ -72,7 +72,7 @@
    ═══════════════════════════════ */
 #nier-hack-canvas {
     display:block; width:100%; max-width:960px; height:auto;
-    background:#E6E6E6; cursor:crosshair;
+    background:#0A0A12; cursor:crosshair;
     border-left:1px solid #333; border-right:1px solid #333;
     /* Smooth canvas transform reset for glitch */
     transition: transform 0.05s ease-out;
