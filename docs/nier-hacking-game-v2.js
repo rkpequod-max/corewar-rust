@@ -14,7 +14,7 @@
     "use strict";
 
     /* ══════════════ CONSTANTS ══════════════ */
-    const MAZE_W = 16, MAZE_H = 12;
+    let MAZE_W = 16, MAZE_H = 12;
     const CELL = 2.0;
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
@@ -35,7 +35,7 @@
     const C_ENEMYEMT = 0xFF6600;
     const C_PBULLET  = 0xFFFFFF;
     const C_EBULLET  = 0xFF0000;
-    const C_RING     = 0xFFFFFF;
+    const C_RING     = 0xFF5500;
     const C_PARTICLE = 0xFFFFFF;
 
     const LEVELS = [
@@ -57,6 +57,9 @@
     let mazeGrid = null;
     let wallMeshes = [], floorMesh = null, gridGroup = null;
     let enemies = [], pBullets = [], eBullets = [], particles = [];
+    let powerups = [], powerupTimer = 0;
+    let playerUpgrade = "standard"; // "standard", "triple", or "heavy"
+    let upgradeTimeRemaining = 0;
     let curLvl = 0, score = 0, invulnT = 0, shootT = 0;
     let active = false, paused = false, rafId = null;
     let isFS = false, sceneOK = false;
@@ -73,7 +76,7 @@
     let mouseDown = false;
 
     /* Shared geos & mats */
-    let geoBullet, matPBullet, matEBullet, geoParticle;
+    let geoBullet, matPBullet, matEBullet, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall;
     let geoPlayer;
 
@@ -177,6 +180,11 @@
                 bgm.currentTime = 0;
             },
 
+            resumeContext: function () {
+                if (ctx && ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+            },
             playSFX: function (name) {
                 if (isMuted || !ctx || !sfxBuffers[name]) return;
 
@@ -189,7 +197,7 @@
 
                 // Playback speed and volume tweaks for realism
                 const gainNode = ctx.createGain();
-                gainNode.gain.value = name === 'player_shoot' ? 0.35 : (name === 'type' ? 0.25 : 0.6);
+                gainNode.gain.value = name === 'player_shoot' ? 0.8 : (name === 'type' ? 0.6 : 1.5);
 
                 source.connect(gainNode);
                 gainNode.connect(ctx.destination);
@@ -216,21 +224,76 @@
     })();
 
     /* ══════════════ MAZE ══════════════ */
-    function genMaze(w, h) {
+    function genMaze() {
         const g = [];
-        for (let y = 0; y < h; y++) { g[y]=[]; for (let x = 0; x < w; x++) g[y][x]={t:true,r:true,b:true,l:true,v:false}; }
-        const stk = [{x:0,y:0}]; g[0][0].v=true;
-        const ds=[{dx:0,dy:-1,w:"t",o:"b"},{dx:1,dy:0,w:"r",o:"l"},{dx:0,dy:1,w:"b",o:"t"},{dx:-1,dy:0,w:"l",o:"r"}];
-        while(stk.length){
-            const c=stk[stk.length-1], nb=[];
-            for(const d of ds){const nx=c.x+d.dx,ny=c.y+d.dy;if(nx>=0&&nx<w&&ny>=0&&ny<h&&!g[ny][nx].v)nb.push({x:nx,y:ny,w:d.w,o:d.o});}
-            if(!nb.length){stk.pop();continue;}
-            const n=nb[Math.floor(Math.random()*nb.length)];
-            g[c.y][c.x][n.w]=false; g[n.y][n.x][n.o]=false; g[n.y][n.x].v=true; stk.push({x:n.x,y:n.y});
+        let map = [];
+        
+        if (curLvl === 0) {
+            // SECTOR A: The Corridor
+            map = [
+                [1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1]
+            ];
+        } else if (curLvl === 1) {
+            // SECTOR B: Core Arena
+            map = [];
+            for(let i=0; i<9; i++){
+                let row = [1,0,0,0,0,0,0,0,1];
+                if(i===0 || i===8) row = [1,1,1,1,1,1,1,1,1];
+                map.push(row);
+            }
+        } else if (curLvl === 2) {
+            // SECTOR C: The Ring
+            map = [
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,2,2,2,2,2,0,0,1],
+                [1,0,0,2,2,2,2,2,0,0,1],
+                [1,0,0,2,2,2,2,2,0,0,1],
+                [1,0,0,2,2,2,2,2,0,0,1],
+                [1,0,0,2,2,2,2,2,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1]
+            ];
+        } else {
+            // SECTOR D+: Fortress
+            map = [
+                [1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,0,1,1,0,1,0,1,1,0,1],
+                [1,0,1,0,0,0,0,0,1,0,1],
+                [1,0,0,0,1,0,1,0,0,0,1],
+                [1,0,1,0,0,0,0,0,1,0,1],
+                [1,0,1,1,0,1,0,1,1,0,1],
+                [1,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1]
+            ];
         }
-        for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(Math.random()<0.30){
-            if(x<w-1&&g[y][x].r){g[y][x].r=false;g[y][x+1].l=false;}
-            if(y<h-1&&g[y][x].b){g[y][x].b=false;g[y+1][x].t=false;}
+
+        MAZE_H = map.length;
+        MAZE_W = map[0].length;
+
+        for (let y = 0; y < MAZE_H; y++) { 
+            g[y]=[]; 
+            for (let x = 0; x < MAZE_W; x++) {
+                g[y][x]={
+                    t: y===0 || map[y-1][x]===1 || map[y-1][x]===2,
+                    r: x===MAZE_W-1 || map[y][x+1]===1 || map[y][x+1]===2,
+                    b: y===MAZE_H-1 || map[y+1][x]===1 || map[y+1][x]===2,
+                    l: x===0 || map[y][x-1]===1 || map[y][x-1]===2,
+                    v: true,
+                    hole: map[y][x] === 2,
+                    wall: map[y][x] === 1
+                };
+            }
         }
         return g;
     }
@@ -287,23 +350,36 @@
 
             clock = new THREE.Clock();
 
+            /* Texture Loader for 2.5D Sprites */
+            const tl = new THREE.TextureLoader();
+            const getTex = (p) => { const t = tl.load(p); t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; return t; };
+            const texPlayer = getTex('YoRHaHackingGame/sprites/player.png');
+            const texPBullet = getTex('YoRHaHackingGame/sprites/player_bullet.png');
+            const texEnemy = getTex('YoRHaHackingGame/sprites/enemy1_new.png');
+            const texEBullet = getTex('YoRHaHackingGame/sprites/enemy_bullet1.png');
+            const texBlockA = getTex('YoRHaHackingGame/sprites/block_A.png');
+            const texCore = getTex('YoRHaHackingGame/sprites/enemy_type2.png');
+
             /* Shared resources */
-            geoBullet  = new THREE.SphereGeometry(0.08, 8, 8); // Beautiful 3D spheres instead of flat boxes
-            matPBullet = new THREE.MeshBasicMaterial({color:C_PBULLET}); // Self-luminous
-            matEBullet = new THREE.MeshBasicMaterial({color:C_EBULLET}); // Self-luminous
-            geoParticle= new THREE.BoxGeometry(0.06, 0.06, 0.06);
+            geoBullet  = new THREE.PlaneGeometry(0.24, 0.24);
+            geoBullet.rotateX(-Math.PI/2);
+            matPBullet = new THREE.MeshBasicMaterial({map: texPBullet, color: 0xFFFFFF, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            matEBullet = new THREE.MeshBasicMaterial({map: texEBullet, color: 0xFFFFFF, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900}); 
+            
+            geoParticle= new THREE.PlaneGeometry(0.08, 0.08);
+            geoParticle.rotateX(-Math.PI/2);
+
             geoWallH   = new THREE.BoxGeometry(CELL+0.15, 0.6, 0.15);
             geoWallV   = new THREE.BoxGeometry(0.15, 0.6, CELL+0.15);
-            matWall    = new THREE.MeshLambertMaterial({color:C_WALL}); // Soft matte shadow receiver/caster
+            matWall    = new THREE.MeshLambertMaterial({color:C_WALL});
 
-            /* Player fallback flat geometry */
-            const shape = new THREE.Shape();
-            shape.moveTo(0, 0.45);
-            shape.lineTo(0.3, -0.3);
-            shape.lineTo(0, -0.15);
-            shape.lineTo(-0.3, -0.3);
-            shape.closePath();
-            geoPlayer = new THREE.ShapeGeometry(shape);
+            geoPlayer = new THREE.PlaneGeometry(0.45, 0.45);
+            geoPlayer.rotateX(-Math.PI/2);
+            window._matPlayer = new THREE.MeshBasicMaterial({map: texPlayer, color: 0xFFFFFF, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            window._matEnemy = new THREE.MeshBasicMaterial({map: texEnemy, color: 0xFF6600, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            window._matBlock = new THREE.MeshBasicMaterial({map: texBlockA, color: 0xFF3300, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
+            window._matCore = new THREE.MeshBasicMaterial({map: texCore, color: 0x1A1A1A, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide});
 
             sceneOK = true;
         } catch(e){ console.error("[NH] Scene init failed:", e); }
@@ -367,74 +443,19 @@
     function createPlayer(){
         if(playerMesh)scene.remove(playerMesh);
         
-        // Build a highly detailed, tactical YoRHa interceptor fighter ship
         const group = new THREE.Group();
-        
-        // 1. Sleek Charcoal Arrowhead Fuselage
-        const fuseGeo = new THREE.ConeGeometry(0.12, 0.6, 4);
-        fuseGeo.rotateX(Math.PI/2);
-        fuseGeo.rotateY(Math.PI/4); // Rotate 45deg to look like a sleek diamond arrowhead
-        const fuseMat = new THREE.MeshLambertMaterial({color: 0x333333}); // dark charcoal
-        const fuseMesh = new THREE.Mesh(fuseGeo, fuseMat);
-        fuseMesh.castShadow = true;
-        fuseMesh.receiveShadow = true;
-        group.add(fuseMesh);
+        const bodyMesh = new THREE.Mesh(geoPlayer, window._matPlayer);
+        bodyMesh.position.y = 0.05;
+        group.add(bodyMesh);
 
-        // 2. YoRHa Sand-Beige Angled Wings
-        const wingMat = new THREE.MeshLambertMaterial({color: 0x98988f}); // YoRHa beige
-        
-        const leftWingGeo = new THREE.BoxGeometry(0.25, 0.03, 0.15);
-        leftWingGeo.rotateY(-Math.PI/6); // angle backwards
-        const leftWing = new THREE.Mesh(leftWingGeo, wingMat);
-        leftWing.position.set(-0.2, 0, 0.1);
-        leftWing.castShadow = true;
-        leftWing.receiveShadow = true;
-        group.add(leftWing);
-
-        const rightWingGeo = new THREE.BoxGeometry(0.25, 0.03, 0.15);
-        rightWingGeo.rotateY(Math.PI/6); // angle backwards
-        const rightWing = new THREE.Mesh(rightWingGeo, wingMat);
-        rightWing.position.set(0.2, 0, 0.1);
-        rightWing.castShadow = true;
-        rightWing.receiveShadow = true;
-        group.add(rightWing);
-
-        // 3. Glowing Core (orange/red energy center)
-        const coreGeo = new THREE.SphereGeometry(0.06, 8, 8);
-        const coreMat = new THREE.MeshBasicMaterial({color: 0xC4362B}); // terminal red/orange
+        // Core indicator
+        const coreGeo = new THREE.PlaneGeometry(0.15, 0.15);
+        coreGeo.rotateX(-Math.PI/2);
+        const coreMat = new THREE.MeshBasicMaterial({color: 0xC4362B, transparent: true, opacity: 0.8});
         const coreMesh = new THREE.Mesh(coreGeo, coreMat);
         coreMesh.position.set(0, 0.06, 0);
         group.add(coreMesh);
-
-        // 4. Twin Floating Support Pods (mini helper drones)
-        const podGeo = new THREE.OctahedronGeometry(0.04, 0);
-        const podMat = new THREE.MeshLambertMaterial({color: 0x5a5a55});
         
-        const leftPod = new THREE.Mesh(podGeo, podMat);
-        leftPod.position.set(-0.42, 0.08, -0.05);
-        leftPod.castShadow = true;
-        group.add(leftPod);
-        group.userData.leftPod = leftPod;
-
-        const rightPod = new THREE.Mesh(podGeo, podMat);
-        rightPod.position.set(0.42, 0.08, -0.05);
-        rightPod.castShadow = true;
-        group.add(rightPod);
-        group.userData.rightPod = rightPod;
-
-        // 5. Dynamic Cyan Energy Thruster Plume
-        const thrustGeo = new THREE.CylinderGeometry(0, 0.06, 0.28, 8);
-        thrustGeo.rotateX(Math.PI/2);
-        const thrustMat = new THREE.MeshBasicMaterial({
-            color: 0x00E1D9, // Glowing Cyan
-            transparent: true,
-            opacity: 0.8
-        });
-        const thrustMesh = new THREE.Mesh(thrustGeo, thrustMat);
-        thrustMesh.position.set(0, 0, 0.35); // positioned at the rear
-        group.add(thrustMesh);
-        group.userData.thruster = thrustMesh;
-
         playerMesh = group;
         playerMesh.position.y = 0.15;
         scene.add(playerMesh);
@@ -444,23 +465,12 @@
     function mkEnemy(type){
         const g=new THREE.Group();
         if(type==="core"){
-            /* Rotating 3D geodesic icosahedron core */
-            const cg=new THREE.IcosahedronGeometry(0.24, 1);
-            const cm=new THREE.MeshLambertMaterial({color:C_ENEMY});
-            const core=new THREE.Mesh(cg,cm);
-            core.position.y=0.25;
-            core.castShadow=true;
-            core.receiveShadow=true;
+            const cg=new THREE.PlaneGeometry(0.65, 0.65);
+            cg.rotateX(-Math.PI/2);
+            const core=new THREE.Mesh(cg, window._matCore);
+            core.position.y=0.06;
             g.add(core);
             g.userData.core=core;
-
-            /* Glowing orange/red core center dot */
-            const og=new THREE.SphereGeometry(0.12, 8, 8);
-            const om=new THREE.MeshBasicMaterial({color:C_ENEMYEMT});
-            const od=new THREE.Mesh(og,om);
-            od.position.y=0.25;
-            g.add(od);
-            g.userData.orangeDot=od;
 
             /* Nesting 3D orbital rings (Torus Geometry) tilting and spinning in 3D space */
             g.userData.rings = [];
@@ -470,18 +480,56 @@
                 const ring=new THREE.Mesh(rg,rm);
                 ring.rotation.x = Math.PI/2 + (Math.random()-0.5)*0.5; // randomize tilt
                 ring.rotation.y = (Math.random()-0.5)*0.5;
-                ring.position.y=0.25;
+                ring.position.y=0.05;
                 g.add(ring);
                 g.userData.rings.push(ring);
             }
+
+            /* Orbiting core shield blocks (Sector B and above) */
+            g.userData.shieldMeshes = [];
+            if(curLvl >= 1){
+                const shieldsGroup = new THREE.Group();
+                shieldsGroup.position.y = 0.05;
+                g.add(shieldsGroup);
+                g.userData.shieldsGroup = shieldsGroup;
+
+                // Sector B: 2 shields, Sector C: 3 shields, Sector D+: 4 shields
+                const numShields = curLvl === 1 ? 2 : (curLvl === 2 ? 3 : 4);
+                const R = 0.55;
+                const shieldBoxGeo = new THREE.PlaneGeometry(0.25, 0.25);
+                shieldBoxGeo.rotateX(-Math.PI/2);
+
+                for(let i=0; i<numShields; i++){
+                    const angle = (i / numShields) * Math.PI * 2;
+                    const box = new THREE.Mesh(shieldBoxGeo, window._matBlock);
+                    box.position.set(Math.cos(angle)*R, 0, Math.sin(angle)*R);
+                    shieldsGroup.add(box);
+                    g.userData.shieldMeshes.push({mesh: box, hp: 3, angle: angle});
+                }
+            }
+
+            /* Orbiting visual muzzle points (Sector C and above) */
+            if(curLvl >= 2){
+                const muzzGroup = new THREE.Group();
+                muzzGroup.position.y = 0.05;
+                g.add(muzzGroup);
+                g.userData.muzzGroup = muzzGroup;
+
+                const muzzGeo = new THREE.PlaneGeometry(0.1, 0.1);
+                muzzGeo.rotateX(-Math.PI/2);
+                for(let i=0; i<4; i++){
+                    const angle = (i / 4) * Math.PI * 2;
+                    const muzz = new THREE.Mesh(muzzGeo, window._matBlock);
+                    muzz.position.set(Math.cos(angle)*0.38, 0, Math.sin(angle)*0.38);
+                    muzzGroup.add(muzz);
+                }
+            }
         } else {
-            /* Floating 3D box enemy slowly spinning on multiple axes */
-            const sg=new THREE.BoxGeometry(0.38, 0.38, 0.38);
-            const sm=new THREE.MeshLambertMaterial({color:C_ENEMY});
-            const sq=new THREE.Mesh(sg,sm);
-            sq.position.y=0.22;
-            sq.castShadow=true;
-            sq.receiveShadow=true;
+            /* 2.5D Plane Enemy */
+            const sg=new THREE.PlaneGeometry(0.4, 0.4);
+            sg.rotateX(-Math.PI/2);
+            const sq=new THREE.Mesh(sg, window._matEnemy);
+            sq.position.y=0.06;
             g.add(sq);
             g.userData.core=sq;
         }
@@ -492,7 +540,13 @@
         enemies.forEach(e=>{scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});
         enemies=[];
         const lvl=LEVELS[curLvl], cells=[];
-        for(let y=0;y<MAZE_H;y++) for(let x=0;x<MAZE_W;x++) if(!(x<=2&&y<=2)) cells.push({x,y});
+        for(let y=0;y<MAZE_H;y++) {
+            for(let x=0;x<MAZE_W;x++) {
+                if(!(x<=2&&y<=2) && mazeGrid[y] && mazeGrid[y][x] && !mazeGrid[y][x].wall && !mazeGrid[y][x].hole) {
+                    cells.push({x,y});
+                }
+            }
+        }
         for(let i=cells.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cells[i],cells[j]]=[cells[j],cells[i]];}
         const cnt=Math.min(lvl.enemies,cells.length);
         for(let i=0;i<cnt;i++){
@@ -509,13 +563,29 @@
     }
 
     /* ══════════════ BULLETS ══════════════ */
-    function mkBullet(x,z,angle,speed,isPlayer){
-        const mat=isPlayer?matPBullet:matEBullet;
+    function mkBullet(x,z,angle,speed,isPlayer, damage=1, piercing=false){
+        let mat=isPlayer?matPBullet:matEBullet;
+        let scale = 1;
+        if(isPlayer && playerUpgrade === "heavy"){
+            mat = matHeavyBullet;
+            scale = 1.8;
+            damage = 2;
+            piercing = true;
+        }
         const m=new THREE.Mesh(geoBullet,mat);
         m.position.set(x,0.15,z);
+        m.scale.set(scale, scale, scale);
         scene.add(m);
         const arr=isPlayer?pBullets:eBullets;
-        arr.push({mesh:m,vx:Math.sin(angle)*speed,vz:-Math.cos(angle)*speed,life:3.5});
+        arr.push({
+            mesh:m,
+            vx:Math.sin(angle)*speed,
+            vz:-Math.cos(angle)*speed,
+            life:3.5,
+            damage: damage,
+            piercing: piercing,
+            piercedTargets: []
+        });
     }
 
     /* ══════════════ PARTICLES ══════════════ */
@@ -527,6 +597,119 @@
             scene.add(m);
             const a=Math.random()*Math.PI*2, s=1+Math.random()*3;
             particles.push({mesh:m,mat,vx:Math.sin(a)*s,vy:0.5+Math.random()*1.5,vz:Math.cos(a)*s,life:0.3+Math.random()*0.3,ml:0.6});
+        }
+    }
+
+    /* ══════════════ POWERUPS ══════════════ */
+    function spawnPowerup(x, z){
+        const g = new THREE.Group();
+        g.position.set(x, 0.15, z);
+        
+        // Golden central floating octahedron
+        const pg = new THREE.OctahedronGeometry(0.12, 0);
+        const pm = new THREE.MeshBasicMaterial({color: 0xFFD700});
+        const m = new THREE.Mesh(pg, pm);
+        g.add(m);
+        g.userData.coreMesh = m;
+
+        // Wireframe glowing ring
+        const rg = new THREE.TorusGeometry(0.18, 0.008, 4, 16);
+        const rm = new THREE.MeshBasicMaterial({color: 0xFFEA00});
+        const ring = new THREE.Mesh(rg, rm);
+        ring.rotation.x = Math.PI/2;
+        g.add(ring);
+        g.userData.ringMesh = ring;
+
+        scene.add(g);
+        powerups.push({mesh: g, pos: {x, z}, life: 8.0, maxLife: 8.0});
+    }
+
+    function updPowerups(dt){
+        const time = clock ? clock.getElapsedTime() : 0;
+        
+        // Decay the player upgrade timer
+        if(upgradeTimeRemaining > 0){
+            upgradeTimeRemaining -= dt;
+            if(upgradeTimeRemaining <= 0){
+                upgradeTimeRemaining = 0;
+                playerUpgrade = "standard";
+                podSay("Subversion upgrade expired.", 3);
+                
+                // Reset ship core color if it was changed
+                if(playerMesh) {
+                    playerMesh.traverse(c => {
+                        if(c.geometry && c.geometry.type === "SphereGeometry" && c.material) {
+                            c.material.color.setHex(0xC4362B); // Reset to terminal red
+                        }
+                    });
+                }
+            }
+        }
+
+        for(let i = powerups.length - 1; i >= 0; i--){
+            const p = powerups[i];
+            p.life -= dt;
+
+            if(p.life <= 0){
+                scene.remove(p.mesh);
+                p.mesh.traverse(c => {
+                    if(c.geometry) c.geometry.dispose();
+                    if(c.material) c.material.dispose();
+                });
+                powerups.splice(i, 1);
+                continue;
+            }
+
+            // Bobbing and rotation animation
+            const hover = Math.sin(time * 4.5 + p.pos.x * 3.0) * 0.04;
+            p.mesh.position.y = 0.15 + hover;
+            
+            if(p.mesh.userData.coreMesh){
+                p.mesh.userData.coreMesh.rotation.y += dt * 1.5;
+                p.mesh.userData.coreMesh.rotation.z += dt * 0.8;
+            }
+            if(p.mesh.userData.ringMesh){
+                p.mesh.userData.ringMesh.rotation.z -= dt * 2.0;
+            }
+
+            // Blinking when life is low
+            if(p.life < 2.0){
+                p.mesh.visible = Math.floor(p.life * 10) % 2 === 0;
+            } else {
+                p.mesh.visible = true;
+            }
+
+            // Check collision with player
+            if(d2(playerPos.x, playerPos.z, p.pos.x, p.pos.z) < 0.4){
+                scene.remove(p.mesh);
+                p.mesh.traverse(c => {
+                    if(c.geometry) c.geometry.dispose();
+                    if(c.material) c.material.dispose();
+                });
+                powerups.splice(i, 1);
+
+                AudioManager.playSFX('button_enter');
+                triggerGlitch(0.5, 0.25);
+                shake(0.2);
+                flashScreen();
+
+                playerUpgrade = Math.random() < 0.5 ? "triple" : "heavy";
+                upgradeTimeRemaining = 7.0;
+
+                const upgradeName = playerUpgrade === "triple" ? "TRIPLE-SPREAD FIRE" : "HEAVY PIERCING PLASMA";
+                podSay(`Subversion module collected. Weapon subversion active: ${upgradeName}.`, 4);
+
+                spawnDeathBurst(playerPos.x, playerPos.z, 0xFFD700, 10);
+
+                if(playerMesh) {
+                    playerMesh.traverse(c => {
+                        if(c.geometry && c.geometry.type === "SphereGeometry" && c.material) {
+                            c.material.color.setHex(0xFFD700); // Golden core
+                        }
+                    });
+                }
+                break;
+            }
         }
     }
 
@@ -546,6 +729,21 @@
     function eShoot(e){
         AudioManager.playSFX('enemy_shoot');
         const ex=e.pos.x,ez=e.pos.z,a=Math.atan2(playerPos.x-ex,-(playerPos.z-ez));
+
+        // Progressive multi-muzzle spiral pattern for Sector C and above cores!
+        if(e.type === "core" && curLvl >= 2){
+            const muzzRot = e.mesh.userData.muzzGroup ? e.mesh.userData.muzzGroup.rotation.y : 0;
+            for(let i=0; i<4; i++){
+                const angle = muzzRot + (i / 4) * Math.PI * 2;
+                const mx = ex + Math.cos(angle) * 0.38;
+                const mz = ez + Math.sin(angle) * 0.38;
+                
+                // Fire a stream of bullets outwards from the muzzle
+                mkBullet(mx, mz, angle, ENEMY_BULLET_SPEED * 0.75, false);
+            }
+            return;
+        }
+
         switch(e.pat){
             case"aimed":mkBullet(ex,ez,a,ENEMY_BULLET_SPEED,false);break;
             case"burst":for(let i=-1;i<=1;i++)mkBullet(ex,ez,a+i*0.15,ENEMY_BULLET_SPEED,false);break;
@@ -567,7 +765,6 @@
                 if(e.mesh.userData.core){
                     e.mesh.userData.core.position.y = 0.25 + hover;
                     e.mesh.userData.core.rotation.y += dt * 0.8;
-                    e.mesh.userData.core.rotation.x += dt * 0.4;
                 }
                 
                 // Pulsate and bob orange dot
@@ -587,12 +784,23 @@
                         ring.scale.set(s,s,s);
                     });
                 }
+
+                // Animate progressive orbiting shield blocks (Sector B+)
+                if(e.mesh.userData.shieldsGroup){
+                    e.mesh.userData.shieldsGroup.position.y = 0.25 + hover;
+                    e.mesh.userData.shieldsGroup.rotation.y += dt * 1.5;
+                }
+
+                // Animate progressive orbiting green muzzle points (Sector C+)
+                if(e.mesh.userData.muzzGroup){
+                    e.mesh.userData.muzzGroup.position.y = 0.25 + hover;
+                    e.mesh.userData.muzzGroup.rotation.y -= dt * 2.2;
+                }
             } else {
                 // Bob and spin the square enemy cube
                 if(e.mesh.userData.core){
                     e.mesh.userData.core.position.y = 0.22 + hover;
                     e.mesh.userData.core.rotation.y += dt * 1.4;
-                    e.mesh.userData.core.rotation.x += dt * 0.7;
                 }
             }
             /* Movement */
@@ -882,7 +1090,7 @@
         } else {
             playerMesh.position.set(playerPos.x, 0.05, playerPos.z);
         }
-        playerMesh.rotation.y = playerAngle;
+        playerMesh.rotation.y = -playerAngle;
         playerMesh.rotation.x = 0;
         playerMesh.rotation.z = 0;
 
@@ -902,7 +1110,13 @@
         /* Shoot */
         shootT-=dt;
         if(mouseDown&&shootT<=0){
-            mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);
+            if(playerUpgrade === "triple"){
+                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, BULLET_SPEED, true);
+                mkBullet(playerPos.x, playerPos.z, playerAngle, BULLET_SPEED, true);
+                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.22, BULLET_SPEED, true);
+            } else {
+                mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);
+            }
             AudioManager.playSFX('player_shoot');
             shootT=SHOOT_CD;
         }
@@ -913,11 +1127,71 @@
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
                 if(b.life>0)spawnP(b.mesh.position.x,b.mesh.position.z,C_GRIDDIM,2);
                 scene.remove(b.mesh);pBullets.splice(i,1);continue;}
+            
+            // Check shield block collisions (Sector B+ cores)
+            let shieldHit = false;
+            for(let j=enemies.length-1;j>=0;j--){
+                const e=enemies[j];
+                if(e.type === "core" && e.mesh.userData.shieldMeshes){
+                    const shields = e.mesh.userData.shieldMeshes;
+                    for(let k=shields.length-1; k>=0; k--){
+                        const s = shields[k];
+                        const shieldPos = new THREE.Vector3();
+                        s.mesh.getWorldPosition(shieldPos);
+                        
+                        if(d2(b.mesh.position.x, b.mesh.position.z, shieldPos.x, shieldPos.z) < 0.22){
+                            if(b.piercing && b.piercedTargets.includes(s.mesh.uuid)) {
+                                continue;
+                            }
+                            
+                            s.hp -= b.damage || 1;
+                            spawnP(shieldPos.x, shieldPos.z, 0xC4362B, 3);
+                            AudioManager.playSFX('enemy_hit');
+                            
+                            const originalColor = s.mesh.material.color.getHex();
+                            s.mesh.material.color.setHex(0xFFFFFF);
+                            setTimeout(()=>{
+                                if(s.mesh && s.mesh.material) s.mesh.material.color.setHex(originalColor);
+                            }, 60);
+
+                            if(s.hp <= 0){
+                                AudioManager.playSFX('enemy_explode');
+                                spawnDeathBurst(shieldPos.x, shieldPos.z, 0x1A1A1A, 8);
+                                spawnDeathBurst(shieldPos.x, shieldPos.z, 0xC4362B, 6);
+                                spawnPowerup(shieldPos.x, shieldPos.z);
+                                
+                                if(e.mesh.userData.shieldsGroup){
+                                    e.mesh.userData.shieldsGroup.remove(s.mesh);
+                                }
+                                s.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});
+                                shields.splice(k, 1);
+                            }
+
+                            if(!b.piercing){
+                                scene.remove(b.mesh);
+                                pBullets.splice(i, 1);
+                                shieldHit = true;
+                                break;
+                            } else {
+                                b.piercedTargets.push(s.mesh.uuid);
+                            }
+                        }
+                    }
+                    if(shieldHit) break;
+                }
+            }
+            if(shieldHit) continue;
+
             let hit=false;
             for(let j=enemies.length-1;j>=0;j--){
                 const e=enemies[j];
                 if(d2(b.mesh.position.x,b.mesh.position.z,e.pos.x,e.pos.z)<0.4){
-                    e.hp--;spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);
+                    if(b.piercing && b.piercedTargets.includes(e.mesh.uuid)) {
+                        continue;
+                    }
+
+                    e.hp -= b.damage || 1;
+                    spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);
                     AudioManager.playSFX('enemy_hit');
                     /* Flash core white on hit */
                     if(e.mesh.userData.core){e.mesh.userData.core.material.color.setHex(0xFFFFFF);setTimeout(()=>{if(e.mesh.userData.core)e.mesh.userData.core.material.color.setHex(C_ENEMY);},60);}
@@ -934,6 +1208,12 @@
                         spawnDeathBurst(e.pos.x, e.pos.z, 0xFFCC00, 6);  // yellow sparks
                         // Brief screen flash for kill
                         flashScreen();
+
+                        const chance = e.type === "core" ? 1.0 : 0.25;
+                        if(Math.random() < chance){
+                            spawnPowerup(e.pos.x, e.pos.z);
+                        }
+
                         scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});
                         score+=e.type==="core"?500:200;enemies.splice(j,1);
                         // Pod commentary on kills
@@ -941,7 +1221,12 @@
                         if(remaining === 1) podSay("One target remaining.", 2);
                         else if(remaining === 0 && curLvl < LEVELS.length - 1) podSay("Sector cleared. Proceeding to next area.", 3);
                     }
-                    scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
+                    
+                    if(!b.piercing){
+                        scene.remove(b.mesh);pBullets.splice(i,1);hit=true;break;
+                    } else {
+                        b.piercedTargets.push(e.mesh.uuid);
+                    }
                 }
             }
             if(hit)continue;
@@ -979,6 +1264,7 @@
         }
 
         updEnemies(dt);
+        updPowerups(dt);
         if(enemies.length===0 && !transitioning){lvlClear();return;}
         updHUD();
     }
@@ -999,7 +1285,7 @@
         overlay.classList.remove("hidden");overlay.style.pointerEvents="auto";
         const sc=score>0?'<div class="nh-ov-score">SCORE: '+score+'</div>':'';
         overlay.innerHTML='<div class="nh-ov-title">'+title+'</div><div class="nh-ov-sub">'+sub+'</div>'+sc+'<button class="nh-ov-btn" onclick="window._nhBtn()">'+btn+'</button>';
-        window._nhBtn=function(){try{AudioManager.playSFX('button_enter');fn();}catch(e){console.error("[NH]",e);}};
+        window._nhBtn=function(){try{AudioManager.resumeContext();AudioManager.playSFX('button_enter');fn();}catch(e){console.error("[NH]",e);}};
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function hideOv(){if(!overlay)return;overlay.classList.add("hidden");overlay.style.pointerEvents="none";overlay.innerHTML="";window._nhBtn=null;}
@@ -1010,8 +1296,10 @@
         clearBP();
         enemies.forEach(e=>{scene.remove(e.mesh);e.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});
         enemies=[];
-        mazeGrid=genMaze(MAZE_W,MAZE_H);buildMaze();
+        mazeGrid=genMaze();buildMaze();
         playerPos=c2w(1,1);playerAngle=0;playerHP=MAX_HP;invulnT=0;shootT=0;
+        playerUpgrade = "standard";
+        upgradeTimeRemaining = 0;
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
         spawnEnemies();
         const cx=MAZE_W*CELL/2,cz=MAZE_H*CELL/2;
@@ -1057,13 +1345,14 @@
         @keyframes nhGoFlicker{0%{opacity:0;transform:translateX(-5px)}25%{opacity:1;transform:translateX(3px)}50%{opacity:04;transform:translateX(-2px)}75%{opacity:0.9;transform:translateX(1px)}100%{opacity:1;transform:translateX(0)}}
         @keyframes nhGoGlitch{0%{text-shadow:-3px 0 rgba(255,0,0,0.8),3px 0 rgba(0,80,255,0.8);transform:skewX(-2deg)}25%{text-shadow:3px 0 rgba(255,0,0,0.8),-3px 0 rgba(0,80,255,0.8);transform:skewX(1deg)}50%{text-shadow:-2px 0 rgba(255,0,0,0.6),2px 0 rgba(0,80,255,0.6);transform:skewX(-0.5deg)}100%{text-shadow:none;transform:skewX(0)}}
         </style>`;
-        window._nhBtn=function(){overlay.style.background="";try{AudioManager.playSFX('button_enter');startLvl();}catch(e){console.error("[NH]",e);}};
+        window._nhBtn=function(){overlay.style.background="";try{AudioManager.resumeContext();AudioManager.playSFX('button_enter');startLvl();}catch(e){console.error("[NH]",e);}};
         const b=overlay.querySelector(".nh-ov-btn");if(b)b.focus();
     }
     function clearBP(){
         pBullets.forEach(b=>{scene.remove(b.mesh);});pBullets=[];
         eBullets.forEach(b=>{scene.remove(b.mesh);});eBullets=[];
         particles.forEach(p=>{scene.remove(p.mesh);p.mat.dispose();if(p.mesh.geometry)p.mesh.geometry.dispose();});particles=[];
+        powerups.forEach(p=>{scene.remove(p.mesh);p.mesh.traverse(c=>{if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});powerups=[];
     }
 
     /* ══════════════ FULLSCREEN ══════════════ */
