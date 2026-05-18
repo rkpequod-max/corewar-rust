@@ -20,7 +20,7 @@
     const HALF = CELL / 2;
     const PLAYER_SPEED = 5.0;
     const BULLET_SPEED = 14;
-    const ENEMY_BULLET_SPEED = 2.5;   // slower but bigger bullets
+    const ENEMY_BULLET_SPEED = 10;    // 4x faster — fast dark bullets
     const SHOOT_CD = 0.11;
     const MAX_HP = 100;
     const INVULN_T = 0.6;
@@ -97,7 +97,7 @@
     let enemyGlows = [];
 
     /* Shared geos & mats */
-    let geoBullet, geoEBullet, geoBeamGlow, matPBullet, matPBeamGlow, matEBullet, geoParticle, matHeavyBullet;
+    let geoBullet, geoEBullet, geoBeamGlow, matPBullet, matPBeamGlow, matEBullet, matEBullets, geoParticle, matHeavyBullet;
     let geoWallH, geoWallV, matWall, matWallTop, matWallEdge;
     let geoPlayer;
     /* Shared geos for particles (avoid per-spawn allocation) */
@@ -407,7 +407,13 @@
             matPBullet = new THREE.MeshBasicMaterial({color: 0xFFFFFF});
             matPBeamGlow = new THREE.MeshBasicMaterial({color: 0xAABBFF, transparent: true, opacity: 0.35});  // beam glow
             geoBeamGlow = new THREE.SphereGeometry(0.16, 4, 4);  // shared glow halo for player bullets
-            matEBullet = new THREE.MeshBasicMaterial({color: 0xFF4400});  // brighter red-orange for visibility through fog
+            /* Enemy bullet colors — dark palette: black, dark grey, midnight blue */
+            matEBullets = [
+                new THREE.MeshBasicMaterial({color: 0x111111}),   // noir
+                new THREE.MeshBasicMaterial({color: 0x333333}),   // gris foncé
+                new THREE.MeshBasicMaterial({color: 0x1A1A3A}),   // bleu nuit
+            ];
+            matEBullet = matEBullets[0]; // default
             matHeavyBullet = new THREE.MeshBasicMaterial({color:0xFF9900});
 
             geoParticle= new THREE.PlaneGeometry(0.08, 0.08);
@@ -463,7 +469,7 @@
 
         /* Floor — dark void base */
         const fg = new THREE.PlaneGeometry(mazeW+20, mazeH+20);
-        const fm = new THREE.MeshPhongMaterial({color:0xDDDDDD, specular:0xAAAAAA, shininess:120, reflectivity: 1.0});
+        const fm = new THREE.MeshPhongMaterial({color:0xF0F0F0, emissive:0x222222, specular:0xFFFFFF, shininess:200, reflectivity: 1.0});
         floorMesh = new THREE.Mesh(fg, fm);
         floorMesh.rotation.x=-Math.PI/2;
         floorMesh.position.set(mazeW/2, -0.01, mazeH/2);
@@ -955,7 +961,7 @@
     function mkBullet(x,z,angle,speed,isPlayer, damage, piercing){
         damage = damage || 1;
         piercing = piercing || false;
-        let mat=isPlayer?matPBullet:matEBullet;
+        let mat=isPlayer?matPBullet:matEBullets[Math.floor(Math.random()*matEBullets.length)];
         let scale = 1;
         if(isPlayer && playerUpgrade === "heavy"){
             mat = matHeavyBullet;
