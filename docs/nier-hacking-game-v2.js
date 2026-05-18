@@ -775,6 +775,7 @@
         group.userData.coreMat = coreMat;
 
         playerMesh = group;
+        playerMesh.scale.set(0.7, 0.7, 0.7);
         playerMesh.position.y = 0.35;
         scene.add(playerMesh);
     }
