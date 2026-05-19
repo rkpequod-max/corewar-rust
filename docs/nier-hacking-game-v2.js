@@ -108,6 +108,7 @@
     let codeEditorActive = false;
     let codeEditorBtnIdx = 1; /* 0=Skip, 1=Compile */
     let codeEditorBtns = [];
+    let suppressFSExit = false; /* Prevent Escape from exiting fullscreen when blurring textarea */
 
     /* Slow-Motion State */
     let slowMoT = 0;
@@ -374,12 +375,23 @@
         /* When textarea is focused, disable game shortcuts */
         textarea.addEventListener('focus', function() { codeEditorActive = true; });
 
-        /* When Escape is pressed in textarea, blur it so game shortcuts work */
+        /* When Escape is pressed in textarea, blur it but stay in fullscreen */
         textarea.addEventListener('keydown', function(ev) {
             if(ev.code === 'Escape') {
                 ev.preventDefault();
                 ev.stopPropagation();
+                suppressFSExit = true;
                 textarea.blur();
+                /* Re-request fullscreen after browser processes the Escape key */
+                setTimeout(function(){
+                    if(suppressFSExit && isFS){
+                        const w = document.getElementById('nier-hack-wrapper');
+                        if(w && !document.fullscreenElement){
+                            w.requestFullscreen().then(function(){isFS=true;if(fsBtn)fsBtn.textContent="⤓";resizeR();}).catch(function(){});
+                        }
+                    }
+                    suppressFSExit = false;
+                }, 100);
             }
             /* Stop propagation so game input handler doesn't fire */
             ev.stopPropagation();
@@ -2822,6 +2834,7 @@
                 const ta = document.getElementById('nh-code-input');
                 if(ta){ta.focus();return;}
             }
+            /* Escape in editor: first press refocuses textarea, second exits fullscreen */
             if(e.code==="Escape"){
                 const ta = document.getElementById('nh-code-input');
                 if(ta){ta.focus();return;}
@@ -2904,7 +2917,7 @@
                 canvas.addEventListener("mousedown",onMD);canvas.addEventListener("mouseup",onMU);canvas.addEventListener("mouseleave",onMU);
                 canvas.addEventListener("contextmenu",function(e){e.preventDefault();});
                 window.addEventListener("resize",function(){if(isFS)resizeR();});
-                document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement){isFS=false;if(fsBtn)fsBtn.textContent="⤒";resizeR();}});
+                document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement){if(!suppressFSExit){isFS=false;if(fsBtn)fsBtn.textContent="⤒";resizeR();}}});
                 if(fsBtn)fsBtn.addEventListener("click",function(e){e.stopPropagation();toggleFS();});
                 if(muteBtn)muteBtn.addEventListener("click",function(e){e.stopPropagation();AudioManager.toggleMute();});
                 if(viewBtn)viewBtn.addEventListener("click",function(e){e.stopPropagation();toggleViewMode();});
