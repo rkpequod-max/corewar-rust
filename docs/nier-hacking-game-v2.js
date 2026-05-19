@@ -5,7 +5,7 @@
    - Play as an antivirus debugger cleaning infected VM memory
    - Write Red Code before each level to boost abilities
    - ADD=damage, STI=pierce, ZJMP=dash distance, LIVE=regen
-   - FORK=spread shot, LD=shield(R), SUB=bullet speed, AND=fire rate
+   - FORK=spread shot, LD=shield(R), SUB=slow enemies, AND=fire rate
    - Each level = hostile warrior process to terminate
    Controls: WASD move, Arrow keys aim, Left click shoot, Space dash, R shield, F fullscreen
    ═══════════════════════════════════════════════════════════════ */
@@ -103,7 +103,7 @@
     let lockUIMeshes = [];
 
     /* Red Code Buffs */
-    let playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+    let playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, slowCount: 0, fireRateMul: 1 };
 
     /* Shield state */
     let shieldActive = false;
@@ -243,12 +243,12 @@
         live: { name: "LIVE", desc: "+2 HP/sec regen",        color: "#00FF00" },
         fork: { name: "FORK", desc: "+1 shot in spread",     color: "#FF00FF" },
         ld:   { name: "LD",   desc: "+1 shield charge (R)",   color: "#00AAFF" },
-        sub:  { name: "SUB",  desc: "+30% bullet speed",      color: "#FF4444" },
+        sub:  { name: "SUB",  desc: "Slow enemies on hit",     color: "#FF4444" },
         and:  { name: "AND",  desc: "+20% fire rate",         color: "#AAAAFF" },
     };
 
     function parseRedCode(code) {
-        const buffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        const buffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, slowCount: 0, fireRateMul: 1 };
         const detected = [];
         const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
         for (const line of lines) {
@@ -260,7 +260,7 @@
             else if (instr === 'live' && buffs.regenHP < 6) { buffs.regenHP += 2; detected.push({ instr: 'live', valid: true }); }
             else if (instr === 'fork' && buffs.forkCount < 3) { buffs.forkCount += 1; detected.push({ instr: 'fork', valid: true }); }
             else if (instr === 'ld' && buffs.shieldCharges < 3) { buffs.shieldCharges += 1; detected.push({ instr: 'ld', valid: true }); }
-            else if (instr === 'sub' && buffs.bulletSpeedMul < 2) { buffs.bulletSpeedMul += 0.3; detected.push({ instr: 'sub', valid: true }); }
+            else if (instr === 'sub' && buffs.slowCount < 3) { buffs.slowCount += 1; detected.push({ instr: 'sub', valid: true }); }
             else if (instr === 'and' && buffs.fireRateMul < 2) { buffs.fireRateMul += 0.2; detected.push({ instr: 'and', valid: true }); }
             else if (instr) { detected.push({ instr, valid: false }); }
         }
@@ -472,7 +472,7 @@
 
         /* Skip button */
         document.getElementById('nh-code-skip').addEventListener('click', function() {
-            playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+            playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, slowCount: 0, fireRateMul: 1 };
             codeEditorActive = false;
             codeEditorEl.style.transition = "opacity 0.2s";
             codeEditorEl.style.opacity = "0";
@@ -1214,16 +1214,17 @@
                 md:{x:0,z:0},mt:0,st:Math.random()*lvl.shootRate,sr:lvl.shootRate,
                 pat:lvl.patterns[Math.floor(Math.random()*lvl.patterns.length)],pp:Math.random()*Math.PI*2,
                 spawnT:0.8, // spawn animation time
-                muzzleShootCount:0
+                muzzleShootCount:0, slowT:0
             });
         }
         updateEnemyGlows();
     }
 
     /* ══════════════ BULLETS ══════════════ */
-    function mkBullet(x,z,angle,speed,isPlayer, damage, pierceLeft){
+    function mkBullet(x,z,angle,speed,isPlayer, damage, pierceLeft, slowStr){
         damage = damage || 1;
         pierceLeft = pierceLeft || 0;
+        slowStr = slowStr || 0;
 
         let m;
         let glowMesh = null;
@@ -1257,6 +1258,7 @@
             damage: damage,
             pierceLeft: pierceLeft,
             piercedTargets: [],
+            slowStr: slowStr,
             trailT:0,
             speed: speed,
             angle: angle
@@ -1653,7 +1655,8 @@
             }
 
             /* Update floor glows to track enemies */
-            /* Movement */
+            /* Movement — reduced by slow effect */
+            const slowMul = e.slowT > 0 ? (1 - Math.min(0.3 * (playerBuffs.slowCount || 1), 0.7)) : 1;
             e.mt-=dt;
             if(e.mt<=0){
                 const tp=Math.atan2(playerPos.x-e.pos.x,-(playerPos.z-e.pos.z));
@@ -1662,15 +1665,24 @@
                 else{const ra=Math.random()*Math.PI*2;e.md={x:Math.sin(ra),z:-Math.cos(ra)};}
                 e.mt=0.5+Math.random()*1.5;
             }
-            const nx=e.pos.x+e.md.x*e.speed*dt,nz=e.pos.z+e.md.z*e.speed*dt;
+            const nx=e.pos.x+e.md.x*e.speed*slowMul*dt,nz=e.pos.z+e.md.z*e.speed*slowMul*dt;
             if(!wallAt(nx,nz)&&!wallAt(e.pos.x,nz)&&!wallAt(nx,e.pos.z)){e.pos.x=nx;e.pos.z=nz;}else e.mt=0;
             e.mesh.position.set(e.pos.x,0,e.pos.z);
 
-            /* Shoot */
-            e.st-=dt;
+            /* Shoot — slowed fire rate */
+            if(e.slowT > 0) e.slowT -= dt;
+            e.st-=dt*slowMul;
             if(e.st<=0){
                 eShoot(e);
                 e.st=e.sr*(0.8+Math.random()*0.4);
+            }
+
+            /* Visual feedback for slow — tint enemy core blue */
+            if(e.mesh.userData.core && e.mesh.userData.core.material){
+                const isSlowed = e.slowT > 0;
+                const origColor = e.type==="core"?0x0A0A0A:(e.type==="drone"?0x333333:0x111111);
+                const targetHex = isSlowed ? 0x4488FF : origColor;
+                e.mesh.userData.core.material.color.lerp(new THREE.Color(targetHex), 0.15);
             }
         }
 
@@ -2378,13 +2390,13 @@
         shootT-=dt;
         if((mouseDown||keys["KeyE"])&&shootT<=0){
             const effectiveShootCD = SHOOT_CD / (playerBuffs.fireRateMul || 1);
-            const effectiveBulletSpeed = BULLET_SPEED * (playerBuffs.bulletSpeedMul || 1);
             const bulletPierce = playerBuffs.pierceCount || 0;
+            const bulletSlow = playerBuffs.slowCount || 0;
             const forkN = playerBuffs.forkCount || 0;
             if(playerUpgrade === "triple"){
-                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, effectiveBulletSpeed, true, playerBuffs.damageMul, bulletPierce);
-                mkBullet(playerPos.x, playerPos.z, playerAngle, effectiveBulletSpeed, true, playerBuffs.damageMul, bulletPierce);
-                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.22, effectiveBulletSpeed, true, playerBuffs.damageMul, bulletPierce);
+                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, BULLET_SPEED, true, playerBuffs.damageMul, bulletPierce, bulletSlow);
+                mkBullet(playerPos.x, playerPos.z, playerAngle, BULLET_SPEED, true, playerBuffs.damageMul, bulletPierce, bulletSlow);
+                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.22, BULLET_SPEED, true, playerBuffs.damageMul, bulletPierce, bulletSlow);
             } else if(forkN >= 1){
                 /* FORK: 1=2 bullets, 2=3 bullets, 3=4 bullets — spread fan */
                 const totalBullets = forkN + 1;
@@ -2392,10 +2404,10 @@
                 const totalSpread = (totalBullets - 1) * spreadStep;
                 for(let fi = 0; fi < totalBullets; fi++){
                     const offset = -totalSpread / 2 + fi * spreadStep;
-                    mkBullet(playerPos.x, playerPos.z, playerAngle + offset, effectiveBulletSpeed, true, playerBuffs.damageMul, bulletPierce);
+                    mkBullet(playerPos.x, playerPos.z, playerAngle + offset, BULLET_SPEED, true, playerBuffs.damageMul, bulletPierce, bulletSlow);
                 }
             } else {
-                mkBullet(playerPos.x,playerPos.z,playerAngle,effectiveBulletSpeed,true,playerBuffs.damageMul,bulletPierce);
+                mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true,playerBuffs.damageMul,bulletPierce,bulletSlow);
             }
             AudioManager.playSFX('player_shoot');
             shootT=effectiveShootCD;
@@ -2518,6 +2530,10 @@
                 if(d2(b.mesh.position.x,b.mesh.position.z,e.pos.x,e.pos.z)<hitRadius){
                     if(b.pierceLeft > 0 && b.piercedTargets.includes(e.mesh.uuid)) continue;
                     e.hp -= b.damage || 1;
+                    /* Apply slow from SUB */
+                    if(b.slowStr > 0){
+                        e.slowT = 3.0; /* 3 seconds slow duration */
+                    }
                     spawnP(e.pos.x,e.pos.z,C_PARTICLE,3);
                     spawnHitSparks(e.pos.x, e.pos.z, 0xFF6600, Math.atan2(b.vx, -b.vz));
                     AudioManager.playSFX('enemy_hit');
@@ -2558,7 +2574,7 @@
                                 speed: e.speed * 1.2,
                                 md: {x:0,z:0}, mt:0, st: Math.random() * e.sr, sr: e.sr,
                                 pat: e.pat, pp: Math.random() * Math.PI * 2,
-                                spawnT: 0, muzzleShootCount: 0, hasForked: true, isDying: false
+                                spawnT: 0, muzzleShootCount: 0, hasForked: true, isDying: false, slowT: 0
                             });
                             spawnDeathBurst(forkX, forkZ, 0xFF6600, 4);
                             AudioManager.playSFX('enemy_explode');
@@ -2783,7 +2799,7 @@
         playerUpgrade = "standard"; upgradeTimeRemaining = 0;
         dashT = 0; dashCooldownT = 0;
         shieldActive = false; shieldHitsRemaining = 0;
-        playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        playerBuffs = { damageMul: 1, pierceCount: 0, dashDistMul: 1, regenHP: 0, forkCount: 0, shieldCharges: 0, slowCount: 0, fireRateMul: 1 };
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
         if(playerMesh.userData.coreMat) playerMesh.userData.coreMat.color.setHex(C_YORHA);
         spawnEnemies();
