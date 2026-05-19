@@ -103,7 +103,7 @@
     let lockUIMeshes = [];
 
     /* Red Code Buffs */
-    let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0 };
+    let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
     let codeEditorEl = null;
 
     /* Slow-Motion State */
@@ -2133,7 +2133,7 @@
         /* Dash ability */
         if(dashT > 0){
             dashT -= dt;
-            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*(playerBuffs.dashDistMul||1)*dt, dashDir.z*DASH_SPEED*(playerBuffs.dashDistMul||1)*dt);
+            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*dt, dashDir.z*DASH_SPEED*dt);
             /* Spawn afterimages */
             if(Math.random() < 0.4) spawnAfterimage(playerPos.x, playerPos.z, playerAngle);
         } else {
@@ -2360,20 +2360,35 @@
                     /* Fork behavior — scouts split at 50% HP */
                     if(e.type === "scout" && e.hp <= e.maxHp * 0.5 && !e.hasForked) {
                         e.hasForked = true;
-                        const newMesh = mkEnemy("scout");
-                        newMesh.position.set(e.pos.x + 1.5, 0, e.pos.z + 1.5);
-                        newMesh.scale.set(0.5, 0.5, 0.5);
-                        scene.add(newMesh);
-                        enemies.push({
-                            mesh: newMesh, type: "scout", hp: Math.round(e.maxHp * 0.3), maxHp: Math.round(e.maxHp * 0.3),
-                            pos: { x: e.pos.x + 1.5, z: e.pos.z + 1.5 },
-                            speed: e.speed * 1.2,
-                            md: {x:0,z:0}, mt:0, st: Math.random() * e.sr, sr: e.sr,
-                            pat: e.pat, pp: Math.random() * Math.PI * 2,
-                            spawnT: 0, muzzleShootCount: 0, hasForked: true, isDying: false
-                        });
-                        spawnDeathBurst(e.pos.x + 1.5, e.pos.z + 1.5, 0xFF6600, 4);
-                        AudioManager.playSFX('enemy_explode');
+                        /* Find a valid spawn position (not inside a wall) */
+                        let forkX = null, forkZ = null;
+                        const forkOffsets = [
+                            {x:1.5,z:1.5},{x:-1.5,z:1.5},{x:1.5,z:-1.5},{x:-1.5,z:-1.5},
+                            {x:0,z:1.5},{x:0,z:-1.5},{x:1.5,z:0},{x:-1.5,z:0}
+                        ];
+                        for(const off of forkOffsets){
+                            const tx = e.pos.x + off.x, tz = e.pos.z + off.z;
+                            if(!wallAt(tx, tz)){
+                                forkX = tx; forkZ = tz; break;
+                            }
+                        }
+                        /* Only spawn forked enemy if a valid position was found */
+                        if(forkX !== null){
+                            const newMesh = mkEnemy("scout");
+                            newMesh.position.set(forkX, 0, forkZ);
+                            newMesh.scale.set(0.5, 0.5, 0.5);
+                            scene.add(newMesh);
+                            enemies.push({
+                                mesh: newMesh, type: "scout", hp: Math.round(e.maxHp * 0.3), maxHp: Math.round(e.maxHp * 0.3),
+                                pos: { x: forkX, z: forkZ },
+                                speed: e.speed * 1.2,
+                                md: {x:0,z:0}, mt:0, st: Math.random() * e.sr, sr: e.sr,
+                                pat: e.pat, pp: Math.random() * Math.PI * 2,
+                                spawnT: 0, muzzleShootCount: 0, hasForked: true, isDying: false
+                            });
+                            spawnDeathBurst(forkX, forkZ, 0xFF6600, 4);
+                            AudioManager.playSFX('enemy_explode');
+                        }
                     }
                     if(e.hp<=0){
                         if(e.type === "core"){
@@ -2749,9 +2764,9 @@
             if(ddx||ddz){const l=Math.sqrt(ddx*ddx+ddz*ddz);ddx/=l;ddz/=l;}
             else{ddx=Math.sin(playerAngle);ddz=-Math.cos(playerAngle);}
             dashDir = {x:ddx, z:ddz};
-            dashT = DASH_DURATION;
+            dashT = DASH_DURATION * (playerBuffs.dashDistMul || 1);
             dashCooldownT = DASH_COOLDOWN;
-            invulnT = Math.max(invulnT, DASH_DURATION);
+            invulnT = Math.max(invulnT, DASH_DURATION * (playerBuffs.dashDistMul || 1));
             triggerGlitch(0.15, 0.1);
             return;
         }
