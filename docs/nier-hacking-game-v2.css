@@ -373,3 +373,22 @@
     #nier-hack-controls { font-size:0.5rem; gap:10px; flex-wrap:wrap; }
     #nier-hack-wrapper h2 { font-size:1.1rem; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   RED CODE EDITOR — Core War terminal
+   ═══════════════════════════════════════════════════════ */
+#nh-code-editor textarea:focus {
+    border-color: #C4362B !important;
+    box-shadow: 0 0 8px rgba(196, 54, 43, 0.3);
+}
+#nh-code-editor button:hover {
+    opacity: 0.8;
+}
+#nh-code-skip:hover {
+    border-color: #888 !important;
+    color: #AAA !important;
+}
+#nh-code-compile:hover {
+    background: #C4362B !important;
+    color: #FFF !important;
+}

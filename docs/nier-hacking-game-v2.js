@@ -1,13 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════
-   NIER AUTOMATA HACKING GAME  –  GOTY Edition v5
+   COREWAR DEBUGGER  –  Hacking Minigame v6
    ═══════════════════════════════════════════════════════════════
-   Visual reference: NieR:Automata hacking minigame
-   - 3D composite player ship with thrusters, pods, shield ring
-   - Three distinct enemy types: Scout, Drone, Core
-   - Enhanced arena with hexagonal floor, glowing walls, ambient particles
-   - Rotating muzzle system inspired by enemy_type_0C.gd
-   - Dash ability, bullet trails, hit sparks, spawn animations
-   - Extended level roster: Sectors A through Ω
+   Fusion: NieR:Automata hacking × Core War VM debugging
+   - Play as an antivirus debugger cleaning infected VM memory
+   - Write Red Code before each level to boost abilities
+   - ADD=damage, STI=split bullets, ZJMP=fast dash, LIVE=regen
+   - FORK=double shot, LD=shield, SUB=bullet speed, AND=fire rate
+   - Each level = hostile warrior process to terminate
    Controls: WASD move, Arrow keys aim, Left click shoot, Space dash, F fullscreen
    ═══════════════════════════════════════════════════════════════ */
 
@@ -48,14 +47,14 @@
     const C_GOLD     = 0xFFD700;
 
     const LEVELS = [
-        { name:"SECTOR A", enemies:3,  hpMul:1,   spdMul:1,   shootRate:1.4, patterns:["aimed"], types:["scout","scout","core"] },
-        { name:"SECTOR B", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:1.2, patterns:["aimed","burst"], types:["scout","scout","drone","core"] },
-        { name:"SECTOR C", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:1.0, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"] },
-        { name:"SECTOR D", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:0.9, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"] },
-        { name:"SECTOR E", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:0.8, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"] },
-        { name:"SECTOR F", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:0.7, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR G", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:0.6, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"] },
-        { name:"SECTOR Ω", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:0.5, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"] },
+        { name:"PROCESS_0x01", enemies:3,  hpMul:1,   spdMul:1,   shootRate:1.4, patterns:["aimed"], types:["scout","scout","core"], codeLines:1, tutorial:"add r1, r2, r3" },
+        { name:"PROCESS_0x02", enemies:4,  hpMul:1.2, spdMul:1.1, shootRate:1.2, patterns:["aimed","burst"], types:["scout","scout","drone","core"], codeLines:1 },
+        { name:"PROCESS_0x03", enemies:5,  hpMul:1.4, spdMul:1.2, shootRate:1.0, patterns:["aimed","burst","ring"], types:["scout","scout","drone","drone","core"], codeLines:1 },
+        { name:"PROCESS_0x04", enemies:5,  hpMul:1.7, spdMul:1.3, shootRate:0.9, patterns:["aimed","burst","ring"], types:["scout","drone","drone","drone","core"], codeLines:2 },
+        { name:"PROCESS_0x05", enemies:6,  hpMul:2.0, spdMul:1.4, shootRate:0.8, patterns:["aimed","burst","ring","spiral"], types:["scout","scout","drone","drone","drone","core"], codeLines:2 },
+        { name:"PROCESS_0x06", enemies:7,  hpMul:2.3, spdMul:1.5, shootRate:0.7, patterns:["aimed","ring","spiral","wall"], types:["scout","drone","drone","drone","drone","drone","core"], codeLines:2 },
+        { name:"PROCESS_0x07", enemies:8,  hpMul:2.8, spdMul:1.7, shootRate:0.6, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","core"], codeLines:3 },
+        { name:"KERNEL_PANIC", enemies:10, hpMul:3.5, spdMul:2.0, shootRate:0.5, patterns:["aimed","burst","ring","spiral","wall"], types:["scout","scout","drone","drone","drone","drone","drone","drone","drone","core"], codeLines:3 },
     ];
 
     /* ══════════════ STATE ══════════════ */
@@ -102,6 +101,10 @@
     let rightMouseDown = false;
     let lockSoundThrottle = 0;
     let lockUIMeshes = [];
+
+    /* Red Code Buffs */
+    let playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0 };
+    let codeEditorEl = null;
 
     /* Slow-Motion State */
     let slowMoT = 0;
@@ -222,6 +225,138 @@
             }
         };
     })();
+
+    /* ══════════════ RED CODE PARSER ══════════════ */
+    const REDCODE_INSTRUCTIONS = {
+        add:  { name: "ADD",  desc: "+50% damage",           color: "#FF6600" },
+        sti:  { name: "STI",  desc: "Splitting projectiles",  color: "#00FFFF" },
+        zjmp: { name: "ZJMP", desc: "+100% dash speed",       color: "#FFD700" },
+        live: { name: "LIVE", desc: "+2 HP/sec regen",        color: "#00FF00" },
+        fork: { name: "FORK", desc: "Double shot",            color: "#FF00FF" },
+        ld:   { name: "LD",   desc: "+3s shield",             color: "#00AAFF" },
+        sub:  { name: "SUB",  desc: "+30% bullet speed",      color: "#FF4444" },
+        and:  { name: "AND",  desc: "+20% fire rate",         color: "#AAAAFF" },
+    };
+
+    function parseRedCode(code) {
+        const buffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        const detected = [];
+        const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+        for (const line of lines) {
+            const trimmed = line.trim().toLowerCase();
+            const instr = trimmed.split(/[\s,]+/)[0];
+            if (instr === 'add' && buffs.damageMul < 2.5) { buffs.damageMul += 0.5; detected.push({ instr: 'add', valid: true }); }
+            else if (instr === 'sti' && !buffs.bulletSplit) { buffs.bulletSplit = true; detected.push({ instr: 'sti', valid: true }); }
+            else if (instr === 'zjmp' && buffs.dashSpeedMul < 3) { buffs.dashSpeedMul += 1; detected.push({ instr: 'zjmp', valid: true }); }
+            else if (instr === 'live' && buffs.regenHP < 6) { buffs.regenHP += 2; detected.push({ instr: 'live', valid: true }); }
+            else if (instr === 'fork' && !buffs.doubleShot) { buffs.doubleShot = true; detected.push({ instr: 'fork', valid: true }); }
+            else if (instr === 'ld' && buffs.shieldTime < 9) { buffs.shieldTime += 3; detected.push({ instr: 'ld', valid: true }); }
+            else if (instr === 'sub' && buffs.bulletSpeedMul < 2) { buffs.bulletSpeedMul += 0.3; detected.push({ instr: 'sub', valid: true }); }
+            else if (instr === 'and' && buffs.fireRateMul < 2) { buffs.fireRateMul += 0.2; detected.push({ instr: 'and', valid: true }); }
+            else if (instr) { detected.push({ instr, valid: false }); }
+        }
+        return { buffs, detected };
+    }
+
+    function showCodeEditor(callback) {
+        if(!wrapEl) wrapEl = document.getElementById("nier-hack-wrapper");
+        if(!wrapEl) { callback(); return; }
+
+        const lvl = LEVELS[curLvl];
+        const maxLines = lvl.codeLines || 1;
+
+        /* Create or reuse editor overlay */
+        if(!codeEditorEl) {
+            codeEditorEl = document.createElement("div");
+            codeEditorEl.id = "nh-code-editor";
+            const canvasWrap = canvas.parentElement;
+            if(canvasWrap) canvasWrap.appendChild(codeEditorEl);
+        }
+
+        codeEditorEl.style.cssText = "position:absolute;inset:0;background:rgba(8,8,12,0.95);z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#D4CFC6;padding:20px;box-sizing:border-box;";
+
+        /* Build instruction reference */
+        let refHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;max-width:600px;">';
+        for (const [key, info] of Object.entries(REDCODE_INSTRUCTIONS)) {
+            refHTML += `<div style="background:rgba(255,255,255,0.05);border:1px solid ${info.color}33;border-radius:3px;padding:4px 10px;font-size:0.65rem;"><span style="color:${info.color};font-weight:bold;">${info.name}</span> <span style="color:#666;">— ${info.desc}</span></div>`;
+        }
+        refHTML += '</div>';
+
+        /* Tutorial hint for first level */
+        let tutorialHTML = '';
+        if(lvl.tutorial) {
+            tutorialHTML = `<div style="margin-bottom:12px;font-size:0.7rem;color:#88AACC;letter-spacing:0.05em;">POD 042: Suggestion — try entering <span style="color:#FF6600;">${lvl.tutorial}</span> to boost firepower.</div>`;
+        }
+
+        codeEditorEl.innerHTML = `
+            <div style="font-size:0.6rem;letter-spacing:0.5em;color:#555;text-transform:uppercase;margin-bottom:6px;">COMPILE COMBAT MODULE</div>
+            <div style="font-size:1.3rem;letter-spacing:0.2em;color:#C4362B;text-transform:uppercase;margin-bottom:18px;">${lvl.name}</div>
+            <div style="font-size:0.65rem;color:#666;margin-bottom:14px;">Available instructions (${maxLines} line${maxLines>1?'s':''} max):</div>
+            ${refHTML}
+            ${tutorialHTML}
+            <textarea id="nh-code-input" rows="${maxLines}" maxlength="${maxLines*40}" spellcheck="false"
+                style="width:340px;max-width:90%;background:#0A0A0E;border:1px solid #333;color:#00FF00;font-family:'Courier New',monospace;font-size:0.85rem;padding:10px;letter-spacing:0.05em;resize:none;outline:none;border-radius:2px;"
+                placeholder="Enter Red Code here..."></textarea>
+            <div id="nh-code-buffs" style="margin-top:10px;min-height:20px;font-size:0.65rem;color:#888;"></div>
+            <div style="display:flex;gap:12px;margin-top:16px;">
+                <button id="nh-code-skip" style="padding:6px 20px;background:transparent;border:1px solid #444;color:#666;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Skip</button>
+                <button id="nh-code-compile" style="padding:6px 20px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Compile</button>
+            </div>
+            <div style="font-size:0.5rem;color:#333;margin-top:14px;letter-spacing:0.1em;">ARENA: 4096 BYTES | IDX_MOD: 512 | CYCLE_TO_DIE: 1536</div>
+        `;
+
+        /* Live parsing on input */
+        const textarea = document.getElementById('nh-code-input');
+        const buffsDisplay = document.getElementById('nh-code-buffs');
+
+        function updateBuffsPreview() {
+            const code = textarea.value;
+            const { buffs, detected } = parseRedCode(code);
+            if(detected.length === 0) {
+                buffsDisplay.innerHTML = '<span style="color:#444;">No instructions detected</span>';
+            } else {
+                buffsDisplay.innerHTML = detected.map(d => {
+                    if(d.valid) {
+                        const info = REDCODE_INSTRUCTIONS[d.instr];
+                        return `<span style="color:${info ? info.color : '#888'};">✓ ${info ? info.name : d.instr}</span>`;
+                    } else {
+                        return `<span style="color:#FF3333;">✗ Unknown: ${d.instr}</span>`;
+                    }
+                }).join('&nbsp;&nbsp;');
+            }
+        }
+
+        textarea.addEventListener('input', updateBuffsPreview);
+
+        /* Compile button */
+        document.getElementById('nh-code-compile').addEventListener('click', function() {
+            const code = textarea.value;
+            const { buffs, detected } = parseRedCode(code);
+            playerBuffs = buffs;
+
+            /* Apply shield */
+            if(buffs.shieldTime > 0) {
+                invulnT = Math.max(invulnT, buffs.shieldTime);
+                if(playerMesh.userData.shieldMat) playerMesh.userData.shieldMat.opacity = 0.6;
+            }
+
+            /* Flash and hide */
+            codeEditorEl.style.transition = "opacity 0.2s";
+            codeEditorEl.style.opacity = "0";
+            setTimeout(() => { codeEditorEl.style.display = "none"; callback(); }, 200);
+        });
+
+        /* Skip button */
+        document.getElementById('nh-code-skip').addEventListener('click', function() {
+            playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+            codeEditorEl.style.transition = "opacity 0.2s";
+            codeEditorEl.style.opacity = "0";
+            setTimeout(() => { codeEditorEl.style.display = "none"; callback(); }, 200);
+        });
+
+        /* Focus textarea */
+        setTimeout(() => { if(textarea) textarea.focus(); }, 100);
+    }
 
     /* ══════════════ MAZE ══════════════ */
     function genMaze() {
@@ -909,28 +1044,25 @@
     }
 
     /* ══════════════ BULLETS ══════════════ */
-    function mkBullet(x,z,angle,speed,isPlayer, damage, piercing){
+    function mkBullet(x,z,angle,speed,isPlayer, damage, canSplit){
         damage = damage || 1;
-        piercing = piercing || false;
+        canSplit = canSplit || false;
 
         let m;
         let glowMesh = null;
 
         if(isPlayer){
             if(playerUpgrade === "heavy"){
-                damage = 2;
-                piercing = true;
-                /* Simple single orange cylinder/needle mesh */
+                damage *= 2;
+                canSplit = true;
                 m = new THREE.Mesh(geoHeavyBullet, matHeavyBullet);
             } else {
-                /* Simple single white cylinder/needle mesh */
                 m = new THREE.Mesh(geoBullet, matPBullet);
             }
             m.position.set(x, 0.25, z);
             m.rotation.y = angle;
             scene.add(m);
         } else {
-            /* Simple solid sphere enemy bullet, randomly purple or orange */
             const mat = Math.random() < 0.5 ? window._matEBulletPurple : window._matEBulletOrange;
             m = new THREE.Mesh(geoEBullet, mat);
             m.position.set(x, 0.25, z);
@@ -943,12 +1075,16 @@
             glowMesh: glowMesh,
             vx:Math.sin(angle)*speed,
             vz:-Math.cos(angle)*speed,
-            life: isPlayer ? 30 : 999,   // enemy bullets never expire by time — only wall/player hit
+            life: isPlayer ? 30 : 999,
             isEnemyBullet: !isPlayer,
             damage: damage,
-            piercing: piercing,
+            piercing: canSplit,
             piercedTargets: [],
-            trailT:0
+            canSplit: canSplit,
+            hasSplit: false,
+            trailT:0,
+            speed: speed,
+            angle: angle
         });
     }
 
@@ -1707,13 +1843,13 @@
         bootEl.style.opacity = "1";
 
         const logLines = [
-            `>> PROBING GATEWAY TO ${LEVELS[curLvl].name}...`,
-            ">> ESTABLISHING SAT-LINK TRANSCEIVER... [OK]",
-            ">> SCANNING HOST HARDWARE ARCHITECTURE... [OCTA-CORE DETECTED]",
-            ">> DECRYPTING CYPRUS SHIELD SECTOR... [FIREWALL ACCESSED]",
-            ">> UPLOADING COMBAT PROGRAM: YoRHa_9S_HACK.EXE...",
-            `>> WARNING: ${enemies.length} HOST NETWORKS DETECTED.`,
-            `>> POD 042: System check complete. Logical connection established. Begin exclusion of target cores.`
+            ">> LOADING VM DEBUGGER v3.14...",
+            `>> PROBING MEMORY SECTOR: ${LEVELS[curLvl].name}...`,
+            ">> ARENA SIZE: 4096 BYTES | CYCLE_TO_DIE: 1536",
+            `>> SCANNING FOR HOSTILE PROCESSES... [${enemies.length} DETECTED]`,
+            ">> DECOMPILING INSTRUCTION STREAM... [REDCODE IDENTIFIED]",
+            `>> WARNING: ${enemies.length} THREAT${enemies.length>1?'S':''} IN MEMORY SPACE.`,
+            `>> POD 042: Debugger online. Compile combat module and eliminate all hostile processes.`
         ];
 
         let lineIdx = 0;
@@ -1800,7 +1936,7 @@
             const canvasWrap = canvas.parentElement;
             if(canvasWrap) canvasWrap.appendChild(el);
         }
-        el.innerHTML = `<div style="font-size:0.6rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:nhTransIn 0.05s 0.05s ease-out forwards;">HACKING COMPLETE</div><div style="font-size:2rem;letter-spacing:0.35em;color:#000;text-transform:uppercase;font-weight:bold;opacity:0;animation:nhTransIn 0.05s 0.075s ease-out forwards;">${name} CLEARED</div><div style="margin-top:18px;width:80px;height:2px;background:#C4362B;opacity:0;animation:nhTransIn 0.05s 0.1s ease-out forwards;"></div><div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;margin-top:12px;opacity:0;animation:nhTransIn 0.05s 0.125s ease-out forwards;">INITIALIZING NEXT SECTOR...</div><style>@keyframes nhTransIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}</style>`;
+        el.innerHTML = `<div style="font-size:0.6rem;letter-spacing:0.5em;color:#888;text-transform:uppercase;margin-bottom:10px;opacity:0;animation:nhTransIn 0.05s 0.05s ease-out forwards;">PROCESS TERMINATED</div><div style="font-size:2rem;letter-spacing:0.35em;color:#000;text-transform:uppercase;font-weight:bold;opacity:0;animation:nhTransIn 0.05s 0.075s ease-out forwards;">${name} NEUTRALIZED</div><div style="margin-top:18px;width:80px;height:2px;background:#C4362B;opacity:0;animation:nhTransIn 0.05s 0.1s ease-out forwards;"></div><div style="font-size:0.55rem;letter-spacing:0.2em;color:#999;margin-top:12px;opacity:0;animation:nhTransIn 0.05s 0.125s ease-out forwards;">LOADING NEXT PROCESS...</div><style>@keyframes nhTransIn{0%{opacity:0;transform:translateX(-8px)}100%{opacity:1;transform:translateX(0)}}</style>`;
         let scanLine = el.querySelector('.nh-scan-line');
         if(!scanLine){
             scanLine = document.createElement('div');
@@ -1997,7 +2133,7 @@
         /* Dash ability */
         if(dashT > 0){
             dashT -= dt;
-            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*dt, dashDir.z*DASH_SPEED*dt);
+            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*(playerBuffs.dashSpeedMul||1)*dt, dashDir.z*DASH_SPEED*(playerBuffs.dashSpeedMul||1)*dt);
             /* Spawn afterimages */
             if(Math.random() < 0.4) spawnAfterimage(playerPos.x, playerPos.z, playerAngle);
         } else {
@@ -2054,6 +2190,11 @@
         if(invulnT>0){invulnT-=dt;playerMesh.visible=Math.floor(invulnT*12)%2===0;}
         else playerMesh.visible=true;
 
+        /* HP regen from LIVE buff */
+        if(playerBuffs.regenHP > 0 && active && !paused) {
+            playerHP = Math.min(MAX_HP, playerHP + playerBuffs.regenHP * dt);
+        }
+
         /* Dash grants invulnerability */
         if(dashT > 0 && invulnT <= 0) {
             /* Already handled by the dash movement above */
@@ -2062,15 +2203,20 @@
         /* Shoot */
         shootT-=dt;
         if((mouseDown||keys["KeyE"])&&shootT<=0){
+            const effectiveShootCD = SHOOT_CD / (playerBuffs.fireRateMul || 1);
+            const effectiveBulletSpeed = BULLET_SPEED * (playerBuffs.bulletSpeedMul || 1);
             if(playerUpgrade === "triple"){
-                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, BULLET_SPEED, true);
-                mkBullet(playerPos.x, playerPos.z, playerAngle, BULLET_SPEED, true);
-                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.22, BULLET_SPEED, true);
+                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.22, effectiveBulletSpeed, true, playerBuffs.damageMul, playerBuffs.bulletSplit);
+                mkBullet(playerPos.x, playerPos.z, playerAngle, effectiveBulletSpeed, true, playerBuffs.damageMul, playerBuffs.bulletSplit);
+                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.22, effectiveBulletSpeed, true, playerBuffs.damageMul, playerBuffs.bulletSplit);
+            } else if(playerBuffs.doubleShot){
+                mkBullet(playerPos.x, playerPos.z, playerAngle - 0.08, effectiveBulletSpeed, true, playerBuffs.damageMul, playerBuffs.bulletSplit);
+                mkBullet(playerPos.x, playerPos.z, playerAngle + 0.08, effectiveBulletSpeed, true, playerBuffs.damageMul, playerBuffs.bulletSplit);
             } else {
-                mkBullet(playerPos.x,playerPos.z,playerAngle,BULLET_SPEED,true);
+                mkBullet(playerPos.x,playerPos.z,playerAngle,effectiveBulletSpeed,true,playerBuffs.damageMul,playerBuffs.bulletSplit);
             }
             AudioManager.playSFX('player_shoot');
-            shootT=SHOOT_CD;
+            shootT=effectiveShootCD;
         }
 
         /* Player bullets */
@@ -2124,6 +2270,15 @@
             if(b.trailT <= 0 && particles.length < MAX_PARTICLES * 0.5){
                 spawnBulletTrail(b.mesh.position.x, b.mesh.position.z, true);
                 b.trailT = 0.06;
+            }
+
+            /* Bullet split — when canSplit is true and bullet has traveled far enough */
+            if(b.canSplit && !b.hasSplit && b.life < 25) {
+                b.hasSplit = true;
+                const splitAngle1 = b.angle + 0.35;
+                const splitAngle2 = b.angle - 0.35;
+                mkBullet(b.mesh.position.x, b.mesh.position.z, splitAngle1, b.speed, true, b.damage * 0.6, false);
+                mkBullet(b.mesh.position.x, b.mesh.position.z, splitAngle2, b.speed * 0.6, true, b.damage * 0.6, false);
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){
@@ -2201,6 +2356,24 @@
                                 if(mat.color) mat.color.setHex(origColor);
                             }
                         },60);
+                    }
+                    /* Fork behavior — scouts split at 50% HP */
+                    if(e.type === "scout" && e.hp <= e.maxHp * 0.5 && !e.hasForked) {
+                        e.hasForked = true;
+                        const newMesh = mkEnemy("scout");
+                        newMesh.position.set(e.pos.x + 1.5, 0, e.pos.z + 1.5);
+                        newMesh.scale.set(0.5, 0.5, 0.5);
+                        scene.add(newMesh);
+                        enemies.push({
+                            mesh: newMesh, type: "scout", hp: Math.round(e.maxHp * 0.3), maxHp: Math.round(e.maxHp * 0.3),
+                            pos: { x: e.pos.x + 1.5, z: e.pos.z + 1.5 },
+                            speed: e.speed * 1.2,
+                            md: {x:0,z:0}, mt:0, st: Math.random() * e.sr, sr: e.sr,
+                            pat: e.pat, pp: Math.random() * Math.PI * 2,
+                            spawnT: 0, muzzleShootCount: 0, hasForked: true, isDying: false
+                        });
+                        spawnDeathBurst(e.pos.x + 1.5, e.pos.z + 1.5, 0xFF6600, 4);
+                        AudioManager.playSFX('enemy_explode');
                     }
                     if(e.hp<=0){
                         if(e.type === "core"){
@@ -2389,13 +2562,17 @@
         playerPos=c2w(1,1);playerAngle=0;playerHP=MAX_HP;invulnT=0;shootT=0;
         playerUpgrade = "standard"; upgradeTimeRemaining = 0;
         dashT = 0; dashCooldownT = 0;
+        playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
         if(playerMesh.userData.coreMat) playerMesh.userData.coreMat.color.setHex(C_YORHA);
         spawnEnemies();
         const cx=MAZE_W*CELL/2,cz=MAZE_H*CELL/2;
         camera.position.set(cx,30,cz);camera.lookAt(cx,0,cz);
         hideOv();
-        triggerBootSequence();
+        /* Show Red Code editor first, then boot sequence */
+        showCodeEditor(function(){
+            triggerBootSequence();
+        });
     }
     function lvlClear(){
         active=false;
@@ -2405,8 +2582,8 @@
                 curLvl = nextLvl; startLvl();
             });
         } else {
-            showLevelTransition("SYSTEM COMPROMISED", function(){
-                showOv("SYSTEM COMPROMISED","All sectors breached — hack successful","RESTART",function(){curLvl=0;score=0;startLvl();});
+            showLevelTransition("MEMORY CLEANED", function(){
+                showOv("MEMORY CLEANED","All hostile processes terminated — arena secured","RESTART",function(){curLvl=0;score=0;startLvl();});
             });
         }
     }
@@ -2424,9 +2601,9 @@
         overlay.style.background="rgba(10,10,10,0.96)";
         overlay.innerHTML = `
         <div style="opacity:0;animation:nhGoFlicker 0.15s 0.3s forwards;font-family:'Courier New',monospace;font-size:0.75rem;letter-spacing:0.4em;color:#C4362B;text-transform:uppercase;margin-bottom:16px;">This cannot continue</div>
-        <div style="opacity:0;animation:nhGoFlicker 0.15s 0.7s forwards, nhGoGlitch 0.4s 0.9s;font-family:'Courier New',monospace;font-size:2.8rem;letter-spacing:0.2em;color:#FFF;text-transform:uppercase;margin-bottom:24px;">CONNECTION LOST</div>
+        <div style="opacity:0;animation:nhGoFlicker 0.15s 0.7s forwards, nhGoGlitch 0.4s 0.9s;font-family:'Courier New',monospace;font-size:2.8rem;letter-spacing:0.2em;color:#FFF;text-transform:uppercase;margin-bottom:24px;">PROCESS KILLED</div>
         <div style="width:60px;height:1px;background:linear-gradient(90deg,#C4362B,transparent);margin:0 auto 24px;opacity:0;animation:nhGoFlicker 0.15s 1.0s forwards;"></div>
-        <div style="opacity:0;animation:nhGoFlicker 0.15s 1.2s forwards;font-family:'Courier New',monospace;font-size:0.7rem;color:#555;letter-spacing:0.1em;">Signal terminated — hack failed</div>
+        <div style="opacity:0;animation:nhGoFlicker 0.15s 1.2s forwards;font-family:'Courier New',monospace;font-size:0.7rem;color:#555;letter-spacing:0.1em;">Process terminated — debugger crashed</div>
         <div style="margin-top:20px;opacity:0;animation:nhGoFlicker 0.15s 1.5s forwards;"><div style="font-family:'Courier New',monospace;font-size:0.9rem;color:#C4362B;letter-spacing:0.2em;">SCORE: ${score}</div></div>
         <button class="nh-ov-btn" style="opacity:0;animation:nhGoFlicker 0.15s 1.8s forwards;margin-top:28px;" onclick="window._nhBtn()">RETRY</button>
         <style>
@@ -2531,7 +2708,7 @@
             case "continue": resumeGame(); break;
             case "restart": hidePauseMenu(); paused=false; curLvl=0; score=0; startLvl(); break;
             case "retry": hidePauseMenu(); paused=false; startLvl(); break;
-            case "quit": hidePauseMenu(); paused=false; pauseWasActive=false; curLvl=0; score=0; active=false; clearBP(); enemies.forEach(function(e){scene.remove(e.mesh);e.mesh.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});enemies=[]; clearMaze(); showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();}); break;
+            case "quit": hidePauseMenu(); paused=false; pauseWasActive=false; curLvl=0; score=0; active=false; clearBP(); enemies.forEach(function(e){scene.remove(e.mesh);e.mesh.traverse(function(c){if(c.geometry)c.geometry.dispose();if(c.material)c.material.dispose();});});enemies=[]; clearMaze(); showOv("DEBUGGER ONLINE","Compile combat modules — eliminate hostile processes","INITIALIZE",function(){startLvl();if(!rafId)animate();}); break;
         }
     }
 
@@ -2647,8 +2824,8 @@
             dashT=0;dashCooldownT=0;
             hidePauseMenu();
             podQueue=[];podTimer=0;podFullMsg='';podTypingIdx=0;podTypingTimer=0;hidePod();
-            showOv("HACKING INITIATED","Breach the firewall — destroy all enemy cores","START",function(){startLvl();if(!rafId)animate();});
-            setTimeout(function(){ podSay("Hacking module engaged. Destroy all enemy cores. Press SPACE to dash.", 4); }, 500);
+            showOv("DEBUGGER ONLINE","Compile combat modules — eliminate hostile processes","INITIALIZE",function(){startLvl();if(!rafId)animate();});
+            setTimeout(function(){ podSay("VM Debugger engaged. Write Red Code to boost combat abilities. Eliminate all hostile processes. Press SPACE to dash.", 5); }, 500);
             if(!rafId)animate();
         },
         toggle:function(){
