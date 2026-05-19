@@ -332,14 +332,16 @@
             }
         }
 
-        /* Enforce line limit — block newlines beyond maxLines */
+        /* Enforce line limit — Enter compiles when all lines are filled */
         textarea.addEventListener('keydown', function(ev) {
             if(ev.code === 'Enter' || ev.code === 'NumpadEnter') {
                 const currentLines = textarea.value.split('\n').length;
                 if(currentLines >= maxLines) {
                     ev.preventDefault();
                     ev.stopPropagation();
-                    ev.stopImmediatePropagation();
+                    /* Trigger compile instead of adding a new line */
+                    const compileBtn = document.getElementById('nh-code-compile');
+                    if(compileBtn){ AudioManager.playSFX('button_enter'); compileBtn.click(); }
                     return;
                 }
             }
