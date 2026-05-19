@@ -277,59 +277,113 @@
             if(canvasWrap) canvasWrap.appendChild(codeEditorEl);
         }
 
-        codeEditorEl.style.cssText = "position:absolute;inset:0;background:rgba(8,8,12,0.95);z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#D4CFC6;padding:20px;box-sizing:border-box;";
+        codeEditorEl.style.cssText = "position:absolute;inset:0;background:#08080C;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#D4CFC6;padding:20px;box-sizing:border-box;";
 
-        /* Build instruction reference */
-        let refHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px;max-width:600px;">';
+        /* Build instruction table — Core War opcode style */
+        let refHTML = `<div style="margin-bottom:12px;width:100%;max-width:520px;border:1px solid #222;">`;
+        refHTML += `<div style="display:flex;background:#111;border-bottom:1px solid #222;padding:3px 8px;font-size:0.5rem;color:#555;letter-spacing:0.15em;">`;
+        refHTML += `<span style="width:60px;">OPCODE</span><span style="flex:1;">EFFECT</span><span style="width:50px;text-align:right;">TYPE</span></div>`;
         for (const [key, info] of Object.entries(REDCODE_INSTRUCTIONS)) {
-            refHTML += `<div style="background:rgba(255,255,255,0.05);border:1px solid ${info.color}33;border-radius:3px;padding:4px 10px;font-size:0.65rem;"><span style="color:${info.color};font-weight:bold;">${info.name}</span> <span style="color:#666;">— ${info.desc}</span></div>`;
+            refHTML += `<div style="display:flex;align-items:center;padding:2px 8px;border-bottom:1px solid #1A1A1A;font-size:0.6rem;">`;
+            refHTML += `<span style="width:60px;color:${info.color};font-weight:bold;letter-spacing:0.05em;">${info.name}</span>`;
+            refHTML += `<span style="flex:1;color:#777;">${info.desc}</span>`;
+            refHTML += `<span style="width:50px;text-align:right;font-size:0.45rem;color:#333;letter-spacing:0.1em;">${key === 'add' || key === 'sub' || key === 'and' ? 'ALU' : key === 'sti' || key === 'ld' ? 'MEM' : key === 'zjmp' || key === 'fork' ? 'CTL' : 'SPE'}</span>`;
+            refHTML += `</div>`;
         }
-        refHTML += '</div>';
+        refHTML += `</div>`;
 
         /* Tutorial hint for first level */
         let tutorialHTML = '';
         if(lvl.tutorial) {
-            tutorialHTML = `<div style="margin-bottom:12px;font-size:0.7rem;color:#88AACC;letter-spacing:0.05em;">POD 042: Suggestion — try entering <span style="color:#FF6600;">${lvl.tutorial}</span> to boost firepower.</div>`;
+            tutorialHTML = `<div style="margin-bottom:10px;font-size:0.6rem;color:#667788;letter-spacing:0.03em;">$ pod042 --suggest "<span style="color:#FF6600;">${lvl.tutorial}</span>"</div>`;
         }
 
         codeEditorEl.innerHTML = `
-            <div style="font-size:0.6rem;letter-spacing:0.5em;color:#555;text-transform:uppercase;margin-bottom:6px;">COMPILE COMBAT MODULE</div>
-            <div style="font-size:1.3rem;letter-spacing:0.2em;color:#C4362B;text-transform:uppercase;margin-bottom:18px;">${lvl.name}</div>
-            <div style="font-size:0.65rem;color:#666;margin-bottom:14px;">Available instructions (${maxLines} line${maxLines>1?'s':''} max):</div>
-            ${refHTML}
-            ${tutorialHTML}
-            <textarea id="nh-code-input" rows="${maxLines}" maxlength="${maxLines*40}" spellcheck="false"
-                style="width:340px;max-width:90%;background:#0A0A0E;border:1px solid #333;color:#00FF00;font-family:'Courier New',monospace;font-size:0.85rem;padding:10px;letter-spacing:0.05em;resize:none;outline:none;border-radius:2px;"
-                placeholder="Enter Red Code here..."></textarea>
-            <div id="nh-code-buffs" style="margin-top:10px;min-height:20px;font-size:0.65rem;color:#888;"></div>
-            <div id="nh-code-error" style="display:none;margin-top:8px;font-size:0.65rem;color:#FF3333;letter-spacing:0.05em;text-align:center;"></div>
-            <div style="display:flex;gap:12px;margin-top:16px;">
-                <button id="nh-code-skip" style="padding:6px 20px;background:transparent;border:1px solid #444;color:#666;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Skip</button>
-                <button id="nh-code-compile" style="padding:6px 20px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Compile</button>
+            <div style="width:100%;max-width:560px;">
+                <!-- Terminal header bar -->
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;padding:4px 0;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#FF5F57;"></span>
+                    <span style="width:8px;height:8px;border-radius:50%;background:#FEBC2E;"></span>
+                    <span style="width:8px;height:8px;border-radius:50%;background:#28C840;"></span>
+                    <span style="flex:1;"></span>
+                    <span style="font-size:0.45rem;color:#333;letter-spacing:0.2em;">ARENA SHELL v3.14</span>
+                </div>
+
+                <!-- Main terminal window -->
+                <div style="background:#0A0A0E;border:1px solid #1A1A1A;padding:12px 14px;">
+
+                    <!-- Shell prompt header -->
+                    <div style="font-size:0.55rem;color:#4A4A4A;letter-spacing:0.05em;margin-bottom:4px;">corewar-arena $ cat /proc/${lvl.name}/status</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;">
+                        <span style="font-size:1.1rem;letter-spacing:0.15em;color:#C4362B;font-weight:bold;">${lvl.name}</span>
+                        <span style="font-size:0.5rem;color:#333;">SECTOR ${curLvl+1}/${LEVELS.length} | LINES: ${maxLines}</span>
+                    </div>
+
+                    <!-- Instruction reference table -->
+                    ${refHTML}
+
+                    <!-- Tutorial -->
+                    ${tutorialHTML}
+
+                    <!-- Code input area — terminal style with line numbers -->
+                    <div style="display:flex;border:1px solid #222;margin-top:8px;background:#050508;">
+                        <div id="nh-line-numbers" style="padding:8px 6px;background:#0A0A0E;border-right:1px solid #1A1A1A;color:#333;font-size:0.75rem;line-height:1.35;text-align:right;min-width:24px;user-select:none;"></div>
+                        <textarea id="nh-code-input" rows="${maxLines}" maxlength="${maxLines*40}" spellcheck="false"
+                            style="flex:1;background:transparent;border:none;color:#00FF00;font-family:'Courier New',monospace;font-size:0.75rem;padding:8px 10px;line-height:1.35;letter-spacing:0.05em;resize:none;outline:none;"
+                            placeholder="_"></textarea>
+                    </div>
+
+                    <!-- Buffs preview -->
+                    <div id="nh-code-buffs" style="margin-top:6px;min-height:16px;font-size:0.55rem;color:#555;"></div>
+
+                    <!-- Error display -->
+                    <div id="nh-code-error" style="display:none;margin-top:4px;font-size:0.55rem;color:#FF3333;letter-spacing:0.03em;"></div>
+
+                    <!-- Action buttons — terminal command style -->
+                    <div style="display:flex;gap:10px;margin-top:10px;">
+                        <button id="nh-code-skip" style="padding:4px 16px;background:transparent;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:0.6rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[skip]</button>
+                        <button id="nh-code-compile" style="padding:4px 16px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:0.6rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[compile]</button>
+                    </div>
+
+                    <!-- Footer info -->
+                    <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:6px;border-top:1px solid #1A1A1A;">
+                        <span style="font-size:0.4rem;color:#2A2A2A;letter-spacing:0.08em;">MEM 4096 | IDX 512 | CTD 1536</span>
+                        <span style="font-size:0.4rem;color:#2A2A2A;letter-spacing:0.08em;">ESC:unfocus | LEFT/RIGHT:select | ENTER:confirm</span>
+                    </div>
+                </div>
             </div>
-            <div style="font-size:0.5rem;color:#333;margin-top:14px;letter-spacing:0.1em;">ARENA: 4096 BYTES | IDX_MOD: 512 | CYCLE_TO_DIE: 1536</div>
-            <div style="font-size:0.45rem;color:#333;margin-top:8px;letter-spacing:0.08em;">ESC: unfocus editor | ←→: select button | ENTER: confirm</div>
         `;
 
         /* Live parsing on input */
         const textarea = document.getElementById('nh-code-input');
         const buffsDisplay = document.getElementById('nh-code-buffs');
+        const lineNumbers = document.getElementById('nh-line-numbers');
+
+        function updateLineNumbers() {
+            const lines = textarea.value.split('\n').length;
+            let nums = '';
+            for(let i = 1; i <= Math.max(lines, maxLines); i++) {
+                nums += (i <= maxLines ? i : '') + '\n';
+            }
+            lineNumbers.textContent = nums.trimEnd();
+        }
 
         function updateBuffsPreview() {
             const code = textarea.value;
             const { buffs, detected } = parseRedCode(code);
             if(detected.length === 0) {
-                buffsDisplay.innerHTML = '<span style="color:#444;">No instructions detected</span>';
+                buffsDisplay.innerHTML = '<span style="color:#333;">// no instructions parsed</span>';
             } else {
                 buffsDisplay.innerHTML = detected.map(d => {
                     if(d.valid) {
                         const info = REDCODE_INSTRUCTIONS[d.instr];
-                        return `<span style="color:${info ? info.color : '#888'};">✓ ${info ? info.name : d.instr}</span>`;
+                        return `<span style="color:${info ? info.color : '#888'};">+ ${info ? info.name : d.instr}</span>`;
                     } else {
-                        return `<span style="color:#FF3333;">✗ Unknown: ${d.instr}</span>`;
+                        return `<span style="color:#FF3333;">! ${d.instr}: UNKNOWN</span>`;
                     }
-                }).join('&nbsp;&nbsp;');
+                }).join(' &nbsp;');
             }
+            updateLineNumbers();
         }
 
         /* Enforce line limit — Enter compiles when all lines are filled */
@@ -365,6 +419,7 @@
         });
 
         textarea.addEventListener('input', updateBuffsPreview);
+        updateLineNumbers();
 
         /* Compile button */
         document.getElementById('nh-code-compile').addEventListener('click', function() {
@@ -375,15 +430,11 @@
             const hasErrors = detected.some(d => !d.valid);
             if(hasErrors) {
                 /* Show compile error and don't close editor */
-                const errorDiv = document.getElementById('nh-code-error') || (function(){
-                    const d = document.createElement('div'); d.id = 'nh-code-error';
-                    d.style.cssText = 'margin-top:8px;font-size:0.65rem;color:#FF3333;letter-spacing:0.05em;text-align:center;';
-                    const buffsEl = document.getElementById('nh-code-buffs');
-                    if(buffsEl && buffsEl.parentNode) buffsEl.parentNode.insertBefore(d, buffsEl.nextSibling);
-                    return d;
-                })();
-                errorDiv.textContent = 'COMPILE ERROR: Unknown instruction — fix before compiling';
-                errorDiv.style.display = 'block';
+                const errorDiv = document.getElementById('nh-code-error');
+                if(errorDiv){
+                    errorDiv.textContent = 'COMPILE ERROR: unknown opcode — aborting';
+                    errorDiv.style.display = 'block';
+                }
                 AudioManager.playSFX('enemy_hit');
                 return;
             }
@@ -462,10 +513,10 @@
             if(i === codeEditorBtnIdx){
                 btn.style.borderColor = '#FFF';
                 btn.style.color = '#FFF';
-                btn.style.boxShadow = '0 0 8px rgba(255,255,255,0.3)';
+                btn.style.boxShadow = '0 0 6px rgba(255,255,255,0.2)';
             } else {
-                btn.style.borderColor = btn.id === 'nh-code-compile' ? '#C4362B' : '#444';
-                btn.style.color = btn.id === 'nh-code-compile' ? '#C4362B' : '#666';
+                btn.style.borderColor = btn.id === 'nh-code-compile' ? '#C4362B' : '#333';
+                btn.style.color = btn.id === 'nh-code-compile' ? '#C4362B' : '#555';
                 btn.style.boxShadow = 'none';
             }
         }
