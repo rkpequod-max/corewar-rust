@@ -302,6 +302,7 @@
                 style="width:340px;max-width:90%;background:#0A0A0E;border:1px solid #333;color:#00FF00;font-family:'Courier New',monospace;font-size:0.85rem;padding:10px;letter-spacing:0.05em;resize:none;outline:none;border-radius:2px;"
                 placeholder="Enter Red Code here..."></textarea>
             <div id="nh-code-buffs" style="margin-top:10px;min-height:20px;font-size:0.65rem;color:#888;"></div>
+            <div id="nh-code-error" style="display:none;margin-top:8px;font-size:0.65rem;color:#FF3333;letter-spacing:0.05em;text-align:center;"></div>
             <div style="display:flex;gap:12px;margin-top:16px;">
                 <button id="nh-code-skip" style="padding:6px 20px;background:transparent;border:1px solid #444;color:#666;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Skip</button>
                 <button id="nh-code-compile" style="padding:6px 20px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Compile</button>
@@ -331,12 +332,61 @@
             }
         }
 
+        /* Enforce line limit — block newlines beyond maxLines */
+        textarea.addEventListener('keydown', function(ev) {
+            if(ev.code === 'Enter' || ev.code === 'NumpadEnter') {
+                const currentLines = textarea.value.split('\n').length;
+                if(currentLines >= maxLines) {
+                    ev.preventDefault();
+                    return;
+                }
+            }
+        });
+
+        /* Also enforce line limit on paste */
+        textarea.addEventListener('paste', function(ev) {
+            ev.preventDefault();
+            const pasted = (ev.clipboardData || window.clipboardData).getData('text');
+            const currentLines = textarea.value.split('\n').length;
+            const pastedLines = pasted.split('\n').length;
+            if(currentLines + pastedLines - 1 > maxLines) {
+                /* Only paste lines that fit */
+                const remaining = maxLines - currentLines + 1;
+                const trimmed = pasted.split('\n').slice(0, remaining).join('\n');
+                document.execCommand('insertText', false, trimmed);
+            } else {
+                document.execCommand('insertText', false, pasted);
+            }
+            updateBuffsPreview();
+        });
+
         textarea.addEventListener('input', updateBuffsPreview);
 
         /* Compile button */
         document.getElementById('nh-code-compile').addEventListener('click', function() {
             const code = textarea.value;
             const { buffs, detected } = parseRedCode(code);
+
+            /* Check for unknown instructions */
+            const hasErrors = detected.some(d => !d.valid);
+            if(hasErrors) {
+                /* Show compile error and don't close editor */
+                const errorDiv = document.getElementById('nh-code-error') || (function(){
+                    const d = document.createElement('div'); d.id = 'nh-code-error';
+                    d.style.cssText = 'margin-top:8px;font-size:0.65rem;color:#FF3333;letter-spacing:0.05em;text-align:center;';
+                    const buffsEl = document.getElementById('nh-code-buffs');
+                    if(buffsEl && buffsEl.parentNode) buffsEl.parentNode.insertBefore(d, buffsEl.nextSibling);
+                    return d;
+                })();
+                errorDiv.textContent = 'COMPILE ERROR: Unknown instruction — fix before compiling';
+                errorDiv.style.display = 'block';
+                AudioManager.playSFX('enemy_hit');
+                return;
+            }
+            /* Clear any previous error */
+            const errorDiv = document.getElementById('nh-code-error');
+            if(errorDiv) errorDiv.style.display = 'none';
+
             playerBuffs = buffs;
 
             /* Apply shield */
