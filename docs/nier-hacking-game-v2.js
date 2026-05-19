@@ -103,7 +103,7 @@
     let lockUIMeshes = [];
 
     /* Red Code Buffs */
-    let playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0 };
+    let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0 };
     let codeEditorEl = null;
 
     /* Slow-Motion State */
@@ -230,7 +230,7 @@
     const REDCODE_INSTRUCTIONS = {
         add:  { name: "ADD",  desc: "+50% damage",           color: "#FF6600" },
         sti:  { name: "STI",  desc: "Splitting projectiles",  color: "#00FFFF" },
-        zjmp: { name: "ZJMP", desc: "+100% dash speed",       color: "#FFD700" },
+        zjmp: { name: "ZJMP", desc: "+100% dash distance",    color: "#FFD700" },
         live: { name: "LIVE", desc: "+2 HP/sec regen",        color: "#00FF00" },
         fork: { name: "FORK", desc: "Double shot",            color: "#FF00FF" },
         ld:   { name: "LD",   desc: "+3s shield",             color: "#00AAFF" },
@@ -239,7 +239,7 @@
     };
 
     function parseRedCode(code) {
-        const buffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        const buffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
         const detected = [];
         const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
         for (const line of lines) {
@@ -247,7 +247,7 @@
             const instr = trimmed.split(/[\s,]+/)[0];
             if (instr === 'add' && buffs.damageMul < 2.5) { buffs.damageMul += 0.5; detected.push({ instr: 'add', valid: true }); }
             else if (instr === 'sti' && !buffs.bulletSplit) { buffs.bulletSplit = true; detected.push({ instr: 'sti', valid: true }); }
-            else if (instr === 'zjmp' && buffs.dashSpeedMul < 3) { buffs.dashSpeedMul += 1; detected.push({ instr: 'zjmp', valid: true }); }
+            else if (instr === 'zjmp' && buffs.dashDistMul < 3) { buffs.dashDistMul += 1; detected.push({ instr: 'zjmp', valid: true }); }
             else if (instr === 'live' && buffs.regenHP < 6) { buffs.regenHP += 2; detected.push({ instr: 'live', valid: true }); }
             else if (instr === 'fork' && !buffs.doubleShot) { buffs.doubleShot = true; detected.push({ instr: 'fork', valid: true }); }
             else if (instr === 'ld' && buffs.shieldTime < 9) { buffs.shieldTime += 3; detected.push({ instr: 'ld', valid: true }); }
@@ -348,7 +348,7 @@
 
         /* Skip button */
         document.getElementById('nh-code-skip').addEventListener('click', function() {
-            playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+            playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
             codeEditorEl.style.transition = "opacity 0.2s";
             codeEditorEl.style.opacity = "0";
             setTimeout(() => { codeEditorEl.style.display = "none"; callback(); }, 200);
@@ -2133,7 +2133,7 @@
         /* Dash ability */
         if(dashT > 0){
             dashT -= dt;
-            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*(playerBuffs.dashSpeedMul||1)*dt, dashDir.z*DASH_SPEED*(playerBuffs.dashSpeedMul||1)*dt);
+            moveWithCollision(playerPos, dashDir.x*DASH_SPEED*(playerBuffs.dashDistMul||1)*dt, dashDir.z*DASH_SPEED*(playerBuffs.dashDistMul||1)*dt);
             /* Spawn afterimages */
             if(Math.random() < 0.4) spawnAfterimage(playerPos.x, playerPos.z, playerAngle);
         } else {
@@ -2562,7 +2562,7 @@
         playerPos=c2w(1,1);playerAngle=0;playerHP=MAX_HP;invulnT=0;shootT=0;
         playerUpgrade = "standard"; upgradeTimeRemaining = 0;
         dashT = 0; dashCooldownT = 0;
-        playerBuffs = { damageMul: 1, bulletSplit: false, dashSpeedMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
         if(playerMesh.userData.coreMat) playerMesh.userData.coreMat.color.setHex(C_YORHA);
         spawnEnemies();
