@@ -4567,73 +4567,81 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
 }
 /* 1: Brouillard Cosmique (0.40x) */
 .cosmic-fog {
-    position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
-    background: radial-gradient(circle at 50% 50%, rgba(0,212,255,0.03) 0%, transparent 60%);
+    position: fixed; top: -10%; left: -10%; width: 120%; height: 120%;
+    background:
+        radial-gradient(ellipse at 75% 40%, rgba(0, 180, 160, 0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 25% 60%, rgba(20, 60, 120, 0.15) 0%, transparent 65%);
     transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
-    mix-blend-mode: screen; z-index: 1; pointer-events: none;
+    pointer-events: none; z-index: 0;
 }
 /* 1: Atmosphère Planétaire (0.40x) */
 .planet-atmosphere {
-            position: fixed; top: 50%; left: 50%; width: 1400px; height: 1400px;
-            margin-top: -700px; margin-left: -700px;
-            border-radius: 50%;
-            background: #020408;
-            box-shadow: inset 0 20px 60px rgba(0,0,0,1), 0 -15px 50px rgba(255,200,100,0.6), 0 0 80px rgba(0,100,255,0.1);
-            transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6));
-            z-index: 1; pointer-events: none;
-        }
-        .planet-atmosphere::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 50%;
-            box-shadow: inset 0 4px 15px rgba(255,255,255,0.4);
-            opacity: 0.8;
-        }
-        /* 1: Horizon Cosmique (0.40x) */
-        .cosmic-horizon {
-            position: fixed; bottom: 0; left: -10%; width: 120%; height: 30%;
-            background: linear-gradient(0deg, rgba(0,212,255,0.02) 0%, transparent 100%);
-            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
-            z-index: 1; pointer-events: none;
-        }
-        /* 1: Soleil (0.40x) */
-        .sun-eclipse {
-            position: fixed; top: 50%; left: 50%; width: 400px; height: 400px;
-            margin-top: -800px; margin-left: -200px;
-            background: radial-gradient(circle, #ffffff 0%, #ffeedd 10%, #ffa500 30%, transparent 70%);
-            filter: blur(20px);
-            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
-            mix-blend-mode: screen; z-index: 0; pointer-events: none;
-            box-shadow: 0 0 100px #fff, 0 0 200px #ff9900;
-        }
-        /* 2: Poussière (1.20x) via JS, on met juste z-index */
-        #dust-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 2;
-        }
-        /* 2: Bloom Overlay (0.40x) */
-        .bloom-overlay {
-            position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
-            background: radial-gradient(circle at 50% 10%, rgba(255,200,150,0.1) 0%, transparent 60%);
-            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
-            mix-blend-mode: screen; z-index: 2; pointer-events: none;
-        }
-        /* 3: Anamorphic Flares (0.20x) */
-        .anamorphic-flares {
-            position: fixed; top: 50%; left: 0; width: 200%; height: 4px;
-            margin-top: -600px; margin-left: -50%;
-            background: linear-gradient(90deg, transparent 0%, rgba(255,150,50,0.4) 40%, rgba(255,255,255,1) 50%, rgba(0,200,255,0.4) 60%, transparent 100%);
-            box-shadow: 0 0 20px rgba(255,150,50,0.8), 0 0 40px rgba(255,255,255,0.6);
-            transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
-            opacity: 0.9; mix-blend-mode: screen; z-index: 3; pointer-events: none;
-        }
-        /* 4: Bloom Glow (0.20x) */
-        .bloom-glow {
-            position: fixed; top: 50%; left: 50%; width: 800px; height: 800px;
-            margin-top: -900px; margin-left: -400px;
-            background: radial-gradient(circle, rgba(255,200,100,0.05) 0%, transparent 70%);
-            transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
-            mix-blend-mode: screen; z-index: 4; pointer-events: none;
-        }
+    position: fixed; top: 40%; left: 50%; width: 640px; height: 640px;
+    margin-top: -320px; margin-left: -320px;
+    border-radius: 50%;
+    background: #010204;
+    box-shadow: inset 0 25px 50px rgba(0,0,0,1), 0 -12px 40px rgba(255, 200, 120, 0.75), 0 0 30px rgba(0,255,136,0.1);
+    transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6));
+    z-index: 1; pointer-events: none;
+}
+.planet-atmosphere::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    border-radius: 50%;
+    box-shadow: inset 0 6px 15px rgba(255,245,230,0.4);
+    opacity: 0.8;
+}
+/* Planète secondaire à droite */
+.planet-secondary {
+    position: fixed; top: 32%; left: 78%; width: 180px; height: 180px;
+    border-radius: 50%;
+    background: #020305;
+    box-shadow: inset -25px -25px 50px rgba(0,0,0,0.95), inset 15px 15px 30px rgba(255,210,170,0.35), 0 0 15px rgba(255,210,170,0.08);
+    transform: translate(calc(var(--cam-x) * 0.5), calc(var(--cam-y) * 0.5));
+    z-index: 1; pointer-events: none;
+}
+[data-theme="nier"] .planet-secondary,
+[data-theme="ame"] .planet-secondary {
+    display: none;
+}
+/* 1: Soleil (0.40x) */
+.sun-eclipse {
+    position: fixed; top: 40%; left: 50%; width: 300px; height: 300px;
+    margin-top: -420px; margin-left: -150px;
+    background: radial-gradient(circle, #ffffff 0%, #ffebd0 20%, #ffaa44 45%, transparent 75%);
+    filter: blur(15px);
+    transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
+    mix-blend-mode: screen; z-index: 0; pointer-events: none;
+    box-shadow: 0 0 80px #fff, 0 0 160px #ff9933;
+}
+/* 2: Poussière (1.20x) via JS, on met juste z-index */
+#dust-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 2;
+}
+/* 2: Bloom Overlay (0.40x) */
+.bloom-overlay {
+    position: fixed; top: -20%; left: -20%; width: 140%; height: 140%;
+    background: radial-gradient(circle at 50% 10%, rgba(255,200,150,0.1) 0%, transparent 60%);
+    transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
+    mix-blend-mode: screen; z-index: 2; pointer-events: none;
+}
+/* 3: Anamorphic Flares (0.20x) */
+.anamorphic-flares {
+    position: fixed; top: 40%; left: 0; width: 200%; height: 6px;
+    margin-top: -273px; margin-left: -50%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,180,100,0.3) 35%, rgba(255,255,255,0.95) 50%, rgba(255,180,100,0.3) 65%, transparent 100%);
+    box-shadow: 0 0 15px rgba(255,180,100,0.6), 0 0 30px rgba(255,255,255,0.6);
+    transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
+    opacity: 0.95; mix-blend-mode: screen; z-index: 3; pointer-events: none;
+}
+/* 4: Bloom Glow (0.20x) */
+.bloom-glow {
+    position: fixed; top: 40%; left: 50%; width: 700px; height: 700px;
+    margin-top: -470px; margin-left: -350px;
+    background: radial-gradient(circle, rgba(255,180,100,0.06) 0%, transparent 70%);
+    transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
+    mix-blend-mode: screen; z-index: 4; pointer-events: none;
+}
         /* 5: HUD Grid (0.20x) */
         .hud-grid {
             position: fixed; top: 5%; left: 5%; width: 90%; height: 90%;
@@ -4675,16 +4683,47 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
             z-index: 99; border-bottom: 2px solid #111; pointer-events: none;
         }
         .cockpit-ceiling::before, .cockpit-ceiling::after {
-            content: ''; position: absolute; top: 20%; width: 25%; height: 60%;
+            content: ''; position: absolute; top: 20%; width: 35%; height: 40%;
             background: #fff;
-            box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(0,212,255,0.5), inset 0 0 20px rgba(200,240,255,1);
+            box-shadow: 0 0 35px rgba(255,255,255,1), 0 0 70px rgba(255,255,255,0.7);
             border-radius: 4px;
         }
-        .cockpit-ceiling::before { left: 15%; }
-        .cockpit-ceiling::after { right: 15%; }
-
+        .cockpit-ceiling::before { left: 10%; }
+        .cockpit-ceiling::after { right: 10%; }
+ 
         .cockpit-pillar-left, .cockpit-pillar-right {
             position: fixed; top: 15%; bottom: 25%; width: 2%;
+            background: #020305;
+            z-index: 9997; pointer-events: none;
+            box-shadow: inset -10px 0 20px rgba(0,0,0,1);
+        }
+        .cockpit-pillar-left { left: 0; border-right: 1px solid #111; }
+        .cockpit-pillar-right { right: 0; border-left: 1px solid #111; box-shadow: inset 10px 0 20px rgba(0,0,0,1); }
+ 
+        .cockpit-frame {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 25%;
+            pointer-events: none; z-index: 9998;
+            background: #020305;
+            border-top: 1px solid #111;
+            overflow: hidden;
+        }
+        .cockpit-frame::before {
+            content: ''; position: absolute; top: 0; left: 10%; width: 80%; height: 250%;
+            background: #ffffff;
+            box-shadow: 0 -10px 40px rgba(255,255,255,1), 0 -20px 80px rgba(255,255,255,0.7);
+            transform-origin: top center;
+            transform: perspective(800px) rotateX(80deg);
+        }
+        .cockpit-frame::after {
+            content: ''; position: absolute; top: 0; left: 10%; width: 80%; height: 250%;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 2px, transparent 2px);
+            background-size: 60px 60px;
+            transform-origin: top center;
+            transform: perspective(800px) rotateX(80deg);
+            opacity: 0.45;
+        }      }: 2%;
             background: #020305;
             z-index: 9997; pointer-events: none;
             box-shadow: inset -10px 0 20px rgba(0,0,0,1);
@@ -4723,6 +4762,184 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
             background-color: rgba(255, 255, 255, 0.01);
             transform: translate(calc(var(--cam-x) * -0.15), calc(var(--cam-y) * -0.15));
         }
+
+        /* ══ HUD COCKPIT OVERLAYS & TELEMETRY ══ */
+        .cockpit-hud-panel, .cockpit-hud-scope {
+            display: none;
+            position: absolute;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: rgba(0, 255, 136, 0.75);
+            text-shadow: 0 0 5px rgba(0, 255, 136, 0.6);
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 10000;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-hud-panel,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-hud-scope {
+            display: block;
+        }
+        .ceiling-telemetry {
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+        .hud-led {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background-color: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+        }
+        .hud-led.pulse-fast { animation: hudLedPulse 0.5s infinite alternate; }
+        .hud-led.pulse-slow { animation: hudLedPulse 1.5s infinite alternate; }
+        .hud-led.steady { opacity: 0.9; }
+        @keyframes hudLedPulse {
+            0% { opacity: 0.3; filter: brightness(0.5); }
+            100% { opacity: 1; filter: brightness(1.25); }
+        }
+        .hud-separator {
+            color: rgba(0, 255, 136, 0.2);
+        }
+        .frame-telemetry-left {
+            bottom: 20px; left: 5%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .frame-telemetry-right {
+            bottom: 20px; right: 5%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: right;
+        }
+        .telemetry-row {
+            font-size: 10px;
+            opacity: 0.9;
+            letter-spacing: 1px;
+        }
+        .cockpit-hud-scope {
+            bottom: -5px; left: 50%;
+            transform: translateX(-50%);
+            width: 140px; height: 70px;
+            background: radial-gradient(circle at top, rgba(0, 255, 136, 0.05) 0%, transparent 70%);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            border-bottom: none;
+            border-radius: 70px 70px 0 0;
+            overflow: hidden;
+        }
+        .scope-grid {
+            position: absolute; inset: 0;
+            background-image: 
+                linear-gradient(rgba(0, 255, 136, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 136, 0.07) 1px, transparent 1px);
+            background-size: 10px 10px;
+            background-position: center bottom;
+        }
+        .scope-sweep {
+            position: absolute; bottom: 0; left: 50%;
+            width: 200%; height: 200%;
+            transform-origin: bottom center;
+            background: conic-gradient(from 180deg, rgba(0, 255, 136, 0.25) 0deg, transparent 45deg);
+            animation: scopeSweepAnimation 4s linear infinite;
+        }
+        @keyframes scopeSweepAnimation {
+            0% { transform: translate(-50%, 0) rotate(0deg); }
+            100% { transform: translate(-50%, 0) rotate(180deg); }
+        }
+
+        /* ══ HUD RETICLE CURSOR ══ */
+        .hud-reticle {
+            position: fixed;
+            top: 0; left: 0;
+            width: 32px; height: 32px;
+            margin-left: -16px; margin-top: -16px;
+            pointer-events: none;
+            z-index: 100000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.08s ease-out, width 0.2s, height 0.2s, margin-left 0.2s, margin-top 0.2s;
+            display: none;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .hud-reticle {
+            display: block;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) {
+            cursor: none;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) a,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) button,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) [role="button"],
+        html:not([data-theme="nier"]):not([data-theme="ame"]) select,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) input,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) textarea {
+            cursor: none !important;
+        }
+        .reticle-center {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-family: monospace; font-size: 10px;
+            color: #00ff88;
+            text-shadow: 0 0 3px #00ff88;
+        }
+        .reticle-bracket {
+            position: absolute;
+            width: 6px; height: 6px;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
+            transition: all 0.2s ease;
+        }
+        .reticle-bracket.top-left { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .reticle-bracket.top-right { top: 0; right: 0; border-left: none; border-bottom: none; }
+        .reticle-bracket.bottom-left { bottom: 0; left: 0; border-right: none; border-top: none; }
+        .reticle-bracket.bottom-right { bottom: 0; right: 0; border-left: none; border-top: none; }
+        .reticle-ring {
+            position: absolute; inset: -4px;
+            border: 1px dashed rgba(0, 255, 136, 0.25);
+            border-radius: 50%;
+            animation: reticleSpin 12s linear infinite;
+            transition: border-color 0.2s;
+        }
+        @keyframes reticleSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hud-reticle.reticle-lock {
+            width: 24px; height: 24px;
+            margin-left: -12px; margin-top: -12px;
+        }
+        .hud-reticle.reticle-lock .reticle-center {
+            color: #ff5500;
+            text-shadow: 0 0 5px #ff5500;
+        }
+        .hud-reticle.reticle-lock .reticle-bracket {
+            border-color: #ff5500;
+            box-shadow: 0 0 6px rgba(255, 85, 0, 0.6);
+        }
+        .hud-reticle.reticle-lock .reticle-ring {
+            border-color: rgba(255, 85, 0, 0.4);
+            animation: reticleSpin 2s linear infinite;
+        }
+        .reticle-click-ring {
+            position: fixed;
+            border: 1px solid #00ff88;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99999;
+            transform: translate(-50%, -50%) scale(0.2);
+            opacity: 1;
+            animation: reticleClickWave 0.3s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+        @keyframes reticleClickWave {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; border-color: #00ff88; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; border-color: #ff5500; }
+        }
+
 [data-theme="nier"] .cockpit-camera .cosmic-fog,
 [data-theme="nier"] .cockpit-camera .planet-atmosphere,
 [data-theme="nier"] .cockpit-camera .cosmic-horizon,
@@ -4864,7 +5081,7 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero-over
     100% { top: 0; }
 }
 @keyframes planetRise {
-    0% { top: 50%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+    0% { top: 40%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
     100% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
 }
 @keyframes ceilingRise {
@@ -4926,14 +5143,82 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-gla
     margin: 40px auto;
     padding: 60px 40px;
     min-height: 80vh; /* Fills the vertical space beautifully */
-    background: rgba(3, 5, 8, 0.7);
+    background: rgba(3, 8, 5, 0.75);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 212, 255, 0.2);
+    border: 1px solid rgba(0, 255, 136, 0.25);
     border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.15);
-    color: #e0f0ff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 30px rgba(0, 255, 136, 0.08);
+    color: #e0f8ff;
     animation: fadeInGlass 1s ease-out forwards;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px;
+    width: 16px; height: 16px;
+    border-top: 3px solid #00ff88;
+    border-left: 3px solid #00ff88;
+    border-top-left-radius: 12px;
+    pointer-events: none;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; right: -2px;
+    width: 16px; height: 16px;
+    border-bottom: 3px solid #00ff88;
+    border-right: 3px solid #00ff88;
+    border-bottom-right-radius: 12px;
+    pointer-events: none;
+}
+
+/* Cyber data overrides for content elements under Rayon Vert */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide h1,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide h2,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide h3,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide h4 {
+    color: #00ff88 !important;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+    font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide a:not(.logo):not(.filter-label):not([href="shell.html"]) {
+    color: #00ff88 !important;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0, 255, 136, 0.4);
+    transition: all 0.2s ease;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide a:not(.logo):not(.filter-label):not([href="shell.html"]):hover {
+    color: #ffffff !important;
+    border-bottom-color: #ffffff;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+}
+
+/* Explicit high-visibility shell button styling under Rayon Vert */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide a[href="shell.html"] {
+    background: #00ff88 !important;
+    color: #030805 !important;
+    font-weight: 800 !important;
+    border: 1px solid #00ff88 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.4) !important;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide a[href="shell.html"]:hover {
+    background: #ffffff !important;
+    color: #030805 !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.6) !important;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide pre,
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide code {
+    background: rgba(0, 20, 10, 0.6) !important;
+    border: 1px solid rgba(0, 255, 136, 0.25) !important;
+    color: #88ffbb !important;
 }
 
 @keyframes fadeInGlass {
