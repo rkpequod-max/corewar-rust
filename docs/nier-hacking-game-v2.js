@@ -282,17 +282,17 @@
             if(canvasWrap) canvasWrap.appendChild(codeEditorEl);
         }
 
-        codeEditorEl.style.cssText = "position:absolute;inset:0;background:#08080C;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#D4CFC6;padding:20px;box-sizing:border-box;";
+        codeEditorEl.style.cssText = "position:absolute;inset:0;background:#08080C;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#D4CFC6;padding:10px;box-sizing:border-box;overflow:hidden;";
 
         /* Build instruction table — Core War opcode style */
-        let refHTML = `<div style="margin-bottom:12px;width:100%;max-width:780px;border:1px solid #222;">`;
-        refHTML += `<div style="display:flex;background:#111;border-bottom:1px solid #222;padding:6px 10px;font-size:1rem;color:#555;letter-spacing:0.15em;">`;
-        refHTML += `<span style="width:120px;">OPCODE</span><span style="flex:1;">EFFECT</span><span style="width:70px;text-align:right;">TYPE</span></div>`;
+        let refHTML = `<div style="margin-bottom:8px;width:100%;border:1px solid #222;">`;
+        refHTML += `<div style="display:flex;background:#111;border-bottom:1px solid #222;padding:3px 10px;font-size:0.95rem;color:#555;letter-spacing:0.15em;">`;
+        refHTML += `<span style="width:100px;">OPCODE</span><span style="flex:1;">EFFECT</span><span style="width:60px;text-align:right;">TYPE</span></div>`;
         for (const [key, info] of Object.entries(REDCODE_INSTRUCTIONS)) {
-            refHTML += `<div style="display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid #1A1A1A;font-size:1.1rem;">`;
-            refHTML += `<span style="width:120px;color:${info.color};font-weight:bold;letter-spacing:0.05em;">${info.name}</span>`;
+            refHTML += `<div style="display:flex;align-items:center;padding:2px 10px;border-bottom:1px solid #1A1A1A;font-size:0.95rem;">`;
+            refHTML += `<span style="width:100px;color:${info.color};font-weight:bold;letter-spacing:0.05em;">${info.name}</span>`;
             refHTML += `<span style="flex:1;color:#777;">${info.desc}</span>`;
-            refHTML += `<span style="width:70px;text-align:right;font-size:0.9rem;color:#333;letter-spacing:0.1em;">${key === 'add' || key === 'sub' || key === 'and' ? 'ALU' : key === 'sti' || key === 'ld' ? 'MEM' : key === 'zjmp' || key === 'fork' ? 'CTL' : 'SPE'}</span>`;
+            refHTML += `<span style="width:60px;text-align:right;font-size:0.8rem;color:#333;letter-spacing:0.1em;">${key === 'add' || key === 'sub' || key === 'and' ? 'ALU' : key === 'sti' || key === 'ld' ? 'MEM' : key === 'zjmp' || key === 'fork' ? 'CTL' : 'SPE'}</span>`;
             refHTML += `</div>`;
         }
         refHTML += `</div>`;
@@ -300,28 +300,28 @@
         /* Tutorial hint for first level */
         let tutorialHTML = '';
         if(lvl.tutorial) {
-            tutorialHTML = `<div style="margin-bottom:10px;font-size:1.1rem;color:#667788;letter-spacing:0.03em;">$ pod042 --suggest "<span style="color:#FF6600;">${lvl.tutorial}</span>"</div>`;
+            tutorialHTML = `<div style="margin-bottom:6px;font-size:0.95rem;color:#667788;letter-spacing:0.03em;">$ pod042 --suggest "<span style="color:#FF6600;">${lvl.tutorial}</span>"</div>`;
         }
 
         codeEditorEl.innerHTML = `
-            <div style="width:100%;max-width:780px;">
+            <div id="nh-shell-scale" style="width:100%;max-width:780px;display:flex;flex-direction:column;transform-origin:top center;">
                 <!-- Terminal header bar -->
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;padding:4px 0;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;padding:3px 0;">
                     <span style="width:8px;height:8px;border-radius:50%;background:#FF5F57;"></span>
                     <span style="width:8px;height:8px;border-radius:50%;background:#FEBC2E;"></span>
                     <span style="width:8px;height:8px;border-radius:50%;background:#28C840;"></span>
                     <span style="flex:1;"></span>
-                    <span style="font-size:0.9rem;color:#333;letter-spacing:0.2em;">ARENA SHELL v3.14</span>
+                    <span style="font-size:0.85rem;color:#333;letter-spacing:0.2em;">ARENA SHELL v3.14</span>
                 </div>
 
                 <!-- Main terminal window -->
-                <div style="background:#0A0A0E;border:1px solid #1A1A1A;padding:12px 14px;">
+                <div style="background:#0A0A0E;border:1px solid #1A1A1A;padding:10px 12px;">
 
                     <!-- Shell prompt header -->
-                    <div style="font-size:1.05rem;color:#4A4A4A;letter-spacing:0.05em;margin-bottom:6px;">corewar-arena $ cat /proc/${lvl.name}/status</div>
-                    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px;">
-                        <span style="font-size:1.8rem;letter-spacing:0.15em;color:#C4362B;font-weight:bold;">${lvl.name}</span>
-                        <span style="font-size:0.95rem;color:#333;">SECTOR ${curLvl+1}/${LEVELS.length} | LINES: ${maxLines}</span>
+                    <div style="font-size:0.95rem;color:#4A4A4A;letter-spacing:0.05em;margin-bottom:4px;">corewar-arena $ cat /proc/${lvl.name}/status</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+                        <span style="font-size:1.5rem;letter-spacing:0.15em;color:#C4362B;font-weight:bold;">${lvl.name}</span>
+                        <span style="font-size:0.85rem;color:#333;">SECTOR ${curLvl+1}/${LEVELS.length} | LINES: ${maxLines}</span>
                     </div>
 
                     <!-- Instruction reference table -->
@@ -331,33 +331,47 @@
                     ${tutorialHTML}
 
                     <!-- Code input area — terminal style with line numbers -->
-                    <div style="display:flex;border:1px solid #222;margin-top:8px;background:#050508;">
-                        <div id="nh-line-numbers" style="padding:10px 8px;background:#0A0A0E;border-right:1px solid #1A1A1A;color:#333;font-size:1.4rem;line-height:1.35;text-align:right;min-width:36px;user-select:none;"></div>
+                    <div style="display:flex;border:1px solid #222;margin-top:6px;background:#050508;">
+                        <div id="nh-line-numbers" style="padding:8px 6px;background:#0A0A0E;border-right:1px solid #1A1A1A;color:#333;font-size:1.2rem;line-height:1.3;text-align:right;min-width:30px;user-select:none;"></div>
                         <textarea id="nh-code-input" rows="${maxLines}" maxlength="${maxLines*40}" spellcheck="false"
-                            style="flex:1;background:transparent;border:none;color:#00FF00;font-family:'Courier New',monospace;font-size:1.4rem;padding:10px 12px;line-height:1.35;letter-spacing:0.05em;resize:none;outline:none;"
+                            style="flex:1;background:transparent;border:none;color:#00FF00;font-family:'Courier New',monospace;font-size:1.2rem;padding:8px 10px;line-height:1.3;letter-spacing:0.05em;resize:none;outline:none;"
                             placeholder="_"></textarea>
                     </div>
 
                     <!-- Buffs preview -->
-                    <div id="nh-code-buffs" style="margin-top:8px;min-height:22px;font-size:1rem;color:#555;"></div>
+                    <div id="nh-code-buffs" style="margin-top:6px;min-height:18px;font-size:0.9rem;color:#555;"></div>
 
                     <!-- Error display -->
-                    <div id="nh-code-error" style="display:none;margin-top:6px;font-size:1rem;color:#FF3333;letter-spacing:0.03em;"></div>
+                    <div id="nh-code-error" style="display:none;margin-top:4px;font-size:0.9rem;color:#FF3333;letter-spacing:0.03em;"></div>
 
                     <!-- Action buttons — terminal command style -->
-                    <div style="display:flex;gap:10px;margin-top:10px;">
-                        <button id="nh-code-skip" style="padding:6px 22px;background:transparent;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:1.1rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[skip]</button>
-                        <button id="nh-code-compile" style="padding:6px 22px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:1.1rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[compile]</button>
+                    <div style="display:flex;gap:8px;margin-top:8px;">
+                        <button id="nh-code-skip" style="padding:4px 18px;background:transparent;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:1rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[skip]</button>
+                        <button id="nh-code-compile" style="padding:4px 18px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:1rem;letter-spacing:0.1em;cursor:pointer;transition:border-color 0.15s,color 0.15s;">[compile]</button>
                     </div>
 
                     <!-- Footer info -->
-                    <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:6px;border-top:1px solid #1A1A1A;">
-                        <span style="font-size:0.8rem;color:#2A2A2A;letter-spacing:0.08em;">MEM 4096 | IDX 512 | CTD 1536</span>
-                        <span style="font-size:0.8rem;color:#2A2A2A;letter-spacing:0.08em;">ESC:unfocus | LEFT/RIGHT:select | ENTER:confirm</span>
+                    <div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:4px;border-top:1px solid #1A1A1A;">
+                        <span style="font-size:0.75rem;color:#2A2A2A;letter-spacing:0.08em;">MEM 4096 | IDX 512 | CTD 1536</span>
+                        <span style="font-size:0.75rem;color:#2A2A2A;letter-spacing:0.08em;">ESC:unfocus | LEFT/RIGHT:select | ENTER:confirm</span>
                     </div>
                 </div>
             </div>
         `;
+
+        /* Auto-scale shell to fit container height */
+        requestAnimationFrame(function(){
+            const shellEl = document.getElementById('nh-shell-scale');
+            if(!shellEl || !codeEditorEl) return;
+            const containerH = codeEditorEl.clientHeight;
+            const shellH = shellEl.scrollHeight;
+            if(shellH > containerH && containerH > 0){
+                const scale = containerH / shellH;
+                shellEl.style.transform = "scale(" + Math.max(scale, 0.5) + ")";
+            } else {
+                shellEl.style.transform = "";
+            }
+        });
 
         /* Live parsing on input */
         const textarea = document.getElementById('nh-code-input');
