@@ -338,6 +338,8 @@
                 const currentLines = textarea.value.split('\n').length;
                 if(currentLines >= maxLines) {
                     ev.preventDefault();
+                    ev.stopPropagation();
+                    ev.stopImmediatePropagation();
                     return;
                 }
             }
