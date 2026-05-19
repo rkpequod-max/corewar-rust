@@ -7020,6 +7020,65 @@ while (!halt) {
 </script>
 
 <script>
+// ── Âme: Caustic Cursor Trail ──
+(function() {
+    var lastTime = 0;
+    document.addEventListener('mousemove', function(e) {
+        if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        var now = Date.now();
+        if (now - lastTime < 80) return;
+        lastTime = now;
+        var dot = document.createElement('div');
+        var size = 4 + Math.random() * 6;
+        var drift = (Math.random() - 0.5) * 40;
+        var rise = -60 - Math.random() * 50;
+        dot.style.cssText = 'position:fixed;pointer-events:none;z-index:9989;border-radius:50%;' +
+            'width:' + size + 'px;height:' + size + 'px;' +
+            'left:' + e.clientX + 'px;top:' + e.clientY + 'px;transform:translate(-50%,-50%) scale(1);' +
+            'background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(0,206,209,0.15) 40%, rgba(30,91,216,0.05) 80%, transparent 100%);' +
+            'border:1px solid rgba(0,206,209,0.3);' +
+            'box-shadow:0 0 5px rgba(0,206,209,0.15), inset 0 0 3px rgba(255,255,255,0.2);' +
+            'transition:opacity 1.5s cubic-bezier(0.1, 0.8, 0.3, 1), transform 1.5s cubic-bezier(0.1, 0.8, 0.3, 1);opacity:0.8;';
+        document.body.appendChild(dot);
+        requestAnimationFrame(function() {
+            dot.style.opacity = '0';
+            dot.style.transform = 'translate(calc(-50% + ' + drift + 'px), calc(-50% + ' + rise + 'px)) scale(1.4)';
+        });
+        setTimeout(function() { dot.remove(); }, 1500);
+    });
+})();
+
+// ── Âme: Interactive Water Ripple ──
+(function() {
+    document.addEventListener('click', function(e) {
+        if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        
+        var ripple = document.createElement('div');
+        ripple.className = 'water-ripple';
+        ripple.style.left = e.clientX + 'px';
+        ripple.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple);
+        
+        var ripple2 = document.createElement('div');
+        ripple2.className = 'water-ripple-mid';
+        ripple2.style.left = e.clientX + 'px';
+        ripple2.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple2);
+
+        var ripple3 = document.createElement('div');
+        ripple3.className = 'water-ripple-inner';
+        ripple3.style.left = e.clientX + 'px';
+        ripple3.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple3);
+        
+        setTimeout(function() { ripple.remove(); }, 1400);
+        setTimeout(function() { ripple2.remove(); }, 1800);
+        setTimeout(function() { ripple3.remove(); }, 2100);
+    });
+})();
+</script>
+
+<script>
 // ── Âme: Realistic Underwater Background Shader ──
 (function() {
     var canvas = document.getElementById('underwater-bg');
@@ -7033,11 +7092,108 @@ while (!halt) {
         'precision mediump float;',
         'uniform float uTime;',
         'uniform vec2 uResolution;',
-        'vec2 hash22(vec2 p){p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));return -1.0+2.0*fract(sin(p)*43758.5453);}',
-        'float voronoi(vec2 p){vec2 n=floor(p);vec2 f=fract(p);float md=8.0;for(int j=-1;j<=1;j++){for(int i=-1;i<=1;i++){vec2 g=vec2(float(i),float(j));vec2 o=hash22(n+g);o=0.5+0.5*sin(uTime*0.15+6.2831*o);vec2 r=g+o-f;float d=dot(r,r);md=min(md,d);}}return sqrt(md);}',
-        'float caustics(vec2 uv){float v1=voronoi(uv*5.0);float v2=voronoi(uv*5.0+vec2(1.7,3.2));float c1=pow(1.0-smoothstep(0.0,0.08,abs(v1-v2)),2.0);float v3=voronoi(uv*9.0+vec2(5.1,2.3));float v4=voronoi(uv*9.0+vec2(6.8,4.5));float c2=pow(1.0-smoothstep(0.0,0.06,abs(v3-v4)),2.0);return c1*0.65+c2*0.35;}',
-        'float godRay(vec2 uv,float cx,float w,float phase){float sway=sin(uv.y*2.5+uTime*0.12+phase)*0.025+sin(uv.y*5.5-uTime*0.07+phase*1.7)*0.012;float x=uv.x-cx-sway;float beam=exp(-x*x/(w*w));beam*=smoothstep(0.0,0.15,1.0-uv.y);beam*=0.55+0.45*sin(uTime*0.08+phase*3.0);return beam;}',
-        'void main(){vec2 uv=gl_FragCoord.xy/uResolution;vec3 col=mix(vec3(0.035,0.065,0.13),vec3(0.012,0.022,0.055),pow(uv.y,0.7));float cf=smoothstep(1.0,0.15,uv.y);float c=caustics(uv);col+=vec3(0.06,0.10,0.18)*c*cf*0.45;float rays=0.0;rays+=godRay(uv,0.18,0.07,0.0)*0.55;rays+=godRay(uv,0.48,0.10,2.1)*0.75;rays+=godRay(uv,0.78,0.06,4.2)*0.45;col+=vec3(0.05,0.08,0.14)*rays;float sf=smoothstep(0.78,1.0,uv.y);float sh=sin(uv.x*50.0+uTime*0.4)*sin(uv.y*30.0-uTime*0.25);sh=pow(max(sh,0.0),4.0);col+=vec3(0.03,0.05,0.08)*sh*sf*0.4;col.r*=mix(0.8,0.3,uv.y);float vig=length((uv-0.5)*vec2(1.2,0.8));col*=smoothstep(1.1,0.3,vig);gl_FragColor=vec4(col,1.0);}'
+        'uniform vec2 uMouse;',
+        '',
+        'float hash(vec2 p){',
+        '  return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);',
+        '}',
+        '',
+        'float noise(vec2 p){',
+        '  vec2 i=floor(p);vec2 f=fract(p);',
+        '  vec2 u=f*f*(3.0-2.0*f);',
+        '  return mix(mix(hash(i+vec2(0.0,0.0)),hash(i+vec2(1.0,0.0)),u.x),',
+        '             mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);',
+        '}',
+        '',
+        'float fbm(vec2 p,float time){',
+        '  float v=0.0;float a=0.5;vec2 shift=vec2(100.0);',
+        '  mat2 rot=mat2(0.8,0.6,-0.6,0.8);',
+        '  for(int i=0;i<3;i++){',
+        '    v+=a*noise(p+vec2(0.0,time*0.15));',
+        '    p=rot*p*2.0+shift;',
+        '    a*=0.5;',
+        '  }',
+        '  return v;',
+        '}',
+        '',
+        'float caustics(vec2 uv, float time){',
+        '  vec2 p=mod(uv*6.28318530718,6.28318530718)-250.0;',
+        '  vec2 i=vec2(p);',
+        '  float c=1.0;',
+        '  float inten=0.005;',
+        '  for(int n=0;n<5;n++){',
+        '    float t=time*(1.0-(3.5/float(n+1)));',
+        '    i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));',
+        '    c+=1.0/(length(vec2(p.x/(sin(i.x+t)/inten),p.y/(cos(i.y+t)/inten)))+0.001);',
+        '  }',
+        '  c/=5.0;',
+        '  c=1.17-pow(c,1.4);',
+        '  return pow(abs(c),8.0);',
+        '}',
+        '',
+        'float getSpotlight(vec2 uv,vec2 origin,float swayAngle,float startWidth,float spread,float decay,float noiseVal){',
+        '  vec2 dir=vec2(sin(swayAngle),-cos(swayAngle));',
+        '  vec2 v=uv-origin;',
+        '  float proj=dot(v,dir);',
+        '  float aboveFade=smoothstep(0.0,-0.05,proj);',
+        '  float perp=length(v-proj*dir);',
+        '  float width=startWidth+max(proj,0.0)*spread;',
+        '  float beam=exp(-(perp*perp)/(width*width));',
+        '  beam*=mix(0.5,1.0,noiseVal);',
+        '  beam*=exp(-max(proj,0.0)*decay);',
+        '  float topFade=smoothstep(0.0,0.12,max(proj,0.0));',
+        '  return beam*(1.0-aboveFade)*topFade;',
+        '}',
+        '',
+        'void main(){',
+        '  vec2 uv=gl_FragCoord.xy/uResolution;',
+        '  vec2 distortedUV=uv;',
+        '  distortedUV.x+=sin(uv.y*10.0+uTime*0.4)*0.003;',
+        '  distortedUV.y+=cos(uv.x*8.0+uTime*0.3)*0.003;',
+        '  vec3 bgBottom=vec3(0.002,0.004,0.012);',
+        '  vec3 bgTop=vec3(0.008,0.015,0.045);',
+        '  vec3 col=mix(bgBottom,bgTop,uv.y);',
+        '  float mist=fbm(distortedUV*2.5,uTime*0.35);',
+        '  col+=vec3(0.008,0.02,0.06)*mist;',
+        '  vec2 mouseInfluence=(uMouse-0.5)*0.1;',
+        '  float totalBeam=0.0;',
+        '  for(int i=0;i<6;i++){',
+        '    float fi=float(i);',
+        '    vec2 spotOrigin=vec2(0.12+fi*0.15+mouseInfluence.x,1.05);',
+        '    float sway=sin(uTime*0.4+fi*1.2)*0.14+mouseInfluence.x*0.5;',
+        '    float beam=getSpotlight(distortedUV,spotOrigin,sway,0.03,0.28,0.9,mist);',
+        '    totalBeam+=beam;',
+        '  }',
+        '  vec3 beamCol=vec3(0.16,0.36,0.85)*totalBeam;',
+        '  vec3 coreCol=vec3(0.7,0.85,1.0)*pow(totalBeam,3.0);',
+        '  col+=beamCol*0.32+coreCol*0.10;',
+        '  float topLights=0.0;',
+        '  for(int i=0;i<6;i++){',
+        '    float fi=float(i);',
+        '    vec2 spotOrigin=vec2(0.12+fi*0.15+mouseInfluence.x,1.05);',
+        '    float d=length(uv-spotOrigin);',
+        '    topLights+=exp(-(d*d)/0.003)*0.85;',
+        '  }',
+        '  col+=vec3(0.8,0.92,1.0)*topLights*smoothstep(0.9,1.0,uv.y)*0.42;',
+        '  float c=caustics(distortedUV*4.0-mouseInfluence,uTime*0.28);',
+        '  col+=vec3(0.04,0.22,0.65)*c*0.18;',
+        '  vec2 gridUV=distortedUV*18.0;',
+        '  gridUV.y-=uTime*0.12;',
+        '  gridUV.x+=sin(gridUV.y+uTime*0.15)*0.12;',
+        '  vec2 gridId=floor(gridUV);',
+        '  vec2 gridFract=fract(gridUV)-0.5;',
+        '  float h=hash(gridId);',
+        '  float hasParticle=step(0.97,h);',
+        '  float size=0.015+0.035*hash(gridId+vec2(1.0));',
+        '  float brightness=0.35+0.65*sin(uTime*2.5+h*6.28);',
+        '  float d=length(gridFract);',
+        '  float particle=smoothstep(size,0.0,d)*brightness*hasParticle;',
+        '  particle*=(0.15+totalBeam*1.5);',
+        '  col+=vec3(0.65,0.88,1.0)*particle*0.45;',
+        '  float vignette=length((uv-0.5)*vec2(1.2,0.8));',
+        '  col*=smoothstep(1.3,0.45,vignette);',
+        '  gl_FragColor=vec4(col,1.0);',
+        '}'
     ].join('\n');
 
     function compile(src, type) {
@@ -7055,6 +7211,15 @@ while (!halt) {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
     var aPos = gl.getAttribLocation(prog, 'aPosition'); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
     var uTime = gl.getUniformLocation(prog, 'uTime'); var uRes = gl.getUniformLocation(prog, 'uResolution');
+    var uMouse = gl.getUniformLocation(prog, 'uMouse');
+
+    var mouseX = 0.5, mouseY = 0.5;
+    var curMouseX = 0.5, curMouseY = 0.5;
+
+    function onMouseMove(e) {
+        mouseX = e.clientX / window.innerWidth;
+        mouseY = 1.0 - (e.clientY / window.innerHeight);
+    }
 
     function resize() {
         var dpr = Math.min(window.devicePixelRatio || 1, 1);
@@ -7062,9 +7227,20 @@ while (!halt) {
         if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); }
     }
     var animId = null; var t0 = 0;
-    function render(now) { if (!t0) t0 = now; resize(); gl.uniform1f(uTime, (now - t0) / 1000); gl.uniform2f(uRes, canvas.width, canvas.height); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); animId = requestAnimationFrame(render); }
-    function start() { if (animId) return; canvas.style.display = 'block'; t0 = 0; animId = requestAnimationFrame(render); }
-    function stop() { if (animId) { cancelAnimationFrame(animId); animId = null; } canvas.style.display = 'none'; }
+    function render(now) {
+        if (!t0) t0 = now; resize();
+        gl.uniform1f(uTime, (now - t0) / 1000);
+        gl.uniform2f(uRes, canvas.width, canvas.height);
+        
+        curMouseX += (mouseX - curMouseX) * 0.05;
+        curMouseY += (mouseY - curMouseY) * 0.05;
+        gl.uniform2f(uMouse, curMouseX, curMouseY);
+
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        animId = requestAnimationFrame(render);
+    }
+    function start() { if (animId) return; canvas.style.display = 'block'; window.addEventListener('mousemove', onMouseMove); t0 = 0; animId = requestAnimationFrame(render); }
+    function stop() { if (animId) { cancelAnimationFrame(animId); animId = null; } window.removeEventListener('mousemove', onMouseMove); canvas.style.display = 'none'; }
 
     var obs = new MutationObserver(function() { if (document.documentElement.getAttribute('data-theme') === 'ame') start(); else stop(); });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

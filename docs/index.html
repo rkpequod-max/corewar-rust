@@ -394,6 +394,7 @@
 
         /* ══ TRIPLE LIGHT BEAMS (Rayon Vert style) ══ */
         .light-beams {
+            display: none !important;
             position: absolute; top: -30%; left: 0; width: 100%; height: 160%;
             z-index: 0; pointer-events: none;
             overflow: hidden;
@@ -1661,7 +1662,7 @@
             --border: #152A55;
             --border-light: #1E4080;
             --text: #C8DAF0;        /* Pale moonlight on water */
-            --text-dim: #4A6A90;
+            --text-dim: #8BB4E8;
             --ray: #1E5BD8;         /* Azur beam — the spotlight in the dark */
             --ray-dim: rgba(30,91,216,0.10);
             --ray-glow: rgba(30,91,216,0.45);
@@ -1978,12 +1979,12 @@
 
         /* ── Terminal Window ── */
         [data-theme="ame"] .terminal-window {
-            background: rgba(6,12,30,0.85);
-            border: 1px solid rgba(21,42,85,0.5);
-            border-left: 3px solid rgba(30,91,216,0.4);
+            background: rgba(6,12,30,0.8);
+            border: 1px solid rgba(74, 144, 226, 0.15);
+            border-left: 3px solid rgba(30,91,216,0.5);
             border-radius: 8px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-            backdrop-filter: blur(8px);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 12px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(12px);
         }
         [data-theme="ame"] .terminal-window::before {
             background: linear-gradient(90deg, transparent, rgba(30,91,216,0.3), rgba(0,206,209,0.2), transparent);
@@ -2013,12 +2014,12 @@
         /* ── Video Cards ── */
         [data-theme="ame"] .video-card {
             background: rgba(6,12,30,0.7);
-            border: 1px solid rgba(21,42,85,0.5);
+            border: 1px solid rgba(74, 144, 226, 0.15);
             border-left: 3px solid rgba(30,91,216,0.4);
             border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5);
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(12px);
         }
         [data-theme="ame"] .video-card::before {
             background: linear-gradient(90deg, rgba(30,91,216,0.3), rgba(0,206,209,0.4), rgba(30,91,216,0.3));
@@ -2028,9 +2029,9 @@
             background: linear-gradient(90deg, transparent, rgba(0,206,209,0.03), transparent);
         }
         [data-theme="ame"] .video-card:hover {
-            border-color: rgba(30,91,216,0.25);
-            border-left-color: rgba(0,206,209,0.6);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,206,209,0.08);
+            border-color: rgba(0, 206, 209, 0.35);
+            border-left-color: rgba(0,206,209,0.7);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.03), 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(0, 206, 209, 0.12);
             transform: translateY(-3px);
         }
         [data-theme="ame"] .video-card .caption { color: #4A6A90; }
@@ -2041,12 +2042,12 @@
         /* ── Crate Cards ── */
         [data-theme="ame"] .crate-card {
             background: rgba(6,12,30,0.7);
-            border: 1px solid rgba(21,42,85,0.5);
+            border: 1px solid rgba(74, 144, 226, 0.15);
             border-left: 3px solid rgba(0,206,209,0.35);
             border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5);
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(12px);
         }
         [data-theme="ame"] .crate-card::before {
             background: linear-gradient(90deg, transparent, rgba(0,206,209,0.04), transparent);
@@ -2057,9 +2058,9 @@
             );
         }
         [data-theme="ame"] .crate-card:hover {
-            border-color: rgba(30,91,216,0.2);
-            border-left-color: rgba(0,206,209,0.5);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,206,209,0.06);
+            border-color: rgba(0, 206, 209, 0.35);
+            border-left-color: rgba(0,206,209,0.7);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.03), 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(0, 206, 209, 0.12);
             transform: translateY(-3px);
         }
         [data-theme="ame"] .crate-card .name {
@@ -2069,11 +2070,11 @@
         /* ── Summary Cards ── */
         [data-theme="ame"] .summary-card {
             background: rgba(6,12,30,0.7);
-            border: 1px solid rgba(21,42,85,0.5);
+            border: 1px solid rgba(74, 144, 226, 0.15);
             border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5);
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(12px);
         }
         /* Subtle water-surface gradient on top edge — very faint */
         [data-theme="ame"] .summary-card::before {
@@ -2088,8 +2089,8 @@
             );
         }
         [data-theme="ame"] .summary-card:hover {
-            border-color: rgba(30,91,216,0.2);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            border-color: rgba(0, 206, 209, 0.35);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.03), 0 15px 35px rgba(0,0,0,0.6), 0 0 15px rgba(0, 206, 209, 0.08);
             transform: translateY(-2px);
         }
         /* Per-card depth shading — subtle, no glow */
@@ -2112,11 +2113,11 @@
         [data-theme="ame"] .summary-card:nth-child(1),
         [data-theme="ame"] .summary-card:nth-child(2),
         [data-theme="ame"] .summary-card:nth-child(3),
-        [data-theme="ame"] .summary-card:nth-child(4) { box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+        [data-theme="ame"] .summary-card:nth-child(4) { box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5); }
         [data-theme="ame"] .summary-card:nth-child(1):hover,
         [data-theme="ame"] .summary-card:nth-child(2):hover,
         [data-theme="ame"] .summary-card:nth-child(3):hover,
-        [data-theme="ame"] .summary-card:nth-child(4):hover { box-shadow: 0 8px 25px rgba(0,0,0,0.6); }
+        [data-theme="ame"] .summary-card:nth-child(4):hover { box-shadow: inset 0 0 12px rgba(255,255,255,0.03), 0 15px 35px rgba(0,0,0,0.6), 0 0 15px rgba(0, 206, 209, 0.08); }
         [data-theme="ame"] .summary-card .label {
             color: #4A7AAA;
             letter-spacing: 2px;
@@ -2236,39 +2237,40 @@
         /* ── Feature Cards ── */
         [data-theme="ame"] .feature-card {
             background: rgba(6,12,30,0.7);
-            border: 1px solid rgba(21,42,85,0.5);
+            border: 1px solid rgba(74, 144, 226, 0.15);
             border-radius: 8px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5);
         }
         [data-theme="ame"] .feature-card:hover {
-            border-color: rgba(30,91,216,0.2);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            border-color: rgba(0, 206, 209, 0.35);
+            box-shadow: inset 0 0 12px rgba(255,255,255,0.03), 0 15px 35px rgba(0,0,0,0.6), 0 0 15px rgba(0, 206, 209, 0.08);
         }
         [data-theme="ame"] .feature-card .fc-icon { color: #1E5BD8; }
         [data-theme="ame"] .stat-val { color: #1E5BD8; }
 
         /* ── Headings & Sections ── */
-        [data-theme="ame"] h2 { color: #E0EAF8; letter-spacing: 1px; font-weight: 200; }
+        [data-theme="ame"] h2 { color: var(--ivory); letter-spacing: 1px; font-weight: 200; }
         [data-theme="ame"] h2 .accent {
-            color: #1E5BD8;
-            text-shadow: 0 0 25px rgba(30,91,216,0.5);
+            color: var(--cyan);
+            text-shadow: 0 0 25px var(--electric-glow);
         }
         [data-theme="ame"] h2::after {
-            background: linear-gradient(90deg, #1E5BD8, #00CED1);
-            box-shadow: 0 0 15px rgba(30,91,216,0.3);
+            background: linear-gradient(90deg, var(--blue), var(--cyan));
+            box-shadow: 0 0 15px var(--electric-glow);
         }
         [data-theme="ame"] h3 {
-            color: #1E5BD8;
-            text-shadow: 0 0 15px rgba(30,91,216,0.2);
+            color: var(--cyan);
+            text-shadow: 0 0 15px var(--electric-glow);
             font-weight: 400;
             letter-spacing: 0.5px;
         }
-        [data-theme="ame"] p { color: #4A6A90; }
-        [data-theme="ame"] strong { color: #C8DAF0; }
-        [data-theme="ame"] a { color: #1E5BD8; }
-        [data-theme="ame"] a:hover { color: #00CED1; }
-        [data-theme="ame"] section { border-bottom-color: rgba(21,42,85,0.5); }
-        [data-theme="ame"] .section-label { color: #4A6A90; letter-spacing: 4px; }
+        [data-theme="ame"] p { color: var(--text-dim); }
+        [data-theme="ame"] strong { color: var(--ivory); }
+        [data-theme="ame"] a { color: var(--cyan); text-decoration: none; transition: all 0.3s ease; }
+        [data-theme="ame"] a:hover { color: var(--ivory); text-shadow: 0 0 8px var(--electric-glow); }
+        [data-theme="ame"] section { border-bottom-color: var(--border); }
+        [data-theme="ame"] .section-label { color: var(--text-dim); letter-spacing: 4px; }
 
         /* ── Utility classes ── */
         [data-theme="ame"] .green { color: #00CED1; }
@@ -2282,8 +2284,6 @@
         }
         [data-theme="ame"] footer a { color: #1E5BD8; }
         [data-theme="ame"] footer a:hover { color: #00CED1; }
-
-        /* ── Theme Toggle ── */
         [data-theme="ame"] .theme-toggle {
             border-color: #152A55;
             color: #4A6A90;
@@ -2316,24 +2316,46 @@
         /* ══ INTERACTIVE WATER RIPPLE ══ */
         [data-theme="ame"] .water-ripple {
             position: fixed;
-            border: 1px solid rgba(0,206,209,0.35);
+            border: 1.5px solid rgba(0,206,209,0.45);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9990;
-            animation: waterRippleExpand 1.5s ease-out forwards;
-            box-shadow: 0 0 8px rgba(0,206,209,0.15), inset 0 0 8px rgba(0,206,209,0.08);
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%) scale(0);
+            transform-origin: center;
+            animation: waterRippleExpand 1.4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            box-shadow: 0 0 15px rgba(0,206,209,0.25), inset 0 0 15px rgba(0,206,209,0.15);
+        }
+        [data-theme="ame"] .water-ripple-mid {
+            position: fixed;
+            border: 1px solid rgba(30,91,216,0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9990;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%) scale(0);
+            transform-origin: center;
+            animation: waterRippleExpand 1.6s cubic-bezier(0.1, 0.8, 0.3, 1) 0.12s forwards;
+            box-shadow: 0 0 15px rgba(30,91,216,0.2), inset 0 0 15px rgba(30,91,216,0.1);
         }
         [data-theme="ame"] .water-ripple-inner {
             position: fixed;
-            border: 1px solid rgba(30,91,216,0.2);
+            border: 1px solid rgba(0,206,209,0.2);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9990;
-            animation: waterRippleExpand 1.8s ease-out 0.15s forwards;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%) scale(0);
+            transform-origin: center;
+            animation: waterRippleExpand 1.8s cubic-bezier(0.1, 0.8, 0.3, 1) 0.24s forwards;
+            box-shadow: 0 0 12px rgba(0,206,209,0.12), inset 0 0 12px rgba(0,206,209,0.06);
         }
         @keyframes waterRippleExpand {
-            0% { width: 0; height: 0; opacity: 0.7; }
-            100% { width: 300px; height: 300px; opacity: 0; }
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
         }
 
         /* ══ UNDERWATER CAUSTIC COLUMNS — organic, diffused ══ */
@@ -3307,18 +3329,28 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
 (function() {
     document.addEventListener('click', function(e) {
         if (document.documentElement.getAttribute('data-theme') !== 'ame') return;
+        
         var ripple = document.createElement('div');
         ripple.className = 'water-ripple';
-        ripple.style.left = (e.clientX - 150) + 'px';
-        ripple.style.top = (e.clientY - 150) + 'px';
+        ripple.style.left = e.clientX + 'px';
+        ripple.style.top = e.clientY + 'px';
         document.body.appendChild(ripple);
+        
         var ripple2 = document.createElement('div');
-        ripple2.className = 'water-ripple-inner';
-        ripple2.style.left = (e.clientX - 150) + 'px';
-        ripple2.style.top = (e.clientY - 150) + 'px';
+        ripple2.className = 'water-ripple-mid';
+        ripple2.style.left = e.clientX + 'px';
+        ripple2.style.top = e.clientY + 'px';
         document.body.appendChild(ripple2);
-        setTimeout(function() { ripple.remove(); }, 1500);
-        setTimeout(function() { ripple2.remove(); }, 2000);
+
+        var ripple3 = document.createElement('div');
+        ripple3.className = 'water-ripple-inner';
+        ripple3.style.left = e.clientX + 'px';
+        ripple3.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple3);
+        
+        setTimeout(function() { ripple.remove(); }, 1400);
+        setTimeout(function() { ripple2.remove(); }, 1800);
+        setTimeout(function() { ripple3.remove(); }, 2100);
     });
 })();
 
@@ -3385,18 +3417,22 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
         if (now - lastTime < 80) return;
         lastTime = now;
         var dot = document.createElement('div');
+        var size = 4 + Math.random() * 6;
+        var drift = (Math.random() - 0.5) * 40;
+        var rise = -60 - Math.random() * 50;
         dot.style.cssText = 'position:fixed;pointer-events:none;z-index:9989;border-radius:50%;' +
-            'width:' + (3 + Math.random() * 5) + 'px;height:' + (3 + Math.random() * 5) + 'px;' +
-            'left:' + (e.clientX - 3) + 'px;top:' + (e.clientY - 3) + 'px;' +
-            'background:radial-gradient(circle,rgba(0,206,209,0.35) 0%,rgba(30,91,216,0.15) 60%,transparent 100%);' +
-            'box-shadow:0 0 6px rgba(0,206,209,0.2);' +
-            'transition:opacity 1.2s ease,transform 1.2s ease;opacity:0.7;';
+            'width:' + size + 'px;height:' + size + 'px;' +
+            'left:' + e.clientX + 'px;top:' + e.clientY + 'px;transform:translate(-50%,-50%) scale(1);' +
+            'background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(0,206,209,0.15) 40%, rgba(30,91,216,0.05) 80%, transparent 100%);' +
+            'border:1px solid rgba(0,206,209,0.3);' +
+            'box-shadow:0 0 5px rgba(0,206,209,0.15), inset 0 0 3px rgba(255,255,255,0.2);' +
+            'transition:opacity 1.5s cubic-bezier(0.1, 0.8, 0.3, 1), transform 1.5s cubic-bezier(0.1, 0.8, 0.3, 1);opacity:0.8;';
         document.body.appendChild(dot);
         requestAnimationFrame(function() {
             dot.style.opacity = '0';
-            dot.style.transform = 'scale(0.3) translateY(-15px)';
+            dot.style.transform = 'translate(calc(-50% + ' + drift + 'px), calc(-50% + ' + rise + 'px)) scale(1.4)';
         });
-        setTimeout(function() { dot.remove(); }, 1300);
+        setTimeout(function() { dot.remove(); }, 1500);
     });
 })();
 
@@ -3468,57 +3504,106 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
         'precision mediump float;',
         'uniform float uTime;',
         'uniform vec2 uResolution;',
+        'uniform vec2 uMouse;',
         '',
-        'vec2 hash22(vec2 p){',
-        '  p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));',
-        '  return -1.0+2.0*fract(sin(p)*43758.5453);',
+        'float hash(vec2 p){',
+        '  return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);',
         '}',
         '',
-        'float voronoi(vec2 p){',
-        '  vec2 n=floor(p);vec2 f=fract(p);float md=8.0;',
-        '  for(int j=-1;j<=1;j++){for(int i=-1;i<=1;i++){',
-        '    vec2 g=vec2(float(i),float(j));',
-        '    vec2 o=hash22(n+g);',
-        '    o=0.5+0.5*sin(uTime*0.15+6.2831*o);',
-        '    vec2 r=g+o-f;float d=dot(r,r);md=min(md,d);',
-        '  }}',
-        '  return sqrt(md);',
+        'float noise(vec2 p){',
+        '  vec2 i=floor(p);vec2 f=fract(p);',
+        '  vec2 u=f*f*(3.0-2.0*f);',
+        '  return mix(mix(hash(i+vec2(0.0,0.0)),hash(i+vec2(1.0,0.0)),u.x),',
+        '             mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);',
         '}',
         '',
-        'float caustics(vec2 uv){',
-        '  float v1=voronoi(uv*5.0);float v2=voronoi(uv*5.0+vec2(1.7,3.2));',
-        '  float c1=pow(1.0-smoothstep(0.0,0.08,abs(v1-v2)),2.0);',
-        '  float v3=voronoi(uv*9.0+vec2(5.1,2.3));float v4=voronoi(uv*9.0+vec2(6.8,4.5));',
-        '  float c2=pow(1.0-smoothstep(0.0,0.06,abs(v3-v4)),2.0);',
-        '  return c1*0.65+c2*0.35;',
+        'float fbm(vec2 p,float time){',
+        '  float v=0.0;float a=0.5;vec2 shift=vec2(100.0);',
+        '  mat2 rot=mat2(0.8,0.6,-0.6,0.8);',
+        '  for(int i=0;i<3;i++){',
+        '    v+=a*noise(p+vec2(0.0,time*0.15));',
+        '    p=rot*p*2.0+shift;',
+        '    a*=0.5;',
+        '  }',
+        '  return v;',
         '}',
         '',
-        'float godRay(vec2 uv,float cx,float w,float phase){',
-        '  float sway=sin(uv.y*2.5+uTime*0.12+phase)*0.025+sin(uv.y*5.5-uTime*0.07+phase*1.7)*0.012;',
-        '  float x=uv.x-cx-sway;float beam=exp(-x*x/(w*w));',
-        '  beam*=smoothstep(0.0,0.15,1.0-uv.y);',
-        '  beam*=0.55+0.45*sin(uTime*0.08+phase*3.0);',
-        '  return beam;',
+        'float caustics(vec2 uv, float time){',
+        '  vec2 p=mod(uv*6.28318530718,6.28318530718)-250.0;',
+        '  vec2 i=vec2(p);',
+        '  float c=1.0;',
+        '  float inten=0.005;',
+        '  for(int n=0;n<5;n++){',
+        '    float t=time*(1.0-(3.5/float(n+1)));',
+        '    i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));',
+        '    c+=1.0/(length(vec2(p.x/(sin(i.x+t)/inten),p.y/(cos(i.y+t)/inten)))+0.001);',
+        '  }',
+        '  c/=5.0;',
+        '  c=1.17-pow(c,1.4);',
+        '  return pow(abs(c),8.0);',
+        '}',
+        '',
+        'float getSpotlight(vec2 uv,vec2 origin,float swayAngle,float startWidth,float spread,float decay,float noiseVal){',
+        '  vec2 dir=vec2(sin(swayAngle),-cos(swayAngle));',
+        '  vec2 v=uv-origin;',
+        '  float proj=dot(v,dir);',
+        '  float aboveFade=smoothstep(0.0,-0.05,proj);',
+        '  float perp=length(v-proj*dir);',
+        '  float width=startWidth+max(proj,0.0)*spread;',
+        '  float beam=exp(-(perp*perp)/(width*width));',
+        '  beam*=mix(0.5,1.0,noiseVal);',
+        '  beam*=exp(-max(proj,0.0)*decay);',
+        '  float topFade=smoothstep(0.0,0.12,max(proj,0.0));',
+        '  return beam*(1.0-aboveFade)*topFade;',
         '}',
         '',
         'void main(){',
         '  vec2 uv=gl_FragCoord.xy/uResolution;',
-        '  vec3 col=mix(vec3(0.035,0.065,0.13),vec3(0.012,0.022,0.055),pow(uv.y,0.7));',
-        '  float cf=smoothstep(1.0,0.15,uv.y);',
-        '  float c=caustics(uv);',
-        '  col+=vec3(0.06,0.10,0.18)*c*cf*0.45;',
-        '  float rays=0.0;',
-        '  rays+=godRay(uv,0.18,0.07,0.0)*0.55;',
-        '  rays+=godRay(uv,0.48,0.10,2.1)*0.75;',
-        '  rays+=godRay(uv,0.78,0.06,4.2)*0.45;',
-        '  col+=vec3(0.05,0.08,0.14)*rays;',
-        '  float sf=smoothstep(0.78,1.0,uv.y);',
-        '  float sh=sin(uv.x*50.0+uTime*0.4)*sin(uv.y*30.0-uTime*0.25);',
-        '  sh=pow(max(sh,0.0),4.0);',
-        '  col+=vec3(0.03,0.05,0.08)*sh*sf*0.4;',
-        '  col.r*=mix(0.8,0.3,uv.y);',
-        '  float vig=length((uv-0.5)*vec2(1.2,0.8));',
-        '  col*=smoothstep(1.1,0.3,vig);',
+        '  vec2 distortedUV=uv;',
+        '  distortedUV.x+=sin(uv.y*10.0+uTime*0.4)*0.003;',
+        '  distortedUV.y+=cos(uv.x*8.0+uTime*0.3)*0.003;',
+        '  vec3 bgBottom=vec3(0.002,0.004,0.012);',
+        '  vec3 bgTop=vec3(0.008,0.015,0.045);',
+        '  vec3 col=mix(bgBottom,bgTop,uv.y);',
+        '  float mist=fbm(distortedUV*2.5,uTime*0.35);',
+        '  col+=vec3(0.008,0.02,0.06)*mist;',
+        '  vec2 mouseInfluence=(uMouse-0.5)*0.1;',
+        '  float totalBeam=0.0;',
+        '  for(int i=0;i<6;i++){',
+        '    float fi=float(i);',
+        '    vec2 spotOrigin=vec2(0.12+fi*0.15+mouseInfluence.x,1.05);',
+        '    float sway=sin(uTime*0.4+fi*1.2)*0.14+mouseInfluence.x*0.5;',
+        '    float beam=getSpotlight(distortedUV,spotOrigin,sway,0.03,0.28,0.9,mist);',
+        '    totalBeam+=beam;',
+        '  }',
+        '  vec3 beamCol=vec3(0.16,0.36,0.85)*totalBeam;',
+        '  vec3 coreCol=vec3(0.7,0.85,1.0)*pow(totalBeam,3.0);',
+        '  col+=beamCol*0.32+coreCol*0.10;',
+        '  float topLights=0.0;',
+        '  for(int i=0;i<6;i++){',
+        '    float fi=float(i);',
+        '    vec2 spotOrigin=vec2(0.12+fi*0.15+mouseInfluence.x,1.05);',
+        '    float d=length(uv-spotOrigin);',
+        '    topLights+=exp(-(d*d)/0.003)*0.85;',
+        '  }',
+        '  col+=vec3(0.8,0.92,1.0)*topLights*smoothstep(0.9,1.0,uv.y)*0.42;',
+        '  float c=caustics(distortedUV*4.0-mouseInfluence,uTime*0.28);',
+        '  col+=vec3(0.04,0.22,0.65)*c*0.18;',
+        '  vec2 gridUV=distortedUV*18.0;',
+        '  gridUV.y-=uTime*0.12;',
+        '  gridUV.x+=sin(gridUV.y+uTime*0.15)*0.12;',
+        '  vec2 gridId=floor(gridUV);',
+        '  vec2 gridFract=fract(gridUV)-0.5;',
+        '  float h=hash(gridId);',
+        '  float hasParticle=step(0.97,h);',
+        '  float size=0.015+0.035*hash(gridId+vec2(1.0));',
+        '  float brightness=0.35+0.65*sin(uTime*2.5+h*6.28);',
+        '  float d=length(gridFract);',
+        '  float particle=smoothstep(size,0.0,d)*brightness*hasParticle;',
+        '  particle*=(0.15+totalBeam*1.5);',
+        '  col+=vec3(0.65,0.88,1.0)*particle*0.45;',
+        '  float vignette=length((uv-0.5)*vec2(1.2,0.8));',
+        '  col*=smoothstep(1.3,0.45,vignette);',
         '  gl_FragColor=vec4(col,1.0);',
         '}'
     ].join('\n');
@@ -3557,6 +3642,15 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
 
     var uTime = gl.getUniformLocation(prog, 'uTime');
     var uRes = gl.getUniformLocation(prog, 'uResolution');
+    var uMouse = gl.getUniformLocation(prog, 'uMouse');
+
+    var mouseX = 0.5, mouseY = 0.5;
+    var curMouseX = 0.5, curMouseY = 0.5;
+
+    function onMouseMove(e) {
+        mouseX = e.clientX / window.innerWidth;
+        mouseY = 1.0 - (e.clientY / window.innerHeight);
+    }
 
     function resize() {
         var dpr = Math.min(window.devicePixelRatio || 1, 1);
@@ -3576,6 +3670,11 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
         resize();
         gl.uniform1f(uTime, (now - t0) / 1000);
         gl.uniform2f(uRes, canvas.width, canvas.height);
+        
+        curMouseX += (mouseX - curMouseX) * 0.05;
+        curMouseY += (mouseY - curMouseY) * 0.05;
+        gl.uniform2f(uMouse, curMouseX, curMouseY);
+
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         animId = requestAnimationFrame(render);
     }
@@ -3583,12 +3682,14 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
     function start() {
         if (animId) return;
         canvas.style.display = 'block';
+        window.addEventListener('mousemove', onMouseMove);
         t0 = 0;
         animId = requestAnimationFrame(render);
     }
 
     function stop() {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
+        window.removeEventListener('mousemove', onMouseMove);
         canvas.style.display = 'none';
     }
 
