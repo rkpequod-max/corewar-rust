@@ -2956,9 +2956,89 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
     animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
 }
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-ceiling {
-    animation: ceilingRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
-}
+        /* ══ HORIZONTAL PANNING FOR COCKPIT (Rayon Vert) ══ */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) body {
+            width: 180vw;
+            overflow-x: auto;
+            overflow-y: auto;
+        }
+        /* Style the horizontal scrollbar for a clean green futuristic look */
+        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar {
+            height: 8px;
+            background: #020305;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.3);
+            border-radius: 4px;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 136, 0.6);
+        }
+
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .hero {
+            width: 100vw;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* 1. Foreground Cabin Elements (Pan the most: -40vw) */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-ceiling {
+            left: -20vw; width: 140vw;
+            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-frame {
+            left: -20vw; width: 140vw;
+            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-pillar-left {
+            left: -20vw;
+            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-pillar-right {
+            right: -20vw;
+            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-glass {
+            left: -20vw; width: 140vw;
+            transform: translate(calc(var(--cam-x) * -0.15 + var(--scroll-offset, 0) * -40vw), calc(var(--cam-y) * -0.15));
+        }
+
+        /* 2. Midground Celestial Elements (Pan intermediate: -20vw) */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .planet-atmosphere {
+            transform: translate(calc(var(--cam-x) * 0.6 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.6));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .sun-eclipse {
+            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .planet-secondary {
+            transform: translate(calc(var(--cam-x) * 0.5 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.5));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cosmic-fog {
+            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cosmic-horizon {
+            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .bloom-overlay {
+            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .bloom-glow {
+            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .anamorphic-flares {
+            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .hud-grid {
+            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .light-leak {
+            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+        }
+
+        /* 3. Far background Stars (Pan least: -10vw) */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) #starfield {
+            transform: translate(calc(var(--cam-x) + var(--scroll-offset, 0) * -10vw), var(--cam-y));
+        }
 </style>
 </head>
 <body>
@@ -4179,6 +4259,37 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
             requestAnimationFrame(updateCamera);
         }
         updateCamera();
+
+        function updateScrollOffset() {
+            if (!isRayonActive()) return;
+            var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+            var ratio = maxScroll > 0 ? window.scrollX / maxScroll : 0.5;
+            var offset = ratio - 0.5;
+            document.documentElement.style.setProperty('--scroll-offset', offset);
+        }
+        window.addEventListener('scroll', updateScrollOffset);
+        window.addEventListener('resize', updateScrollOffset);
+
+        window.addEventListener('load', function() {
+            if (isRayonActive()) {
+                setTimeout(function() {
+                    var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+                    window.scrollTo(maxScroll / 2, 0);
+                    updateScrollOffset();
+                }, 50);
+            }
+        });
+
+        var themeObserver = new MutationObserver(function() {
+            if (isRayonActive()) {
+                setTimeout(function() {
+                    var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
+                    window.scrollTo(maxScroll / 2, 0);
+                    updateScrollOffset();
+                }, 50);
+            }
+        });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     }
 
     // Dust Canvas

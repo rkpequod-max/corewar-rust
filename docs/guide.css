@@ -5153,27 +5153,6 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-gla
     animation: fadeInGlass 1s ease-out forwards;
 }
 
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper::before {
-    content: '';
-    position: absolute;
-    top: -2px; left: -2px;
-    width: 16px; height: 16px;
-    border-top: 3px solid #00ff88;
-    border-left: 3px solid #00ff88;
-    border-top-left-radius: 12px;
-    pointer-events: none;
-}
-
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper::after {
-    content: '';
-    position: absolute;
-    bottom: -2px; right: -2px;
-    width: 16px; height: 16px;
-    border-bottom: 3px solid #00ff88;
-    border-right: 3px solid #00ff88;
-    border-bottom-right-radius: 12px;
-    pointer-events: none;
-}
 
 /* Cyber data overrides for content elements under Rayon Vert */
 html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide h1,
@@ -5232,4 +5211,168 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide > div[styl
     backdrop-filter: none !important;
     border: none !important;
     box-shadow: none !important;
+}
+
+/* Hide cyber elements for Nier and Ame themes */
+body.page-guide .guide-glass-header,
+body.page-guide .reading-progress-bar,
+body.page-guide .cyber-corner,
+body.page-guide .holo-scanline,
+body.page-guide .guide-glass-footer {
+    display: none;
+}
+
+/* Style and show them ONLY in Rayon Vert theme */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper {
+    background: linear-gradient(135deg, rgba(3, 8, 5, 0.82) 0%, rgba(2, 5, 3, 0.92) 100%);
+    background-image: 
+        radial-gradient(rgba(0, 255, 136, 0.05) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(3, 8, 5, 0.82) 0%, rgba(2, 5, 3, 0.92) 100%);
+    background-size: 20px 20px, 100% 100%;
+    border: 1px solid rgba(0, 255, 136, 0.18);
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.95),
+                inset 0 0 40px rgba(0, 255, 136, 0.06),
+                0 0 25px rgba(0, 255, 136, 0.04);
+    overflow: hidden; /* Contains the scanlines and progress bar */
+}
+
+/* Authentic CRT/Hologram screen lines */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: 
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%),
+        linear-gradient(90deg, rgba(0, 255, 136, 0.03), rgba(0, 255, 136, 0.01), rgba(0, 255, 136, 0.03));
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+    padding-bottom: 16px;
+    margin-bottom: 30px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: rgba(0, 255, 136, 0.85);
+    text-transform: uppercase;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hud-status-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hud-beacon {
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    animation: beaconPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes beaconPulse {
+    0% { transform: scale(0.9); opacity: 0.5; box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+    50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 10px 4px rgba(0, 255, 136, 0.4); }
+    100% { transform: scale(0.9); opacity: 0.5; box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hud-telemetry {
+    font-weight: bold;
+    display: flex;
+    gap: 20px;
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+/* Reading Progress Bar */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .reading-progress-bar {
+    display: block;
+    position: absolute;
+    top: 50px;
+    left: 40px;
+    right: 40px;
+    height: 2px;
+    background: rgba(0, 255, 136, 0.1);
+    overflow: hidden;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .reading-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #00ff88;
+    box-shadow: 0 0 10px #00ff88;
+}
+
+/* Four Corner Brackets */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cyber-corner {
+    display: block;
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid transparent;
+    pointer-events: none;
+    z-index: 101;
+}
+
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cyber-corner.tl {
+    top: -2px; left: -2px;
+    border-top-color: #00ff88;
+    border-left-color: #00ff88;
+    border-top-left-radius: 8px;
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cyber-corner.tr {
+    top: -2px; right: -2px;
+    border-top-color: #00ff88;
+    border-right-color: #00ff88;
+    border-top-right-radius: 8px;
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cyber-corner.bl {
+    bottom: -2px; left: -2px;
+    border-bottom-color: #00ff88;
+    border-left-color: #00ff88;
+    border-bottom-left-radius: 8px;
+}
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cyber-corner.br {
+    bottom: -2px; right: -2px;
+    border-bottom-color: #00ff88;
+    border-right-color: #00ff88;
+    border-bottom-right-radius: 8px;
+}
+
+/* Animated Scanline */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .holo-scanline {
+    display: block;
+    position: absolute;
+    left: 0; width: 100%; height: 20px;
+    background: linear-gradient(to bottom, transparent, rgba(0, 255, 136, 0.18), transparent);
+    animation: holoScanline 12s linear infinite;
+    pointer-events: none;
+    z-index: 99;
+}
+
+@keyframes holoScanline {
+    0% { top: 0%; }
+    100% { top: 100%; }
+}
+
+/* Footer Telemetry */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(0, 255, 136, 0.15);
+    padding-top: 16px;
+    margin-top: 50px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgba(0, 255, 136, 0.5);
+    text-transform: uppercase;
 }
