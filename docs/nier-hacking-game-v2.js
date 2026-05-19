@@ -105,6 +105,9 @@
     /* Red Code Buffs */
     let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
     let codeEditorEl = null;
+    let codeEditorActive = false;
+    let codeEditorBtnIdx = 1; /* 0=Skip, 1=Compile */
+    let codeEditorBtns = [];
 
     /* Slow-Motion State */
     let slowMoT = 0;
@@ -303,6 +306,7 @@
                 <button id="nh-code-compile" style="padding:6px 20px;background:transparent;border:1px solid #C4362B;color:#C4362B;font-family:'Courier New',monospace;font-size:0.7rem;letter-spacing:0.15em;cursor:pointer;border-radius:2px;text-transform:uppercase;">Compile</button>
             </div>
             <div style="font-size:0.5rem;color:#333;margin-top:14px;letter-spacing:0.1em;">ARENA: 4096 BYTES | IDX_MOD: 512 | CYCLE_TO_DIE: 1536</div>
+            <div style="font-size:0.45rem;color:#333;margin-top:8px;letter-spacing:0.08em;">ESC: unfocus editor | ←→: select button | ENTER: confirm</div>
         `;
 
         /* Live parsing on input */
@@ -341,6 +345,7 @@
             }
 
             /* Flash and hide */
+            codeEditorActive = false;
             codeEditorEl.style.transition = "opacity 0.2s";
             codeEditorEl.style.opacity = "0";
             setTimeout(() => { codeEditorEl.style.display = "none"; callback(); }, 200);
@@ -349,13 +354,55 @@
         /* Skip button */
         document.getElementById('nh-code-skip').addEventListener('click', function() {
             playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+            codeEditorActive = false;
             codeEditorEl.style.transition = "opacity 0.2s";
             codeEditorEl.style.opacity = "0";
             setTimeout(() => { codeEditorEl.style.display = "none"; callback(); }, 200);
         });
 
+        /* Button navigation state */
+        codeEditorActive = true;
+        codeEditorBtnIdx = 1; /* Default to Compile */
+        codeEditorBtns = [
+            document.getElementById('nh-code-skip'),
+            document.getElementById('nh-code-compile')
+        ];
+
+        /* Highlight the initially selected button */
+        updCodeBtnHL();
+
+        /* When textarea is focused, disable game shortcuts */
+        textarea.addEventListener('focus', function() { codeEditorActive = true; });
+
+        /* When Escape is pressed in textarea, blur it so game shortcuts work */
+        textarea.addEventListener('keydown', function(ev) {
+            if(ev.code === 'Escape') {
+                ev.preventDefault();
+                ev.stopPropagation();
+                textarea.blur();
+            }
+            /* Stop propagation so game input handler doesn't fire */
+            ev.stopPropagation();
+        });
+
         /* Focus textarea */
         setTimeout(() => { if(textarea) textarea.focus(); }, 100);
+    }
+
+    function updCodeBtnHL(){
+        for(let i=0; i<codeEditorBtns.length; i++){
+            const btn = codeEditorBtns[i];
+            if(!btn) continue;
+            if(i === codeEditorBtnIdx){
+                btn.style.borderColor = '#FFF';
+                btn.style.color = '#FFF';
+                btn.style.boxShadow = '0 0 8px rgba(255,255,255,0.3)';
+            } else {
+                btn.style.borderColor = btn.id === 'nh-code-compile' ? '#C4362B' : '#444';
+                btn.style.color = btn.id === 'nh-code-compile' ? '#C4362B' : '#666';
+                btn.style.boxShadow = 'none';
+            }
+        }
     }
 
     /* ══════════════ MAZE ══════════════ */
@@ -2747,6 +2794,11 @@
 
     /* ══════════════ INPUT ══════════════ */
     function onKD(e){
+        /* If textarea in code editor is focused, skip ALL game shortcuts */
+        const activeEl = document.activeElement;
+        const textareaFocused = activeEl && activeEl.tagName === 'TEXTAREA' && activeEl.id === 'nh-code-input';
+        if(textareaFocused) return;
+
         keys[e.code]=true;
         if(e.code==="KeyM"){e.preventDefault();AudioManager.toggleMute();return;}
         if(e.code==="KeyO"){e.preventDefault();toggleViewMode();return;}
@@ -2754,6 +2806,28 @@
         if(e.code==="Enter" && window._nhBtn && overlay && !overlay.classList.contains("hidden")){
             e.preventDefault(); window._nhBtn(); return;
         }
+
+        /* Code editor button navigation (when editor is open but textarea is not focused) */
+        if(codeEditorActive){
+            if(e.code==="ArrowLeft"){e.preventDefault();codeEditorBtnIdx=0;updCodeBtnHL();AudioManager.playSFX('button_select');return;}
+            if(e.code==="ArrowRight"){e.preventDefault();codeEditorBtnIdx=1;updCodeBtnHL();AudioManager.playSFX('button_select');return;}
+            if(e.code==="Enter"){
+                e.preventDefault();
+                const btn = codeEditorBtns[codeEditorBtnIdx];
+                if(btn){AudioManager.playSFX('button_enter');btn.click();}
+                return;
+            }
+            /* Re-focus textarea when typing letters (not shortcuts) */
+            if(e.code.startsWith("Key") && e.code !== "KeyF" && e.code !== "KeyP" && e.code !== "KeyM" && e.code !== "KeyO"){
+                const ta = document.getElementById('nh-code-input');
+                if(ta){ta.focus();return;}
+            }
+            if(e.code==="Escape"){
+                const ta = document.getElementById('nh-code-input');
+                if(ta){ta.focus();return;}
+            }
+        }
+
         /* Dash — Space key */
         if(e.code==="Space" && active && dashCooldownT <= 0 && dashT <= 0){
             e.preventDefault();
