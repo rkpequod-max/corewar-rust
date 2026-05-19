@@ -4,10 +4,10 @@
    Fusion: NieR:Automata hacking × Core War VM debugging
    - Play as an antivirus debugger cleaning infected VM memory
    - Write Red Code before each level to boost abilities
-   - ADD=damage, STI=split bullets, ZJMP=fast dash, LIVE=regen
-   - FORK=double shot, LD=shield, SUB=bullet speed, AND=fire rate
+   - ADD=damage, STI=split bullets, ZJMP=dash distance, LIVE=regen
+   - FORK=double shot, LD=shield(R), SUB=bullet speed, AND=fire rate
    - Each level = hostile warrior process to terminate
-   Controls: WASD move, Arrow keys aim, Left click shoot, Space dash, F fullscreen
+   Controls: WASD move, Arrow keys aim, Left click shoot, Space dash, R shield, F fullscreen
    ═══════════════════════════════════════════════════════════════ */
 
 (function () {
@@ -103,7 +103,12 @@
     let lockUIMeshes = [];
 
     /* Red Code Buffs */
-    let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+    let playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+
+    /* Shield state */
+    let shieldActive = false;
+    let shieldHitsRemaining = 0;
+    const SHIELD_MAX_HITS = 3;
     let codeEditorEl = null;
     let codeEditorActive = false;
     let codeEditorBtnIdx = 1; /* 0=Skip, 1=Compile */
@@ -136,7 +141,7 @@
     let matTrailPlayer, matTrailEnemy;
 
     /* DOM */
-    let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, fsBtn, flashEl, muteBtn, viewBtn;
+    let canvas, overlay, hudHP, hudBar, hudScore, hudLvl, hudEnm, hudName, hudShield, fsBtn, flashEl, muteBtn, viewBtn;
     let pauseMenu, pauseItems, pauseIdx = 0;
     let pauseWasActive = false;
 
@@ -237,13 +242,13 @@
         zjmp: { name: "ZJMP", desc: "+100% dash distance",    color: "#FFD700" },
         live: { name: "LIVE", desc: "+2 HP/sec regen",        color: "#00FF00" },
         fork: { name: "FORK", desc: "Double shot",            color: "#FF00FF" },
-        ld:   { name: "LD",   desc: "+3s shield",             color: "#00AAFF" },
+        ld:   { name: "LD",   desc: "+1 shield charge (R)",   color: "#00AAFF" },
         sub:  { name: "SUB",  desc: "+30% bullet speed",      color: "#FF4444" },
         and:  { name: "AND",  desc: "+20% fire rate",         color: "#AAAAFF" },
     };
 
     function parseRedCode(code) {
-        const buffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        const buffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
         const detected = [];
         const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
         for (const line of lines) {
@@ -254,7 +259,7 @@
             else if (instr === 'zjmp' && buffs.dashDistMul < 3) { buffs.dashDistMul += 1; detected.push({ instr: 'zjmp', valid: true }); }
             else if (instr === 'live' && buffs.regenHP < 6) { buffs.regenHP += 2; detected.push({ instr: 'live', valid: true }); }
             else if (instr === 'fork' && !buffs.doubleShot) { buffs.doubleShot = true; detected.push({ instr: 'fork', valid: true }); }
-            else if (instr === 'ld' && buffs.shieldTime < 9) { buffs.shieldTime += 3; detected.push({ instr: 'ld', valid: true }); }
+            else if (instr === 'ld' && buffs.shieldCharges < 3) { buffs.shieldCharges += 1; detected.push({ instr: 'ld', valid: true }); }
             else if (instr === 'sub' && buffs.bulletSpeedMul < 2) { buffs.bulletSpeedMul += 0.3; detected.push({ instr: 'sub', valid: true }); }
             else if (instr === 'and' && buffs.fireRateMul < 2) { buffs.fireRateMul += 0.2; detected.push({ instr: 'and', valid: true }); }
             else if (instr) { detected.push({ instr, valid: false }); }
@@ -444,12 +449,6 @@
 
             playerBuffs = buffs;
 
-            /* Apply shield */
-            if(buffs.shieldTime > 0) {
-                invulnT = Math.max(invulnT, buffs.shieldTime);
-                if(playerMesh.userData.shieldMat) playerMesh.userData.shieldMat.opacity = 0.6;
-            }
-
             /* Flash and hide */
             codeEditorActive = false;
             codeEditorEl.style.transition = "opacity 0.2s";
@@ -459,7 +458,7 @@
 
         /* Skip button */
         document.getElementById('nh-code-skip').addEventListener('click', function() {
-            playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+            playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
             codeEditorActive = false;
             codeEditorEl.style.transition = "opacity 0.2s";
             codeEditorEl.style.opacity = "0";
@@ -2339,15 +2338,14 @@
         }
         /* Shield ring rotation and opacity */
         if(playerMesh.userData.shieldRing){
-            playerMesh.userData.shieldRing.rotation.z += dt * 0.5;
-            const shieldOp = invulnT > 0 ? 0.4 : 0.12;
+            playerMesh.userData.shieldRing.rotation.z += dt * (shieldActive ? 3.0 : 0.5);
+            const shieldOp = shieldActive ? 0.9 : (invulnT > 0 ? 0.4 : 0.12);
             playerMesh.userData.shieldMat.opacity += (shieldOp - playerMesh.userData.shieldMat.opacity) * 0.1;
         }
-        /* Core glow color change for upgrade */
+        /* Core glow color change — bright white when shield active */
         if(playerMesh.userData.coreMat){
-            const targetColor = playerUpgrade !== "standard" ? C_GOLD : C_YORHA;
-            const curColor = playerMesh.userData.coreMat.color.getHex();
-            if(curColor !== targetColor) playerMesh.userData.coreMat.color.setHex(targetColor);
+            const targetColor = shieldActive ? 0xFFFFFF : (playerUpgrade !== "standard" ? C_GOLD : C_YORHA);
+            playerMesh.userData.coreMat.color.lerp(new THREE.Color(targetColor), 0.15);
         }
 
         /* Invuln flash */
@@ -2636,6 +2634,22 @@
             }
 
             if(wallAt(b.mesh.position.x,b.mesh.position.z)||b.life<=0){scene.remove(b.mesh);eBullets.splice(i,1);continue;}
+            /* Shield absorption */
+            if(shieldActive && d2(b.mesh.position.x,b.mesh.position.z,playerPos.x,playerPos.z)<0.35){
+                shieldHitsRemaining--;
+                spawnP(playerPos.x,playerPos.z,0xFFFFFF,6);
+                spawnHitSparks(playerPos.x, playerPos.z, 0x00AAFF, Math.atan2(b.vx, -b.vz));
+                AudioManager.playSFX('bullet_cancel');
+                flashScreen(); shake(0.08);
+                scene.remove(b.mesh);eBullets.splice(i,1);
+                if(shieldHitsRemaining <= 0){
+                    shieldActive = false;
+                    shieldHitsRemaining = 0;
+                    playerBuffs.shieldCharges--;
+                    podSay("Shield depleted. " + playerBuffs.shieldCharges + " charge" + (playerBuffs.shieldCharges !== 1 ? "s" : "") + " remaining.", 2);
+                }
+                continue;
+            }
             /* Dash invulnerability */
             const isInvuln = invulnT > 0 || dashT > 0;
             if(!isInvuln&&d2(b.mesh.position.x,b.mesh.position.z,playerPos.x,playerPos.z)<0.3){
@@ -2716,6 +2730,20 @@
             hudName.textContent=LEVELS[curLvl].name;
             lastHUDState.name = LEVELS[curLvl].name;
         }
+        /* Shield HUD */
+        if(hudShield){
+            const charges = playerBuffs.shieldCharges;
+            if(shieldActive){
+                hudShield.textContent = "◆".repeat(shieldHitsRemaining) + "◇".repeat(SHIELD_MAX_HITS - shieldHitsRemaining) + " ×" + charges;
+                hudShield.style.color = "#FFFFFF";
+            } else if(charges > 0){
+                hudShield.textContent = "◇".repeat(SHIELD_MAX_HITS) + " ×" + charges;
+                hudShield.style.color = "#00AAFF";
+            } else {
+                hudShield.textContent = "—";
+                hudShield.style.color = "#333";
+            }
+        }
     }
 
     /* ══════════════ OVERLAY ══════════════ */
@@ -2741,7 +2769,8 @@
         playerPos=c2w(1,1);playerAngle=0;playerHP=MAX_HP;invulnT=0;shootT=0;
         playerUpgrade = "standard"; upgradeTimeRemaining = 0;
         dashT = 0; dashCooldownT = 0;
-        playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldTime: 0, bulletSpeedMul: 1, fireRateMul: 1 };
+        shieldActive = false; shieldHitsRemaining = 0;
+        playerBuffs = { damageMul: 1, bulletSplit: false, dashDistMul: 1, regenHP: 0, doubleShot: false, shieldCharges: 0, bulletSpeedMul: 1, fireRateMul: 1 };
         playerMesh.position.set(playerPos.x,0.05,playerPos.z);playerMesh.rotation.z=0;playerMesh.visible=true;
         if(playerMesh.userData.coreMat) playerMesh.userData.coreMat.color.setHex(C_YORHA);
         spawnEnemies();
@@ -2946,6 +2975,16 @@
             }
         }
 
+        /* Shield — R key */
+        if(e.code==="KeyR" && active && !shieldActive && playerBuffs.shieldCharges > 0){
+            shieldActive = true;
+            shieldHitsRemaining = SHIELD_MAX_HITS;
+            AudioManager.playSFX('button_enter');
+            triggerGlitch(0.15, 0.1);
+            podSay("Shield active. " + shieldHitsRemaining + " hits remaining.", 1.5);
+            return;
+        }
+
         /* Dash — Space key */
         if(e.code==="Space" && active && dashCooldownT <= 0 && dashT <= 0){
             e.preventDefault();
@@ -3002,7 +3041,7 @@
             overlay=document.getElementById("nier-hack-overlay");
             hudHP=document.getElementById("nh-health");hudBar=document.getElementById("nh-bar");
             hudScore=document.getElementById("nh-score");hudLvl=document.getElementById("nh-level");
-            hudEnm=document.getElementById("nh-enemies");hudName=document.getElementById("nh-level-name");
+            hudEnm=document.getElementById("nh-enemies");hudName=document.getElementById("nh-level-name");hudShield=document.getElementById("nh-shield");
             fsBtn=document.getElementById("nh-fullscreen");flashEl=document.getElementById("nh-flash");
             muteBtn=document.getElementById("nh-mute");
             viewBtn=document.getElementById("nh-view");
