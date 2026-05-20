@@ -4728,14 +4728,7 @@ html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::af
             background-size: 60px 60px;
             transform-origin: top center;
             transform: perspective(800px) rotateX(80deg);
-            opacity: 0.45;
-        }      }: 2%;
-            background: #020305;
-            z-index: 9997; pointer-events: none;
-            box-shadow: inset -10px 0 20px rgba(0,0,0,1);
         }
-        .cockpit-pillar-left { left: 0; border-right: 1px solid #111; }
-        .cockpit-pillar-right { right: 0; border-left: 1px solid #111; box-shadow: inset 10px 0 20px rgba(0,0,0,1); }
 
         .cockpit-frame {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 25%;
