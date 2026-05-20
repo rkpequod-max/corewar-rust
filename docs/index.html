@@ -22,9 +22,9 @@
             --border-light: #1e2d4a;
             --text: #d4dce8;
             --text-dim: #5a6b82;
-            --ray: #00ff88;
-            --ray-dim: rgba(0,255,136,0.12);
-            --ray-glow: rgba(0,255,136,0.4);
+            --ray: #00d2ff;
+            --ray-dim: rgba(0, 210, 255, 0.12);
+            --ray-glow: rgba(0, 210, 255, 0.4);
             --pink: #ff2d78;
             --pink-dim: rgba(255,45,120,0.12);
             --pink-glow: rgba(255,45,120,0.35);
@@ -251,8 +251,14 @@
         }
         .cockpit-ceiling::before, .cockpit-ceiling::after {
             content: ''; position: absolute; top: 20%; width: 35%; height: 40%;
-            background: #fff;
-            box-shadow: 0 0 35px rgba(255,255,255,1), 0 0 70px rgba(255,255,255,0.7);
+            background: linear-gradient(to bottom,
+                #fff 0%, #fff 22%,
+                transparent 22%, transparent 39%,
+                #fff 39%, #fff 61%,
+                transparent 61%, transparent 78%,
+                #fff 78%, #fff 100%
+            );
+            box-shadow: 0 0 35px rgba(255,255,255,0.95), 0 0 70px rgba(255,255,255,0.65);
             border-radius: 4px;
         }
         .cockpit-ceiling::before { left: 10%; }
@@ -290,6 +296,10 @@
             transform-origin: top center;
             transform: perspective(800px) rotateX(80deg);
             opacity: 0.45;
+        }
+
+        .cockpit-chair, .cockpit-table {
+            display: none;
         }
 
         .cockpit-glass {
@@ -387,7 +397,12 @@
         }
         @keyframes scopeSweepAnimation {
             0% { transform: translate(-50%, 0) rotate(0deg); }
-            100% { transform: translate(-50%, 0) rotate(180deg); }
+            100% { transform: translate(-50%, 0) rotate(360deg); }
+        }
+
+        @keyframes holoRotate {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
         }
 
         /* ══ HUD RETICLE CURSOR ══ */
@@ -2914,137 +2929,419 @@
             0% { top: -15%; }
             100% { top: 0; }
         }
-
-        body[data-theme="rayon"] .cockpit-frame::before,
-        body[data-theme="rayon"] .cockpit-frame::after {
-            animation: cameraPanUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        html:not([data-theme]) .cabin-room,
+        html[data-theme="rayon"] .cabin-room {
+            animation: roomPanUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
-        body[data-theme="rayon"] .planet-atmosphere,
-        body[data-theme="rayon"] .sun-eclipse {
+        html:not([data-theme]) .planet-atmosphere,
+        html:not([data-theme]) .sun-eclipse,
+        html[data-theme="rayon"] .planet-atmosphere,
+        html[data-theme="rayon"] .sun-eclipse {
             animation: planetDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
-        body[data-theme="rayon"] .cockpit-ceiling {
-            animation: ceilingDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-        }
-/* Entry animation for Rayon Vert Camera Pan */
-@keyframes cameraPanDown {
-    0% {
-        transform: perspective(800px) rotateX(70deg) translateY(0);
-        width: 60%; left: 20%;
-    }
-    100% {
-        transform: perspective(1000px) rotateX(30deg) translateY(-10%);
-        width: 120%; left: -10%;
-    }
-}
-@keyframes planetRise {
-    0% { top: 40%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
-    100% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
-}
-@keyframes ceilingRise {
-    0% { top: 0; }
-    100% { top: -15%; }
-}
 
-/* ====== TRANSITIONS CINEMATIQUES VIA JAVASCRIPT ====== */
-/* Quand on part de index.html vers guide.html (Pan Down) */
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::before,
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::after {
-    animation: cameraPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
-}
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .planet-atmosphere,
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
-    animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
-}
-        /* ══ HORIZONTAL PANNING FOR COCKPIT (Rayon Vert) ══ */
-        html:not([data-theme="nier"]):not([data-theme="ame"]) body {
-            width: 180vw;
-            overflow-x: auto;
-            overflow-y: auto;
+        /* Transition-specific room animations */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cabin-room {
+            animation: roomPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
         }
-        /* Style the horizontal scrollbar for a clean green futuristic look */
-        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar {
-            height: 8px;
-            background: #020305;
+        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .cabin-room {
+            animation: roomPanUp 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
         }
-        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar-thumb {
-            background: rgba(0, 255, 136, 0.3);
-            border-radius: 4px;
-        }
-        html:not([data-theme="nier"]):not([data-theme="ame"])::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 255, 136, 0.6);
+        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .planet-atmosphere,
+        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
+            animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
         }
 
+        html[data-theme="rayon"] nav,
+        html[data-theme="rayon"] .hero,
+        html[data-theme="rayon"] section {
+            transform: translateX(var(--window-x, 0px));
+            transition: none; /* Handled smoothly by JS requestAnimationFrame */
+        }
+
+        /* Push the hero content down so the top frame doesn't obscure the title */
+        html[data-theme="rayon"] .hero {
+            padding-top: 250px;
+        }
+
+        /* Allow scrolling past the bottom dashboard */
+        html[data-theme="rayon"] body {
+            padding-bottom: 350px;
+        }
+
+        @keyframes roomPanUp {
+            0% {
+                transform: translate3d(0, -300px, -1610px);
+            }
+            100% {
+                transform: translate3d(0, -300px, -1520px);
+            }
+        }
+        @keyframes roomPanDown {
+            0% {
+                transform: translate3d(0, -300px, -1520px);
+            }
+            100% {
+                transform: translate3d(0, -300px, -1610px);
+            }
+        }
+        @keyframes planetDescend {
+            0% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
+            100% { top: 40%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+        }
+        @keyframes planetRise {
+            0% { top: 40%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1); opacity: 1; }
+            100% { top: -30%; transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6)) scale(1.5); opacity: 0.3; }
+        }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .hero {
             width: 100vw;
             margin: 0 auto;
             position: relative;
         }
 
-        /* 1. Foreground Cabin Elements (Pan the most: -40vw) */
-        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-ceiling {
-            left: -20vw; width: 140vw;
-            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
+        /* Perspective wrapper — fixed, full screen */
+        .cockpit-cabin-wrapper {
+            position: fixed;
+            inset: 0;
+            perspective: 70px;
+            perspective-origin: 50% 65%;
+            transform-origin: 50% 65%; /* CRITICAL FIX: keep focal point on screen when scaled */
+            transform: scale(5);
+            z-index: 99;
+            pointer-events: none;
+            display: none;
+            overflow: hidden;
         }
-        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-frame {
-            left: -20vw; width: 140vw;
-            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
-        }
-        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-pillar-left {
-            left: -20vw;
-            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
-        }
-        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-pillar-right {
-            right: -20vw;
-            transform: translateX(calc(var(--scroll-offset, 0) * -40vw));
-        }
-        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-glass {
-            left: -20vw; width: 140vw;
-            transform: translate(calc(var(--cam-x) * -0.15 + var(--scroll-offset, 0) * -40vw), calc(var(--cam-y) * -0.15));
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-cabin-wrapper { display: block; }
+        html[data-theme="nier"] .cockpit-cabin-wrapper,
+        html[data-theme="ame"]  .cockpit-cabin-wrapper { display: none !important; }
+
+        /* The scene that rotates */
+        .cockpit-cabin {
+            position: absolute;
+            inset: 0;
+            transform-style: preserve-3d;
+            transform: rotateX(var(--cabin-pitch, 0deg)) rotateY(var(--cabin-yaw, 0deg));
+            transform-origin: 50% 65% 70px;
         }
 
-        /* 2. Midground Celestial Elements (Pan intermediate: -20vw) */
+        /* Zero-size 3D origin at eye level (65% down, center) */
+        .cabin-room {
+            position: absolute;
+            top: 65%; left: 50%;
+            width: 0; height: 0;
+            transform-style: preserve-3d;
+            transform: translate3d(0, -300px, -1520px);
+        }
+
+        /* ── ROOM SURFACES ──
+           Room Dimensions: Width (X) = 2600px, Height (Y) = 700px, Depth (Z) = 2700px
+           Eye level is at Y = 0. Camera is at (0, 0, 0) looking at -Z at 0deg rotation.
+           Front window frame is at Z = -400px.
+           Back wall is at Z = +2300px.
+           Floor is at Y = +350px.
+           Ceiling is at Y = -350px.
+           Side walls are at X = ±1300px.
+        */
+
+        /* FLOOR — glowing white light panel with dark grid lines */
+        .room-floor {
+            position: absolute;
+            width: 3600px; height: 1980px;
+            left: -1800px; top: -990px;
+            transform: translate3d(0, 600px, 1590px) rotateX(90deg) scale(1.02);
+            background: radial-gradient(ellipse at center, #ffffff 0%, #dff2fc 60%, #b3e5ff 100%);
+        }
+        /* Floor grid lines */
+        .room-floor::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(11, 21, 30, 0.4) 4px, transparent 4px),
+                linear-gradient(90deg, rgba(11, 21, 30, 0.4) 4px, transparent 4px);
+            background-size: 120px 120px;
+        }
+
+        /* CEILING — dark slate-teal carbon panels with large glowing white recessed light panel */
+        .room-ceiling {
+            position: absolute;
+            width: 3600px; height: 1980px;
+            left: -1800px; top: -990px;
+            transform: translate3d(0, -600px, 1590px) rotateX(-90deg) scale(1.02);
+            background: #060a0f;
+        }
+        /* Recessed dual glowing white light panels above chairs */
+        /* Front glowing ceiling neon panels (left and right) */
+        .room-ceiling::before {
+            content: '';
+            position: absolute;
+            width: 1100px; height: 330px;
+            left: 500px; bottom: 200px;
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(to right, transparent 0px, transparent 210px, #060a0f 210px, #060a0f 220px),
+                linear-gradient(to bottom, transparent 0px, transparent 100px, #060a0f 100px, #060a0f 110px);
+            background-size: 220px 110px;
+            box-shadow: 0 0 150px rgba(255, 255, 255, 0.6), inset 0 0 30px #ffffff;
+            border-radius: 4px;
+        }
+        .room-ceiling::after {
+            content: '';
+            position: absolute;
+            width: 1100px; height: 330px;
+            right: 500px; bottom: 200px;
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(to right, transparent 0px, transparent 210px, #060a0f 210px, #060a0f 220px),
+                linear-gradient(to bottom, transparent 0px, transparent 100px, #060a0f 100px, #060a0f 110px);
+            background-size: 220px 110px;
+            box-shadow: 0 0 150px rgba(255, 255, 255, 0.6), inset 0 0 30px #ffffff;
+            border-radius: 4px;
+        }
+
+        /* BACK WALL — desaturated dark cyan/teal wall with central column & bottom blue light strip */
+        .room-wall-back {
+            position: absolute;
+            width: 3600px; height: 1200px;
+            left: -1800px; top: -600px;
+            transform: translate3d(0, 0, 2580px) rotateY(180deg) scale(1.02);
+            background: #0b151e;
+            border: 1px solid rgba(0, 210, 255, 0.1);
+        }
+        /* Rear bottom cyan neon light strip */
+        .room-wall-back::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 8px;
+            background: #00d2ff;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.95), 0 0 60px rgba(0, 210, 255, 0.5);
+        }
+        /* Rear ceiling strip light */
+        .room-wall-back::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 12%; right: 12%; height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.6), transparent);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+        /* LEFT SIDE WALL — glass front turning into solid panel */
+        .room-wall-left {
+            position: absolute;
+            width: 1980px; height: 1200px;
+            left: -990px; top: -600px;
+            transform: translate3d(-1800px, 0, 1590px) rotateY(90deg) scale(1.02);
+            background-image: 
+                linear-gradient(to top, #00d2ff 0px, #00d2ff 2px, transparent 2px),
+                linear-gradient(to left, transparent 0%, transparent 240px, #0b151e 240px, #0b151e 100%);
+            background-position: 0 100%, 0 0;
+            background-size: 1740px 100%, 100% 100%;
+            background-repeat: no-repeat;
+            box-shadow: inset 0 -6px 12px rgba(0, 210, 255, 0.1);
+        }
+        /* Top side frame for the window gap */
+        .room-wall-left::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; width: 240px; height: 80px;
+            background: #020305;
+            border-bottom: 2px solid #00d2ff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.95), 0 2px 12px rgba(0,210,255,1);
+            box-sizing: border-box;
+        }
+        /* Bottom side frame */
+        .room-wall-left::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0; width: 240px; height: 80px;
+            background: #020305;
+            border-top: 1px solid #0d1118;
+            box-sizing: border-box;
+        }
+
+        /* RIGHT SIDE WALL — glass front turning into solid panel */
+        .room-wall-right {
+            position: absolute;
+            width: 1980px; height: 1200px;
+            left: -990px; top: -600px;
+            transform: translate3d(1800px, 0, 1590px) rotateY(-90deg) scale(1.02);
+            background-image: 
+                linear-gradient(to top, #00d2ff 0px, #00d2ff 2px, transparent 2px),
+                linear-gradient(to right, transparent 0%, transparent 240px, #0b151e 240px, #0b151e 100%);
+            background-position: 240px 100%, 0 0;
+            background-size: 1740px 100%, 100% 100%;
+            background-repeat: no-repeat;
+            box-shadow: inset 0 -6px 12px rgba(0, 210, 255, 0.1);
+        }
+        /* Top side frame for the window gap */
+        .room-wall-right::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 240px; height: 80px;
+            background: #020305;
+            border-bottom: 2px solid #00d2ff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.95), 0 2px 12px rgba(0,210,255,1);
+            box-sizing: border-box;
+        }
+        /* Bottom side frame */
+        .room-wall-right::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 240px; height: 80px;
+            background: #020305;
+            border-top: 1px solid #0d1118;
+            box-sizing: border-box;
+        }
+
+        /* FRONT FRAME — top bar */
+        .room-frame-top {
+            position: absolute;
+            width: 3600px; height: 80px; /* Reduced by 2/3 to match bottom frame */
+            left: -1800px; top: -600px;
+            transform: translate3d(0, 0, 600px);
+            background: #020305;
+            border-bottom: 1px solid #0d1118;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.95);
+        }
+        .room-frame-top::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; height: 2px; width: 100%;
+            background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 1), 0 0 20px rgba(0, 210, 255, 0.6);
+        }
+
+        /* FRONT FRAME — bottom bar (dashboard) */
+        .room-frame-bottom {
+            position: absolute;
+            width: 3600px; height: 80px;
+            left: -1800px; top: 520px;
+            transform: translate3d(0, 0, 600px);
+            background: #020305;
+            border-top: 1px solid #0d1118;
+            /* ── CHAIRS AND TABLES REMOVED ── */
+            overflow: hidden;
+        }
+        /* Dashboard surface shine */
+        .room-frame-bottom::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 350%;
+            background: linear-gradient(180deg, #00d2ff 0%, rgba(0, 210, 255, 0.15) 20%, transparent 100%);
+            box-shadow: 0 0 100px rgba(0, 210, 255, 0.5);
+            transform-origin: top center;
+            transform: rotateX(72deg);
+        }
+        /* Dashboard grid */
+        .room-frame-bottom::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; width: 80%; height: 350%;
+            background-image:
+                linear-gradient(rgba(0,210,255,0.2) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0,210,255,0.2) 2px, transparent 2px);
+            background-size: 100px 100px;
+            transform-origin: top center;
+            transform: rotateX(72deg);
+            opacity: 0.6;
+        }
+
+        /* Radar HUD scope on bottom dashboard */
+        .cockpit-hud-scope {
+            display: none !important; /* Hidden to match sleek cinematic references */
+        }
+
+
+        /* ── HUD telemetry panels (attached to front frame top) ── */
+        .cockpit-hud-panel { display: none; }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) .cockpit-hud-panel { display: block; }
+
+        .ceiling-telemetry {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex; align-items: center; gap: 15px;
+            color: rgba(0, 210, 255, 0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 11px; font-weight: bold;
+            letter-spacing: 2px; white-space: nowrap;
+            text-shadow: 0 0 5px rgba(0, 210, 255, 0.7);
+        }
+        .hud-led {
+            display: inline-block; width: 7px; height: 7px;
+            border-radius: 50%; background: #00d2ff;
+            box-shadow: 0 0 8px #00d2ff;
+        }
+        .hud-led.pulse-fast { animation: hudLedPulse 0.5s infinite alternate; }
+        .hud-led.pulse-slow { animation: hudLedPulse 1.5s infinite alternate; }
+        @keyframes hudLedPulse {
+            0%   { opacity: 0.3; filter: brightness(0.5); }
+            100% { opacity: 1;   filter: brightness(1.25); }
+        }
+        .hud-separator { color: rgba(0, 210, 255, 0.25); }
+
+
+        /* CPU Animations */
+        @keyframes cpuFlicker1 {
+            0%, 100% { width: 78%; }
+            30% { width: 85%; }
+            60% { width: 70%; }
+            80% { width: 90%; }
+        }
+        @keyframes cpuFlicker2 {
+            0%, 100% { width: 45%; }
+            20% { width: 60%; }
+            50% { width: 35%; }
+            75% { width: 50%; }
+        }
+        @keyframes cpuFlicker3 {
+            0%, 100% { width: 92%; }
+            40% { width: 80%; }
+            70% { width: 98%; }
+            90% { width: 88%; }
+        }
+
+        /* Background layers keep mouse parallax only, no scroll panning */
         html:not([data-theme="nier"]):not([data-theme="ame"]) .planet-atmosphere {
-            transform: translate(calc(var(--cam-x) * 0.6 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.6));
+            transform: translate(calc(var(--cam-x) * 0.6), calc(var(--cam-y) * 0.6));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .sun-eclipse {
-            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .planet-secondary {
-            transform: translate(calc(var(--cam-x) * 0.5 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.5));
+            transform: translate(calc(var(--cam-x) * 0.5), calc(var(--cam-y) * 0.5));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .cosmic-fog {
-            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .cosmic-horizon {
-            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .bloom-overlay {
-            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .bloom-glow {
-            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+            transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .anamorphic-flares {
-            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+            transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .hud-grid {
-            transform: translate(calc(var(--cam-x) * 0.2 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.2));
+            transform: translate(calc(var(--cam-x) * 0.2), calc(var(--cam-y) * 0.2));
         }
         html:not([data-theme="nier"]):not([data-theme="ame"]) .light-leak {
-            transform: translate(calc(var(--cam-x) * 0.4 + var(--scroll-offset, 0) * -20vw), calc(var(--cam-y) * 0.4));
+            transform: translate(calc(var(--cam-x) * 0.4), calc(var(--cam-y) * 0.4));
         }
-
-        /* 3. Far background Stars (Pan least: -10vw) */
         html:not([data-theme="nier"]):not([data-theme="ame"]) #starfield {
-            transform: translate(calc(var(--cam-x) + var(--scroll-offset, 0) * -10vw), var(--cam-y));
+            transform: translate(calc(var(--cam-x)), var(--cam-y));
         }
 </style>
 </head>
 <body>
 
 <!-- Cockpit Camera Wrapper (Parallax System) -->
-<div class="cockpit-camera">
+<div class="cockpit-camera" style="--window-x: calc(var(--cabin-yaw, 0deg) * -1);">
     <!-- Background WebGL Shaders -->
     <canvas id="rayon-bg"></canvas>
     <canvas id="nier-bg"></canvas>
@@ -3090,17 +3387,49 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
     <div id="biolum-container"></div>
 </div><!-- end .cockpit-camera -->
 
-<!-- Cockpit Frame (Static layers) -->
-<div class="cockpit-glass"></div>
-<div class="cockpit-frame">
+<!-- 3D Cockpit Room System -->
+<div class="cockpit-cabin-wrapper">
+<div class="cockpit-cabin">
+<div class="cabin-room">
+
+<!-- Room Surfaces -->
+<div class="room-floor"></div>
+<div class="room-ceiling"></div>
+
+<div class="room-wall-left"></div>
+<div class="room-wall-right"></div>
+
+<!-- Front Frame & HUD -->
+<div class="room-frame-top">
+    <!-- Ceiling Telemetry -->
+    <div class="cockpit-hud-panel ceiling-telemetry">
+        <span class="hud-led pulse-fast"></span>
+        <span>SYS.NOMINAL</span>
+        <span class="hud-separator">|</span>
+        <span>RADAR.ACTIVE</span>
+        <span class="hud-separator">|</span>
+        <span class="hud-led pulse-slow"></span>
+        <span>CORE.SYNC</span>
+    </div>
+</div>
+<div class="room-frame-bottom">
     <div class="cockpit-hud-scope">
         <div class="scope-grid"></div>
         <div class="scope-sweep"></div>
     </div>
 </div>
-<div class="cockpit-ceiling"></div>
-<div class="cockpit-pillar-left"></div>
-<div class="cockpit-pillar-right"></div>
+
+
+
+<!-- Back Wall & Consoles -->
+<div class="room-wall-back">
+
+
+</div><!-- end .room-wall-back -->
+
+</div><!-- end .cabin-room -->
+</div><!-- end .cockpit-cabin -->
+</div><!-- end .cockpit-cabin-wrapper -->
 
 <!-- Film Grain (static, no SVG filter) -->
 <div id="film-grain"></div>
@@ -3575,6 +3904,8 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
         }
     });
 })();
+
+
 
 // ── Parallax on Light Beams ──
 (function() {
@@ -4260,36 +4591,128 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-g
         }
         updateCamera();
 
-        function updateScrollOffset() {
-            if (!isRayonActive()) return;
-            var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-            var ratio = maxScroll > 0 ? window.scrollX / maxScroll : 0.5;
-            var offset = ratio - 0.5;
-            document.documentElement.style.setProperty('--scroll-offset', offset);
-        }
-        window.addEventListener('scroll', updateScrollOffset);
-        window.addEventListener('resize', updateScrollOffset);
+        // ══ 3D CABIN ROTATION SYSTEM ══
+        // Mouse X drives Y-axis rotation (yaw), Mouse Y drives X-axis rotation (pitch)
+        var cabinEl = document.querySelector('.cockpit-cabin');
+        var targetCabinYaw = 0;
+        var currentCabinYaw = 0;
+        var targetCabinPitch = 0;
+        var currentCabinPitch = 0;
+        var maxYaw = 20; // Restricted to 20 degrees to prevent 2D text wrap-around and 3D clipping glitches
+        var maxPitch = 15; // degrees
 
-        window.addEventListener('load', function() {
-            if (isRayonActive()) {
-                setTimeout(function() {
-                    var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-                    window.scrollTo(maxScroll / 2, 0);
-                    updateScrollOffset();
-                }, 50);
-            }
+        document.addEventListener('mousemove', function(e) {
+            if (!isRayonActive()) return;
+            // Yaw (Left/Right)
+            var normalizedX = (e.clientX / window.innerWidth) * 2 - 1;
+            var curvedX = Math.sign(normalizedX) * Math.pow(Math.abs(normalizedX), 1.3);
+            targetCabinYaw = curvedX * maxYaw;
+
+            // Pitch (Up/Down)
+            var normalizedY = (e.clientY / window.innerHeight) * 2 - 1;
+            var curvedY = Math.sign(normalizedY) * Math.pow(Math.abs(normalizedY), 1.3);
+            targetCabinPitch = -curvedY * maxPitch;
         });
 
+        function updateCabinRotation() {
+            if (isRayonActive() && cabinEl) {
+                currentCabinYaw += (targetCabinYaw - currentCabinYaw) * 0.06;
+                currentCabinPitch += (targetCabinPitch - currentCabinPitch) * 0.06;
+                cabinEl.style.setProperty('--cabin-yaw', currentCabinYaw + 'deg');
+                cabinEl.style.setProperty('--cabin-pitch', currentCabinPitch + 'deg');
+
+                // GLUE 2D TEXT TO WINDOW: Calculate exact perspective displacement
+                // perspective = 70px, scale = 5 -> visual perspective = 350px
+                // Limit yaw internally to avoid infinity at 90deg, though maxYaw limits it visually
+                var safeYaw = Math.max(-80, Math.min(80, currentCabinYaw));
+                var yawRad = safeYaw * Math.PI / 180;
+                var displacement = -350 * Math.tan(yawRad);
+                document.documentElement.style.setProperty('--window-x', displacement + 'px');
+            }
+            requestAnimationFrame(updateCabinRotation);
+        }
+        updateCabinRotation();
+
         var themeObserver = new MutationObserver(function() {
-            if (isRayonActive()) {
-                setTimeout(function() {
-                    var maxScroll = document.documentElement.scrollWidth - window.innerWidth;
-                    window.scrollTo(maxScroll / 2, 0);
-                    updateScrollOffset();
-                }, 50);
+            if (isRayonActive() && cabinEl) {
+                currentCabinYaw = 0;
+                currentCabinPitch = 0;
+                targetCabinYaw = 0;
+                targetCabinPitch = 0;
+                cabinEl.style.setProperty('--cabin-yaw', '0deg');
+                cabinEl.style.setProperty('--cabin-pitch', '0deg');
             }
         });
         themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        // ══ LIVE TELEMETRY CONSOLE UPDATES ══
+        var consoleGrid = document.getElementById('console-memory-grid');
+        var consoleLogs = document.getElementById('console-log-lines');
+        var lastLogCycle = 1536;
+
+        function updateLiveConsoles() {
+            if (!isRayonActive()) return;
+
+            // 1. Randomly update memory grid cells
+            if (consoleGrid) {
+                var cells = consoleGrid.children;
+                if (cells.length > 0) {
+                    var countToChange = Math.floor(Math.random() * 3) + 1;
+                    for (var i = 0; i < countToChange; i++) {
+                        var randIdx = Math.floor(Math.random() * cells.length);
+                        var cell = cells[randIdx];
+                        if (Math.random() < 0.25) {
+                            var val = Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0');
+                            cell.textContent = val;
+                            cell.style.color = '#00ff88';
+                            cell.style.fontWeight = 'bold';
+                            cell.style.textShadow = '0 0 4px #00ff88';
+                        } else {
+                            cell.textContent = '00';
+                            cell.style.color = 'rgba(0,255,136,0.4)';
+                            cell.style.fontWeight = 'normal';
+                            cell.style.textShadow = 'none';
+                        }
+                    }
+                }
+            }
+
+            // 2. Append mock compiler/VM logs
+            if (consoleLogs) {
+                lastLogCycle += Math.floor(Math.random() * 40) + 10;
+                var opcodes = ['live', 'ld', 'st', 'add', 'sub', 'and', 'or', 'xor', 'zjmp', 'ldi', 'sti', 'fork', 'lld', 'lldi', 'lfork', 'aff'];
+                var players = ['P1', 'P2'];
+                var pName = players[Math.floor(Math.random() * players.length)];
+                var op = opcodes[Math.floor(Math.random() * opcodes.length)];
+                var arg = Math.floor(Math.random() * 4096);
+                
+                var logLine = document.createElement('div');
+                logLine.style.opacity = '1';
+                
+                if (Math.random() < 0.15) {
+                    logLine.style.color = '#00ff88';
+                    logLine.style.fontWeight = 'bold';
+                    logLine.textContent = '[' + lastLogCycle.toString().padStart(4, '0') + '] ' + pName + ' ' + op.toUpperCase() + ' SUCCESS';
+                } else if (Math.random() < 0.2) {
+                    logLine.style.color = '#ffaa00';
+                    logLine.textContent = '[' + lastLogCycle.toString().padStart(4, '0') + '] VM WARN: pc overlap';
+                } else {
+                    logLine.style.color = '#8b9bb4';
+                    logLine.textContent = '[' + lastLogCycle.toString().padStart(4, '0') + '] ' + pName + ' EXEC: ' + op + ' ' + arg;
+                }
+
+                consoleLogs.appendChild(logLine);
+                while (consoleLogs.children.length > 6) {
+                    consoleLogs.removeChild(consoleLogs.firstChild);
+                }
+                var children = consoleLogs.children;
+                for (var i = 0; i < children.length; i++) {
+                    children[i].style.opacity = (0.3 + (i / children.length) * 0.7).toString();
+                }
+            }
+        }
+
+        setInterval(updateLiveConsoles, 1500);
     }
 
     // Dust Canvas
