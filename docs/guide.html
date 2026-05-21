@@ -7407,10 +7407,10 @@ while (!halt) {
     function start() { if (animId) return; canvas.style.display = 'block'; window.addEventListener('mousemove', onMouseMove); t0 = 0; animId = requestAnimationFrame(render); }
     function stop() { if (animId) { cancelAnimationFrame(animId); animId = null; } window.removeEventListener('mousemove', onMouseMove); canvas.style.display = 'none'; }
 
-    var obs = new MutationObserver(function() { if (document.documentElement.getAttribute('data-theme') === 'ame') start(); else stop(); });
+    var obs = new MutationObserver(function() { if (false && document.documentElement.getAttribute('data-theme') === 'ame') start(); else stop(); });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    if (document.documentElement.getAttribute('data-theme') === 'ame') start();
-    document.addEventListener('visibilitychange', function() { if (document.hidden) stop(); else if (document.documentElement.getAttribute('data-theme') === 'ame') start(); });
+    if (false && document.documentElement.getAttribute('data-theme') === 'ame') start();
+    document.addEventListener('visibilitychange', function() { if (document.hidden) stop(); else if (false && document.documentElement.getAttribute('data-theme') === 'ame') start(); });
     window.addEventListener('resize', function() { if (animId) resize(); });
 })();
 </script>
@@ -7873,7 +7873,9 @@ while (!halt) {
     <div class="reticle-ring"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="nier-immersive.js"></script>
+<script src="ame-immersive.js"></script>
 <script src="transition_guide.js?v=7"></script>
 </body>
 </html>

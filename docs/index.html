@@ -1542,6 +1542,32 @@
         [data-theme="nier"] ::-webkit-scrollbar-thumb { background: #8B2519; border-radius: 0; }
         [data-theme="nier"] { scrollbar-color: #8B2519 #EDE8DF; scrollbar-width: thin; }
 
+        /* Scrollbar Rayon Vert */
+        html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar,
+        [data-theme="rayon"] ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-track,
+        [data-theme="rayon"] ::-webkit-scrollbar-track {
+            background: #030508;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-thumb,
+        [data-theme="rayon"] ::-webkit-scrollbar-thumb {
+            background: #151e35;
+            border-radius: 5px;
+            border: 2px solid #030508;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-thumb:hover,
+        [data-theme="rayon"] ::-webkit-scrollbar-thumb:hover {
+            background: #00d2ff;
+        }
+        html:not([data-theme="nier"]):not([data-theme="ame"]),
+        [data-theme="rayon"] {
+            scrollbar-color: #151e35 #030508;
+            scrollbar-width: thin;
+        }
+
         /* Typography */
         [data-theme="nier"] h1, [data-theme="nier"] h2 {
             font-family: var(--nier-heading); letter-spacing: 0.12em; text-transform: uppercase;
@@ -1886,6 +1912,27 @@
             --ivory: #E0EAF8;       /* Near-white with blue tint */
             --cyan: #00CED1;
             --silver: #A0B8D0;      /* Argent reflections */
+        }
+
+        /* Scrollbar aquatique (Âme dans l'eau) */
+        [data-theme="ame"] ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        [data-theme="ame"] ::-webkit-scrollbar-track {
+            background: #070B1A;
+        }
+        [data-theme="ame"] ::-webkit-scrollbar-thumb {
+            background: #1E4080;
+            border-radius: 5px;
+            border: 2px solid #070B1A;
+        }
+        [data-theme="ame"] ::-webkit-scrollbar-thumb:hover {
+            background: #00CED1;
+        }
+        [data-theme="ame"] {
+            scrollbar-color: #1E4080 #070B1A;
+            scrollbar-width: thin;
         }
 
         /* ── Body & Atmosphere ── */
@@ -2722,18 +2769,20 @@
             50% { opacity: 0.6; box-shadow: 0 0 12px var(--glow-color), 0 0 24px var(--glow-color); }
         }
 
-        /* ══ REALISTIC UNDERWATER SHADER (WebGL canvas) ══ */
-        #underwater-bg, #rayon-bg, #nier-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; pointer-events: none; display: none;
-        }
-        [data-theme="ame"] #underwater-bg { display: block; }
+        /* Legacy 2D underwater canvas — hidden in favour of new 3D engine */
+        [data-theme="ame"] #underwater-bg { display: none !important; }
         [data-theme="nier"] #nier-bg { display: none !important; }
         html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
+
+        /* New 3D immersive canvas — managed by ame-immersive.js */
+        #ame-3d-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
         
-        /* When WebGL is active, shader replaces CSS atmosphere */
-        [data-theme="ame"].webgl body::before { background: none !important; animation: none !important; }
-        [data-theme="ame"].webgl #god-rays { display: none !important; }
+        /* When 3D WebGL is active, suppress CSS atmosphere duplicates */
+        [data-theme="ame"] body::before { background: none !important; animation: none !important; }
+        [data-theme="ame"] #god-rays { display: none !important; }
         [data-theme="nier"].webgl body::before, [data-theme="nier"].webgl body::after { background: none !important; }
         html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after { background: none !important; }
         /* Subtle current drift — content sways imperceptibly */
@@ -4299,15 +4348,15 @@
     }
 
     var obs = new MutationObserver(function() {
-        if (document.documentElement.getAttribute('data-theme') === 'ame') start();
+        if (false && document.documentElement.getAttribute('data-theme') === 'ame') start();
         else stop();
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    if (document.documentElement.getAttribute('data-theme') === 'ame') start();
+    if (false && document.documentElement.getAttribute('data-theme') === 'ame') start();
 
     document.addEventListener('visibilitychange', function() {
         if (document.hidden) stop();
-        else if (document.documentElement.getAttribute('data-theme') === 'ame') start();
+        else if (false && document.documentElement.getAttribute('data-theme') === 'ame') start();
     });
 
     window.addEventListener('resize', function() { if (animId) resize(); });
@@ -4991,6 +5040,7 @@
 
 <div id="theme-transition"></div>
 <script src="nier-immersive.js"></script>
+<script src="ame-immersive.js"></script>
 <script src="transition_index.js?v=5"></script>
 </body>
 </html>

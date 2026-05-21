@@ -199,7 +199,7 @@
             text-align:center; padding:100px 20px 60px;
             background: transparent;
             border-bottom:1px solid rgba(28,38,64,0.4);
-            position:relative; overflow:hidden;
+            position:relative; overflow:hidden; z-index: 10000;
         }
         .hero::before {
             content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
@@ -2025,6 +2025,32 @@
     [data-theme="nier"] ::-webkit-scrollbar-thumb:hover { background: #C4362B; }
     [data-theme="nier"] { scrollbar-color: #8B2519 #EDE8DF; scrollbar-width: thin; }
 
+    /* Scrollbar Rayon Vert */
+    html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar,
+    [data-theme="rayon"] ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-track,
+    [data-theme="rayon"] ::-webkit-scrollbar-track {
+        background: #030508;
+    }
+    html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-thumb,
+    [data-theme="rayon"] ::-webkit-scrollbar-thumb {
+        background: #151e35;
+        border-radius: 5px;
+        border: 2px solid #030508;
+    }
+    html:not([data-theme="nier"]):not([data-theme="ame"]) ::-webkit-scrollbar-thumb:hover,
+    [data-theme="rayon"] ::-webkit-scrollbar-thumb:hover {
+        background: #00d2ff;
+    }
+    html:not([data-theme="nier"]):not([data-theme="ame"]),
+    [data-theme="rayon"] {
+        scrollbar-color: #151e35 #030508;
+        scrollbar-width: thin;
+    }
+
     /* Typographie NieR — Titres en Cinzel, sous-titres en EB Garamond */
     [data-theme="nier"] h1, [data-theme="nier"] h2 {
         font-family: var(--nier-heading);
@@ -2532,6 +2558,27 @@
     /* Cursor — aquatic crosshair */
     [data-theme="ame"] body, [data-theme="ame"] a, [data-theme="ame"] button, [data-theme="ame"] select, [data-theme="ame"] input, [data-theme="ame"] textarea, [data-theme="ame"] .intro-card, [data-theme="ame"] .diagram-box, [data-theme="ame"] .code-wrapper, [data-theme="ame"] .collapse-header, [data-theme="ame"] .sidebar a, [data-theme="ame"] .badge {
         cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cline x1='12' y1='4' x2='12' y2='10' stroke='%2300CED1' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='12' y1='14' x2='12' y2='20' stroke='%2300CED1' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='4' y1='12' x2='10' y2='12' stroke='%2300CED1' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='14' y1='12' x2='20' y2='12' stroke='%2300CED1' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='12' r='1.5' fill='%2300CED1'/%3E%3Ccircle cx='12' cy='12' r='5' stroke='%2300CED1' stroke-width='0.7' fill='none' opacity='0.4'/%3E%3C/svg%3E") 12 12, crosshair;
+    }
+
+    /* Scrollbar aquatique (Âme dans l'eau) */
+    [data-theme="ame"] ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    [data-theme="ame"] ::-webkit-scrollbar-track {
+        background: #070B1A;
+    }
+    [data-theme="ame"] ::-webkit-scrollbar-thumb {
+        background: #1E4080;
+        border-radius: 5px;
+        border: 2px solid #070B1A;
+    }
+    [data-theme="ame"] ::-webkit-scrollbar-thumb:hover {
+        background: #00CED1;
+    }
+    [data-theme="ame"] {
+        scrollbar-color: #1E4080 #070B1A;
+        scrollbar-width: thin;
     }
 
     /* Theme toggle */
@@ -4551,12 +4598,20 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     z-index: 0; pointer-events: none; display: none;
 }
-[data-theme="ame"] #underwater-bg { display: block; }
+/* Legacy 2D underwater canvas — suppressed in favour of new 3D engine */
+[data-theme="ame"] #underwater-bg { display: none !important; }
 [data-theme="nier"] #nier-bg { display: none !important; }
 html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
 
-[data-theme="ame"].webgl body::before { background: none !important; animation: none !important; }
-[data-theme="ame"].webgl #god-rays { display: none !important; }
+/* New 3D immersive canvas — managed by ame-immersive.js */
+#ame-3d-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+}
+
+/* When 3D engine is active, suppress CSS atmosphere duplicates */
+[data-theme="ame"] body::before { background: none !important; animation: none !important; }
+[data-theme="ame"] #god-rays { display: none !important; }
 [data-theme="nier"].webgl body::before, [data-theme="nier"].webgl body::after { background: none !important; }
 html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after { background: none !important; }
 
@@ -5198,23 +5253,54 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-i
     opacity: 0;
 }
 /* ====== NEW GUIDE CONTENT WRAPPER ====== */
-/* Fixes the restricted height issue in guide.html */
-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper {
+/* Fixes the restricted height issue in guide.html and establishes stacking context above 3D background */
+body.page-guide .guide-glass-wrapper {
     position: relative;
     z-index: 10000;
     max-width: 900px;
     margin: 40px auto;
     padding: 60px 40px;
     min-height: 80vh; /* Fills the vertical space beautifully */
+    border-radius: 12px;
+}
+
+@media (max-width: 930px) {
+    body.page-guide .guide-glass-wrapper {
+        margin: 20px 10px;
+        padding: 40px 20px;
+    }
+}
+
+/* Theme-specific styles for the wrapper */
+html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-wrapper {
     background: rgba(3, 8, 5, 0.75);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(0, 210, 255, 0.25);
-    border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 30px rgba(0, 210, 255, 0.08);
     color: #e0f8ff;
     animation: fadeInGlass 1s ease-out forwards;
 }
+
+/* Nier Automata Theme Wrapper Style */
+[data-theme="nier"] body.page-guide .guide-glass-wrapper {
+    background: #FAF8F5;
+    border: 1px solid #D4CFC6;
+    border-radius: 0px; /* Sharp corners signature of Nier UI */
+    color: #4E4A42;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+
+/* Âme dans l'eau Theme Wrapper Style (Deep aquatic glow container) */
+[data-theme="ame"] body.page-guide .guide-glass-wrapper {
+    background: rgba(8, 14, 38, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(74, 144, 226, 0.25);
+    color: #C8DAF0;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(74, 144, 226, 0.1);
+}
+
 
 
 /* Cyber data overrides for content elements under Rayon Vert */
