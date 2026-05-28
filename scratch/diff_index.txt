@@ -1,0 +1,211 @@
+diff --git a/docs/index.html b/docs/index.html
+index 99af4b5..c459a9a 100755
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -4,6 +4,7 @@
+     <meta charset="UTF-8">
+     <meta name="view-transition" content="same-origin">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
++
+     <title>Corewar — Rust</title>
+     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+@@ -1408,6 +1409,16 @@
+         }
+         footer a { color: var(--ray); text-decoration: none; }
+         footer a:hover { text-decoration: underline; text-shadow: 0 0 10px rgba(0,255,136,0.3); }
++        .footer-holygraph-separator,
++        .footer-holygraph-link {
++            display: none;
++        }
++        [data-theme="nier"] .footer-holygraph-separator,
++        [data-theme="nier"] .footer-holygraph-link,
++        [data-theme="ame"] .footer-holygraph-separator,
++        [data-theme="ame"] .footer-holygraph-link {
++            display: inline;
++        }
+ 
+         /* ══ RESPONSIVE ══ */
+         @media(max-width:700px) {
+@@ -1933,10 +1944,11 @@
+         [data-theme="ame"] {
+             scrollbar-color: #1E4080 #070B1A;
+             scrollbar-width: thin;
++            background-color: #030810 !important;
+         }
+ 
+         /* ── Body & Atmosphere ── */
+-        [data-theme="ame"] body { background: linear-gradient(180deg, #070B1A 0%, #050B18 40%, #030812 70%, #020510 100%); }
++        [data-theme="ame"] body { background: linear-gradient(180deg, #070B1A 0%, #050B18 40%, #030812 70%, #020510 100%); background-attachment: fixed; }
+         [data-theme="ame"] body::before {
+             background:
+                 radial-gradient(ellipse at 15% 30%, rgba(30,91,216,0.06) 0%, transparent 55%),
+@@ -2769,6 +2781,11 @@
+             50% { opacity: 0.6; box-shadow: 0 0 12px var(--glow-color), 0 0 24px var(--glow-color); }
+         }
+ 
++        #underwater-bg, #rayon-bg, #nier-bg {
++            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
++            z-index: 0; pointer-events: none; display: none;
++        }
++
+         /* Legacy 2D underwater canvas — hidden in favour of new 3D engine */
+         [data-theme="ame"] #underwater-bg { display: none !important; }
+         [data-theme="nier"] #nier-bg { display: none !important; }
+@@ -2779,7 +2796,7 @@
+             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+             z-index: 0; pointer-events: none;
+         }
+-        
++
+         /* When 3D WebGL is active, suppress CSS atmosphere duplicates */
+         [data-theme="ame"] body::before { background: none !important; animation: none !important; }
+         [data-theme="ame"] #god-rays { display: none !important; }
+@@ -2978,26 +2995,26 @@
+             0% { top: -15%; }
+             100% { top: 0; }
+         }
+-        html:not([data-theme]) .cabin-room,
+-        html[data-theme="rayon"] .cabin-room {
++        html:not([data-theme]):not(.webgl):not(.webgl-supported) .cabin-room,
++        html[data-theme="rayon"]:not(.webgl):not(.webgl-supported) .cabin-room {
+             animation: roomPanUp 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+         }
+-        html:not([data-theme]) .planet-atmosphere,
+-        html:not([data-theme]) .sun-eclipse,
+-        html[data-theme="rayon"] .planet-atmosphere,
+-        html[data-theme="rayon"] .sun-eclipse {
++        html:not([data-theme]):not(.webgl):not(.webgl-supported) .planet-atmosphere,
++        html:not([data-theme]):not(.webgl):not(.webgl-supported) .sun-eclipse,
++        html[data-theme="rayon"]:not(.webgl):not(.webgl-supported) .planet-atmosphere,
++        html[data-theme="rayon"]:not(.webgl):not(.webgl-supported) .sun-eclipse {
+             animation: planetDescend 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+         }
+ 
+         /* Transition-specific room animations */
+-        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cabin-room {
++        html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .cabin-room {
+             animation: roomPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+         }
+-        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .cabin-room {
++        html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .cabin-room {
+             animation: roomPanUp 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+         }
+-        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .planet-atmosphere,
+-        html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
++        html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .planet-atmosphere,
++        html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .sun-eclipse {
+             animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+         }
+ 
+@@ -3385,6 +3402,66 @@
+         html:not([data-theme="nier"]):not([data-theme="ame"]) #starfield {
+             transform: translate(calc(var(--cam-x)), var(--cam-y));
+         }
++
++        /* Static suppression of 2D space backdrop when WebGL Rayon Vert is active */
++        html.webgl:not([data-theme]) .planet-atmosphere,
++        html[data-theme="rayon"].webgl .planet-atmosphere,
++        html.webgl-supported:not([data-theme]) .planet-atmosphere,
++        html[data-theme="rayon"].webgl-supported .planet-atmosphere,
++        html.webgl:not([data-theme]) .sun-eclipse,
++        html[data-theme="rayon"].webgl .sun-eclipse,
++        html.webgl-supported:not([data-theme]) .sun-eclipse,
++        html[data-theme="rayon"].webgl-supported .sun-eclipse,
++        html.webgl:not([data-theme]) .planet-secondary,
++        html[data-theme="rayon"].webgl .planet-secondary,
++        html.webgl-supported:not([data-theme]) .planet-secondary,
++        html[data-theme="rayon"].webgl-supported .planet-secondary,
++        html.webgl:not([data-theme]) .cosmic-fog,
++        html[data-theme="rayon"].webgl .cosmic-fog,
++        html.webgl-supported:not([data-theme]) .cosmic-fog,
++        html[data-theme="rayon"].webgl-supported .cosmic-fog,
++        html.webgl:not([data-theme]) .cosmic-horizon,
++        html[data-theme="rayon"].webgl .cosmic-horizon,
++        html.webgl-supported:not([data-theme]) .cosmic-horizon,
++        html[data-theme="rayon"].webgl-supported .cosmic-horizon,
++        html.webgl:not([data-theme]) .bloom-overlay,
++        html[data-theme="rayon"].webgl .bloom-overlay,
++        html.webgl-supported:not([data-theme]) .bloom-overlay,
++        html[data-theme="rayon"].webgl-supported .bloom-overlay,
++        html.webgl:not([data-theme]) .bloom-glow,
++        html[data-theme="rayon"].webgl .bloom-glow,
++        html.webgl-supported:not([data-theme]) .bloom-glow,
++        html[data-theme="rayon"].webgl-supported .bloom-glow,
++        html.webgl:not([data-theme]) .anamorphic-flares,
++        html[data-theme="rayon"].webgl .anamorphic-flares,
++        html.webgl-supported:not([data-theme]) .anamorphic-flares,
++        html[data-theme="rayon"].webgl-supported .anamorphic-flares,
++        html.webgl:not([data-theme]) .light-leak,
++        html[data-theme="rayon"].webgl .light-leak,
++        html.webgl-supported:not([data-theme]) .light-leak,
++        html[data-theme="rayon"].webgl-supported .light-leak,
++        html.webgl:not([data-theme]) #starfield,
++        html[data-theme="rayon"].webgl #starfield,
++        html.webgl-supported:not([data-theme]) #starfield,
++        html[data-theme="rayon"].webgl-supported #starfield,
++        html.webgl:not([data-theme]) #dust-canvas,
++        html[data-theme="rayon"].webgl #dust-canvas,
++        html.webgl-supported:not([data-theme]) #dust-canvas,
++        html[data-theme="rayon"].webgl-supported #dust-canvas,
++        html.webgl:not([data-theme]) .light-beams,
++        html[data-theme="rayon"].webgl .light-beams,
++        html.webgl-supported:not([data-theme]) .light-beams,
++        html[data-theme="rayon"].webgl-supported .light-beams,
++        html.webgl:not([data-theme]) .lens-flare,
++        html[data-theme="rayon"].webgl .lens-flare,
++        html.webgl-supported:not([data-theme]) .lens-flare,
++        html[data-theme="rayon"].webgl-supported .lens-flare,
++        html.webgl:not([data-theme]) #rayon-bg,
++        html[data-theme="rayon"].webgl #rayon-bg,
++        html.webgl-supported:not([data-theme]) #rayon-bg,
++        html[data-theme="rayon"].webgl-supported #rayon-bg {
++            display: none !important;
++        }
+ </style>
+ </head>
+ <body>
+@@ -3794,10 +3871,12 @@
+     <a href="https://github.com/rkpequod-max/corewar-rust">github.com/rkpequod-max/corewar-rust</a>
+     <span style="margin: 0 12px; color: var(--border);">|</span>
+     <a href="https://github.com/rkpequod-max/corewar-rust/blob/main/LICENSE" target="_blank">Tous droits reserves</a>
++    <span class="footer-holygraph-separator" style="margin: 0 12px; color: var(--border);">|</span>
++    <a href="holygraph.html" class="footer-holygraph-link">Curriculum Graphe</a>
+ </footer>
+ 
+ 
+-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
++<script src="three.min.js"></script>
+ <script src="nier-hacking-game-v2.js"></script>
+ <script>
+ /* ═══════════════════════════════════════
+@@ -3883,7 +3962,8 @@
+ 
+     let transitioning = false;
+ 
+-    const stored = localStorage.getItem('cw-theme');
++    const match = window.location.search.match(/[?&]theme=([^&]+)/);
++    const stored = match ? match[1] : localStorage.getItem('cw-theme');
+     if (stored && THEMES.indexOf(stored) !== -1) {
+         if (stored !== 'rayon') {
+             document.documentElement.setAttribute('data-theme', stored);
+@@ -3892,6 +3972,14 @@
+         if (stored === 'nier' && window.NierHackGame) window.NierHackGame.init();
+     }
+ 
++    const isHeadless = window.location.search.indexOf('screenshot=true') !== -1 || navigator.userAgent.indexOf('Headless') !== -1;
++    const scrollMatch = window.location.search.match(/[?&]scroll=(\d+)/);
++    if (scrollMatch && !isHeadless) {
++        setTimeout(function() {
++            window.scrollTo(0, parseInt(scrollMatch[1]));
++        }, 150);
++    }
++
+     window.toggleTheme = function() {
+         if (transitioning) return;
+         const overlay = document.getElementById('theme-transition');
+@@ -5044,3 +5132,4 @@
+ <script src="transition_index.js?v=5"></script>
+ </body>
+ </html>
++

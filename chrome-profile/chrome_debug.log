@@ -1,0 +1,11 @@
+[73714:73714:0527/161412.236279:WARNING:chrome/browser/signin/account_consistency_mode_manager.cc:74] Desktop Identity Consistency cannot be enabled as no OAuth client ID and client secret have been configured.
+[73838:73838:0527/161413.476757:WARNING:sandbox/policy/linux/sandbox_linux.cc:404] InitializeSandbox() called with multiple threads in process gpu-process.
+[73714:73813:0527/161416.760528:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[73838:73838:0527/161417.180353:ERROR:gpu/command_buffer/service/gl_utils.cc:430] [.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[73714:73714:0527/161418.784733:INFO:CONSOLE:5146] "[.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels", source: http://localhost:8001/docs/index.html?theme=ame&scroll=1400 (5146)
+[73838:73838:0527/161419.070610:ERROR:gpu/command_buffer/service/gl_utils.cc:430] [.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[73714:73714:0527/161419.568231:INFO:CONSOLE:0] "[.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels", source: http://localhost:8001/docs/index.html?theme=ame&scroll=1400 (0)
+[73838:73838:0527/161419.747780:ERROR:gpu/command_buffer/service/gl_utils.cc:430] [.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[73714:73714:0527/161420.237320:INFO:CONSOLE:0] "[.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels", source: http://localhost:8001/docs/index.html?theme=ame&scroll=1400 (0)
+[73838:73838:0527/161420.319729:ERROR:gpu/command_buffer/service/gl_utils.cc:430] [.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[73714:73714:0527/161420.739725:INFO:CONSOLE:0] "[.WebGL-0x130c024d3c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)", source: http://localhost:8001/docs/index.html?theme=ame&scroll=1400 (0)

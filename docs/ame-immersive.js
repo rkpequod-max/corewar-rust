@@ -5,6 +5,8 @@
 (function() {
     'use strict';
 
+
+
     var active = false;
     var renderer, scene, camera;
     var animId = null;
@@ -20,9 +22,17 @@
     var fogPlanes = [];    // horizontal haze veils
 
     var cameraPos, cameraVel, cameraTarget;
-    var keys = { w:false, a:false, s:false, d:false, Space:false, Control:false };
+    var keys = { w:false, a:false, s:false, d:false, Space:false, Control:false, ArrowLeft:false, ArrowRight:false, ArrowUp:false, ArrowDown:false };
     var mouseX = 0, mouseY = 0;
     var cameraBobbing = 0;
+
+    // 3D Scene Elements for L'âme dans l'eau
+    var directionalLight = null;
+    var chainGroup = null;       // single center chain
+    var stagePillars = [];       // slanted stage structures
+    var bubbleParticles = null;  // points particle system
+    var vSpotlights = [];        // crossing V-shaped spotlight beams
+    var scrollInitialized = false;
 
     // Web Audio
     var audioCtx = null;
@@ -179,8 +189,19 @@
         // Dim ambient light only — no direct lights, rays create all illumination
         scene.add(new THREE.AmbientLight(0x06101e, 1.0));
 
+        // Soft directional light from top-front to create subtle reflections/highlights on 3D objects (chain, pillars)
+        directionalLight = new THREE.DirectionalLight(0x4a8ec8, 1.5);
+        directionalLight.position.set(0, 30, 20);
+        scene.add(directionalLight);
+
         buildGodRays();
         buildFogVeils();
+
+        // 3D assets for the enhanced underwater theme
+        buildChain();
+        buildStagePillars();
+        buildVSpotlights();
+        buildBubbleParticles();
     }
 
     function buildGodRays() {
@@ -283,6 +304,178 @@
         godRays.push({ mesh: glowFloor, baseX: 0, baseZ: 0, baseOp: 0.12, phase: 0, type: 'floor' });
     }
 
+    function buildChain() {
+        chainGroup = new THREE.Group();
+        
+        var linkRadius = 0.75;
+        var linkTube = 0.19;
+        // TorusGeometry: radius, tube, radialSegments, tubularSegments
+        var linkGeo = new THREE.TorusGeometry(linkRadius, linkTube, 10, 20);
+        
+        // Iron material with high metalness & low roughness for shiny reflections
+        var chainMat = new THREE.MeshStandardMaterial({
+            color: 0x141a22,
+            metalness: 0.95,
+            roughness: 0.16,
+            side: THREE.DoubleSide
+        });
+        
+        var spacing = 2.15;
+        var numLinks = 28; // Covers depth down to Y = -56
+        
+        for (var i = 0; i < numLinks; i++) {
+            var linkMesh = new THREE.Mesh(linkGeo, chainMat);
+            
+            // Squash Torus along Y to make it oval
+            linkMesh.scale.set(1.0, 1.55, 1.0);
+            
+            // Alternate rotations by 90 degrees around Y axis
+            if (i % 2 === 0) {
+                linkMesh.rotation.y = 0;
+            } else {
+                linkMesh.rotation.y = Math.PI / 2;
+            }
+            
+            // Stack links down
+            linkMesh.position.y = -i * spacing;
+            chainGroup.add(linkMesh);
+        }
+        
+        // Position at scene center (x=0, z=0)
+        chainGroup.position.set(0, 0, 0);
+        scene.add(chainGroup);
+    }
+
+    function buildStagePillars() {
+        var pillarGeo = new THREE.BoxGeometry(4.0, 32.0, 4.0);
+        var pillarMat = new THREE.MeshStandardMaterial({
+            color: 0x162436,
+            roughness: 0.38,
+            metalness: 0.6,
+            side: THREE.DoubleSide
+        });
+        
+        // Positions at the bottom stage area, moved slightly inward to fit viewport at Z=-5
+        var configs = [
+            { x: -13.5, y: -41.0, z: -5.0, rotZ: -0.34 },
+            { x: -21.0, y: -41.0, z: -2.0, rotZ: -0.34 },
+            { x: 13.5,  y: -41.0, z: -5.0, rotZ: 0.34 },
+            { x: 21.0,  y: -41.0, z: -2.0, rotZ: 0.34 }
+        ];
+        
+        configs.forEach(function(cfg) {
+            var mesh = new THREE.Mesh(pillarGeo, pillarMat);
+            mesh.position.set(cfg.x, cfg.y, cfg.z);
+            mesh.rotation.z = cfg.rotZ;
+            scene.add(mesh);
+            stagePillars.push(mesh);
+        });
+    }
+
+    function buildVSpotlights() {
+        // Crossing volumetric beams coming from top corners (Reference 3)
+        var spotConfigs = [
+            // Left spotlight: starts at x=-26, y=16, z=-5, angles down-right
+            { x: -26, y: 16, z: -5, rotZ: -0.48, w: 7.5, h: 95, op: 0.10, col: 0x2280d0 },
+            // Right spotlight: starts at x=26, y=16, z=-5, angles down-left
+            { x: 26,  y: 16, z: -5, rotZ: 0.48,  w: 7.5, h: 95, op: 0.10, col: 0x2280d0 }
+        ];
+        
+        spotConfigs.forEach(function(cfg) {
+            var geo = new THREE.ConeGeometry(cfg.w, cfg.h, 16, 1, true);
+            
+            var mat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uColor: { value: new THREE.Color(cfg.col) },
+                    uOpacity: { value: cfg.op },
+                    uTime: { value: 0 },
+                    uHeight: { value: cfg.h },
+                    uEdgePower: { value: 2.5 },
+                    uCausticSpeed: { value: 0.9 },
+                    uIsFloor: { value: 0.0 }
+                },
+                vertexShader: RayShader.vertexShader,
+                fragmentShader: RayShader.fragmentShader,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+            
+            var pivot = new THREE.Group();
+            pivot.position.set(cfg.x, cfg.y, cfg.z);
+            
+            var mesh = new THREE.Mesh(geo, mat);
+            // Tip of the cone is at y = h/2 in standard ConeGeometry, so we shift mesh down by h/2
+            mesh.position.set(0, -cfg.h * 0.5, 0);
+            pivot.add(mesh);
+            pivot.rotation.z = cfg.rotZ;
+            
+            scene.add(pivot);
+            vSpotlights.push({ mesh: mesh, baseOp: cfg.op, phase: rand(0, Math.PI * 2) });
+        });
+    }
+
+    function createStarTexture() {
+        var canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        var ctx = canvas.getContext('2d');
+        
+        var grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.85)');
+        grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
+        grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(16, 16, 16, 0, Math.PI * 2);
+        ctx.fill();
+        
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function buildBubbleParticles() {
+        var numParticles = 80;
+        var geo = new THREE.BufferGeometry();
+        
+        var posArray = new Float32Array(numParticles * 3);
+        var speedArray = new Float32Array(numParticles);
+        var driftArray = new Float32Array(numParticles);
+        
+        for (var i = 0; i < numParticles; i++) {
+            posArray[i * 3] = rand(-45, 45);     // X
+            posArray[i * 3 + 1] = rand(-55, 5);  // Y
+            posArray[i * 3 + 2] = rand(-25, 15); // Z
+            
+            speedArray[i] = rand(1.6, 4.2);      // Rise speed
+            driftArray[i] = rand(0.2, 0.9);      // Horizontal drift frequency
+        }
+        
+        geo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        
+        // Re-use star texture (diffuse circular glow) for bubbles
+        var bubbleTex = createStarTexture();
+        var mat = new THREE.PointsMaterial({
+            size: 1.6,
+            map: bubbleTex,
+            transparent: true,
+            opacity: 0.45,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        
+        bubbleParticles = new THREE.Points(geo, mat);
+        scene.add(bubbleParticles);
+        
+        bubbleParticles.userData = {
+            speeds: speedArray,
+            drifts: driftArray,
+            numParticles: numParticles
+        };
+    }
+
     function buildFogVeils() {
         var depths = [-8, -16, -26, -38, -50];
         var opacities = [0.04, 0.06, 0.07, 0.08, 0.09];
@@ -314,8 +507,14 @@
         if (keys.s) vel.addScaledVector(forward, -1);
         if (keys.a) vel.addScaledVector(right, -1);
         if (keys.d) vel.addScaledVector(right, 1);
-        if (keys.Space) vel.y += 1.0;
-        if (keys.Control) vel.y -= 1.0;
+        
+        var hasCtrl = keys.Control;
+        if (hasCtrl) {
+            if (keys.ArrowUp) vel.y += 1.0;
+            if (keys.ArrowDown) vel.y -= 1.0;
+        } else {
+            if (keys.Space) vel.y += 1.0;
+        }
         vel.normalize().multiplyScalar(swimSpeed);
 
         cameraVel.lerp(vel, 0.05);
@@ -331,6 +530,21 @@
         cameraBobbing += dt * (isMoving ? 3.2 : 1.0);
         var cur = cameraPos.clone();
         cur.y += Math.sin(cameraBobbing) * (isMoving ? 0.18 : 0.06);
+
+        if (keys.ArrowLeft) {
+            mouseX = Math.max(-1.0, mouseX - 1.5 * dt);
+        }
+        if (keys.ArrowRight) {
+            mouseX = Math.min(1.0, mouseX + 1.5 * dt);
+        }
+        if (!hasCtrl) {
+            if (keys.ArrowUp) {
+                mouseY = Math.min(1.0, mouseY + 1.5 * dt);
+            }
+            if (keys.ArrowDown) {
+                mouseY = Math.max(-1.0, mouseY - 1.5 * dt);
+            }
+        }
 
         cameraTarget.copy(cur).add(new THREE.Vector3(
             Math.sin(-mouseX * 0.4),
@@ -348,11 +562,31 @@
 
     function handleScrollDepth() {
         if (!active) return;
+        var isHeadless = window.location.search.indexOf('screenshot=true') !== -1 || navigator.userAgent.indexOf('Headless') !== -1;
         var scrollY = window.scrollY || 0;
+        if (isHeadless) {
+            var scrollMatch = window.location.search.match(/[?&]scroll=(\d+)/);
+            if (scrollMatch) {
+                scrollY = parseInt(scrollMatch[1]);
+            }
+        }
         var maxS = document.documentElement.scrollHeight - window.innerHeight;
-        if (maxS <= 0) return;
+        if (maxS <= 0) maxS = 2400;
         var pct = scrollY / maxS;
-        cameraPos.y = THREE.MathUtils.lerp(cameraPos.y, -4.0 - pct * 44.0, 0.06);
+        
+        var targetY = -4.0 - pct * 44.0;
+        if (!scrollInitialized) {
+            cameraPos.y = targetY;
+            scrollInitialized = true;
+        } else {
+            if (isHeadless) {
+                cameraPos.y = targetY;
+            } else {
+                cameraPos.y = THREE.MathUtils.lerp(cameraPos.y, targetY, 0.06);
+            }
+        }
+
+
 
         // Fog transitions with depth
         var r, g, b;
@@ -422,6 +656,48 @@
             veil.mesh.position.z = Math.cos(t * 0.07 * veil.driftSpeed) * 15;
         });
 
+        // 1. Animate the single central chain with liquid pendulum propagation
+        if (chainGroup) {
+            chainGroup.children.forEach(function(link, i) {
+                // Wave propagation down the chain links
+                link.rotation.z = Math.sin(t * 0.55 - i * 0.16) * 0.045;
+                link.position.x = Math.sin(t * 0.38 - i * 0.12) * 0.45;
+            });
+        }
+
+        // 2. Animate V-spotlights (caustics and soft intensity breathing)
+        vSpotlights.forEach(function(spot) {
+            if (spot.mesh.material.uniforms) {
+                if (spot.mesh.material.uniforms.uTime) {
+                    spot.mesh.material.uniforms.uTime.value = t;
+                }
+                if (spot.mesh.material.uniforms.uOpacity) {
+                    // Subtle organic pulsation to make beams feel alive in underwater dust/haze
+                    spot.mesh.material.uniforms.uOpacity.value = spot.baseOp * (0.8 + 0.2 * Math.sin(t * 1.6 + spot.phase));
+                }
+            }
+        });
+
+        // 3. Animate rising bubbles and drifting particles
+        if (bubbleParticles) {
+            var positions = bubbleParticles.geometry.attributes.position.array;
+            var userData = bubbleParticles.userData;
+            for (var i = 0; i < userData.numParticles; i++) {
+                // Rise upwards
+                positions[i * 3 + 1] += userData.speeds[i] * dt;
+                
+                // Drift horizontally (current simulation)
+                positions[i * 3] += Math.sin(t * userData.drifts[i] + i) * 0.35 * dt;
+                
+                // Reset to bottom if they exceed surface Y=5.0
+                if (positions[i * 3 + 1] > 5.0) {
+                    positions[i * 3 + 1] = -55.0;
+                    positions[i * 3] = rand(-45, 45);
+                }
+            }
+            bubbleParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
         updatePhysics(dt);
         handleScrollDepth();
 
@@ -437,13 +713,57 @@
     /* ── Input ── */
     function onKeyDown(e) {
         if (!active) return;
-        var m = { KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d', Space:'Space', ControlLeft:'Control', ControlRight:'Control' };
-        if (m[e.code]) { keys[m[e.code]] = true; }
+
+        var activeEl = document.activeElement;
+        var isEditable = activeEl && (
+            activeEl.tagName === 'INPUT' || 
+            activeEl.tagName === 'TEXTAREA' || 
+            activeEl.isContentEditable
+        );
+        if (isEditable) return;
+
+        var m = { 
+            KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d', 
+            Space:'Space', ControlLeft:'Control', ControlRight:'Control',
+            ArrowLeft:'ArrowLeft', ArrowRight:'ArrowRight',
+            ArrowUp:'ArrowUp', ArrowDown:'ArrowDown'
+        };
+        var code = e.code;
+        if (!code) {
+            if (e.key === 'ArrowLeft') code = 'ArrowLeft';
+            else if (e.key === 'ArrowRight') code = 'ArrowRight';
+            else if (e.key === 'ArrowUp') code = 'ArrowUp';
+            else if (e.key === 'ArrowDown') code = 'ArrowDown';
+            else if (e.key === 'w' || e.key === 'W') code = 'KeyW';
+            else if (e.key === 'a' || e.key === 'A') code = 'KeyA';
+            else if (e.key === 's' || e.key === 'S') code = 'KeyS';
+            else if (e.key === 'd' || e.key === 'D') code = 'KeyD';
+        }
+        if (m[code]) { keys[m[code]] = true; }
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code)) {
+            e.preventDefault();
+        }
     }
     function onKeyUp(e) {
         if (!active) return;
-        var m = { KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d', Space:'Space', ControlLeft:'Control', ControlRight:'Control' };
-        if (m[e.code]) keys[m[e.code]] = false;
+        var m = { 
+            KeyW:'w', KeyA:'a', KeyS:'s', KeyD:'d', 
+            Space:'Space', ControlLeft:'Control', ControlRight:'Control',
+            ArrowLeft:'ArrowLeft', ArrowRight:'ArrowRight',
+            ArrowUp:'ArrowUp', ArrowDown:'ArrowDown'
+        };
+        var code = e.code;
+        if (!code) {
+            if (e.key === 'ArrowLeft') code = 'ArrowLeft';
+            else if (e.key === 'ArrowRight') code = 'ArrowRight';
+            else if (e.key === 'ArrowUp') code = 'ArrowUp';
+            else if (e.key === 'ArrowDown') code = 'ArrowDown';
+            else if (e.key === 'w' || e.key === 'W') code = 'KeyW';
+            else if (e.key === 'a' || e.key === 'A') code = 'KeyA';
+            else if (e.key === 's' || e.key === 'S') code = 'KeyS';
+            else if (e.key === 'd' || e.key === 'D') code = 'KeyD';
+        }
+        if (m[code]) keys[m[code]] = false;
     }
     function onMouseMove(e) {
         if (!active) return;
@@ -503,16 +823,59 @@
         });
         fogPlanes = [];
 
+        // Clean up new 3D elements for L'âme dans l'eau
+        if (directionalLight) {
+            if (scene) scene.remove(directionalLight);
+            directionalLight = null;
+        }
+        if (chainGroup) {
+            chainGroup.children.forEach(function(link) {
+                if (link.geometry) link.geometry.dispose();
+                if (link.material) link.material.dispose();
+            });
+            if (scene) scene.remove(chainGroup);
+            chainGroup = null;
+        }
+        stagePillars.forEach(function(mesh) {
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) mesh.material.dispose();
+            if (scene) scene.remove(mesh);
+        });
+        stagePillars = [];
+        vSpotlights.forEach(function(spot) {
+            if (spot.mesh) {
+                if (spot.mesh.geometry) spot.mesh.geometry.dispose();
+                if (spot.mesh.material) spot.mesh.material.dispose();
+                if (spot.mesh.parent) {
+                    if (scene) scene.remove(spot.mesh.parent);
+                } else {
+                    if (scene) scene.remove(spot.mesh);
+                }
+            }
+        });
+        vSpotlights = [];
+        if (bubbleParticles) {
+            if (bubbleParticles.geometry) bubbleParticles.geometry.dispose();
+            if (bubbleParticles.material) {
+                if (bubbleParticles.material.map) bubbleParticles.material.map.dispose();
+                bubbleParticles.material.dispose();
+            }
+            if (scene) scene.remove(bubbleParticles);
+            bubbleParticles = null;
+        }
+
 
         if (screenQuad) { screenQuad.geometry.dispose(); screenQuad.material.dispose(); }
         if (renderTarget) renderTarget.dispose();
         if (containerCanvas) { containerCanvas.remove(); containerCanvas = null; }
         if (renderer) { renderer.dispose(); renderer = null; }
 
+
         scene = null; camera = null; postScene = null; postCamera = null;
+        scrollInitialized = false;
 
         var legacyBg = document.getElementById('underwater-bg');
-        if (legacyBg) legacyBg.style.display = 'block';
+        if (legacyBg) legacyBg.style.display = '';
     }
 
     function onWindowResize() {

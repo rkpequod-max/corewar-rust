@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="view-transition" content="same-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function() {
+            try {
+                var match = window.location.search.match(/[?&]theme=([^&]+)/);
+                var stored = match ? match[1] : localStorage.getItem('cw-theme');
+                if (stored && stored !== 'rayon') {
+                    document.documentElement.setAttribute('data-theme', stored);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <title>Corewar — Guide Pedagogique Complet</title>
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <link rel="stylesheet" href="guide.css?v=7">
@@ -256,7 +268,7 @@
         <a href="#theorie-architecture" style="color:var(--violet);opacity:0.7">Théorie</a>
     </div>
     <div style="flex:1"></div>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata">☀</button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Thème Nier Automata"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" style="display:block;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></button>
     <button onclick="openSearch()" style="background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:0.75rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--ray)';this.style.color='var(--ray)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">⌘K Rechercher</button>
     <button id="pdf-btn" onclick="downloadPDF()" title="Télécharger en PDF">📄 PDF</button>
 </nav>
@@ -3622,6 +3634,8 @@ loop:  live %1
     <a href="https://github.com/rkpequod-max/corewar-rust">github.com/rkpequod-max/corewar-rust</a>
     <span style="margin:0 12px;color:var(--border)">|</span>
     <a href="https://github.com/rkpequod-max/corewar-rust/blob/main/LICENSE" target="_blank">Tous droits reserves</a>
+    <span class="footer-holygraph-separator" style="margin:0 12px;color:var(--border)">|</span>
+    <a href="holygraph.html" class="footer-holygraph-link">Curriculum Graphe</a>
 </footer>
 
 <script>
@@ -4380,17 +4394,53 @@ function doSearch(query) {
     }
 
     results.innerHTML = matches.map((m, i) => {
+        const globalIdx = searchData.indexOf(m);
         const highlighted = m.text.replace(new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<mark>$1</mark>');
-        return '<div class="search-result" data-idx="' + i + '" data-section="' + m.id + '" onclick="goToSearchResult(\'' + m.id + '\')">' +
+        return '<div class="search-result" data-idx="' + i + '" data-global-idx="' + globalIdx + '" onclick="goToSearchResult(' + globalIdx + ')">' +
             '<div class="sr-section">' + m.section + '</div>' +
             '<div class="sr-text">' + highlighted.substring(0, 150) + '…</div></div>';
     }).join('');
 }
 
-function goToSearchResult(sectionId) {
+function goToSearchResult(globalIdx) {
     closeSearch();
-    const el = document.getElementById(sectionId);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const item = searchData[globalIdx];
+    if (!item || !item.el) return;
+
+    // 1. Auto-expand any collapsed parents containing the matching element
+    let parent = item.el.parentElement;
+    while (parent) {
+        if (parent.classList.contains('collapse-body') && !parent.classList.contains('open')) {
+            parent.classList.add('open');
+            if (parent.previousElementSibling && parent.previousElementSibling.classList.contains('collapse-header')) {
+                parent.previousElementSibling.classList.add('open');
+            }
+        }
+        parent = parent.parentElement;
+    }
+
+    // 2. Scroll to the matching element
+    const scrollContainer = document.getElementById('rayon-projector-screen');
+    if (scrollContainer && document.documentElement.classList.contains('webgl')) {
+        let top = 0;
+        let cur = item.el;
+        while (cur && cur !== scrollContainer) {
+            top += cur.offsetTop || 0;
+            cur = cur.offsetParent;
+        }
+        top = Math.max(0, top - scrollContainer.clientHeight / 2);
+        scrollContainer.scrollTo({ top: top, behavior: 'smooth' });
+    } else {
+        item.el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // 3. Highlight / flash the matching element
+    document.querySelectorAll('.search-highlight-flash').forEach(el => {
+        el.classList.remove('search-highlight-flash');
+    });
+    // Trigger reflow to restart animation if clicked again
+    void item.el.offsetWidth;
+    item.el.classList.add('search-highlight-flash');
 }
 
 // Keyboard shortcuts for search
@@ -4403,14 +4453,21 @@ document.addEventListener('keydown', function(e) {
         if (e.key === 'ArrowDown') { e.preventDefault(); searchSelectedIdx = Math.min(searchSelectedIdx + 1, items.length - 1); highlightSearchItem(items); }
         if (e.key === 'ArrowUp') { e.preventDefault(); searchSelectedIdx = Math.max(searchSelectedIdx - 1, 0); highlightSearchItem(items); }
         if (e.key === 'Enter' && searchSelectedIdx >= 0 && items[searchSelectedIdx]) {
-            const section = items[searchSelectedIdx].dataset.section;
-            goToSearchResult(section);
+            const globalIdx = parseInt(items[searchSelectedIdx].dataset.globalIdx, 10);
+            goToSearchResult(globalIdx);
         }
     }
 });
 
 function highlightSearchItem(items) {
-    items.forEach((it, i) => it.style.background = i === searchSelectedIdx ? 'rgba(0,210,255,0.1)' : '');
+    const isNier = document.documentElement.getAttribute('data-theme') === 'nier';
+    const isAme = document.documentElement.getAttribute('data-theme') === 'ame';
+    
+    let highlightBg = 'rgba(0, 210, 255, 0.1)';
+    if (isNier) highlightBg = 'rgba(196, 54, 43, 0.08)';
+    else if (isAme) highlightBg = 'rgba(0, 206, 209, 0.15)';
+    
+    items.forEach((it, i) => it.style.background = i === searchSelectedIdx ? highlightBg : '');
     if (items[searchSelectedIdx]) items[searchSelectedIdx].scrollIntoView({ block: 'nearest' });
 }
 
@@ -5433,9 +5490,9 @@ ctdRender();
 (function() {
     var themes = ['rayon', 'nier', 'ame'];
     var themeLabels = {
-        'rayon': { icon: '☀', next: 'Thème Nier Automata' },
-        'nier':  { icon: '☽', next: "Thème L'Âme dans l'eau" },
-        'ame':   { icon: '🌊', next: 'Thème Rayon Vert' }
+        'rayon': { icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun" style="display:block;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`, next: 'Thème Nier Automata' },
+        'nier':  { icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon" style="display:block;"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`, next: "Thème L'Âme dans l'eau" },
+        'ame':   { icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waves" style="display:block;"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.6 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.6 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.6 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`, next: 'Thème Rayon Vert' }
     };
     var transitionClasses = {
         'rayon': 'transition-to-rayon',
@@ -5460,7 +5517,8 @@ ctdRender();
     }
 
     // Restore stored theme
-    var stored = localStorage.getItem('cw-theme');
+    var match = window.location.search.match(/[?&]theme=([^&]+)/);
+    var stored = match ? match[1] : localStorage.getItem('cw-theme');
     if (stored && themes.indexOf(stored) !== -1) {
         applyTheme(stored);
     }
@@ -5499,7 +5557,7 @@ ctdRender();
         var current = getCurrentTheme();
         var info = themeLabels[current] || themeLabels['rayon'];
         document.querySelectorAll('.theme-toggle').forEach(function(btn) {
-            btn.textContent = info.icon;
+            btn.innerHTML = info.icon;
             btn.title = info.next;
         });
     }
@@ -7873,7 +7931,7 @@ while (!halt) {
     <div class="reticle-ring"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
 <script src="nier-immersive.js"></script>
 <script src="ame-immersive.js"></script>
 <script src="transition_guide.js?v=7"></script>

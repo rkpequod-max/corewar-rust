@@ -1,0 +1,310 @@
+diff --git a/docs/guide.css b/docs/guide.css
+index e20723b..cecce10 100644
+--- a/docs/guide.css
++++ b/docs/guide.css
+@@ -689,6 +689,16 @@
+         footer { text-align:center; padding:30px 20px; color:var(--text-muted); font-size:0.85rem; }
+         footer a { color:var(--ray); text-decoration:none; }
+         footer a:hover { text-decoration:underline; text-shadow:0 0 8px rgba(0,210,255,0.3); }
++        .footer-holygraph-separator,
++        .footer-holygraph-link {
++            display: none;
++        }
++        [data-theme="nier"] .footer-holygraph-separator,
++        [data-theme="nier"] .footer-holygraph-link,
++        [data-theme="ame"] .footer-holygraph-separator,
++        [data-theme="ame"] .footer-holygraph-link {
++            display: inline;
++        }
+ 
+         /* Responsive */
+         @media(max-width:700px) {
+@@ -4603,8 +4613,8 @@ body.level-hide-approfondissement [data-level="approfondissement"] {
+ [data-theme="nier"] #nier-bg { display: none !important; }
+ html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display: block; }
+ 
+-/* New 3D immersive canvas — managed by ame-immersive.js */
+-#ame-3d-bg {
++/* New 3D immersive canvas — managed by ame-immersive.js / rayon-immersive.js */
++#ame-3d-bg, #rayon-3d-bg {
+     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+     z-index: 0; pointer-events: none;
+ }
+@@ -4612,8 +4622,104 @@ html:not([data-theme]) #rayon-bg, html[data-theme="rayon"] #rayon-bg { display:
+ /* When 3D engine is active, suppress CSS atmosphere duplicates */
+ [data-theme="ame"] body::before { background: none !important; animation: none !important; }
+ [data-theme="ame"] #god-rays { display: none !important; }
+-[data-theme="nier"].webgl body::before, [data-theme="nier"].webgl body::after { background: none !important; }
+-html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after { background: none !important; }
++html.webgl:not([data-theme]) body::before, html.webgl:not([data-theme]) body::after, html[data-theme="rayon"].webgl body::before, html[data-theme="rayon"].webgl body::after,
++html.webgl-supported:not([data-theme]) body::before, html.webgl-supported:not([data-theme]) body::after, html[data-theme="rayon"].webgl-supported body::before, html[data-theme="rayon"].webgl-supported body::after { background: none !important; }
++
++/* Hide flat CSS/SVG cockpit when WebGL Rayon Vert theme is active */
++html.webgl:not([data-theme]) .cockpit-glass,
++html.webgl:not([data-theme]) .cockpit-frame,
++html.webgl:not([data-theme]) .cockpit-ceiling,
++html.webgl:not([data-theme]) .cockpit-pillar-left,
++html.webgl:not([data-theme]) .cockpit-pillar-right,
++html.webgl:not([data-theme]) .cockpit-chair,
++html.webgl:not([data-theme]) .cockpit-table,
++html.webgl:not([data-theme]) .cockpit-cabin-wrapper,
++html[data-theme="rayon"].webgl .cockpit-glass,
++html[data-theme="rayon"].webgl .cockpit-frame,
++html[data-theme="rayon"].webgl .cockpit-ceiling,
++html[data-theme="rayon"].webgl .cockpit-pillar-left,
++html[data-theme="rayon"].webgl .cockpit-pillar-right,
++html[data-theme="rayon"].webgl .cockpit-chair,
++html[data-theme="rayon"].webgl .cockpit-table,
++html[data-theme="rayon"].webgl .cockpit-cabin-wrapper,
++html.webgl-supported:not([data-theme]) .cockpit-glass,
++html.webgl-supported:not([data-theme]) .cockpit-frame,
++html.webgl-supported:not([data-theme]) .cockpit-ceiling,
++html.webgl-supported:not([data-theme]) .cockpit-pillar-left,
++html.webgl-supported:not([data-theme]) .cockpit-pillar-right,
++html.webgl-supported:not([data-theme]) .cockpit-chair,
++html.webgl-supported:not([data-theme]) .cockpit-table,
++html.webgl-supported:not([data-theme]) .cockpit-cabin-wrapper,
++html[data-theme="rayon"].webgl-supported .cockpit-glass,
++html[data-theme="rayon"].webgl-supported .cockpit-frame,
++html[data-theme="rayon"].webgl-supported .cockpit-ceiling,
++html[data-theme="rayon"].webgl-supported .cockpit-pillar-left,
++html[data-theme="rayon"].webgl-supported .cockpit-pillar-right,
++html[data-theme="rayon"].webgl-supported .cockpit-chair,
++html[data-theme="rayon"].webgl-supported .cockpit-table,
++html[data-theme="rayon"].webgl-supported .cockpit-cabin-wrapper {
++    display: none !important;
++}
++
++/* Static suppression of 2D space backdrop when WebGL Rayon Vert is active */
++html.webgl:not([data-theme]) .planet-atmosphere,
++html[data-theme="rayon"].webgl .planet-atmosphere,
++html.webgl-supported:not([data-theme]) .planet-atmosphere,
++html[data-theme="rayon"].webgl-supported .planet-atmosphere,
++html.webgl:not([data-theme]) .sun-eclipse,
++html[data-theme="rayon"].webgl .sun-eclipse,
++html.webgl-supported:not([data-theme]) .sun-eclipse,
++html[data-theme="rayon"].webgl-supported .sun-eclipse,
++html.webgl:not([data-theme]) .planet-secondary,
++html[data-theme="rayon"].webgl .planet-secondary,
++html.webgl-supported:not([data-theme]) .planet-secondary,
++html[data-theme="rayon"].webgl-supported .planet-secondary,
++html.webgl:not([data-theme]) .cosmic-fog,
++html[data-theme="rayon"].webgl .cosmic-fog,
++html.webgl-supported:not([data-theme]) .cosmic-fog,
++html[data-theme="rayon"].webgl-supported .cosmic-fog,
++html.webgl:not([data-theme]) .cosmic-horizon,
++html[data-theme="rayon"].webgl .cosmic-horizon,
++html.webgl-supported:not([data-theme]) .cosmic-horizon,
++html[data-theme="rayon"].webgl-supported .cosmic-horizon,
++html.webgl:not([data-theme]) .bloom-overlay,
++html[data-theme="rayon"].webgl .bloom-overlay,
++html.webgl-supported:not([data-theme]) .bloom-overlay,
++html[data-theme="rayon"].webgl-supported .bloom-overlay,
++html.webgl:not([data-theme]) .bloom-glow,
++html[data-theme="rayon"].webgl .bloom-glow,
++html.webgl-supported:not([data-theme]) .bloom-glow,
++html[data-theme="rayon"].webgl-supported .bloom-glow,
++html.webgl:not([data-theme]) .anamorphic-flares,
++html[data-theme="rayon"].webgl .anamorphic-flares,
++html.webgl-supported:not([data-theme]) .anamorphic-flares,
++html[data-theme="rayon"].webgl-supported .anamorphic-flares,
++html.webgl:not([data-theme]) .light-leak,
++html[data-theme="rayon"].webgl .light-leak,
++html.webgl-supported:not([data-theme]) .light-leak,
++html[data-theme="rayon"].webgl-supported .light-leak,
++html.webgl:not([data-theme]) #starfield,
++html[data-theme="rayon"].webgl #starfield,
++html.webgl-supported:not([data-theme]) #starfield,
++html[data-theme="rayon"].webgl-supported #starfield,
++html.webgl:not([data-theme]) #dust-canvas,
++html[data-theme="rayon"].webgl #dust-canvas,
++html.webgl-supported:not([data-theme]) #dust-canvas,
++html[data-theme="rayon"].webgl-supported #dust-canvas,
++html.webgl:not([data-theme]) .light-beams,
++html[data-theme="rayon"].webgl .light-beams,
++html.webgl-supported:not([data-theme]) .light-beams,
++html[data-theme="rayon"].webgl-supported .light-beams,
++html.webgl:not([data-theme]) .lens-flare,
++html[data-theme="rayon"].webgl .lens-flare,
++html.webgl-supported:not([data-theme]) .lens-flare,
++html[data-theme="rayon"].webgl-supported .lens-flare,
++html.webgl:not([data-theme]) #rayon-bg,
++html[data-theme="rayon"].webgl #rayon-bg,
++html.webgl-supported:not([data-theme]) #rayon-bg,
++html[data-theme="rayon"].webgl-supported #rayon-bg {
++    display: none !important;
++}
+ 
+ /* ══ COCKPIT CAMERA PARALLAX (Rayon Vert) ══ */
+ .cockpit-camera {
+@@ -5208,44 +5314,44 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .hero-over
+     100% { top: -15%; }
+ }
+ 
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cockpit-frame::before,
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cockpit-frame::after {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.page-guide .cockpit-frame::before,
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.page-guide .cockpit-frame::after {
+     animation: cameraPanDown 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .planet-atmosphere {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.page-guide .planet-atmosphere {
+     animation: planetRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .sun-eclipse {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.page-guide .sun-eclipse {
+     animation: planetRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; /* same logic */
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .cockpit-ceiling {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.page-guide .cockpit-ceiling {
+     animation: ceilingRise 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+ }
+ 
+ /* ====== TRANSITIONS CINEMATIQUES VIA JAVASCRIPT ====== */
+ /* Quand on part de index.html vers guide.html (Pan Down) */
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::before,
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-frame::after {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .cockpit-frame::before,
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .cockpit-frame::after {
+     animation: cameraPanDown 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .planet-atmosphere,
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .sun-eclipse {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .planet-atmosphere,
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .sun-eclipse {
+     animation: planetRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-guide .cockpit-ceiling {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-guide .cockpit-ceiling {
+     animation: ceilingRise 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+ 
+ /* Quand on part de guide.html vers index.html (Pan Up) */
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .cockpit-frame::before,
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .cockpit-frame::after {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .cockpit-frame::before,
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .cockpit-frame::after {
+     animation: cameraPanUp 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .planet-atmosphere,
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .sun-eclipse {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .planet-atmosphere,
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .sun-eclipse {
+     animation: planetDescend 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+-html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .cockpit-ceiling {
++html:not([data-theme="nier"]):not([data-theme="ame"]):not(.webgl):not(.webgl-supported) body.is-transitioning-to-index .cockpit-ceiling {
+     animation: ceilingDescend 1.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+ }
+ html:not([data-theme="nier"]):not([data-theme="ame"]) body.is-transitioning-to-index .guide-glass-wrapper {
+@@ -5511,6 +5617,7 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .holo-scan
+     100% { top: 100%; }
+ }
+ 
++/* Footer Telemetry */
+ /* Footer Telemetry */
+ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-glass-footer {
+     display: flex;
+@@ -5525,3 +5632,102 @@ html:not([data-theme="nier"]):not([data-theme="ame"]) body.page-guide .guide-gla
+     color: rgba(0, 210, 255, 0.5);
+     text-transform: uppercase;
+ }
++
++/* ══ SEARCH HIGHLIGHTING AND THEME OVERRIDES ══ */
++
++@keyframes searchHighlightFlash {
++    0% { background-color: var(--ray-glow); box-shadow: 0 0 15px var(--ray-glow); border-radius: 4px; }
++    100% { background-color: transparent; box-shadow: none; border-radius: 0; }
++}
++.search-highlight-flash {
++    animation: searchHighlightFlash 2.5s ease-out;
++}
++
++/* NieR Theme Search Styling */
++[data-theme="nier"] #search-overlay {
++    background: rgba(245, 240, 232, 0.95);
++    backdrop-filter: none;
++}
++[data-theme="nier"] #search-box {
++    background: #EDE8DF;
++    border: 1px solid #D4CFC6;
++    border-left: 3px solid #C4362B;
++    border-radius: 0;
++    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
++}
++[data-theme="nier"] #search-input {
++    color: #1A1A1A;
++    font-family: var(--nier-subheading);
++}
++[data-theme="nier"] #search-results {
++    border-top: 1px solid #D4CFC6;
++}
++[data-theme="nier"] .search-result {
++    border-bottom: 1px solid #D4CFC6;
++}
++[data-theme="nier"] .search-result:hover {
++    background: rgba(196, 54, 43, 0.05);
++}
++[data-theme="nier"] .search-result .sr-section {
++    color: #C4362B;
++    font-family: var(--nier-heading);
++}
++[data-theme="nier"] .search-result .sr-text {
++    color: #6B6560;
++}
++[data-theme="nier"] .search-result mark {
++    background: rgba(196, 54, 43, 0.12);
++    color: #C4362B;
++}
++[data-theme="nier"] .search-hint {
++    border-top: 1px solid #D4CFC6;
++    color: #6B6560;
++}
++[data-theme="nier"] .search-hint kbd {
++    background: #F5F0E8;
++    border: 1px solid #D4CFC6;
++    color: #1A1A1A;
++}
++
++/* Âme Theme Search Styling */
++[data-theme="ame"] #search-overlay {
++    background: rgba(4, 10, 20, 0.9);
++}
++[data-theme="ame"] #search-box {
++    background: rgba(8, 16, 32, 0.95);
++    border: 1px solid rgba(0, 206, 209, 0.3);
++    border-radius: 6px;
++    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 206, 209, 0.1);
++}
++[data-theme="ame"] #search-input {
++    color: #E2E8F0;
++}
++[data-theme="ame"] #search-results {
++    border-top: 1px solid rgba(0, 206, 209, 0.2);
++}
++[data-theme="ame"] .search-result {
++    border-bottom: 1px solid rgba(0, 206, 209, 0.1);
++}
++[data-theme="ame"] .search-result:hover {
++    background: rgba(0, 206, 209, 0.08);
++}
++[data-theme="ame"] .search-result .sr-section {
++    color: #00CED1;
++}
++[data-theme="ame"] .search-result .sr-text {
++    color: #94A3B8;
++}
++[data-theme="ame"] .search-result mark {
++    background: rgba(0, 206, 209, 0.25);
++    color: #E2E8F0;
++}
++[data-theme="ame"] .search-hint {
++    border-top: 1px solid rgba(0, 206, 209, 0.2);
++    color: #94A3B8;
++}
++[data-theme="ame"] .search-hint kbd {
++    background: rgba(15, 23, 42, 0.8);
++    border: 1px solid rgba(0, 206, 209, 0.3);
++    color: #00CED1;
++}
++

@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holygraph Officiel Interactif - 42 Curriculum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #04080e;
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Liens de connexions - Ignorés par la souris pour éviter les sauts de hover */
+        .link-path {
+            transition: stroke 0.3s ease, stroke-width 0.3s ease, opacity 0.3s ease;
+            pointer-events: none; 
+        }
+
+        @keyframes pulse-flow {
+            to { stroke-dashoffset: -32; }
+        }
+
+        .active-path {
+            animation: pulse-flow 1.5s linear infinite;
+        }
+
+        /* Animation anti-clignotement par mise à l'échelle du rayon natif */
+        .project-circle {
+            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill 0.25s ease, stroke 0.25s ease;
+        }
+
+        .project-node:hover .project-circle {
+            r: 15px; /* Grossissement stable par rapport au centre local (0,0) */
+        }
+
+        .project-node:hover text {
+            fill: #ffffff;
+        }
+
+        /* Menu style dépoli Intra 42 */
+        .intra-panel {
+            background: rgba(8, 16, 24, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 186, 188, 0.15);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Custom Scrollbar styled matching the cyan theme */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(8, 16, 24, 0.3);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 186, 188, 0.3);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 186, 188, 0.6);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex flex-col justify-between">
+
+    <!-- Ambiance lumineuse graduelle inspirée de holygraphf.jpg -->
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,#0c1d2d_0%,#06101b_50%,#020509_100%)] pointer-events-none z-0"></div>
+
+    <!-- Header -->
+    <header class="w-full px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-900/60 bg-slate-950/40 backdrop-blur-md z-10">
+        <div class="flex items-center gap-4">
+            <div class="p-2 bg-[#00babc]/10 rounded-xl border border-[#00babc]/30 shadow-[0_0_15px_rgba(0,186,188,0.1)]">
+                <svg class="w-6 h-6 text-[#00babc]" viewBox="0 0 100 100" fill="currentColor">
+                    <path d="M15 20 H35 V45 H55 V20 H75 V60 H55 V80 H35 V60 H15 Z" fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"/>
+                    <path d="M45 45 L65 65" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+                    <path d="M85 80 L70 65" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-wider text-slate-200 uppercase font-mono flex items-center gap-2">
+                    Holygraph Graphe d'Apprentissage <span class="text-[9px] bg-[#00babc]/20 text-[#00babc] px-1.5 py-0.5 rounded font-sans lowercase font-bold">intra v3.5</span>
+                </h1>
+                <p class="text-[10px] text-slate-400 font-medium tracking-wide">Visualisation des interdépendances et des constellations de spécialisation</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400"></i>
+                <input type="text" id="search-bar" placeholder="Rechercher un projet, une compétence (ex: C++, Docker)..." 
+                       class="w-80 pl-9 pr-4 py-1.5 bg-slate-900/70 border border-slate-800/80 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#00babc] focus:ring-1 focus:ring-[#00babc]/40 transition-all">
+                <div id="search-dropdown" class="absolute left-0 right-0 mt-2 bg-slate-950 border border-slate-800 rounded-lg shadow-2xl max-h-60 overflow-y-auto hidden z-50 intra-panel"></div>
+            </div>
+            <button onclick="resetCamera()" class="p-1.5 bg-slate-900/80 border border-slate-800 rounded-lg hover:border-[#00babc]/60 hover:text-[#00babc] transition-all text-slate-400" title="Recentrer la carte">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Zone Graphe SVG principal -->
+    <main class="flex-grow w-full h-full relative overflow-hidden z-5" id="graphe-container">
+        
+        <!-- Panneau de sélection gauche -->
+        <div class="absolute top-6 left-6 p-4 intra-panel rounded-xl w-68 shadow-2xl z-10 flex flex-col gap-3.5">
+            <div>
+                <h3 class="text-[10px] font-bold uppercase tracking-widest text-[#00babc] mb-0.5 flex items-center gap-1.5 font-mono">
+                    <i data-lucide="compass" class="w-3.5 h-3.5"></i> CONSTELLATIONS (PISCINES)
+                </h3>
+                <p class="text-[10px] text-slate-400 leading-relaxed">Parcourez les filières pour illuminer leurs dépendances logiques.</p>
+            </div>
+            
+            <div class="space-y-1 flex flex-col text-xs max-h-56 overflow-y-auto pr-1 font-medium" id="piscine-filters">
+                <button onclick="togglePiscine('piscine_java', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Filière Java Enterprise</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_unity', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Moteurs 3D & Unity</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_swift', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Développement iOS Swift</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_php', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Web PHP / Symfony</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_python', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Python & Django Apps</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_ruby', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Ruby on Rails Framework</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_ocaml', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Filière OCaml Fonctionnel</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+                <button onclick="togglePiscine('piscine_datascience', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                    <span>Python Data Science & ML</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                </button>
+            </div>
+
+            <div class="h-px bg-slate-800/80"></div>
+
+            <!-- Index Chromatique -->
+            <div class="space-y-1.5 text-[10px] text-slate-400 font-medium uppercase font-mono tracking-wide">
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#00babc]"></span> <span>Noyau Commun</span></div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span> <span>Algorithmes & Flux</span></div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff9f43]"></span> <span>Infographie & 3D</span></div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff4757]"></span> <span>Sécurité & Kernel Linux</span></div>
+                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#5f27cd]"></span> <span>Web, Frameworks & DB</span></div>
+            </div>
+        </div>
+
+        <!-- Scène Vectorielle SVG -->
+        <svg id="viewport-svg" class="w-full h-full cursor-grab active:cursor-grabbing">
+            <g id="viewport-group">
+                
+                <!-- INDICATIONS LISIBLES DE FOND (MISES À JOUR : HAUT CONTRASTE ET COULEURS DE BRANCHES) -->
+                <g id="dynamic-backdrops" class="mono font-black tracking-widest uppercase select-none">
+                    <!-- Centre : Noyau Commun -->
+                    <text x="0" y="-25" font-size="32" fill="rgba(0, 186, 188, 0.09)" font-weight="900" text-anchor="middle">COMMON CORE</text>
+                    
+                    <!-- Branche Supérieure : Sécurité / Chiffrement -->
+                    <text x="30" y="-600" font-size="26" fill="rgba(255, 71, 87, 0.08)" font-weight="900" text-anchor="middle">CYBERSECURITY & CRYPTO</text>
+                    <text x="30" y="-580" font-size="12" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">OpenSSL / DES / RSA / TOTP / REVERSE</text>
+                    
+                    <!-- Branche Droite / Supérieure : Unix Bas niveau -->
+                    <text x="700" y="-210" font-size="45" fill="rgba(148, 163, 184, 0.11)" font-weight="900" text-anchor="middle">UNIX SYSTEM</text>
+                    <text x="700" y="-182" font-size="13" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">ASM x86-64 / Dynamic Memory Malloc / Syscalls</text>
+                    
+                    <!-- Branche Droite / Inférieure : Kernel Linux -->
+                    <text x="750" y="55" font-size="34" fill="rgba(148, 163, 184, 0.1)" font-weight="900" text-anchor="middle">LINUX KERNEL (KFS)</text>
+                    <text x="750" y="78" font-size="11" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">GDT / IDT / TSS / VFS Scheduler / Protected Mode</text>
+                    
+                    <!-- Branche Bas-Droite : OCaml -->
+                    <text x="720" y="460" font-size="40" fill="rgba(95, 39, 205, 0.1)" font-weight="900" text-anchor="middle">OCAML CORE</text>
+                    <text x="720" y="484" font-size="12" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">Functional Paradigms & Automata Theories</text>
+                    
+                    <!-- Branche Bas : OpenGL & Raytracing -->
+                    <text x="300" y="630" font-size="40" fill="rgba(255, 159, 67, 0.1)" font-weight="900" text-anchor="middle">OPENGL ENGINE</text>
+                    <text x="300" y="653" font-size="13" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">3D Raytracing Matrices & Shaders Pipeline</text>
+                    
+                    <!-- Branche Gauche Supérieure : Java -->
+                    <text x="-700" y="-410" font-size="28" fill="rgba(95, 39, 205, 0.08)" font-weight="900" text-anchor="middle">JAVA ENTERPRISE</text>
+                    <text x="-700" y="-390" font-size="12" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">Spring Architecture, Brokers & Scalability</text>
+                    
+                    <!-- Branche Gauche Centrale : Algorithmes -->
+                    <text x="-650" y="-210" font-size="42" fill="rgba(16, 185, 129, 0.11)" font-weight="900" text-anchor="middle">ALGORITHMS</text>
+                    <text x="-650" y="-185" font-size="13" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">Graph Theory / Max Flow Optimization / VMs</text>
+                    
+                    <!-- Branche Gauche Inférieure : Web Apps -->
+                    <text x="-710" y="120" font-size="32" fill="rgba(95, 39, 205, 0.08)" font-weight="900" text-anchor="middle">WEB ARCHITECTURE</text>
+                    <text x="-710" y="140" font-size="11" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">React / Node.js / WebSockets Engine / Sec App</text>
+                    
+                    <!-- Branche Bas-Gauche : Data Science -->
+                    <text x="-740" y="470" font-size="28" fill="rgba(16, 185, 129, 0.09)" font-weight="900" text-anchor="middle">DATA SCIENCE & ML</text>
+                    <text x="-740" y="490" font-size="11" fill="rgba(255, 255, 255, 0.15)" text-anchor="middle">NLP / Deep Learning Models / Big Data Analytics</text>
+                </g>
+
+                <!-- ANNEAUX ET ORBITES CONCENTRIQUES DE L'INTRA -->
+                <g id="concentric-rings"></g>
+
+                <!-- CHEMINS DE REQUIS (EDGES) -->
+                <g id="svg-connections"></g>
+
+                <!-- PROJETS ET EXAMS (NODES) -->
+                <g id="svg-nodes"></g>
+            </g>
+        </svg>
+
+        <!-- Boutons de zoom HUD -->
+        <div class="absolute bottom-6 left-6 flex items-center gap-1.5 z-10">
+            <button onclick="zoomManual(1.2)" class="p-2 bg-slate-900/90 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-all">
+                <i data-lucide="zoom-in" class="w-4 h-4"></i>
+            </button>
+            <button onclick="zoomManual(0.8)" class="p-2 bg-slate-900/90 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-all">
+                <i data-lucide="zoom-out" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Mode Entraînement Starfleet -->
+        <div class="absolute bottom-6 right-6 z-10">
+            <button onclick="highlightStarfleet()" class="px-4 py-2 bg-gradient-to-r from-[#00babc] to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all active:scale-95 font-mono">
+                <i data-lucide="code-2" class="w-4 h-4 stroke-[2.5]"></i> Mode Exam Starfleet
+            </button>
+        </div>
+
+        <!-- Tiroir de détails (Drawer) -->
+        <div id="project-drawer" class="absolute top-6 right-6 bottom-6 w-88 intra-panel rounded-xl shadow-2xl transform translate-x-[400px] transition-transform duration-300 z-20 flex flex-col hidden overflow-hidden">
+            <!-- Entête du Tiroir -->
+            <div class="p-5 pb-3 border-b border-slate-900/60 bg-slate-950/20">
+                <div class="flex justify-between items-start mb-2">
+                    <span id="drawer-tag" class="text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded bg-slate-900 text-slate-400 font-mono border border-slate-800">MODULE</span>
+                    <button onclick="closeProjectDrawer()" class="text-slate-500 hover:text-white p-1 hover:bg-slate-900 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <h2 id="drawer-title" class="text-xl font-bold text-white tracking-tight font-mono">Nom du Projet</h2>
+            </div>
+            
+            <!-- Contenu défilable -->
+            <div class="flex-grow overflow-y-auto p-5 space-y-5 custom-scrollbar">
+                <div>
+                    <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 font-mono">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-[#00babc]"></i> Description Pédagogique
+                    </h4>
+                    <!-- Description scrollable s'il y a débordement -->
+                    <p id="drawer-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-950/40 p-3 rounded-lg border border-slate-900 max-h-48 overflow-y-auto custom-scrollbar whitespace-pre-wrap"></p>
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 font-mono">
+                        <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-400"></i> Compétences Acquises
+                    </h4>
+                    <div id="drawer-skills" class="flex flex-wrap gap-1"></div>
+                </div>
+            </div>
+
+            <!-- Pied du Tiroir (fixe) -->
+            <div class="p-4 border-t border-slate-900 bg-slate-950/40 text-center text-[9px] text-slate-500 font-mono tracking-widest">
+                VERIFICATION ET CURRICULUM VITAE ACADEMIQUE
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer HUD -->
+    <footer class="w-full px-6 py-2 border-t border-slate-900/80 bg-slate-950/50 backdrop-blur-md z-10 flex justify-between items-center text-[9px] text-slate-500 font-mono uppercase tracking-wider">
+        <div>Cartographie : <span class="text-[#00babc] font-bold">Curriculum Général Reconstitué</span></div>
+        <div class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#00babc]/60"></i> Sync OK</div>
+    </footer>
+
+    <script>
+        // BASE DE DONNÉES EXHAUSTIVE : INCLUSION DE TOUS LES AXES DU PDF DE DÉPART
+        const holygraphData = {
+            rings: [
+                { id: "inner", radius: 75, label: "Fondations de Base" },
+                { id: "ring1", radius: 155, label: "Rang 1 - Entrées / Sorties & SysOps" },
+                { id: "ring2", radius: 240, label: "Rang 2 - Algorithmes d'Alignement & Threads" },
+                { id: "ring3", radius: 330, label: "Rang 3 - Systèmes Complexes & Abstractions" },
+                { id: "ring4", radius: 425, label: "Rang 4 - Infrastructures & Moteurs" },
+                { id: "ring5", radius: 520, label: "Rang 5 - Projets d'Intégration Terminaux" }
+            ],
+            nodes: [
+                // NOYAU CENTRAL (C / C++)
+                { id: "libft", label: "Libft", cx: 0, cy: 0, ring: "inner", type: "core", desc: "Réécriture complète de la librairie standard C pour assimiler pointeurs et arithmétique mémoire.", skills: ["C", "Structures Impératives", "Allocation Dynamique"] },
+                { id: "ft_printf", label: "ft_printf", cx: -45, cy: -45, ring: "ring1", type: "core", desc: "Recodage de printf pour appréhender le parsing de chaînes et les listes d'arguments variadiques.", skills: ["C", "Variadic Macros", "Formatage standard"] },
+                { id: "get_next_line", label: "get_next_line", cx: 45, cy: 45, ring: "ring1", type: "core", desc: "Développement d'un lecteur de flux ligne par ligne gérant de multiples descripteurs.", skills: ["C", "Gestion de Buffers", "Variables statiques"] },
+                { id: "born2beroot", label: "Born2beRoot", cx: -110, cy: 40, ring: "ring1", type: "core", desc: "Mise en place d'une machine virtuelle Linux Debian durcie avec configurations réseau strictes.", skills: ["SysAdmin", "Sudoers", "LVM", "SSH"] },
+                { id: "push_swap", label: "push_swap", cx: 0, cy: -120, ring: "ring2", type: "algo", desc: "Algorithme de tri d'une pile de données avec des contraintes de jeu d'instructions minimales.", skills: ["Algorithmique", "Optimisation de flux", "Complexité temporelle"] },
+                { id: "minitalk", label: "Minitalk", cx: -130, cy: -90, ring: "ring2", type: "core", desc: "Système d'échange d'informations client-serveur reposant exclusivement sur les signaux système UNIX.", skills: ["Signaux UNIX", "Opérations Bitwise", "Processus inter-connectés"] },
+                { id: "pipex", label: "pipex", cx: 130, cy: -90, ring: "ring2", type: "core", desc: "Simulation du mécanisme de pipes d'interconnexion de processus de terminaux Linux.", skills: ["Fork / Execve", "Redirections", "File Descriptors"] },
+                { id: "so_long", label: "so_long", cx: 120, cy: 100, ring: "ring2", type: "graphics", desc: "Moteur 2D basique de jeu avec gestion des textures fixes et déplacements clavier.", skills: ["MiniLibX", "Gestion événementielle", "Rendu matriciel"] },
+                { id: "philosophers", label: "Philosophers", cx: -110, cy: 110, ring: "ring2", type: "algo", desc: "Modélisation du problème d'accès concurrent aux ressources (Dîner des Philosophes) avec Threads.", skills: ["POSIX Threads", "Mutex", "Data Races", "Sémaphores"] },
+                { id: "minishell", label: "Minishell", cx: -180, cy: -160, ring: "ring3", type: "core", desc: "Développement d'un shell interactif gérant l'historique, les pipes et les variables d'environnement.", skills: ["Parsing", "Gestion d'état", "Exécution binaire"] },
+                { id: "fdf", label: "FdF", cx: 180, cy: -160, ring: "ring3", type: "graphics", desc: "Génération de reliefs cartographiques tridimensionnels par projection fil de fer isométrique.", skills: ["Matrices 3D", "Tracé de Bresenham", "Rendu graphique"] },
+                { id: "fract_ol", label: "fract-ol", cx: 190, cy: 110, ring: "ring3", type: "graphics", desc: "Générateur de fractales (Julia, Mandelbrot) interactif avec gestion fine du zoom souris.", skills: ["Mathématiques complexes", "Optimisation de calcul", "Threads de rendu"] },
+                { id: "netpractice", label: "NetPractice", cx: -190, cy: 110, ring: "ring3", type: "core", desc: "Résolution pratique de configurations de masques réseau, d'adresses de sous-réseaux et de tables de routage IP.", skills: ["Réseaux IP", "Masques CIDR", "Aiguillage IP"] },
+                { id: "cub3d", label: "cub3D", cx: -250, cy: -240, ring: "ring4", type: "graphics", desc: "Création d'un moteur graphique 3D subjectif à la première personne via la technique du Raycasting.", skills: ["Raycasting", "Trigonométrie", "Mappage de textures"] },
+                { id: "miniRT", label: "miniRT", cx: 250, cy: -240, ring: "ring4", type: "graphics", desc: "Générateur d'images virtuelles via lancer de rayons prenant en compte réflexions et ombres portées.", skills: ["Raytracing", "Algèbre Vectorielle", "Éclairage spéculaire"] },
+                { id: "inception", label: "Inception", cx: -250, cy: 240, ring: "ring4", type: "core", desc: "Virtualisation d'une infrastructure de services Web redondante isolée via des micro-conteneurs Docker.", skills: ["Docker Compose", "DevOps", "Nginx / MariaDB Security"] },
+                { id: "ft_services", label: "ft_services", cx: -300, cy: 110, ring: "ring4", type: "core", desc: "Mise en œuvre de services réseaux avec Kubernetes et orchestration de conteneurs.", skills: ["Docker", "Kubernetes", "DevOps", "Service Discovery"] },
+                { id: "ft_containers", label: "ft_containers", cx: 200, cy: -350, ring: "ring4", type: "core", desc: "Réécriture des conteneurs standards C++ (STL) pour comprendre les structures de données sous-jacentes.", skills: ["C++", "Templates", "Structures de Données", "STL"] },
+                { id: "webserv", label: "Webserv", cx: 320, cy: -290, ring: "ring5", type: "core", desc: "Écriture d'un serveur HTTP/1.1 conforme, asynchrone et non-bloquant développé de A à Z en C++.", skills: ["C++ 98", "Sockets non-bloquantes", "Multiplexage I/O (Select/Poll)"] },
+                { id: "ft_irc", label: "ft_irc", cx: -320, cy: -290, ring: "ring5", type: "core", desc: "Serveur applicatif mettant en œuvre de façon exhaustive le protocole de messagerie de salon IRC.", skills: ["C++", "Architecture Client/Serveur", "Gestion de protocoles"] },
+                { id: "ft_transcendence", label: "ft_transcendence", cx: 0, cy: 380, ring: "ring5", type: "core", desc: "Grande plateforme web d'affrontements en ligne avec jeu temps réel, chat et authentification forte.", skills: ["Frameworks Modernes", "WebSockets", "Sécurité Web (OAuth2)"] },
+
+                // BRANCHE SUPÉRIEURE : SÉCURITÉ / CRYPTOGRAPHIE / OPENSSL
+                { id: "ft_ssl", label: "ft_ssl", cx: -60, cy: -410, ring: "security", type: "security", desc: "Recodage de la logique d'interfaçage d'algorithmes de hachage et chiffrement standardisés.", skills: ["Cryptographie", "Padding standard", "Gestion d'octets"] },
+                { id: "ft_ssl_des", label: "ft_ssl_des", cx: -130, cy: -430, ring: "security", type: "security", desc: "Développement natif de l'algorithme de chiffrement par blocs symétriques DES.", skills: ["Data Encryption Standard", "Bit Shifting", "S-Boxes"] },
+                { id: "ft_ssl_rsa", label: "ft_ssl_rsa", cx: -190, cy: -450, ring: "security", type: "security", desc: "Mise en œuvre mathématique de la mécanique d'échange asymétrique par clés de chiffrement RSA.", skills: ["Chiffrement Asymétrique", "Nombres Premiers", "Exponentiation modulaire"] },
+                { id: "ft_otp", label: "ft_otp", cx: 10, cy: -410, ring: "security", type: "security", desc: "Générateur d'empreintes de validation jetables basées sur la dérive horaire (TOTP RFC 6238).", skills: ["HMAC", "Authentification forte", "Sécurité système"] },
+                { id: "ft_onion", label: "ft_onion", cx: 80, cy: -410, ring: "security", type: "security", desc: "Configuration de passerelles de services masqués par routage en oignon sur le réseau distribué Tor.", skills: ["Tor Hidden Services", "Durcissement Nginx", "Fils anonymisés"] },
+                { id: "override", label: "override", cx: 150, cy: -430, ring: "security", type: "security", desc: "Analyse applicative de vulnérabilités binaires, cassage de structures logiques et dépassement de tampons.", skills: ["Reverse Engineering", "Assembleur x86", "GDB Debugging"] },
+                { id: "taskmaster", label: "taskmaster", cx: 220, cy: -450, ring: "security", type: "security", desc: "Création d'un superviseur système complet capable de piloter et redémarrer des démons applicatifs.", skills: ["Gestionnaire de tâches", "Signaux Posix", "Logging applicatif"] },
+                { id: "matt_daemon", label: "matt_daemon", cx: -60, cy: -465, ring: "security", type: "security", desc: "Conception d'un démon système C résident en arrière-plan assurant sa propre réplication sécurisée.", skills: ["Daemons Linux", "File Locking", "Sockets SSL/TLS"] },
+                { id: "pest_control", label: "pest_control", cx: 20, cy: -465, ring: "security", type: "security", desc: "Mise en place d'environnements étanches d'analyse d'activité et de détection comportementale.", skills: ["Sandboxing", "Surveillance d'appels noyau", "Analyse de menaces"] },
+
+                // BRANCHE DROITE : ASM / PING / TRACEROUTE & KERNEL DEVELOPMENT (KFS)
+                { id: "libasm", label: "libasm", cx: 420, cy: -150, ring: "unix", type: "unix", desc: "Codage de fonctions utilitaires systèmes en assembleur x86-64 pur pour appréhender les registres CPU.", skills: ["Assembleur x86-64", "Registres système", "Appels noyau directs"] },
+                { id: "malloc", label: "malloc", cx: 495, cy: -125, ring: "unix", type: "unix", desc: "Écriture de l'allocateur de mémoire système sous-jacent (malloc, realloc, free) avec les primitives d'alignement.", skills: ["Gestion Mémoire Système", "Sbrk / Mmap", "Fragmentation de tas"] },
+                { id: "ft_select", label: "ft_select", cx: 565, cy: -100, ring: "unix", type: "unix", desc: "Interface utilisateur interactive en console utilisant les capacités d'affichage bas-niveau de Termcap.", skills: ["Termcap / Termios", "Descripteurs TTY", "Capture de signaux"] },
+                { id: "ft_ping", label: "ft_ping", cx: 450, cy: -65, ring: "unix", type: "unix", desc: "Récriture de la commande ping exploitant directement des sockets réseau de bas niveau pour forger des paquets ICMP.", skills: ["Sockets RAW", "Protocole ICMP", "Checksum réseaux"] },
+                { id: "ft_traceroute", label: "ft_traceroute", cx: 520, cy: -40, ring: "unix", type: "unix", desc: "Analyse séquentielle des routeurs intermédiaires d'un paquet Internet par incrémentation TTL.", skills: ["Time-To-Live", "Sockets IP", "Analyse WAN"] },
+                { id: "ft_nm_otool", label: "ft_nm_otool", cx: 590, cy: -15, ring: "unix", type: "unix", desc: "Création d'outils de décodage des en-têtes de fichiers exécutables compilés pour lister la table de symboles.", skills: ["Fichiers ELF / Mach-O", "Structure binaire", "Mémoire virtuelle"] },
+                { id: "strace", label: "strace", cx: 475, cy: 20, ring: "unix", type: "unix", desc: "Outil d'interception dynamique de l'ensemble des appels système émis par un binaire tiers.", skills: ["Ptrace Hooking", "Syscalls", "Analyse d'exécution"] },
+                
+                // SOUS-BRANCHE LINUX KERNEL (KFS 1 à 10)
+                { id: "ft_linux", label: "ft_linux", cx: 440, cy: 130, ring: "kfs", type: "unix", desc: "Point d'ancrage de la filière de développement système bas-niveau de noyau Linux autonome.", skills: ["Bootloaders", "Architecture x86", "Logique de bas niveau"] },
+                { id: "kfs1", label: "KFS-1", cx: 510, cy: 100, ring: "kfs", type: "unix", desc: "Création d'un mini-noyau capable de s'amorcer de manière autonome en mode protégé avec affichage écran VGA.", skills: ["Kernel Boot", "VGA Drivers", "Protected Mode"] },
+                { id: "kfs2", label: "KFS-2", cx: 565, cy: 100, ring: "kfs", type: "unix", desc: "Implémentation de l'agencement et de l'initialisation de la table globale des descripteurs (GDT).", skills: ["GDT Setup", "Sélecteurs de segments", "Sécurisation matérielle"] },
+                { id: "kfs3", label: "KFS-3", cx: 620, cy: 100, ring: "kfs", type: "unix", desc: "Mise en œuvre de la table d'interruption (IDT) pour capturer les interruptions clavier et les défauts de page.", skills: ["IDT", "Interrupt Handlers", "IRQs / ISRs"] },
+                { id: "kfs4", label: "KFS-4", cx: 675, cy: 100, ring: "kfs", type: "unix", desc: "Développement de l'ordonnanceur de tâches et gestion de la commutation de contexte pour threads noyau.", skills: ["Context Switching", "Task Scheduler", "Multitasking"] },
+                { id: "kfs5", label: "KFS-5", cx: 730, cy: 100, ring: "kfs", type: "unix", desc: "Mise en place d'une couche d'abstraction de gestion de pilotes pour disques virtuels et ramdisks.", skills: ["Block Devices", "Virtual Disk Drivers", "I/O Ports"] },
+                { id: "kfs6", label: "KFS-6", cx: 510, cy: 165, ring: "kfs", type: "unix", desc: "Séparation d'exécution matérielle par mise en place de la transition de l'espace noyau vers l'espace utilisateur.", skills: ["Userland Transition", "TSS (Task State Segment)", "Ring 0 vs Ring 3"] },
+                { id: "kfs7", label: "KFS-7", cx: 565, cy: 165, ring: "kfs", type: "unix", desc: "Développement du mécanisme des appels système permettant aux processus utilisateurs de communiquer avec le noyau.", skills: ["Syscalls Dispatcher", "Inter-Process Signals", "Protection"] },
+                { id: "kfs8", label: "KFS-8", cx: 620, cy: 165, ring: "kfs", type: "unix", desc: "Création d'une couche d'abstraction système sous forme de Système de fichiers virtuel (VFS).", skills: ["VFS Inodes", "File Abstraction Layer", "Mounting Points"] },
+                { id: "kfs9", label: "KFS-9", cx: 675, cy: 165, ring: "kfs", type: "unix", desc: "Mise en œuvre d'une allocation par pages physiques et pagination logicielle avec mécanisme Copy-On-Write.", skills: ["Page Directory", "Copy-On-Write", "Virtual Memory Allocation"] },
+                { id: "kfs10", label: "KFS-10", cx: 730, cy: 165, ring: "kfs", type: "unix", desc: "Version terminale de l'OS incluant l'exécution de binaires externes compilés autonomes.", skills: ["ELF Loading", "Stable Custom OS", "POSIX Core Concurrency"] },
+
+                // BRANCHE INFÉRIEURE : GRAPHISME, RENDU ET MOTEURS OPENGL
+                { id: "scop", label: "scop", cx: 180, cy: 390, ring: "opengl", type: "graphics", desc: "Lecteur d'objets 3D (.obj) optimisé tirant parti des pipelines de Shaders modernes d'OpenGL.", skills: ["C++", "Modern OpenGL API", "Vertex / Fragment Shaders"] },
+                { id: "mod1", label: "mod1", cx: 250, cy: 390, ring: "opengl", type: "graphics", desc: "Simulateur et générateur procédural d'environnements et de topographies géographiques dynamiques.", skills: ["Perlin Noise", "Génération de Maillages 3D", "Calculs matriciels"] },
+                { id: "wolf3d", label: "wolf3d", cx: 320, cy: 390, ring: "opengl", type: "graphics", desc: "Moteur géométrique à la première personne rendant hommage aux fondations de Wolfenstein 3D.", skills: ["Raycasting vectoriel", "Optimisation de boucle de rendu", "Buffers vidéo"] },
+                { id: "humanity", label: "humanity", cx: 180, cy: 450, ring: "opengl", type: "graphics", desc: "Moteur physique simulant les déplacements et l'évitement cinétique au sein d'une foule compacte.", skills: ["Modélisation comportementale", "Calculs de forces", "Rendu dynamique"] },
+                { id: "rt", label: "rt", cx: 250, cy: 450, ring: "opengl", type: "graphics", desc: "Moteur de synthèse photo-réaliste avancé incluant réfraction, miroirs, anti-aliasing et ombres lisses.", skills: ["Raytracing de pointe", "Algorithmes Multi-threads", "Équations d'intersections"] },
+                { id: "rtv1", label: "rtv1", cx: 310, cy: 450, ring: "opengl", type: "graphics", desc: "Première approche mathématique de la projection par lancer de rayons sur des formes simples.", skills: ["Lumière diffuse", "Vecteurs directeurs", "Sphères et Cylindres"] },
+
+                // BRANCHE INFERIEURE DROITE : PROGRAMMATION FONCTIONNELLE OCAML
+                { id: "piscine_ocaml", label: "Piscine OCaml", cx: 420, cy: 330, ring: "ocaml", type: "ocaml", desc: "Immersion intensive dans le paradigme fonctionnel, l'immuabilité et l'inférence de types.", skills: ["OCaml", "Pattern Matching", "Recursivité terminale"] },
+                { id: "ft_turing", label: "ft_turing", cx: 470, cy: 295, ring: "ocaml", type: "ocaml", desc: "Modélisation logicielle abstraite d'une Machine de Turing universelle définie par fichier de configuration JSON.", skills: ["Théorie des Automates", "Machines de Turing", "Logique formelle"] },
+                { id: "f_ml", label: "f_ml", cx: 535, cy: 330, ring: "ocaml", type: "ocaml", desc: "Conception d'un micro-langage typé doté de son propre système de vérification et d'inférence Hindley-Milner.", skills: ["Compilateurs", "Arbres de syntaxe (AST)", "Inférence de Types"] },
+                { id: "ft_linear", label: "ft_linear", cx: 595, cy: 295, ring: "ocaml", type: "ocaml", desc: "Moteur d'analyse mathématique et d'opérations matricielles développé suivant l'approche fonctionnelle.", skills: ["Algèbre Linéaire", "Espaces Vectoriels", "Optimisation fonctionnelle"] },
+                { id: "f_k_d_tree", label: "f-k-d-tree", cx: 660, cy: 330, ring: "ocaml", type: "ocaml", desc: "Mise en œuvre de structures de partitionnement spatial d'arbres pour accélérer les recherches de voisinage.", skills: ["K-Dimensional Trees", "Partitionnement d'espace", "Algorithmes de tri"] },
+                { id: "avion", label: "avion", cx: 720, cy: 295, ring: "ocaml", type: "ocaml", desc: "Moteur de simulation asynchrone modélisant les trajectoires et l'anticipation de collisions aériennes.", skills: ["Systèmes réactifs", "Simulation asynchrone", "Structures fonctionnelles"] },
+
+                // BRANCHE GAUCHE : ALGORITHMES ET GRAPHES COMPLEXES (LEM-IN / COREWAR)
+                { id: "computor_v1", label: "computor-v1", cx: -410, cy: -150, ring: "algo_ext", type: "algo", desc: "Interpréteur et résolveur algébrique d'équations polynomiales de degré inférieur ou égal à deux.", skills: ["Mathématiques", "Parsing syntaxique", "Calcul de discriminant"] },
+                { id: "computor_v2", label: "computor-v2", cx: -475, cy: -125, ring: "algo_ext", type: "algo", desc: "Calculateur matriciel étendu supportant variables complexes, expressions rationnelles et fonctions personnalisées.", skills: ["Équations complexes", "Calcul matriciel", "Analyse syntaxique"] },
+                { id: "lemin", label: "lem-in", cx: -540, cy: -100, ring: "algo_ext", type: "algo", desc: "Algorithme d'optimisation de trajectoires simultanées de fourmis au sein d'un graphe à forte contrainte de goulot d'étranglement.", skills: ["Théorie des Graphes", "Recherche de flux maximum", "Algorithme d'Edmonds-Karp"] },
+                { id: "corewar", label: "corewar", cx: -440, cy: -65, ring: "algo_ext", type: "algo", desc: "Machine virtuelle accueillant des programmes concurrents écrits en assembleur réduit luttant pour l'accès à la mémoire vive.", skills: ["Machine Virtuelle", "Assembleur / Compilateurs", "Scheduling de processus"] },
+                { id: "filler", label: "filler", cx: -510, cy: -40, ring: "algo_ext", type: "algo", desc: "Création d'un agent autonome d'intelligence artificielle optimisant le placement géométrique pour bloquer son adversaire.", skills: ["Intelligence Artificielle", "Stratégie de grille", "Algorithmes de score"] },
+
+                // BRANCHE EXTENSION ET FRAMEWORKS SPECIFIQUES (JAVA / REST / WEB / DATA SCIENCE)
+                // Filière Java Enterprise
+                { id: "fwa", label: "fwa", cx: -420, cy: -290, ring: "java", type: "java", desc: "Développement d'un framework d'architecture modulaire d'entreprise structuré en Java.", skills: ["Java EE", "Design Patterns Architecture", "Inversion de Contrôle"] },
+                { id: "goma", label: "goma", cx: -485, cy: -265, ring: "java", type: "java", desc: "Moteur d'aiguillage réseau multithreadé assurant une haute dispo sur les flux entrants.", skills: ["Java Multithreading", "Réseau Asynchrone", "Gestion de Sockets"] },
+                { id: "message_queue", label: "message queue", cx: -550, cy: -290, ring: "java", type: "java", desc: "Mise en œuvre d'un bus de communication asynchrone résilient pour l'échange de messages inter-services.", skills: ["Message Brokers", "Kafka / RabbitMQ", " découplage applicatif"] },
+                { id: "restful", label: "restful", cx: -615, cy: -265, ring: "java", type: "java", desc: "Déploiement d'une API industrielle Web RESTful sécurisée avec persistence transactionnelle avancée.", skills: ["Spring Boot", "JPA / Hibernate", "Sécurisation JWT"] },
+                { id: "ft_scale_server", label: "ft_scale-server", cx: -680, cy: -290, ring: "java", type: "java", desc: "Mise en place d'une grappe de serveurs évolutive horizontalement intégrant équilibrage de charge et tolérance aux pannes.", skills: ["Scalabilité", "Load Balancing", "Haute Disponibilité"] },
+
+                // Filière Web App Moderne
+                { id: "camagru", label: "camagru", cx: -420, cy: 155, ring: "web", type: "web", desc: "Application Web de traitement multimédia et d'édition d'images sans framework côté client.", skills: ["Vanila JavaScript", "SQL natif", "Web API Media"] },
+                { id: "matcha", label: "matcha", cx: -485, cy: 130, ring: "web", type: "web", desc: "Plateforme de mise en relation utilisateur intégrant notifications instantanées et géolocalisation étendue.", skills: ["Node.js / Express", "WebSockets", "Modélisation Relationnelle"] },
+                { id: "hypertube", label: "hypertube", cx: -550, cy: 155, ring: "web", type: "web", desc: "Moteur web de streaming vidéo téléchargeant et décodant des flux BitTorrent en temps réel de manière transparente.", skills: ["BitTorrent Protocol", "Stream Buffering", "NoSQL Data"] },
+                { id: "red_tetris", label: "red-tetris", cx: -615, cy: 130, ring: "web", type: "web", desc: "Jeu coopératif et compétitif en réseau développé suivant une architecture web moderne hautement réactive.", skills: ["React.js", "Redux State Engine", "Sockets de communication"] },
+                { id: "music_room", label: "music-room", cx: -680, cy: 155, ring: "web", type: "web", desc: "Service d'écoute musicale partagée permettant la synchronisation fine de pistes et playlists multi-utilisateurs.", skills: ["OAuth APIs Third-party", "WebAudio API", "Realtime Synchro"] },
+
+                // Filière Python Data Science & ML
+                { id: "tweets", label: "tweets", cx: -420, cy: 330, ring: "datascience", type: "datascience", desc: "Moteur d'évaluation sémantique de flux textuels massifs visant à classifier les émotions associées.", skills: ["Python Data", "Natural Language Processing", "Scikit-Learn"] },
+                { id: "chum", label: "chum", cx: -485, cy: 295, ring: "datascience", type: "datascience", desc: "Modélisation graphique d'interdépendances au sein de structures complexes de réseaux sociaux.", skills: ["NetworkX Graph", "Data Analysis", "Analyse de centralité"] },
+                { id: "n_gram", label: "n-gram", cx: -550, cy: 330, ring: "datascience", type: "datascience", desc: "Générateur probabiliste de chaînes de mots reposant sur la modélisation statistique de patterns N-Gram.", skills: ["Modèles Stochastiques", "Markov Chains", "Algorithmes prédictifs"] },
+                { id: "uber", label: "uber", cx: -615, cy: 295, ring: "datascience", type: "datascience", desc: "Algorithme d'optimisation logistique pour l'affectation et le calcul d'itinéraires flottes en temps réel.", skills: ["Heuristiques A*", "Recherche Opérationnelle", "Dataframes Data"] },
+                { id: "big_data", label: "big-data", cx: -680, cy: 330, ring: "datascience", type: "datascience", desc: "Pipeline distribué de calcul de volumes de données massifs sur grappe de serveurs partitionnée.", skills: ["Apache PySpark", "Hadoop DFS Architectures", "Traitement MapReduce"] },
+                { id: "predictive_analysis", label: "predictive-analysis", cx: -745, cy: 295, ring: "datascience", type: "datascience", desc: "Modèle d'apprentissage profond multicouche entraîné pour la prédiction d'indicateurs complexes.", skills: ["TensorFlow / Keras", "Deep Learning", "Validation Croisée"] },
+
+                // PISCINE STARFLEET (INTERVIEW TECHNIQUE ELITE)
+                { id: "starfleet", label: "Starfleet Interview", cx: 580, cy: 450, ring: "starfleet", type: "starfleet", desc: "Entraînement algorithmique d'élite centré sur le design système et la résolution rapide de casse-têtes complexes sur tableau blanc.", skills: ["Whiteboarding", "Structures de données avancées", "System Architecture Design"] }
+            ],
+            connections: [
+                // Liaisons Noyau Commun
+                { from: "libft", to: "ft_printf" },
+                { from: "libft", to: "get_next_line" },
+                { from: "libft", to: "push_swap" },
+                { from: "ft_printf", to: "so_long" },
+                { from: "get_next_line", to: "pipex" },
+                { from: "born2beroot", to: "minitalk" },
+                { from: "push_swap", to: "philosophers" },
+                { from: "so_long", to: "fdf" },
+                { from: "pipex", to: "minishell" },
+                { from: "minitalk", to: "minishell" },
+                { from: "philosophers", to: "minishell" },
+                { from: "fdf", to: "cub3d" },
+                { from: "minishell", to: "cub3d" },
+                { from: "minishell", to: "netpractice" },
+                { from: "cub3d", to: "ft_irc" },
+                { from: "netpractice", to: "webserv" },
+                { from: "born2beroot", to: "ft_services" },
+                { from: "ft_services", to: "inception" },
+                { from: "philosophers", to: "ft_containers" },
+                { from: "ft_containers", to: "webserv" },
+                { from: "webserv", to: "ft_transcendence" },
+                { from: "ft_irc", to: "ft_transcendence" },
+
+                // Sécurité / Cryptographie / OpenSSL
+                { from: "minishell", to: "ft_ssl" },
+                { from: "ft_ssl", to: "ft_ssl_des" },
+                { from: "ft_ssl_des", to: "ft_ssl_rsa" },
+                { from: "ft_ssl", to: "ft_otp" },
+                { from: "ft_otp", to: "ft_onion" },
+                { from: "ft_onion", to: "override" },
+                { from: "override", to: "taskmaster" },
+                { from: "ft_ssl_rsa", to: "matt_daemon" },
+                { from: "matt_daemon", to: "pest_control" },
+
+                // Primitives Systèmes Unix / ASM
+                { from: "minishell", to: "libasm" },
+                { from: "libasm", to: "malloc" },
+                { from: "malloc", to: "ft_select" },
+                { from: "ft_select", to: "ft_ping" },
+                { from: "ft_ping", to: "ft_traceroute" },
+                { from: "ft_traceroute", to: "ft_nm_otool" },
+                { from: "ft_nm_otool", to: "strace" },
+
+                // Primitives Noyau (KFS)
+                { from: "strace", to: "ft_linux" },
+                { from: "ft_linux", to: "kfs1" },
+                { from: "kfs1", to: "kfs2" },
+                { from: "kfs2", to: "kfs3" },
+                { from: "kfs3", to: "kfs4" },
+                { from: "kfs4", to: "kfs5" },
+                { from: "ft_linux", to: "kfs6" },
+                { from: "kfs6", to: "kfs7" },
+                { from: "kfs7", to: "kfs8" },
+                { from: "kfs8", to: "kfs9" },
+                { from: "kfs9", to: "kfs10" },
+
+                // Graphisme 3D / OpenGL
+                { from: "cub3d", to: "scop" },
+                { from: "scop", to: "mod1" },
+                { from: "mod1", to: "wolf3d" },
+                { from: "scop", to: "humanity" },
+                { from: "humanity", to: "rt" },
+                { from: "rt", to: "rtv1" },
+
+                // Paradigme Fonctionnel OCaml
+                { from: "philosophers", to: "piscine_ocaml" },
+                { from: "piscine_ocaml", to: "ft_turing" },
+                { from: "ft_turing", to: "f_ml" },
+                { from: "f_ml", to: "ft_linear" },
+                { from: "ft_linear", to: "f_k_d_tree" },
+                { from: "f_k_d_tree", to: "avion" },
+
+                // Graphes & VM Externes
+                { from: "philosophers", to: "computor_v1" },
+                { from: "computor_v1", to: "computor_v2" },
+                { from: "computor_v2", to: "lemin" },
+                { from: "lemin", to: "corewar" },
+                { from: "corewar", to: "filler" },
+
+                // Pipeline Serveurs Java
+                { from: "minishell", to: "fwa" },
+                { from: "fwa", to: "goma" },
+                { from: "goma", to: "message_queue" },
+                { from: "message_queue", to: "restful" },
+                { from: "restful", to: "ft_scale_server" },
+
+                // Architecture Applications Web
+                { from: "inception", to: "camagru" },
+                { from: "camagru", to: "matcha" },
+                { from: "matcha", to: "hypertube" },
+                { from: "hypertube", to: "red_tetris" },
+                { from: "red_tetris", to: "music_room" },
+
+                // Constellation Data Science Python
+                { from: "inception", to: "tweets" },
+                { from: "tweets", to: "chum" },
+                { from: "chum", to: "n_gram" },
+                { from: "n_gram", to: "uber" },
+                { from: "uber", to: "big_data" },
+                { from: "big_data", to: "predictive_analysis" }
+            ],
+            pipelines: {
+                piscine_java: ["fwa", "goma", "message_queue", "restful", "ft_scale_server"],
+                piscine_unity: ["scop", "mod1", "wolf3d", "humanity", "rt", "rtv1"],
+                piscine_swift: ["tweets", "chum", "n_gram"],
+                piscine_php: ["camagru", "matcha"],
+                piscine_python: ["camagru", "matcha", "hypertube", "red_tetris"],
+                piscine_ruby: ["camagru", "matcha", "hypertube", "red_tetris", "music_room"],
+                piscine_ocaml: ["piscine_ocaml", "ft_turing", "f_ml", "ft_linear", "f_k_d_tree", "avion"],
+                piscine_datascience: ["tweets", "chum", "n_gram", "uber", "big_data", "predictive_analysis"]
+            }
+        };
+
+        // GESTIONNAIRE DE NAVIGATION ET ZOOM DE VUE
+        const svg = document.getElementById('viewport-svg');
+        const gViewport = document.getElementById('viewport-group');
+        let scale = 0.9;
+        let pX = 0; let pY = 0;
+        let isDragging = false;
+        let startX, startY;
+
+        function centerViewport() {
+            pX = svg.clientWidth / 2;
+            pY = svg.clientHeight / 2.3;
+            scale = Math.min(svg.clientWidth, svg.clientHeight) / 1200;
+            updateTransform();
+        }
+
+        function updateTransform() {
+            gViewport.setAttribute('transform', `translate(${pX}, ${pY}) scale(${scale})`);
+        }
+
+        svg.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('project-circle')) return;
+            isDragging = true;
+            startX = e.clientX - pX;
+            startY = e.clientY - pY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            pX = e.clientX - startX;
+            pY = e.clientY - startY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        svg.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const step = 1.1;
+            const bounding = svg.getBoundingClientRect();
+            const localX = e.clientX - bounding.left - pX;
+            const localY = e.clientY - bounding.top - pY;
+
+            if (e.deltaY < 0) {
+                if (scale < 4) {
+                    pX -= localX * (step - 1);
+                    pY -= localY * (step - 1);
+                    scale *= step;
+                }
+            } else {
+                if (scale > 0.15) {
+                    pX += localX * (1 - 1 / step);
+                    pY += localY * (1 - 1 / step);
+                    scale /= step;
+                }
+            }
+            updateTransform();
+        });
+
+        function zoomManual(factor) {
+            scale *= factor;
+            updateTransform();
+        }
+
+        function resetCamera() {
+            document.querySelectorAll('#piscine-filters button').forEach(btn => {
+                btn.className = btn.className.replace('bg-cyan-950/70 border-cyan-500', 'bg-slate-900/60 border-slate-800');
+            });
+            clearHighlights();
+            centerViewport();
+        }
+
+        // CONSTRUCTEUR DU GRAPHE VECTORIEL
+        function generateGraphElements() {
+            // Ajustement dynamique des coordonnées pour aligner précisément les noeuds du Common Core sur les cercles concentriques correspondants à la référence de l'utilisateur
+            holygraphData.nodes.forEach(n => {
+                if (n.id === "libft") {
+                    n.cx = 0;
+                    n.cy = 0;
+                    return;
+                }
+                
+                let targetRadius = null;
+                
+                // Rangs du Common Core définis selon le schéma de l'utilisateur :
+                // Fondations (rayon 75) : born2beroot, get_next_line, ft_printf
+                // Rang 1 (rayon 155) : minitalk, pipex, push_swap, fdf, fract_ol, so_long
+                // Rang 2 (rayon 240) : philosophers, minishell
+                // Rang 3 (rayon 330) : cub3d, miniRT, netpractice
+                // Rang 4 (rayon 425) : inception, ft_irc, webserv
+                // Rang 5 (rayon 520) : ft_transcendence
+                if (n.id === "born2beroot" || n.id === "get_next_line" || n.id === "ft_printf") {
+                    targetRadius = 75; // Fondations
+                } else if (n.id === "minitalk" || n.id === "pipex" || n.id === "push_swap" || n.id === "fdf" || n.id === "fract_ol" || n.id === "so_long") {
+                    targetRadius = 155; // Rang 1
+                } else if (n.id === "philosophers" || n.id === "minishell") {
+                    targetRadius = 240; // Rang 2
+                } else if (n.id === "cub3d" || n.id === "miniRT" || n.id === "netpractice") {
+                    targetRadius = 330; // Rang 3
+                } else if (n.id === "inception" || n.id === "ft_irc" || n.id === "webserv" || n.id === "ft_services" || n.id === "ft_containers") {
+                    targetRadius = 425; // Rang 4
+                } else if (n.id === "ft_transcendence") {
+                    targetRadius = 520; // Rang 5
+                }
+                
+                if (targetRadius !== null) {
+                    if (n.cx !== 0 || n.cy !== 0) {
+                        const angle = Math.atan2(n.cy, n.cx);
+                        n.cx = Math.round(targetRadius * Math.cos(angle));
+                        n.cy = Math.round(targetRadius * Math.sin(angle));
+                    }
+                } else {
+                    // Pour toutes les branches de spécialisation, on s'assure qu'elles restent
+                    // complètement à l'extérieur du cercle maximal du Common Core (rayon 520).
+                    const dist = Math.sqrt(n.cx**2 + n.cy**2);
+                    if (dist > 0) {
+                        const angle = Math.atan2(n.cy, n.cx);
+                        // Décalage de 135px pour pousser le noeud de départ le plus proche (414px)
+                        // au-delà de 540px, évitant tout chevauchement avec le cercle de rayon 520.
+                        const newDist = dist + 135;
+                        n.cx = Math.round(newDist * Math.cos(angle));
+                        n.cy = Math.round(newDist * Math.sin(angle));
+                    }
+                }
+            });
+
+            const ringsGroup = document.getElementById('concentric-rings');
+            const connectionsGroup = document.getElementById('svg-connections');
+            const nodesGroup = document.getElementById('svg-nodes');
+
+            // Cercles radiaux de niveau
+            holygraphData.rings.forEach(r => {
+                const circleElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circleElement.setAttribute('cx', '0');
+                circleElement.setAttribute('cy', '0');
+                circleElement.setAttribute('r', r.radius);
+                circleElement.setAttribute('fill', 'none');
+                
+                // Style des cercles concentriques pour une visibilité accrue
+                if (r.id === "inner") {
+                    // Cercle 1 (Fondations) - Solide et bien visible (vert-cyan de la référence)
+                    circleElement.setAttribute('stroke', 'rgba(0, 186, 188, 0.55)');
+                    circleElement.setAttribute('stroke-width', '2');
+                    circleElement.setAttribute('stroke-dasharray', 'none');
+                } else if (r.id === "ring1" || r.id === "ring2" || r.id === "ring3") {
+                    // Cercles 2, 3, 4 (Rangs du Common Core) - Pointillés très visibles
+                    circleElement.setAttribute('stroke', 'rgba(6, 182, 212, 0.35)');
+                    circleElement.setAttribute('stroke-width', '1.5');
+                    circleElement.setAttribute('stroke-dasharray', '6 4');
+                } else {
+                    // Cercles périphériques - Discrets
+                    circleElement.setAttribute('stroke', 'rgba(6, 182, 212, 0.15)');
+                    circleElement.setAttribute('stroke-width', '1');
+                    circleElement.setAttribute('stroke-dasharray', '4 4');
+                }
+                ringsGroup.appendChild(circleElement);
+
+                const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                textElement.setAttribute('x', '0');
+                textElement.setAttribute('y', -r.radius - 5);
+                textElement.setAttribute('fill', r.id === "inner" ? 'rgba(0, 186, 188, 0.65)' : 'rgba(148, 163, 184, 0.6)');
+                textElement.setAttribute('font-size', '8px');
+                textElement.setAttribute('text-anchor', 'middle');
+                textElement.setAttribute('class', 'mono uppercase font-bold tracking-widest');
+                textElement.textContent = r.label;
+                ringsGroup.appendChild(textElement);
+            });
+
+            // Arêtes relationnelles
+            holygraphData.connections.forEach(c => {
+                const sourceNode = holygraphData.nodes.find(n => n.id === c.from);
+                const targetNode = holygraphData.nodes.find(n => n.id === c.to);
+
+                if (sourceNode && targetNode) {
+                    const lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    lineElement.setAttribute('x1', sourceNode.cx);
+                    lineElement.setAttribute('y1', sourceNode.cy);
+                    lineElement.setAttribute('x2', targetNode.cx);
+                    lineElement.setAttribute('y2', targetNode.cy);
+                    lineElement.setAttribute('stroke', 'rgba(30, 41, 59, 0.5)');
+                    lineElement.setAttribute('stroke-width', '2');
+                    lineElement.setAttribute('class', 'link-path');
+                    lineElement.setAttribute('id', `link-${sourceNode.id}-${targetNode.id}`);
+                    connectionsGroup.appendChild(lineElement);
+                }
+            });
+
+            // Sommets (Noeuds Projets)
+            holygraphData.nodes.forEach(n => {
+                let color;
+                switch (n.type) {
+                    case "core": color = "#06b6d4"; break;      // Cyan
+                    case "algo": color = "#10b981"; break;      // Emerald
+                    case "graphics": color = "#f59e0b"; break;  // Amber
+                    case "security": color = "#f87171"; break;  // Red
+                    default: color = "#6366f1";                 // Indigo
+                }
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${n.cx}, ${n.cy})`);
+                g.setAttribute('class', 'project-node cursor-pointer');
+                g.addEventListener('click', () => inspectProject(n));
+
+                const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circ.setAttribute('r', n.id === "libft" ? "14" : "10");
+                circ.setAttribute('fill', '#020617');
+                circ.setAttribute('stroke', color);
+                circ.setAttribute('stroke-width', '2.5');
+                circ.setAttribute('class', 'project-circle');
+                circ.setAttribute('id', `node-${n.id}`);
+                g.appendChild(circ);
+
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('y', n.id === "libft" ? "24" : "20");
+                label.setAttribute('fill', '#94a3b8');
+                label.setAttribute('font-size', '8px');
+                label.setAttribute('font-weight', '700');
+                label.setAttribute('text-anchor', 'middle');
+                label.setAttribute('class', 'mono pointer-events-none drop-shadow-[0_2px_3px_rgba(0,0,0,1)]');
+                label.textContent = n.label;
+                g.appendChild(label);
+
+                nodesGroup.appendChild(g);
+            });
+        }
+
+        // SYSTEME DE FILTRAGE DES PISCINES CORRESPONDANTES
+        let selectedPiscine = null;
+
+        function togglePiscine(piscineKey, targetButton) {
+            if (selectedPiscine === piscineKey) {
+                resetCamera();
+                return;
+            }
+
+            document.querySelectorAll('#piscine-filters button').forEach(b => {
+                b.className = b.className.replace('bg-cyan-950/70 border-cyan-500', 'bg-slate-900/60 border-slate-800');
+            });
+            targetButton.className = targetButton.className.replace('bg-slate-900/60 border-slate-800', 'bg-cyan-950/70 border-cyan-500');
+
+            selectedPiscine = piscineKey;
+            const targetIds = holygraphData.pipelines[piscineKey];
+
+            document.querySelectorAll('.project-circle').forEach(c => c.setAttribute('opacity', '0.15'));
+            document.querySelectorAll('.link-path').forEach(l => {
+                l.setAttribute('opacity', '0.05');
+                l.classList.remove('active-path');
+            });
+
+            targetIds.forEach(id => {
+                const nodeElement = document.getElementById(`node-${id}`);
+                if (nodeElement) nodeElement.setAttribute('opacity', '1');
+            });
+
+            holygraphData.connections.forEach(c => {
+                if (targetIds.includes(c.from) && targetIds.includes(c.to)) {
+                    const edgeElement = document.getElementById(`link-${c.from}-${c.to}`);
+                    if (edgeElement) {
+                        edgeElement.setAttribute('opacity', '1');
+                        edgeElement.setAttribute('stroke', '#06b6d4');
+                        edgeElement.setAttribute('stroke-width', '3');
+                        edgeElement.setAttribute('stroke-dasharray', '6 3');
+                        edgeElement.classList.add('active-path');
+                    }
+                }
+            });
+        }
+
+        function clearHighlights() {
+            selectedPiscine = null;
+            document.querySelectorAll('.project-circle').forEach(c => {
+                c.setAttribute('opacity', '1');
+                c.setAttribute('stroke-width', '2.5');
+            });
+            document.querySelectorAll('.link-path').forEach(l => {
+                l.setAttribute('opacity', '1');
+                l.setAttribute('stroke', 'rgba(30, 41, 59, 0.5)');
+                l.setAttribute('stroke-width', '2');
+                l.setAttribute('stroke-dasharray', 'none');
+                l.classList.remove('active-path');
+            });
+        }
+
+        // INSPECTION DE PROJET ET DRAWER
+        function inspectProject(node) {
+            const drawer = document.getElementById('project-drawer');
+            document.getElementById('drawer-title').textContent = node.label;
+            document.getElementById('drawer-desc').textContent = node.desc;
+            
+            const tag = document.getElementById('drawer-tag');
+            tag.textContent = node.type.toUpperCase();
+
+            const skillsBox = document.getElementById('drawer-skills');
+            skillsBox.innerHTML = '';
+            node.skills.forEach(s => {
+                const badge = document.createElement('span');
+                badge.className = "px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 text-[9px] rounded font-mono font-medium";
+                badge.textContent = s;
+                skillsBox.appendChild(badge);
+            });
+
+            drawer.classList.remove('hidden');
+            setTimeout(() => drawer.classList.remove('translate-x-[400px]'), 15);
+        }
+
+        function closeProjectDrawer() {
+            const drawer = document.getElementById('project-drawer');
+            drawer.classList.add('translate-x-[400px]');
+            setTimeout(() => drawer.classList.add('hidden'), 300);
+        }
+
+        function highlightStarfleet() {
+            const starNode = holygraphData.nodes.find(n => n.id === "starfleet");
+            if (starNode) {
+                pX = (svg.clientWidth / 2) - (starNode.cx * scale);
+                pY = (svg.clientHeight / 2) - (starNode.cy * scale);
+                updateTransform();
+                inspectProject(starNode);
+            }
+        }
+
+        // COMPORTEMENT DU RECHERCHE OPERATIONNELLE
+        const searchInput = document.getElementById('search-bar');
+        const searchDropdown = document.getElementById('search-dropdown');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchVal = e.target.value.toLowerCase().trim();
+            if (!searchVal) {
+                searchDropdown.classList.add('hidden');
+                return;
+            }
+
+            const matchNodes = holygraphData.nodes.filter(n => 
+                n.label.toLowerCase().includes(searchVal) || n.skills.some(s => s.toLowerCase().includes(searchVal))
+            );
+
+            if (matchNodes.length > 0) {
+                searchDropdown.innerHTML = '';
+                matchNodes.forEach(n => {
+                    const el = document.createElement('div');
+                    el.className = "p-2.5 hover:bg-slate-900 cursor-pointer text-xs flex justify-between items-center transition-colors font-mono border-b border-slate-900 text-slate-300";
+                    el.innerHTML = `<span>${n.label}</span><span class="text-[8px] opacity-40 uppercase">${n.type}</span>`;
+                    el.addEventListener('click', () => {
+                        pX = (svg.clientWidth / 2) - (n.cx * scale);
+                        pY = (svg.clientHeight / 2) - (n.cy * scale);
+                        updateTransform();
+                        inspectProject(n);
+                        searchDropdown.classList.add('hidden');
+                        searchInput.value = '';
+                    });
+                    searchDropdown.appendChild(el);
+                });
+                searchDropdown.classList.remove('hidden');
+            } else {
+                searchDropdown.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+                searchDropdown.classList.add('hidden');
+            }
+        });
+
+        window.addEventListener('resize', updateTransform);
+
+        window.onload = function() {
+            lucide.createIcons();
+            generateGraphElements();
+            centerViewport();
+        };
+    </script>
+</body>
+</html>
