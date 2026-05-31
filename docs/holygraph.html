@@ -1688,9 +1688,8 @@
                 progressText.textContent = 'Marquer comme complété';
             }
 
-            // Voler vers le noeud et illuminer la chaîne de dépendances
+            // Voler vers le noeud sélectionné
             flyToNode(node);
-            highlightDependencyChain(node.id);
 
             drawer.classList.remove('hidden');
             setTimeout(() => drawer.classList.remove('translate-x-[400px]'), 15);
