@@ -623,193 +623,218 @@
                 { id: "h42n42", label: "h42n42", cx: -610, cy: 580, ring: "unity", type: "graphics", desc: "Projet de synthèse de réalité virtuelle ou d'arène d'entraînement sous Unity.", skills: ["Virtual Reality", "C# advanced", "Raycasting Unity"] }
             ],
             connections: [
-                // Liaisons Noyau Commun
+                // ═══ NOYAU COMMUN - Fondations (Libft = racine) ═══
                 { from: "libft", to: "ft_printf" },
                 { from: "libft", to: "get_next_line" },
+                { from: "libft", to: "born2beroot" },
                 { from: "libft", to: "push_swap" },
+                { from: "libft", to: "dr_quine" },
+
+                // ═══ NOYAU COMMUN - Rang 1 : projets requérant ft_printf et/ou get_next_line ═══
                 { from: "ft_printf", to: "so_long" },
+                { from: "get_next_line", to: "so_long" },
+                { from: "ft_printf", to: "fdf" },
+                { from: "get_next_line", to: "fdf" },
+                { from: "ft_printf", to: "fract_ol" },
+                { from: "get_next_line", to: "fract_ol" },
+                { from: "ft_printf", to: "pipex" },
                 { from: "get_next_line", to: "pipex" },
-                { from: "born2beroot", to: "minitalk" },
+                { from: "ft_printf", to: "minitalk" },
+
+                // ═══ NOYAU COMMUN - Rang 2 : maturité système & algorithmique ═══
                 { from: "push_swap", to: "philosophers" },
-                { from: "so_long", to: "fdf" },
                 { from: "pipex", to: "minishell" },
-                { from: "minitalk", to: "minishell" },
-                { from: "philosophers", to: "minishell" },
-                { from: "fdf", to: "cub3d" },
-                { from: "minishell", to: "cub3d" },
-                { from: "minishell", to: "netpractice" },
-                { from: "cub3d", to: "ft_irc" },
-                { from: "netpractice", to: "webserv" },
+                { from: "born2beroot", to: "netpractice" },
                 { from: "born2beroot", to: "ft_services" },
-                { from: "ft_services", to: "inception" },
-                { from: "philosophers", to: "ft_containers" },
+
+                // ═══ NOYAU COMMUN - Rang 3 : projets avancés ═══
+                { from: "fdf", to: "cub3d" },
+                { from: "fdf", to: "miniRT" },
+                { from: "minishell", to: "cpp_modules" },
+
+                // ═══ NOYAU COMMUN - Rang 4 : intégration & C++ ═══
+                { from: "cpp_modules", to: "ft_containers" },
+                { from: "cpp_modules", to: "ft_irc" },
                 { from: "ft_containers", to: "webserv" },
+                { from: "netpractice", to: "webserv" },
+                { from: "ft_services", to: "inception" },
+
+                // ═══ NOYAU COMMUN - Rang 5 : projet terminal ═══
                 { from: "webserv", to: "ft_transcendence" },
                 { from: "ft_irc", to: "ft_transcendence" },
 
-                // Sécurité / Cryptographie / OpenSSL
-                { from: "minishell", to: "ft_ssl" },
-                { from: "ft_ssl", to: "ft_ssl_des" },
-                { from: "ft_ssl_des", to: "ft_ssl_rsa" },
-                { from: "ft_ssl", to: "ft_otp" },
-                { from: "ft_otp", to: "ft_onion" },
-                { from: "ft_onion", to: "override" },
-                { from: "override", to: "taskmaster" },
-                { from: "ft_ssl_rsa", to: "matt_daemon" },
-                { from: "matt_daemon", to: "pest_control" },
-
-                // Primitives Systèmes Unix / ASM
-                { from: "minishell", to: "libasm" },
-                { from: "libasm", to: "malloc" },
-                { from: "malloc", to: "ft_select" },
-                { from: "ft_select", to: "ft_ping" },
-                { from: "ft_ping", to: "ft_traceroute" },
-                { from: "ft_traceroute", to: "ft_nm_otool" },
-                { from: "ft_nm_otool", to: "strace" },
-
-                // Primitives Noyau (KFS)
-                { from: "strace", to: "ft_linux" },
-                { from: "ft_linux", to: "kfs1" },
-                { from: "kfs1", to: "kfs2" },
-                { from: "kfs2", to: "kfs3" },
-                { from: "kfs3", to: "kfs4" },
-                { from: "kfs4", to: "kfs5" },
-                { from: "ft_linux", to: "kfs6" },
-                { from: "kfs6", to: "kfs7" },
-                { from: "kfs7", to: "kfs8" },
-                { from: "kfs8", to: "kfs9" },
-                { from: "kfs9", to: "kfs10" },
-
-                // Graphisme 3D / OpenGL
-                { from: "cub3d", to: "scop" },
-                { from: "scop", to: "mod1" },
-                { from: "mod1", to: "wolf3d" },
-                { from: "scop", to: "humanity" },
-                { from: "humanity", to: "rt" },
-                { from: "rt", to: "rtv1" },
-
-                // Paradigme Fonctionnel OCaml
-                { from: "philosophers", to: "piscine_ocaml" },
-                { from: "piscine_ocaml", to: "ft_turing" },
-                { from: "ft_turing", to: "f_ml" },
-                { from: "f_ml", to: "ft_linear" },
-                { from: "ft_linear", to: "f_k_d_tree" },
-                { from: "f_k_d_tree", to: "avion" },
-
-                // Graphes & VM Externes
-                { from: "philosophers", to: "computor_v1" },
-                { from: "computor_v1", to: "computor_v2" },
-                { from: "computor_v2", to: "lemin" },
-                { from: "lemin", to: "corewar" },
-                { from: "corewar", to: "filler" },
-
-                // Pipeline Serveurs Java
-                { from: "minishell", to: "fwa" },
-                { from: "fwa", to: "goma" },
-                { from: "goma", to: "message_queue" },
-                { from: "message_queue", to: "restful" },
-                { from: "restful", to: "ft_scale_server" },
-
-                // Architecture Applications Web
-                { from: "inception", to: "camagru" },
-                { from: "camagru", to: "matcha" },
-                { from: "matcha", to: "hypertube" },
-                { from: "hypertube", to: "red_tetris" },
-                { from: "red_tetris", to: "music_room" },
-
-                // Constellation Data Science Python
-                { from: "inception", to: "tweets" },
-                { from: "tweets", to: "chum" },
-                { from: "chum", to: "n_gram" },
-                { from: "n_gram", to: "uber" },
-                { from: "uber", to: "big_data" },
-                { from: "big_data", to: "predictive_analysis" },
-                { from: "ft_ssl", to: "ft_ssl_md5" },
-                { from: "ft_ssl", to: "ft_nmap" },
-                { from: "ft_ssl_md5", to: "matt_daemon" },
-                { from: "ft_onion", to: "darkly" },
-                { from: "darkly", to: "boot2root" },
-                { from: "boot2root", to: "durex" },
-                { from: "durex", to: "deathwar" },
+                // ═══ BRANCHE SÉCURITÉ - CTF & Exploitation ═══
                 { from: "minishell", to: "snow-crash" },
                 { from: "snow-crash", to: "rainfall" },
                 { from: "rainfall", to: "override" },
                 { from: "override", to: "woody-woodpacker" },
                 { from: "woody-woodpacker", to: "famine" },
                 { from: "famine", to: "pestilence" },
+                { from: "override", to: "taskmaster" },
+
+                // ═══ BRANCHE SÉCURITÉ - Cryptographie / OpenSSL ═══
+                { from: "minishell", to: "ft_ssl" },
+                { from: "ft_ssl", to: "ft_ssl_des" },
+                { from: "ft_ssl_des", to: "ft_ssl_rsa" },
+                { from: "ft_ssl", to: "ft_otp" },
+                { from: "ft_ssl", to: "ft_ssl_md5" },
+                { from: "ft_ssl", to: "ft_nmap" },
+                { from: "ft_otp", to: "ft_onion" },
+                { from: "ft_ssl_rsa", to: "matt_daemon" },
+                { from: "ft_ssl_md5", to: "matt_daemon" },
+                { from: "matt_daemon", to: "pest_control" },
+
+                // ═══ BRANCHE SÉCURITÉ - Web Security & Pentest ═══
+                { from: "ft_onion", to: "darkly" },
+                { from: "darkly", to: "boot2root" },
+                { from: "boot2root", to: "durex" },
+                { from: "durex", to: "deathwar" },
+
+                // ═══ BRANCHE UNIX - ASM & System Programming ═══
+                { from: "minishell", to: "libasm" },
+                { from: "minishell", to: "42sh" },
                 { from: "libasm", to: "ft_ls" },
                 { from: "ft_ls", to: "malloc" },
-                { from: "kfs3", to: "drivers-and-interrupt" },
-                { from: "kfs4", to: "process-and-memory" },
-                { from: "kfs6", to: "userspace_digression" },
-                { from: "kfs8", to: "filesystem" },
-                { from: "kfs10", to: "kfs-x" },
+                { from: "malloc", to: "ft_select" },
+                { from: "ft_select", to: "ft_ping" },
+                { from: "ft_ping", to: "ft_traceroute" },
+                { from: "ft_traceroute", to: "ft_nm_otool" },
+                { from: "ft_nm_otool", to: "strace" },
+                { from: "pipex", to: "lem_ipc" },
+                { from: "lem_ipc", to: "strace" },
+
+                // ═══ BRANCHE UNIX - Kernel Linux (KFS) ═══
+                { from: "strace", to: "ft_linux" },
+                { from: "ft_linux", to: "kfs1" },
                 { from: "ft_linux", to: "little-penguin-1" },
+                { from: "kfs1", to: "kfs2" },
+                { from: "kfs2", to: "kfs3" },
+                { from: "kfs3", to: "kfs4" },
+                { from: "kfs3", to: "drivers-and-interrupt" },
+                { from: "kfs4", to: "kfs5" },
+                { from: "kfs4", to: "process-and-memory" },
+                { from: "ft_linux", to: "kfs6" },
+                { from: "kfs6", to: "kfs7" },
+                { from: "kfs6", to: "userspace_digression" },
+                { from: "kfs7", to: "kfs8" },
+                { from: "kfs8", to: "kfs9" },
+                { from: "kfs8", to: "filesystem" },
+                { from: "kfs9", to: "kfs10" },
+                { from: "kfs10", to: "kfs-x" },
+
+                // ═══ BRANCHE GRAPHISME - OpenGL & Moteurs 3D ═══
+                { from: "cub3d", to: "scop" },
+                { from: "scop", to: "mod1" },
                 { from: "scop", to: "guimp" },
+                { from: "scop", to: "gbmu" },
+                { from: "scop", to: "humanity" },
+                { from: "mod1", to: "wolf3d" },
                 { from: "mod1", to: "ft_vox" },
                 { from: "ft_vox", to: "42run" },
                 { from: "42run", to: "ft_ality" },
                 { from: "humanity", to: "humangl" },
                 { from: "humangl", to: "bomberman" },
+                { from: "humanity", to: "rt" },
+                { from: "rt", to: "rtv1" },
                 { from: "rt", to: "particle-system" },
                 { from: "particle-system", to: "shaderpixel" },
                 { from: "rtv1", to: "ft_newton" },
+
+                // ═══ BRANCHE ALGORITHMES - Graphes & VM ═══
+                { from: "push_swap", to: "computor_v1" },
+                { from: "computor_v1", to: "computor_v2" },
                 { from: "computor_v1", to: "expert-system" },
+                { from: "computor_v2", to: "lemin" },
                 { from: "computor_v2", to: "n-puzzle" },
                 { from: "n-puzzle", to: "rubik" },
-                { from: "filler", to: "gomoku" },
+                { from: "lemin", to: "corewar" },
                 { from: "lemin", to: "krpsim" },
+                { from: "corewar", to: "filler" },
                 { from: "corewar", to: "zappy" },
+                { from: "filler", to: "gomoku" },
                 { from: "zappy", to: "nibbler" },
-                { from: "minishell", to: "piscine_java" },
+
+                // ═══ BRANCHE OCAML - Programmation Fonctionnelle ═══
+                { from: "cpp_modules", to: "piscine_ocaml" },
+                { from: "piscine_ocaml", to: "ft_turing" },
+                { from: "ft_turing", to: "f_ml" },
+                { from: "f_ml", to: "ft_linear" },
+                { from: "ft_linear", to: "f_k_d_tree" },
+                { from: "f_k_d_tree", to: "avion" },
+
+                // ═══ BRANCHE JAVA ENTERPRISE ═══
+                { from: "cpp_modules", to: "piscine_java" },
                 { from: "piscine_java", to: "avaj-launcher" },
                 { from: "avaj-launcher", to: "swingy" },
                 { from: "swingy", to: "fix-me" },
+                { from: "piscine_java", to: "fwa" },
+                { from: "fwa", to: "goma" },
+                { from: "goma", to: "message_queue" },
+                { from: "message_queue", to: "restful" },
+                { from: "restful", to: "ft_scale_server" },
                 { from: "fwa", to: "springboot" },
                 { from: "springboot", to: "microservices" },
-                { from: "minishell", to: "swifty-companion" },
+
+                // ═══ BRANCHE SWIFT / iOS ═══
+                { from: "cpp_modules", to: "swifty-companion" },
                 { from: "swifty-companion", to: "swifty-proteins" },
                 { from: "swifty-proteins", to: "t_hangouts" },
-                { from: "minishell", to: "piscine_php" },
+
+                // ═══ BRANCHE WEB - PHP / Symfony ═══
+                { from: "netpractice", to: "piscine_php" },
+                { from: "piscine_php", to: "camagru" },
+                { from: "camagru", to: "matcha" },
+                { from: "matcha", to: "hypertube" },
+                { from: "hypertube", to: "red_tetris" },
+                { from: "red_tetris", to: "music_room" },
                 { from: "piscine_php", to: "symphony" },
-                { from: "minishell", to: "piscine_ruby" },
+                { from: "symphony", to: "cinema" },
+
+                // ═══ BRANCHE WEB - Ruby on Rails ═══
+                { from: "netpractice", to: "piscine_ruby" },
                 { from: "piscine_ruby", to: "myspotify" },
+
+                // ═══ BRANCHE PYTHON - Django ═══
+                { from: "netpractice", to: "piscine_python" },
                 { from: "piscine_python", to: "django" },
-                { from: "minishell", to: "piscine_python" },
+
+                // ═══ BRANCHE DATA SCIENCE - Python ML ═══
                 { from: "piscine_python", to: "piscine_python_datascience" },
+                { from: "piscine_python_datascience", to: "ft_linear_regression" },
                 { from: "piscine_python_datascience", to: "dslr" },
+                { from: "ft_linear_regression", to: "dslr" },
                 { from: "dslr", to: "multilayer-perception" },
+                { from: "piscine_python_datascience", to: "tweets" },
+                { from: "tweets", to: "chum" },
+                { from: "chum", to: "n_gram" },
+                { from: "n_gram", to: "uber" },
+                { from: "uber", to: "big_data" },
+                { from: "big_data", to: "predictive_analysis" },
                 { from: "tweets", to: "churn" },
                 { from: "churn", to: "understanding_customer" },
                 { from: "n_gram", to: "total-perspective-vortex" },
-                { from: "minishell", to: "piscine_unity" },
+
+                // ═══ BRANCHE UNITY 3D ═══
+                { from: "cub3d", to: "piscine_unity" },
                 { from: "piscine_unity", to: "in-the-shadows" },
                 { from: "in-the-shadows", to: "city_life" },
                 { from: "city_life", to: "fried_eggs" },
                 { from: "fried_eggs", to: "amazon_xv" },
                 { from: "amazon_xv", to: "h42n42" },
-                { from: "scop", to: "gbmu" },
-                { from: "symphony", to: "cinema" },
-                { from: "minishell", to: "42sh" },
-                { from: "42sh", to: "libasm" },
-                { from: "piscine_python_datascience", to: "ft_linear_regression" },
-                { from: "ft_linear_regression", to: "dslr" },
+
+                // ═══ PROJETS COMPLÉMENTAIRES ═══
                 { from: "inception", to: "cloud-1" },
-                { from: "philosophers", to: "cpp_modules" },
-                { from: "cpp_modules", to: "ft_containers" },
-                { from: "pipex", to: "lem_ipc" },
-                { from: "lem_ipc", to: "strace" },
-                { from: "libft", to: "dr_quine" }
+                { from: "cpp_modules", to: "starfleet" }
             ],
             pipelines: {
                 piscine_java: ["piscine_java", "avaj-launcher", "swingy", "fix-me", "fwa", "goma", "message_queue", "restful", "ft_scale_server", "springboot", "microservices"],
-                piscine_unity: ["piscine_unity", "in-the-shadows", "city_life", "fried_eggs", "amazon_xv", "h42n42"],
+                piscine_unity: ["cub3d", "piscine_unity", "in-the-shadows", "city_life", "fried_eggs", "amazon_xv", "h42n42"],
                 piscine_swift: ["swifty-companion", "swifty-proteins", "t_hangouts"],
-                piscine_php: ["piscine_php", "symphony", "camagru", "matcha"],
-                piscine_python: ["piscine_python", "django", "camagru", "matcha", "hypertube", "red_tetris"],
-                piscine_ruby: ["piscine_ruby", "myspotify", "camagru", "matcha", "hypertube", "red_tetris", "music_room"],
+                piscine_php: ["piscine_php", "camagru", "matcha", "hypertube", "red_tetris", "music_room", "symphony", "cinema"],
+                piscine_python: ["piscine_python", "django", "piscine_python_datascience", "ft_linear_regression", "dslr", "multilayer-perception"],
+                piscine_ruby: ["piscine_ruby", "myspotify"],
                 piscine_ocaml: ["piscine_ocaml", "ft_turing", "f_ml", "ft_linear", "f_k_d_tree", "avion"],
-                piscine_datascience: ["piscine_python", "piscine_python_datascience", "dslr", "multilayer-perception", "churn", "understanding_customer", "tweets", "chum", "n_gram", "uber", "big_data", "predictive_analysis", "total-perspective-vortex", "ft_linear_regression"]
+                piscine_datascience: ["piscine_python", "piscine_python_datascience", "ft_linear_regression", "dslr", "multilayer-perception", "tweets", "chum", "n_gram", "uber", "big_data", "predictive_analysis", "churn", "understanding_customer", "total-perspective-vortex"]
             }
         };
 
