@@ -37,11 +37,18 @@
 
         /* Animation anti-clignotement par mise à l'échelle du rayon natif */
         .project-circle {
-            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill 0.25s ease, stroke 0.25s ease;
+            transition: r 0.25s cubic-bezier(0.4, 0, 0.2, 1), fill 0.25s ease, stroke 0.25s ease, filter 0.3s ease, stroke-width 0.25s ease;
         }
 
         .project-node:hover .project-circle {
             r: 15px; /* Grossissement stable par rapport au centre local (0,0) */
+        }
+
+        /* Surbrillance du noeud sélectionné */
+        .project-circle.selected {
+            stroke: #ffffff !important;
+            stroke-width: 3.5 !important;
+            filter: drop-shadow(0 0 8px rgba(0, 186, 188, 0.8)) drop-shadow(0 0 16px rgba(0, 186, 188, 0.4));
         }
 
         .project-node:hover text {
@@ -1532,6 +1539,8 @@
         });
 
         // INSPECTION DE PROJET ET DRAWER
+        let currentSelectedCircle = null;
+
         function inspectProject(node) {
             currentDrawerNode = node;
             const drawer = document.getElementById('project-drawer');
@@ -1611,6 +1620,15 @@
             // Voler vers le noeud sélectionné
             flyToNode(node);
 
+            // Surbrillance du noeud sélectionné
+            if (currentSelectedCircle) {
+                currentSelectedCircle.classList.remove('selected');
+            }
+            const circleEl = document.getElementById(`node-${node.id}`);
+            if (circleEl) {
+                circleEl.classList.add('selected');
+                currentSelectedCircle = circleEl;
+            }
             drawer.classList.remove('hidden');
             setTimeout(() => drawer.classList.remove('translate-x-[400px]'), 15);
             // Re-créer les icônes Lucide pour les nouveaux éléments
@@ -1621,6 +1639,11 @@
             const drawer = document.getElementById('project-drawer');
             drawer.classList.add('translate-x-[400px]');
             setTimeout(() => drawer.classList.add('hidden'), 300);
+            // Retirer la surbrillance du noeud
+            if (currentSelectedCircle) {
+                currentSelectedCircle.classList.remove('selected');
+                currentSelectedCircle = null;
+            }
         }
 
         function highlightStarfleet() {
