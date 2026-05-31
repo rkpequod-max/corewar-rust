@@ -628,7 +628,9 @@
                 { from: "libft", to: "get_next_line" },
                 { from: "libft", to: "born2beroot" },
                 { from: "libft", to: "push_swap" },
-                { from: "libft", to: "dr_quine" },
+
+                // ═══ BRANCHE UNIX - Quine (virus sub-branch, requiert woody-woodpacker) ═══
+                { from: "woody-woodpacker", to: "dr_quine" },
 
                 // ═══ NOYAU COMMUN - Rang 1 : ft_printf + get_next_line débloquent les projets applicatifs ═══
                 { from: "ft_printf", to: "so_long" },
@@ -663,6 +665,8 @@
                 { from: "ft_containers", to: "webserv" },
                 { from: "netpractice", to: "webserv" },
                 { from: "ft_services", to: "inception" },
+                { from: "born2beroot", to: "inception" },
+                { from: "netpractice", to: "inception" },
 
                 // ═══ NOYAU COMMUN - Rang 5 : projet terminal ═══
                 { from: "webserv", to: "ft_transcendence" },
@@ -746,9 +750,10 @@
                 { from: "philosophers", to: "humanity" },
                 { from: "humanity", to: "humangl" },
                 { from: "humangl", to: "bomberman" },
-                // RT = raytracer avancé → vient de miniRT (raytracer de base)
+                // RT = raytracer avancé → vient de miniRT (raytracer commun) ET rtv1 (raytracer graphique basique)
                 { from: "miniRT", to: "rt" },
-                { from: "rt", to: "rtv1" },
+                { from: "rtv1", to: "rt" },
+                { from: "fdf", to: "rtv1" },
                 { from: "rt", to: "particle-system" },
                 { from: "particle-system", to: "shaderpixel" },
                 { from: "rtv1", to: "ft_newton" },
@@ -765,7 +770,8 @@
                 { from: "corewar", to: "filler" },
                 { from: "corewar", to: "zappy" },
                 { from: "filler", to: "gomoku" },
-                { from: "zappy", to: "nibbler" },
+                // Nibbler = projet C++ profond (dynamic libs) → vient de ft_containers (C++ STL)
+                { from: "ft_containers", to: "nibbler" },
 
                 // ═══ BRANCHE OCAML - Programmation Fonctionnelle ═══
                 { from: "cpp_modules", to: "piscine_ocaml" },
