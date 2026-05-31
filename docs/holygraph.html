@@ -74,6 +74,67 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 186, 188, 0.6);
         }
+
+        /* Tooltip de survol rapide */
+        .graph-tooltip {
+            position: absolute;
+            pointer-events: none;
+            z-index: 60;
+            max-width: 240px;
+            padding: 8px 12px;
+            background: rgba(8, 16, 24, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 186, 188, 0.25);
+            border-radius: 10px;
+            box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.7);
+            transition: opacity 0.15s ease;
+        }
+
+        /* Minimap de navigation */
+        .minimap-container {
+            position: absolute;
+            bottom: 52px;
+            right: 24px;
+            width: 190px;
+            height: 130px;
+            background: rgba(8, 16, 24, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 186, 188, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 15;
+            box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6);
+        }
+        .minimap-viewport {
+            fill: rgba(0, 186, 188, 0.12);
+            stroke: rgba(0, 186, 188, 0.5);
+            stroke-width: 1.5;
+            rx: 2;
+        }
+
+        /* Noeud complété - anneau vert */
+        .node-completed .project-circle {
+            stroke-dasharray: none !important;
+        }
+        .progress-badge {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .progress-badge:hover {
+            transform: scale(1.15);
+        }
+
+        /* Noeud actif glow */
+        .node-active .project-circle {
+            filter: url(#glow-active);
+        }
+
+        /* Smooth camera transition */
+        #viewport-group.animating {
+            transition: transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
     </style>
 </head>
 <body class="w-screen h-screen relative flex flex-col justify-between">
@@ -165,6 +226,55 @@
 
         <!-- Scène Vectorielle SVG -->
         <svg id="viewport-svg" class="w-full h-full cursor-grab active:cursor-grabbing">
+            <defs>
+                <!-- Filtres de glow colorés par branche -->
+                <filter id="glow-active" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+                    <feFlood flood-color="#06b6d4" flood-opacity="0.6" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge>
+                        <feMergeNode in="glow"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+                <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+                    <feFlood flood-color="#06b6d4" flood-opacity="0.7" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="glow-emerald" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+                    <feFlood flood-color="#10b981" flood-opacity="0.7" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+                    <feFlood flood-color="#f59e0b" flood-opacity="0.7" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+                    <feFlood flood-color="#f87171" flood-opacity="0.7" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="glow-indigo" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+                    <feFlood flood-color="#6366f1" flood-opacity="0.7" result="color"/>
+                    <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                    <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <!-- Marqueur de flèche directionnelle pour les arêtes -->
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L8,3 L0,6 L2,3 Z" fill="rgba(100, 116, 139, 0.6)"/>
+                </marker>
+                <marker id="arrowhead-active" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L8,3 L0,6 L2,3 Z" fill="#06b6d4"/>
+                </marker>
+            </defs>
             <g id="viewport-group">
                 
                 <!-- INDICATIONS LISIBLES DE FOND (MISES À JOUR : HAUT CONTRASTE ET COULEURS DE BRANCHES) -->
@@ -231,10 +341,25 @@
         </div>
 
         <!-- Mode Entraînement Starfleet -->
-        <div class="absolute bottom-6 right-6 z-10">
+        <div class="absolute bottom-44 right-6 z-10">
             <button onclick="highlightStarfleet()" class="px-4 py-2 bg-gradient-to-r from-[#00babc] to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all active:scale-95 font-mono">
                 <i data-lucide="code-2" class="w-4 h-4 stroke-[2.5]"></i> Mode Exam Starfleet
             </button>
+        </div>
+
+        <!-- Minimap de Navigation -->
+        <div id="minimap-wrapper" class="minimap-container">
+            <svg id="minimap-svg" class="w-full h-full"></svg>
+        </div>
+
+        <!-- Tooltip de survol rapide -->
+        <div id="graph-tooltip" class="graph-tooltip hidden">
+            <div id="tooltip-title" class="text-[11px] font-bold text-white font-mono mb-0.5"></div>
+            <div id="tooltip-desc" class="text-[9px] text-slate-400 leading-snug"></div>
+            <div class="flex items-center gap-1.5 mt-1">
+                <span id="tooltip-duration" class="text-[8px] text-[#00babc] font-mono"></span>
+                <span id="tooltip-type" class="text-[8px] text-slate-500 font-mono uppercase"></span>
+            </div>
         </div>
 
         <!-- Tiroir de détails (Drawer) -->
@@ -269,6 +394,24 @@
                     </h4>
                     <div id="drawer-skills" class="flex flex-wrap gap-1"></div>
                 </div>
+                <div>
+                    <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 font-mono">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5 text-amber-400"></i> Prérequis
+                    </h4>
+                    <div id="drawer-prereqs" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div>
+                    <h4 class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1 font-mono">
+                        <i data-lucide="unlock" class="w-3.5 h-3.5 text-cyan-400"></i> Débloque
+                    </h4>
+                    <div id="drawer-dependents" class="flex flex-wrap gap-1"></div>
+                </div>
+                <div>
+                    <button id="drawer-progress-btn" onclick="toggleCurrentProjectProgress()" class="w-full px-3 py-2 rounded-lg border text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span id="drawer-progress-text">Marquer comme complété</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Pied du Tiroir (fixe) -->
@@ -280,8 +423,17 @@
 
     <!-- Footer HUD -->
     <footer class="w-full px-6 py-2 border-t border-slate-900/80 bg-slate-950/50 backdrop-blur-md z-10 flex justify-between items-center text-[9px] text-slate-500 font-mono uppercase tracking-wider">
-        <div>Cartographie : <span class="text-[#00babc] font-bold">Curriculum Général Reconstitué</span></div>
-        <div class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#00babc]/60"></i> Sync OK</div>
+        <div class="flex items-center gap-4">
+            <span>Cartographie : <span class="text-[#00babc] font-bold">Curriculum Général Reconstitué</span></span>
+            <span class="hidden md:inline text-slate-700">|</span>
+            <span class="hidden md:inline">Projets : <span id="stat-total" class="text-slate-300">0</span> | Complétés : <span id="stat-completed" class="text-emerald-400">0</span></span>
+            <span class="hidden md:inline text-slate-700">|</span>
+            <span class="hidden md:inline">Heures : <span id="stat-hours-total" class="text-slate-300">0</span>h | Validées : <span id="stat-hours-done" class="text-emerald-400">0</span>h</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="hidden sm:inline text-slate-600">Raccourcis : +/- zoom · Esc fermer · Flèches déplacer · R recentrer</span>
+            <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-[#00babc]/60"></i> Sync OK</span>
+        </div>
     </footer>
 
     <script>
@@ -674,6 +826,7 @@
             pY = svg.clientHeight / 2.3;
             scale = Math.min(svg.clientWidth, svg.clientHeight) / 1200;
             updateTransform();
+            renderMinimap();
         }
 
         function updateTransform() {
@@ -696,6 +849,9 @@
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
+        // Mettre à jour la minimap après chaque drag
+        svg.addEventListener('mouseup', () => renderMinimap());
+
         svg.addEventListener('wheel', (e) => {
             e.preventDefault();
             const step = 1.1;
@@ -717,11 +873,14 @@
                 }
             }
             updateTransform();
+            renderMinimap();
         });
 
         function zoomManual(factor) {
             scale *= factor;
+            scale = Math.min(4, Math.max(0.15, scale));
             updateTransform();
+            renderMinimap();
         }
 
         function resetCamera() {
@@ -828,59 +987,125 @@
                 ringsGroup.appendChild(textElement);
             });
 
-            // Arêtes relationnelles
+            // Arêtes relationnelles — Courbes de Bézier avec flèches directionnelles
             holygraphData.connections.forEach(c => {
                 const sourceNode = holygraphData.nodes.find(n => n.id === c.from);
                 const targetNode = holygraphData.nodes.find(n => n.id === c.to);
 
                 if (sourceNode && targetNode) {
-                    const lineElement = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    lineElement.setAttribute('x1', sourceNode.cx);
-                    lineElement.setAttribute('y1', sourceNode.cy);
-                    lineElement.setAttribute('x2', targetNode.cx);
-                    lineElement.setAttribute('y2', targetNode.cy);
-                    lineElement.setAttribute('stroke', 'rgba(30, 41, 59, 0.5)');
-                    lineElement.setAttribute('stroke-width', '2');
-                    lineElement.setAttribute('class', 'link-path');
-                    lineElement.setAttribute('id', `link-${sourceNode.id}-${targetNode.id}`);
-                    connectionsGroup.appendChild(lineElement);
+                    const dx = targetNode.cx - sourceNode.cx;
+                    const dy = targetNode.cy - sourceNode.cy;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    // Point de contrôle décalé perpendiculairement pour une courbe organique
+                    const curvature = Math.min(dist * 0.15, 40);
+                    const midX = (sourceNode.cx + targetNode.cx) / 2;
+                    const midY = (sourceNode.cy + targetNode.cy) / 2;
+                    // Vecteur perpendiculaire normalisé
+                    const nx = -dy / dist;
+                    const ny = dx / dist;
+                    const ctrlX = midX + nx * curvature;
+                    const ctrlY = midY + ny * curvature;
+
+                    const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    pathElement.setAttribute('d', `M${sourceNode.cx},${sourceNode.cy} Q${ctrlX},${ctrlY} ${targetNode.cx},${targetNode.cy}`);
+                    pathElement.setAttribute('stroke', 'rgba(30, 41, 59, 0.5)');
+                    pathElement.setAttribute('stroke-width', '1.8');
+                    pathElement.setAttribute('fill', 'none');
+                    pathElement.setAttribute('class', 'link-path');
+                    pathElement.setAttribute('id', `link-${sourceNode.id}-${targetNode.id}`);
+                    pathElement.setAttribute('marker-end', 'url(#arrowhead)');
+                    connectionsGroup.appendChild(pathElement);
                 }
             });
 
-            // Sommets (Noeuds Projets)
+            // Sommets (Noeuds Projets) — Taille par durée, glow, progression
+            const progress = getProgress();
             holygraphData.nodes.forEach(n => {
                 let color;
+                let glowFilter;
                 switch (n.type) {
-                    case "core": color = "#06b6d4"; break;      // Cyan
-                    case "algo": color = "#10b981"; break;      // Emerald
-                    case "graphics": color = "#f59e0b"; break;  // Amber
-                    case "security": color = "#f87171"; break;  // Red
-                    default: color = "#6366f1";                 // Indigo
+                    case "core": color = "#06b6d4"; glowFilter = "url(#glow-cyan)"; break;
+                    case "algo": color = "#10b981"; glowFilter = "url(#glow-emerald)"; break;
+                    case "graphics": color = "#f59e0b"; glowFilter = "url(#glow-amber)"; break;
+                    case "security": color = "#f87171"; glowFilter = "url(#glow-red)"; break;
+                    case "unix": color = "#f87171"; glowFilter = "url(#glow-red)"; break;
+                    default: color = "#6366f1"; glowFilter = "url(#glow-indigo)";
                 }
+
+                // Rayon basé sur la durée du projet
+                const dur = parseInt(n.duration) || 70;
+                let radius;
+                if (n.id === "libft") { radius = 14; }
+                else if (dur <= 40) { radius = 8; }
+                else if (dur <= 70) { radius = 10; }
+                else if (dur <= 100) { radius = 11; }
+                else if (dur <= 120) { radius = 12; }
+                else if (dur <= 175) { radius = 13; }
+                else { radius = 15; }
+
+                const isCompleted = progress.includes(n.id);
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 g.setAttribute('transform', `translate(${n.cx}, ${n.cy})`);
-                g.setAttribute('class', 'project-node cursor-pointer');
-                g.addEventListener('click', () => inspectProject(n));
+                g.setAttribute('class', `project-node cursor-pointer${isCompleted ? ' node-completed' : ''}`);
+                g.dataset.nodeId = n.id;
 
+                // Cercle principal
                 const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circ.setAttribute('r', n.id === "libft" ? "14" : "10");
-                circ.setAttribute('fill', '#020617');
-                circ.setAttribute('stroke', color);
-                circ.setAttribute('stroke-width', '2.5');
+                circ.setAttribute('r', radius);
+                circ.setAttribute('fill', isCompleted ? 'rgba(16, 185, 129, 0.15)' : '#020617');
+                circ.setAttribute('stroke', isCompleted ? '#10b981' : color);
+                circ.setAttribute('stroke-width', isCompleted ? '3' : '2.5');
                 circ.setAttribute('class', 'project-circle');
                 circ.setAttribute('id', `node-${n.id}`);
                 g.appendChild(circ);
 
+                // Checkmark vert pour les projets complétés
+                if (isCompleted) {
+                    const checkCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    checkCirc.setAttribute('cx', radius * 0.6);
+                    checkCirc.setAttribute('cy', -radius * 0.6);
+                    checkCirc.setAttribute('r', '4');
+                    checkCirc.setAttribute('fill', '#10b981');
+                    checkCirc.setAttribute('stroke', '#020617');
+                    checkCirc.setAttribute('stroke-width', '1.5');
+                    g.appendChild(checkCirc);
+                    const checkMark = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    checkMark.setAttribute('d', `M${radius*0.6-2},${-radius*0.6} L${radius*0.6-0.5},${-radius*0.6+2} L${radius*0.6+2.5},${-radius*0.6-2}`);
+                    checkMark.setAttribute('stroke', '#020617');
+                    checkMark.setAttribute('stroke-width', '1.5');
+                    checkMark.setAttribute('fill', 'none');
+                    checkMark.setAttribute('stroke-linecap', 'round');
+                    checkMark.setAttribute('stroke-linejoin', 'round');
+                    g.appendChild(checkMark);
+                }
+
+                // Label du projet
                 const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                label.setAttribute('y', n.id === "libft" ? "24" : "20");
-                label.setAttribute('fill', '#94a3b8');
-                label.setAttribute('font-size', '8px');
+                label.setAttribute('y', radius + 12);
+                label.setAttribute('fill', isCompleted ? '#10b981' : '#94a3b8');
+                label.setAttribute('font-size', radius <= 9 ? '7px' : '8px');
                 label.setAttribute('font-weight', '700');
                 label.setAttribute('text-anchor', 'middle');
                 label.setAttribute('class', 'mono pointer-events-none drop-shadow-[0_2px_3px_rgba(0,0,0,1)]');
                 label.textContent = n.label;
                 g.appendChild(label);
+
+                // Événements hover : glow + tooltip
+                g.addEventListener('mouseenter', (e) => {
+                    circ.setAttribute('filter', glowFilter);
+                    showTooltip(n, e);
+                });
+                g.addEventListener('mousemove', (e) => moveTooltip(e));
+                g.addEventListener('mouseleave', () => {
+                    if (!g.classList.contains('node-active')) {
+                        circ.removeAttribute('filter');
+                    }
+                    hideTooltip();
+                });
+
+                // Événement click
+                g.addEventListener('click', () => inspectProject(n));
 
                 nodesGroup.appendChild(g);
             });
@@ -933,18 +1158,367 @@
             document.querySelectorAll('.project-circle').forEach(c => {
                 c.setAttribute('opacity', '1');
                 c.setAttribute('stroke-width', '2.5');
+                c.removeAttribute('filter');
             });
             document.querySelectorAll('.link-path').forEach(l => {
                 l.setAttribute('opacity', '1');
                 l.setAttribute('stroke', 'rgba(30, 41, 59, 0.5)');
-                l.setAttribute('stroke-width', '2');
+                l.setAttribute('stroke-width', '1.8');
                 l.setAttribute('stroke-dasharray', 'none');
+                l.setAttribute('marker-end', 'url(#arrowhead)');
                 l.classList.remove('active-path');
+            });
+            document.querySelectorAll('.project-node').forEach(g => g.classList.remove('node-active'));
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  NOUVELLES FONCTIONNALITÉS : Caméra, Dépendances, Progress, Tooltip, Minimap, Touch, Clavier
+        // ═══════════════════════════════════════════════════════════
+
+        // --- Caméra animée (fly-to) ---
+        let currentDrawerNode = null;
+
+        function flyToNode(node) {
+            const targetPX = (svg.clientWidth / 2) - (node.cx * scale);
+            const targetPY = (svg.clientHeight / 2.3) - (node.cy * scale);
+            gViewport.classList.add('animating');
+            pX = targetPX;
+            pY = targetPY;
+            updateTransform();
+            setTimeout(() => gViewport.classList.remove('animating'), 600);
+        }
+
+        function flyToNodeAndZoom(node, targetScale) {
+            const ts = targetScale || Math.min(svg.clientWidth, svg.clientHeight) / 800;
+            gViewport.classList.add('animating');
+            scale = ts;
+            pX = (svg.clientWidth / 2) - (node.cx * scale);
+            pY = (svg.clientHeight / 2.3) - (node.cy * scale);
+            updateTransform();
+            setTimeout(() => gViewport.classList.remove('animating'), 600);
+        }
+
+        // --- Chaîne de dépendances ---
+        function getPrerequisites(nodeId, visited = new Set()) {
+            const prereqs = [];
+            holygraphData.connections.forEach(c => {
+                if (c.to === nodeId && !visited.has(c.from)) {
+                    visited.add(c.from);
+                    prereqs.push(c.from);
+                    prereqs.push(...getPrerequisites(c.from, visited));
+                }
+            });
+            return [...new Set(prereqs)];
+        }
+
+        function getDependents(nodeId, visited = new Set()) {
+            const deps = [];
+            holygraphData.connections.forEach(c => {
+                if (c.from === nodeId && !visited.has(c.to)) {
+                    visited.add(c.to);
+                    deps.push(c.to);
+                    deps.push(...getDependents(c.to, visited));
+                }
+            });
+            return [...new Set(deps)];
+        }
+
+        function getDirectPrerequisites(nodeId) {
+            return holygraphData.connections.filter(c => c.to === nodeId).map(c => c.from);
+        }
+
+        function getDirectDependents(nodeId) {
+            return holygraphData.connections.filter(c => c.from === nodeId).map(c => c.to);
+        }
+
+        function highlightDependencyChain(nodeId) {
+            const allPrereqs = getPrerequisites(nodeId);
+            const allDeps = getDependents(nodeId);
+            const chainIds = [...allPrereqs, nodeId, ...allDeps];
+
+            // Dimmer tous les noeuds et arêtes
+            document.querySelectorAll('.project-circle').forEach(c => c.setAttribute('opacity', '0.12'));
+            document.querySelectorAll('.link-path').forEach(l => {
+                l.setAttribute('opacity', '0.05');
+                l.classList.remove('active-path');
+            });
+
+            // Illuminer la chaîne
+            chainIds.forEach(id => {
+                const nodeEl = document.getElementById(`node-${id}`);
+                if (nodeEl) nodeEl.setAttribute('opacity', '1');
+            });
+
+            // Illuminer les arêtes de la chaîne
+            holygraphData.connections.forEach(c => {
+                if (chainIds.includes(c.from) && chainIds.includes(c.to)) {
+                    const edgeEl = document.getElementById(`link-${c.from}-${c.to}`);
+                    if (edgeEl) {
+                        edgeEl.setAttribute('opacity', '1');
+                        edgeEl.setAttribute('stroke', '#06b6d4');
+                        edgeEl.setAttribute('stroke-width', '2.5');
+                        edgeEl.setAttribute('marker-end', 'url(#arrowhead-active)');
+                        edgeEl.classList.add('active-path');
+                    }
+                }
+            });
+
+            // Activer le glow sur le noeud cliqué
+            const clickedGroup = document.querySelector(`[data-node-id="${nodeId}"]`);
+            if (clickedGroup) {
+                clickedGroup.classList.add('node-active');
+                const circ = clickedGroup.querySelector('.project-circle');
+                if (circ) circ.setAttribute('filter', 'url(#glow-active)');
+            }
+        }
+
+        // --- Progress Tracking (localStorage) ---
+        function getProgress() {
+            try { return JSON.parse(localStorage.getItem('holygraph-progress') || '[]'); }
+            catch { return []; }
+        }
+
+        function toggleProjectProgress(nodeId) {
+            let progress = getProgress();
+            if (progress.includes(nodeId)) {
+                progress = progress.filter(id => id !== nodeId);
+            } else {
+                progress.push(nodeId);
+            }
+            localStorage.setItem('holygraph-progress', JSON.stringify(progress));
+            updateProgressVisuals();
+            updateStats();
+        }
+
+        function toggleCurrentProjectProgress() {
+            if (currentDrawerNode) {
+                toggleProjectProgress(currentDrawerNode.id);
+                // Rafraîchir le drawer
+                inspectProject(currentDrawerNode);
+            }
+        }
+
+        function updateProgressVisuals() {
+            const progress = getProgress();
+            document.querySelectorAll('.project-node').forEach(g => {
+                const nodeId = g.dataset.nodeId;
+                if (!nodeId) return;
+                const isCompleted = progress.includes(nodeId);
+                const circ = g.querySelector('.project-circle');
+                if (!circ) return;
+
+                if (isCompleted) {
+                    g.classList.add('node-completed');
+                    circ.setAttribute('fill', 'rgba(16, 185, 129, 0.15)');
+                    circ.setAttribute('stroke', '#10b981');
+                    circ.setAttribute('stroke-width', '3');
+                } else {
+                    g.classList.remove('node-completed');
+                    circ.setAttribute('fill', '#020617');
+                    // Restaurer la couleur d'origine
+                    const node = holygraphData.nodes.find(n => n.id === nodeId);
+                    if (node) {
+                        let color;
+                        switch (node.type) {
+                            case "core": color = "#06b6d4"; break;
+                            case "algo": color = "#10b981"; break;
+                            case "graphics": color = "#f59e0b"; break;
+                            case "security": color = "#f87171"; break;
+                            case "unix": color = "#f87171"; break;
+                            default: color = "#6366f1";
+                        }
+                        circ.setAttribute('stroke', color);
+                        circ.setAttribute('stroke-width', '2.5');
+                    }
+                }
+                // Gérer le label
+                const label = g.querySelector('text');
+                if (label) label.setAttribute('fill', isCompleted ? '#10b981' : '#94a3b8');
             });
         }
 
+        function updateStats() {
+            const progress = getProgress();
+            const totalNodes = holygraphData.nodes.length;
+            const completedCount = progress.filter(id => holygraphData.nodes.some(n => n.id === id)).length;
+            const totalHours = holygraphData.nodes.reduce((sum, n) => sum + (parseInt(n.duration) || 70), 0);
+            const completedHours = holygraphData.nodes.filter(n => progress.includes(n.id)).reduce((sum, n) => sum + (parseInt(n.duration) || 70), 0);
+
+            const elTotal = document.getElementById('stat-total');
+            const elCompleted = document.getElementById('stat-completed');
+            const elHoursTotal = document.getElementById('stat-hours-total');
+            const elHoursDone = document.getElementById('stat-hours-done');
+
+            if (elTotal) elTotal.textContent = totalNodes;
+            if (elCompleted) elCompleted.textContent = completedCount;
+            if (elHoursTotal) elHoursTotal.textContent = totalHours;
+            if (elHoursDone) elHoursDone.textContent = completedHours;
+        }
+
+        // --- Tooltip ---
+        const tooltip = document.getElementById('graph-tooltip');
+        const tooltipTitle = document.getElementById('tooltip-title');
+        const tooltipDesc = document.getElementById('tooltip-desc');
+        const tooltipDuration = document.getElementById('tooltip-duration');
+        const tooltipType = document.getElementById('tooltip-type');
+
+        function showTooltip(node, e) {
+            tooltipTitle.textContent = node.label;
+            tooltipDesc.textContent = node.desc.substring(0, 90) + (node.desc.length > 90 ? '...' : '');
+            tooltipDuration.textContent = node.duration || '70h';
+            tooltipType.textContent = node.type;
+            tooltip.classList.remove('hidden');
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            const container = document.getElementById('graphe-container');
+            const rect = container.getBoundingClientRect();
+            let x = e.clientX - rect.left + 16;
+            let y = e.clientY - rect.top - 10;
+            // Ne pas déborder
+            if (x + 250 > rect.width) x = e.clientX - rect.left - 260;
+            if (y + 80 > rect.height) y = y - 70;
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.classList.add('hidden');
+        }
+
+        // --- Minimap ---
+        function renderMinimap() {
+            const minimapSvg = document.getElementById('minimap-svg');
+            minimapSvg.innerHTML = '';
+            const mmW = 190, mmH = 130;
+
+            // Calculer les bornes du graphe
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            holygraphData.nodes.forEach(n => {
+                if (n.cx < minX) minX = n.cx;
+                if (n.cx > maxX) maxX = n.cx;
+                if (n.cy < minY) minY = n.cy;
+                if (n.cy > maxY) maxY = n.cy;
+            });
+            const padding = 60;
+            minX -= padding; maxX += padding; minY -= padding; maxY += padding;
+            const graphW = maxX - minX;
+            const graphH = maxY - minY;
+            const mmScale = Math.min(mmW / graphW, mmH / graphH);
+            const offX = (mmW - graphW * mmScale) / 2;
+            const offY = (mmH - graphH * mmScale) / 2;
+
+            // Arêtes miniatures
+            holygraphData.connections.forEach(c => {
+                const s = holygraphData.nodes.find(n => n.id === c.from);
+                const t = holygraphData.nodes.find(n => n.id === c.to);
+                if (s && t) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', (s.cx - minX) * mmScale + offX);
+                    line.setAttribute('y1', (s.cy - minY) * mmScale + offY);
+                    line.setAttribute('x2', (t.cx - minX) * mmScale + offX);
+                    line.setAttribute('y2', (t.cy - minY) * mmScale + offY);
+                    line.setAttribute('stroke', 'rgba(100, 116, 139, 0.2)');
+                    line.setAttribute('stroke-width', '0.5');
+                    minimapSvg.appendChild(line);
+                }
+            });
+
+            // Noeuds miniatures
+            const progress = getProgress();
+            holygraphData.nodes.forEach(n => {
+                const cx = (n.cx - minX) * mmScale + offX;
+                const cy = (n.cy - minY) * mmScale + offY;
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', cx);
+                dot.setAttribute('cy', cy);
+                dot.setAttribute('r', n.id === "libft" ? 2.5 : 1.5);
+                let color;
+                switch (n.type) {
+                    case "core": color = "#06b6d4"; break;
+                    case "algo": color = "#10b981"; break;
+                    case "graphics": color = "#f59e0b"; break;
+                    case "security": color = "#f87171"; break;
+                    case "unix": color = "#f87171"; break;
+                    default: color = "#6366f1";
+                }
+                dot.setAttribute('fill', progress.includes(n.id) ? '#10b981' : color);
+                dot.setAttribute('opacity', '0.7');
+                minimapSvg.appendChild(dot);
+            });
+
+            // Rectangle du viewport actuel
+            const vpRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            const vpLeft = (-pX / scale - minX) * mmScale + offX;
+            const vpTop = (-pY / scale - minY) * mmScale + offY;
+            const vpWidth = (svg.clientWidth / scale) * mmScale;
+            const vpHeight = (svg.clientHeight / scale) * mmScale;
+            vpRect.setAttribute('x', vpLeft);
+            vpRect.setAttribute('y', vpTop);
+            vpRect.setAttribute('width', vpWidth);
+            vpRect.setAttribute('height', vpHeight);
+            vpRect.setAttribute('class', 'minimap-viewport');
+            minimapSvg.appendChild(vpRect);
+        }
+
+        // --- Support Tactile (pinch zoom + drag mobile) ---
+        let touchStartDist = 0;
+        let touchStartScale = 0;
+
+        svg.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                startX = e.touches[0].clientX - pX;
+                startY = e.touches[0].clientY - pY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                touchStartDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                touchStartScale = scale;
+            }
+        }, { passive: false });
+
+        svg.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1 && isDragging) {
+                pX = e.touches[0].clientX - startX;
+                pY = e.touches[0].clientY - startY;
+                updateTransform();
+                renderMinimap();
+            } else if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                scale = Math.min(4, Math.max(0.15, touchStartScale * (dist / touchStartDist)));
+                updateTransform();
+                renderMinimap();
+            }
+        }, { passive: false });
+
+        svg.addEventListener('touchend', () => { isDragging = false; });
+
+        // --- Raccourcis Clavier ---
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return;
+            switch (e.key) {
+                case '+': case '=': zoomManual(1.2); break;
+                case '-': zoomManual(0.8); break;
+                case 'Escape': closeProjectDrawer(); clearHighlights(); break;
+                case 'ArrowLeft': pX += 50; updateTransform(); renderMinimap(); break;
+                case 'ArrowRight': pX -= 50; updateTransform(); renderMinimap(); break;
+                case 'ArrowUp': pY += 50; updateTransform(); renderMinimap(); break;
+                case 'ArrowDown': pY -= 50; updateTransform(); renderMinimap(); break;
+                case 'r': case 'R': resetCamera(); break;
+            }
+        });
+
         // INSPECTION DE PROJET ET DRAWER
         function inspectProject(node) {
+            currentDrawerNode = node;
             const drawer = document.getElementById('project-drawer');
             document.getElementById('drawer-title').textContent = node.label;
             document.getElementById('drawer-desc').textContent = node.desc;
@@ -958,6 +1532,7 @@
                 durationEl.textContent = node.duration || "70h";
             }
 
+            // Compétences
             const skillsBox = document.getElementById('drawer-skills');
             skillsBox.innerHTML = '';
             node.skills.forEach(s => {
@@ -967,8 +1542,65 @@
                 skillsBox.appendChild(badge);
             });
 
+            // Prérequis directs
+            const prereqsBox = document.getElementById('drawer-prereqs');
+            prereqsBox.innerHTML = '';
+            const directPrereqs = getDirectPrerequisites(node.id);
+            if (directPrereqs.length === 0) {
+                prereqsBox.innerHTML = '<span class="text-[9px] text-slate-500 font-mono italic">Aucun prérequis</span>';
+            } else {
+                directPrereqs.forEach(pid => {
+                    const pNode = holygraphData.nodes.find(n => n.id === pid);
+                    if (pNode) {
+                        const badge = document.createElement('span');
+                        badge.className = "px-2 py-0.5 bg-slate-900 border border-amber-800/50 text-amber-300/80 text-[9px] rounded font-mono font-medium cursor-pointer hover:border-amber-500 transition-colors";
+                        badge.textContent = pNode.label;
+                        badge.addEventListener('click', () => { flyToNode(pNode); inspectProject(pNode); });
+                        prereqsBox.appendChild(badge);
+                    }
+                });
+            }
+
+            // Débloque (dépendants directs)
+            const depsBox = document.getElementById('drawer-dependents');
+            depsBox.innerHTML = '';
+            const directDeps = getDirectDependents(node.id);
+            if (directDeps.length === 0) {
+                depsBox.innerHTML = '<span class="text-[9px] text-slate-500 font-mono italic">Projet terminal</span>';
+            } else {
+                directDeps.forEach(did => {
+                    const dNode = holygraphData.nodes.find(n => n.id === did);
+                    if (dNode) {
+                        const badge = document.createElement('span');
+                        badge.className = "px-2 py-0.5 bg-slate-900 border border-cyan-800/50 text-cyan-300/80 text-[9px] rounded font-mono font-medium cursor-pointer hover:border-cyan-500 transition-colors";
+                        badge.textContent = dNode.label;
+                        badge.addEventListener('click', () => { flyToNode(dNode); inspectProject(dNode); });
+                        depsBox.appendChild(badge);
+                    }
+                });
+            }
+
+            // Bouton progression
+            const progress = getProgress();
+            const isCompleted = progress.includes(node.id);
+            const progressBtn = document.getElementById('drawer-progress-btn');
+            const progressText = document.getElementById('drawer-progress-text');
+            if (isCompleted) {
+                progressBtn.className = 'w-full px-3 py-2 rounded-lg border text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all bg-emerald-900/30 border-emerald-600/50 text-emerald-400 hover:bg-emerald-900/50';
+                progressText.textContent = 'Complété — Cliquer pour annuler';
+            } else {
+                progressBtn.className = 'w-full px-3 py-2 rounded-lg border text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all bg-slate-900/50 border-slate-700 text-slate-400 hover:border-[#00babc]/60 hover:text-[#00babc]';
+                progressText.textContent = 'Marquer comme complété';
+            }
+
+            // Voler vers le noeud et illuminer la chaîne de dépendances
+            flyToNode(node);
+            highlightDependencyChain(node.id);
+
             drawer.classList.remove('hidden');
             setTimeout(() => drawer.classList.remove('translate-x-[400px]'), 15);
+            // Re-créer les icônes Lucide pour les nouveaux éléments
+            setTimeout(() => lucide.createIcons(), 50);
         }
 
         function closeProjectDrawer() {
@@ -980,9 +1612,7 @@
         function highlightStarfleet() {
             const starNode = holygraphData.nodes.find(n => n.id === "starfleet");
             if (starNode) {
-                pX = (svg.clientWidth / 2) - (starNode.cx * scale);
-                pY = (svg.clientHeight / 2) - (starNode.cy * scale);
-                updateTransform();
+                flyToNodeAndZoom(starNode);
                 inspectProject(starNode);
             }
         }
@@ -1009,9 +1639,7 @@
                     el.className = "p-2.5 hover:bg-slate-900 cursor-pointer text-xs flex justify-between items-center transition-colors font-mono border-b border-slate-900 text-slate-300";
                     el.innerHTML = `<span>${n.label}</span><span class="text-[8px] opacity-40 uppercase">${n.type}</span>`;
                     el.addEventListener('click', () => {
-                        pX = (svg.clientWidth / 2) - (n.cx * scale);
-                        pY = (svg.clientHeight / 2) - (n.cy * scale);
-                        updateTransform();
+                        flyToNode(n);
                         inspectProject(n);
                         searchDropdown.classList.add('hidden');
                         searchInput.value = '';
@@ -1030,12 +1658,15 @@
             }
         });
 
-        window.addEventListener('resize', updateTransform);
+        window.addEventListener('resize', () => { updateTransform(); renderMinimap(); });
 
         window.onload = function() {
             lucide.createIcons();
             generateGraphElements();
             centerViewport();
+            updateProgressVisuals();
+            updateStats();
+            renderMinimap();
         };
     </script>
 </body>
