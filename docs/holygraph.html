@@ -855,6 +855,7 @@
         let scale = 0.9;
         let pX = 0; let pY = 0;
         let isDragging = false;
+        let hasDragged = false;
         let startX, startY;
 
         function centerViewport() {
@@ -871,18 +872,27 @@
         svg.addEventListener('mousedown', (e) => {
             if (e.target.classList.contains('project-circle')) return;
             isDragging = true;
+            hasDragged = false;
             startX = e.clientX - pX;
             startY = e.clientY - pY;
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
+            hasDragged = true;
             pX = e.clientX - startX;
             pY = e.clientY - startY;
             updateTransform();
         });
 
-        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mouseup', (e) => {
+            // Désélectionner le noeud si on clique sur le fond du graphe sans drag
+            if (isDragging && !hasDragged && !e.target.closest('.project-node')) {
+                deselectNode();
+                closeProjectDrawer();
+            }
+            isDragging = false;
+        });
 
 
 
@@ -1529,7 +1539,7 @@
             switch (e.key) {
                 case '+': case '=': zoomManual(1.2); break;
                 case '-': zoomManual(0.8); break;
-                case 'Escape': closeProjectDrawer(); clearHighlights(); break;
+                case 'Escape': closeProjectDrawer(); deselectNode(); clearHighlights(); break;
                 case 'ArrowLeft': pX += 50; updateTransform(); break;
                 case 'ArrowRight': pX -= 50; updateTransform(); break;
                 case 'ArrowUp': pY += 50; updateTransform(); break;
@@ -1639,7 +1649,9 @@
             const drawer = document.getElementById('project-drawer');
             drawer.classList.add('translate-x-[400px]');
             setTimeout(() => drawer.classList.add('hidden'), 300);
-            // Retirer la surbrillance du noeud
+        }
+
+        function deselectNode() {
             if (currentSelectedCircle) {
                 currentSelectedCircle.classList.remove('selected');
                 currentSelectedCircle = null;
