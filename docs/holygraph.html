@@ -91,28 +91,7 @@
             transition: opacity 0.15s ease;
         }
 
-        /* Minimap de navigation */
-        .minimap-container {
-            position: absolute;
-            bottom: 52px;
-            right: 24px;
-            width: 190px;
-            height: 130px;
-            background: rgba(8, 16, 24, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 186, 188, 0.15);
-            border-radius: 10px;
-            overflow: hidden;
-            z-index: 15;
-            box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6);
-        }
-        .minimap-viewport {
-            fill: rgba(0, 186, 188, 0.12);
-            stroke: rgba(0, 186, 188, 0.5);
-            stroke-width: 1.5;
-            rx: 2;
-        }
+
 
         /* Noeud complété - anneau vert */
         .node-completed .project-circle {
@@ -176,51 +155,58 @@
     <!-- Zone Graphe SVG principal -->
     <main class="flex-grow w-full h-full relative overflow-hidden z-5" id="graphe-container">
         
-        <!-- Panneau de sélection gauche -->
-        <div class="absolute top-6 left-6 p-4 intra-panel rounded-xl w-68 shadow-2xl z-10 flex flex-col gap-3.5">
-            <div>
-                <h3 class="text-[10px] font-bold uppercase tracking-widest text-[#00babc] mb-0.5 flex items-center gap-1.5 font-mono">
-                    <i data-lucide="compass" class="w-3.5 h-3.5"></i> CONSTELLATIONS (PISCINES)
-                </h3>
-                <p class="text-[10px] text-slate-400 leading-relaxed">Parcourez les filières pour illuminer leurs dépendances logiques.</p>
-            </div>
-            
-            <div class="space-y-1 flex flex-col text-xs max-h-56 overflow-y-auto pr-1 font-medium" id="piscine-filters">
-                <button onclick="togglePiscine('piscine_java', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Filière Java Enterprise</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_unity', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Moteurs 3D & Unity</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_swift', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Développement iOS Swift</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_php', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Web PHP / Symfony</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_python', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Python & Django Apps</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_ruby', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Ruby on Rails Framework</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_ocaml', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Filière OCaml Fonctionnel</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-                <button onclick="togglePiscine('piscine_datascience', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
-                    <span>Python Data Science & ML</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
-                </button>
-            </div>
+        <!-- Panneau de sélection gauche rétractable -->
+        <div id="piscine-panel" class="absolute top-6 left-6 intra-panel rounded-xl shadow-2xl z-10 flex flex-col gap-3.5 transition-all duration-300" style="width: 272px;">
+            <!-- Bouton toggle -->
+            <button onclick="togglePiscinePanel()" class="absolute -right-3 top-4 w-6 h-6 bg-slate-900/90 border border-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-[#00babc] hover:border-[#00babc]/60 transition-all z-20" title="Rétracter le panneau">
+                <i data-lucide="panel-left-close" class="w-3.5 h-3.5" id="panel-toggle-icon"></i>
+            </button>
 
-            <div class="h-px bg-slate-800/80"></div>
+            <div id="piscine-panel-content" class="p-4 flex flex-col gap-3.5">
+                <div>
+                    <h3 class="text-[10px] font-bold uppercase tracking-widest text-[#00babc] mb-0.5 flex items-center gap-1.5 font-mono">
+                        <i data-lucide="compass" class="w-3.5 h-3.5"></i> CONSTELLATIONS (PISCINES)
+                    </h3>
+                    <p class="text-[10px] text-slate-400 leading-relaxed">Parcourez les filières pour illuminer leurs dépendances logiques.</p>
+                </div>
+                
+                <div class="space-y-1 flex flex-col text-xs max-h-56 overflow-y-auto pr-1 font-medium" id="piscine-filters">
+                    <button onclick="togglePiscine('piscine_java', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Filière Java Enterprise</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_unity', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Moteurs 3D & Unity</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_swift', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Développement iOS Swift</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_php', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Web PHP / Symfony</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_python', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Python & Django Apps</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_ruby', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Ruby on Rails Framework</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_ocaml', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Filière OCaml Fonctionnel</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                    <button onclick="togglePiscine('piscine_datascience', this)" class="w-full text-left px-2.5 py-1.5 rounded bg-slate-900/30 border border-slate-800/60 text-slate-300 hover:text-white hover:border-slate-600 transition-all flex items-center justify-between group">
+                        <span>Python Data Science & ML</span> <i data-lucide="chevron-right" class="w-3 h-3 opacity-40 group-hover:opacity-100 transition-all text-[#00babc]"></i>
+                    </button>
+                </div>
 
-            <!-- Index Chromatique -->
-            <div class="space-y-1.5 text-[10px] text-slate-400 font-medium uppercase font-mono tracking-wide">
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#00babc]"></span> <span>Noyau Commun</span></div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span> <span>Algorithmes & Flux</span></div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff9f43]"></span> <span>Infographie & 3D</span></div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff4757]"></span> <span>Sécurité & Kernel Linux</span></div>
-                <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#5f27cd]"></span> <span>Web, Frameworks & DB</span></div>
+                <div class="h-px bg-slate-800/80"></div>
+
+                <!-- Index Chromatique -->
+                <div class="space-y-1.5 text-[10px] text-slate-400 font-medium uppercase font-mono tracking-wide">
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#00babc]"></span> <span>Noyau Commun</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span> <span>Algorithmes & Flux</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff9f43]"></span> <span>Infographie & 3D</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#ff4757]"></span> <span>Sécurité & Kernel Linux</span></div>
+                    <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#5f27cd]"></span> <span>Web, Frameworks & DB</span></div>
+                </div>
             </div>
         </div>
 
@@ -345,11 +331,6 @@
             <button onclick="highlightStarfleet()" class="px-4 py-2 bg-gradient-to-r from-[#00babc] to-teal-600 hover:from-cyan-400 hover:to-teal-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 transition-all active:scale-95 font-mono">
                 <i data-lucide="code-2" class="w-4 h-4 stroke-[2.5]"></i> Mode Exam Starfleet
             </button>
-        </div>
-
-        <!-- Minimap de Navigation -->
-        <div id="minimap-wrapper" class="minimap-container">
-            <svg id="minimap-svg" class="w-full h-full"></svg>
         </div>
 
         <!-- Tooltip de survol rapide -->
@@ -874,7 +855,6 @@
             pY = svg.clientHeight / 2.3;
             scale = Math.min(svg.clientWidth, svg.clientHeight) / 1200;
             updateTransform();
-            renderMinimap();
         }
 
         function updateTransform() {
@@ -897,8 +877,7 @@
 
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // Mettre à jour la minimap après chaque drag
-        svg.addEventListener('mouseup', () => renderMinimap());
+
 
         svg.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -921,14 +900,12 @@
                 }
             }
             updateTransform();
-            renderMinimap();
         });
 
         function zoomManual(factor) {
             scale *= factor;
             scale = Math.min(4, Math.max(0.15, scale));
             updateTransform();
-            renderMinimap();
         }
 
         function resetCamera() {
@@ -937,6 +914,26 @@
             });
             clearHighlights();
             centerViewport();
+        }
+
+        // --- Panneau Piscines rétractable ---
+        let piscinePanelOpen = true;
+        function togglePiscinePanel() {
+            const panel = document.getElementById('piscine-panel');
+            const content = document.getElementById('piscine-panel-content');
+            const icon = document.getElementById('panel-toggle-icon');
+            piscinePanelOpen = !piscinePanelOpen;
+            if (piscinePanelOpen) {
+                content.style.display = '';
+                panel.style.width = '272px';
+                icon.setAttribute('data-lucide', 'panel-left-close');
+            } else {
+                content.style.display = 'none';
+                panel.style.width = '0px';
+                panel.style.padding = '0';
+                icon.setAttribute('data-lucide', 'panel-left-open');
+            }
+            lucide.createIcons();
         }
 
         // CONSTRUCTEUR DU GRAPHE VECTORIEL
@@ -1482,81 +1479,6 @@
             tooltip.classList.add('hidden');
         }
 
-        // --- Minimap ---
-        function renderMinimap() {
-            const minimapSvg = document.getElementById('minimap-svg');
-            minimapSvg.innerHTML = '';
-            const mmW = 190, mmH = 130;
-
-            // Calculer les bornes du graphe
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            holygraphData.nodes.forEach(n => {
-                if (n.cx < minX) minX = n.cx;
-                if (n.cx > maxX) maxX = n.cx;
-                if (n.cy < minY) minY = n.cy;
-                if (n.cy > maxY) maxY = n.cy;
-            });
-            const padding = 60;
-            minX -= padding; maxX += padding; minY -= padding; maxY += padding;
-            const graphW = maxX - minX;
-            const graphH = maxY - minY;
-            const mmScale = Math.min(mmW / graphW, mmH / graphH);
-            const offX = (mmW - graphW * mmScale) / 2;
-            const offY = (mmH - graphH * mmScale) / 2;
-
-            // Arêtes miniatures
-            holygraphData.connections.forEach(c => {
-                const s = holygraphData.nodes.find(n => n.id === c.from);
-                const t = holygraphData.nodes.find(n => n.id === c.to);
-                if (s && t) {
-                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    line.setAttribute('x1', (s.cx - minX) * mmScale + offX);
-                    line.setAttribute('y1', (s.cy - minY) * mmScale + offY);
-                    line.setAttribute('x2', (t.cx - minX) * mmScale + offX);
-                    line.setAttribute('y2', (t.cy - minY) * mmScale + offY);
-                    line.setAttribute('stroke', 'rgba(100, 116, 139, 0.2)');
-                    line.setAttribute('stroke-width', '0.5');
-                    minimapSvg.appendChild(line);
-                }
-            });
-
-            // Noeuds miniatures
-            const progress = getProgress();
-            holygraphData.nodes.forEach(n => {
-                const cx = (n.cx - minX) * mmScale + offX;
-                const cy = (n.cy - minY) * mmScale + offY;
-                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                dot.setAttribute('cx', cx);
-                dot.setAttribute('cy', cy);
-                dot.setAttribute('r', n.id === "libft" ? 2.5 : 1.5);
-                let color;
-                switch (n.type) {
-                    case "core": color = "#06b6d4"; break;
-                    case "algo": color = "#10b981"; break;
-                    case "graphics": color = "#f59e0b"; break;
-                    case "security": color = "#f87171"; break;
-                    case "unix": color = "#f87171"; break;
-                    default: color = "#6366f1";
-                }
-                dot.setAttribute('fill', progress.includes(n.id) ? '#10b981' : color);
-                dot.setAttribute('opacity', '0.7');
-                minimapSvg.appendChild(dot);
-            });
-
-            // Rectangle du viewport actuel
-            const vpRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            const vpLeft = (-pX / scale - minX) * mmScale + offX;
-            const vpTop = (-pY / scale - minY) * mmScale + offY;
-            const vpWidth = (svg.clientWidth / scale) * mmScale;
-            const vpHeight = (svg.clientHeight / scale) * mmScale;
-            vpRect.setAttribute('x', vpLeft);
-            vpRect.setAttribute('y', vpTop);
-            vpRect.setAttribute('width', vpWidth);
-            vpRect.setAttribute('height', vpHeight);
-            vpRect.setAttribute('class', 'minimap-viewport');
-            minimapSvg.appendChild(vpRect);
-        }
-
         // --- Support Tactile (pinch zoom + drag mobile) ---
         let touchStartDist = 0;
         let touchStartScale = 0;
@@ -1582,7 +1504,6 @@
                 pX = e.touches[0].clientX - startX;
                 pY = e.touches[0].clientY - startY;
                 updateTransform();
-                renderMinimap();
             } else if (e.touches.length === 2) {
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
@@ -1590,7 +1511,6 @@
                 );
                 scale = Math.min(4, Math.max(0.15, touchStartScale * (dist / touchStartDist)));
                 updateTransform();
-                renderMinimap();
             }
         }, { passive: false });
 
@@ -1603,10 +1523,10 @@
                 case '+': case '=': zoomManual(1.2); break;
                 case '-': zoomManual(0.8); break;
                 case 'Escape': closeProjectDrawer(); clearHighlights(); break;
-                case 'ArrowLeft': pX += 50; updateTransform(); renderMinimap(); break;
-                case 'ArrowRight': pX -= 50; updateTransform(); renderMinimap(); break;
-                case 'ArrowUp': pY += 50; updateTransform(); renderMinimap(); break;
-                case 'ArrowDown': pY -= 50; updateTransform(); renderMinimap(); break;
+                case 'ArrowLeft': pX += 50; updateTransform(); break;
+                case 'ArrowRight': pX -= 50; updateTransform(); break;
+                case 'ArrowUp': pY += 50; updateTransform(); break;
+                case 'ArrowDown': pY -= 50; updateTransform(); break;
                 case 'r': case 'R': resetCamera(); break;
             }
         });
@@ -1752,7 +1672,7 @@
             }
         });
 
-        window.addEventListener('resize', () => { updateTransform(); renderMinimap(); });
+        window.addEventListener('resize', () => { updateTransform(); });
 
         window.onload = function() {
             lucide.createIcons();
@@ -1760,7 +1680,6 @@
             centerViewport();
             updateProgressVisuals();
             updateStats();
-            renderMinimap();
         };
     </script>
 </body>
