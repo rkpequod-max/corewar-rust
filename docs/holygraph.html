@@ -531,7 +531,7 @@
                 // Filière Java Enterprise
                 { id: "fwa", label: "fwa", cx: -390, cy: -320, ring: "java", type: "java", desc: "Développement d'un framework d'architecture modulaire d'entreprise structuré en Java.", skills: ["Java EE", "Design Patterns Architecture", "Inversion de Contrôle"] , duration: "120h" },
                 { id: "goma", label: "goma", cx: -460, cy: -340, ring: "java", type: "java", desc: "Moteur d'aiguillage réseau multithreadé assurant une haute dispo sur les flux entrants.", skills: ["Java Multithreading", "Réseau Asynchrone", "Gestion de Sockets"] , duration: "120h" },
-                { id: "message_queue", label: "message queue", cx: -530, cy: -360, ring: "java", type: "java", desc: "Mise en œuvre d'un bus de communication asynchrone résilient pour l'échange de messages inter-services.", skills: ["Message Brokers", "Kafka / RabbitMQ", " découplage applicatif"] , duration: "120h" },
+                { id: "message_queue", label: "message queue", cx: -530, cy: -360, ring: "java", type: "java", desc: "Mise en œuvre d'un bus de communication asynchrone résilient pour l'échange de messages inter-services.", skills: ["Message Brokers", "Kafka / RabbitMQ", "Découplage applicatif"] , duration: "120h" },
                 { id: "restful", label: "restful", cx: -600, cy: -380, ring: "java", type: "java", desc: "Déploiement d'une API industrielle Web RESTful sécurisée avec persistence transactionnelle avancée.", skills: ["Spring Boot", "JPA / Hibernate", "Sécurisation JWT"] , duration: "120h" },
                 { id: "ft_scale_server", label: "ft_scale-server", cx: -670, cy: -400, ring: "java", type: "java", desc: "Mise en place d'une grappe de serveurs évolutive horizontalement intégrant équilibrage de charge et tolérance aux pannes.", skills: ["Scalabilité", "Load Balancing", "Haute Disponibilité"] , duration: "175h" },
 
@@ -840,13 +840,13 @@
                 { from: "cpp_modules", to: "starfleet" }
             ],
             pipelines: {
-                piscine_java: ["piscine_java", "avaj-launcher", "swingy", "fix-me", "fwa", "goma", "message_queue", "restful", "ft_scale_server", "springboot", "microservices"],
-                piscine_unity: ["cub3d", "piscine_unity", "in-the-shadows", "city_life", "fried_eggs", "amazon_xv", "h42n42"],
-                piscine_swift: ["swifty-companion", "swifty-proteins", "t_hangouts"],
+                piscine_java: ["cpp_modules", "piscine_java", "avaj-launcher", "swingy", "fix-me", "fwa", "goma", "message_queue", "restful", "ft_scale_server", "springboot", "microservices"],
+                piscine_unity: ["fdf", "cub3d", "piscine_unity", "in-the-shadows", "city_life", "fried_eggs", "amazon_xv", "h42n42"],
+                piscine_swift: ["cpp_modules", "swifty-companion", "swifty-proteins", "t_hangouts"],
                 piscine_php: ["piscine_php", "camagru", "matcha", "hypertube", "red_tetris", "music_room", "symphony", "cinema"],
                 piscine_python: ["piscine_python", "django", "piscine_python_datascience", "ft_linear_regression", "dslr", "multilayer-perception"],
                 piscine_ruby: ["piscine_ruby", "myspotify"],
-                piscine_ocaml: ["piscine_ocaml", "ft_turing", "f_ml", "ft_linear", "f_k_d_tree", "avion"],
+                piscine_ocaml: ["cpp_modules", "piscine_ocaml", "ft_turing", "f_ml", "ft_linear", "f_k_d_tree", "avion"],
                 piscine_datascience: ["piscine_python", "piscine_python_datascience", "ft_linear_regression", "dslr", "multilayer-perception", "tweets", "chum", "n_gram", "uber", "big_data", "predictive_analysis", "churn", "understanding_customer", "total-perspective-vortex"]
             }
         };
@@ -1100,6 +1100,8 @@
 
                 // Checkmark vert pour les projets complétés
                 if (isCompleted) {
+                    const checkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    checkGroup.setAttribute('class', 'checkmark-group');
                     const checkCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     checkCirc.setAttribute('cx', radius * 0.6);
                     checkCirc.setAttribute('cy', -radius * 0.6);
@@ -1107,7 +1109,7 @@
                     checkCirc.setAttribute('fill', '#10b981');
                     checkCirc.setAttribute('stroke', '#020617');
                     checkCirc.setAttribute('stroke-width', '1.5');
-                    g.appendChild(checkCirc);
+                    checkGroup.appendChild(checkCirc);
                     const checkMark = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     checkMark.setAttribute('d', `M${radius*0.6-2},${-radius*0.6} L${radius*0.6-0.5},${-radius*0.6+2} L${radius*0.6+2.5},${-radius*0.6-2}`);
                     checkMark.setAttribute('stroke', '#020617');
@@ -1115,7 +1117,8 @@
                     checkMark.setAttribute('fill', 'none');
                     checkMark.setAttribute('stroke-linecap', 'round');
                     checkMark.setAttribute('stroke-linejoin', 'round');
-                    g.appendChild(checkMark);
+                    checkGroup.appendChild(checkMark);
+                    g.appendChild(checkGroup);
                 }
 
                 // Label du projet
@@ -1166,14 +1169,14 @@
             selectedPiscine = piscineKey;
             const targetIds = holygraphData.pipelines[piscineKey];
 
-            document.querySelectorAll('.project-circle').forEach(c => c.setAttribute('opacity', '0.15'));
+            document.querySelectorAll('.project-node').forEach(g => g.setAttribute('opacity', '0.15'));
             document.querySelectorAll('.link-path').forEach(l => {
                 l.setAttribute('opacity', '0.05');
                 l.classList.remove('active-path');
             });
 
             targetIds.forEach(id => {
-                const nodeElement = document.getElementById(`node-${id}`);
+                const nodeElement = document.querySelector(`[data-node-id="${id}"]`);
                 if (nodeElement) nodeElement.setAttribute('opacity', '1');
             });
 
@@ -1193,10 +1196,21 @@
 
         function clearHighlights() {
             selectedPiscine = null;
-            document.querySelectorAll('.project-circle').forEach(c => {
-                c.setAttribute('opacity', '1');
-                c.setAttribute('stroke-width', '2.5');
-                c.removeAttribute('filter');
+            const progress = getProgress();
+            document.querySelectorAll('.project-node').forEach(g => {
+                g.setAttribute('opacity', '1');
+                g.classList.remove('node-active');
+                const nodeId = g.dataset.nodeId;
+                const circ = g.querySelector('.project-circle');
+                if (circ) {
+                    circ.removeAttribute('filter');
+                    // Restaurer le stroke-width correct selon le statut complété
+                    if (progress.includes(nodeId)) {
+                        circ.setAttribute('stroke-width', '3');
+                    } else {
+                        circ.setAttribute('stroke-width', '2.5');
+                    }
+                }
             });
             document.querySelectorAll('.link-path').forEach(l => {
                 l.setAttribute('opacity', '1');
@@ -1206,7 +1220,6 @@
                 l.setAttribute('marker-end', 'url(#arrowhead)');
                 l.classList.remove('active-path');
             });
-            document.querySelectorAll('.project-node').forEach(g => g.classList.remove('node-active'));
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -1275,7 +1288,7 @@
             const chainIds = [...allPrereqs, nodeId, ...allDeps];
 
             // Dimmer tous les noeuds et arêtes
-            document.querySelectorAll('.project-circle').forEach(c => c.setAttribute('opacity', '0.12'));
+            document.querySelectorAll('.project-node').forEach(g => g.setAttribute('opacity', '0.12'));
             document.querySelectorAll('.link-path').forEach(l => {
                 l.setAttribute('opacity', '0.05');
                 l.classList.remove('active-path');
@@ -1283,7 +1296,7 @@
 
             // Illuminer la chaîne
             chainIds.forEach(id => {
-                const nodeEl = document.getElementById(`node-${id}`);
+                const nodeEl = document.querySelector(`[data-node-id="${id}"]`);
                 if (nodeEl) nodeEl.setAttribute('opacity', '1');
             });
 
@@ -1345,11 +1358,45 @@
                 const circ = g.querySelector('.project-circle');
                 if (!circ) return;
 
+                // Supprimer les anciens checkmarks s'ils existent
+                g.querySelectorAll('.checkmark-group').forEach(el => el.remove());
+
                 if (isCompleted) {
                     g.classList.add('node-completed');
                     circ.setAttribute('fill', 'rgba(16, 185, 129, 0.15)');
                     circ.setAttribute('stroke', '#10b981');
                     circ.setAttribute('stroke-width', '3');
+
+                    // Ajouter le checkmark SVG
+                    const radius = parseFloat(circ.getAttribute('r'));
+                    const checkGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    checkGroup.setAttribute('class', 'checkmark-group');
+
+                    const checkCirc = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    checkCirc.setAttribute('cx', radius * 0.6);
+                    checkCirc.setAttribute('cy', -radius * 0.6);
+                    checkCirc.setAttribute('r', '4');
+                    checkCirc.setAttribute('fill', '#10b981');
+                    checkCirc.setAttribute('stroke', '#020617');
+                    checkCirc.setAttribute('stroke-width', '1.5');
+                    checkGroup.appendChild(checkCirc);
+
+                    const checkMark = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    checkMark.setAttribute('d', `M${radius*0.6-2},${-radius*0.6} L${radius*0.6-0.5},${-radius*0.6+2} L${radius*0.6+2.5},${-radius*0.6-2}`);
+                    checkMark.setAttribute('stroke', '#020617');
+                    checkMark.setAttribute('stroke-width', '1.5');
+                    checkMark.setAttribute('fill', 'none');
+                    checkMark.setAttribute('stroke-linecap', 'round');
+                    checkMark.setAttribute('stroke-linejoin', 'round');
+                    checkGroup.appendChild(checkMark);
+
+                    // Insérer avant le label texte
+                    const textEl = g.querySelector('text');
+                    if (textEl) {
+                        g.insertBefore(checkGroup, textEl);
+                    } else {
+                        g.appendChild(checkGroup);
+                    }
                 } else {
                     g.classList.remove('node-completed');
                     circ.setAttribute('fill', '#020617');
@@ -1666,8 +1713,8 @@
                 return;
             }
 
-            const matchNodes = holygraphData.nodes.filter(n => 
-                n.label.toLowerCase().includes(searchVal) || n.skills.some(s => s.toLowerCase().includes(searchVal))
+            const matchNodes = holygraphData.nodes.filter(n =>
+                n.label.toLowerCase().includes(searchVal) || n.skills.some(s => s.toLowerCase().includes(searchVal)) || n.desc.toLowerCase().includes(searchVal)
             );
 
             if (matchNodes.length > 0) {
