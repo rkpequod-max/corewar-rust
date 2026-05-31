@@ -687,7 +687,6 @@
                 { from: "ft_ssl_des", to: "ft_ssl_rsa" },
                 { from: "ft_ssl", to: "ft_otp" },
                 { from: "ft_ssl", to: "ft_ssl_md5" },
-                { from: "ft_ssl", to: "ft_nmap" },
                 { from: "ft_otp", to: "ft_onion" },
                 { from: "ft_ssl_rsa", to: "matt_daemon" },
                 { from: "ft_ssl_md5", to: "matt_daemon" },
@@ -701,20 +700,25 @@
                 { from: "durex", to: "deathwar" },
 
                 // ═══ BRANCHE UNIX - ASM & System Programming (ramifications, pas chaîne linéaire) ═══
+                // ft_ls = recodage de ls → projet précoce UNIX, juste après libft
+                { from: "libft", to: "ft_ls" },
+                // libasm = assembleur x86-64 → nécessite maturité système (ft_ls + minishell)
+                { from: "ft_ls", to: "libasm" },
                 { from: "minishell", to: "libasm" },
-                { from: "libasm", to: "ft_ls" },
-                { from: "ft_ls", to: "malloc" },
+                // malloc = allocateur système → suite logique de libasm (bas niveau mémoire)
+                { from: "libasm", to: "malloc" },
                 // ft_select = termcap/TTY → branche depuis minishell (shell interactif)
                 { from: "minishell", to: "ft_select" },
                 // ft_ping = sockets RAW → branche depuis netpractice (réseau)
                 { from: "netpractice", to: "ft_ping" },
                 { from: "ft_ping", to: "ft_traceroute" },
+                // ft_nmap = scanner de ports → suite de ft_ping (outils réseau)
+                { from: "ft_ping", to: "ft_nmap" },
                 // ft_nm_otool = analyse binaire ELF → branche depuis malloc (mémoire/binaire)
                 { from: "malloc", to: "ft_nm_otool" },
                 { from: "ft_nm_otool", to: "strace" },
                 // lem_ipc = IPC shared memory → branche depuis philosophers (concurrence)
                 { from: "philosophers", to: "lem_ipc" },
-                { from: "lem_ipc", to: "strace" },
 
                 // ═══ BRANCHE UNIX - Kernel Linux (KFS) ═══
                 { from: "strace", to: "ft_linux" },
