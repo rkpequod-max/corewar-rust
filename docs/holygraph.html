@@ -623,14 +623,14 @@
                 { id: "h42n42", label: "h42n42", cx: -610, cy: 580, ring: "unity", type: "graphics", desc: "Projet de synthèse de réalité virtuelle ou d'arène d'entraînement sous Unity.", skills: ["Virtual Reality", "C# advanced", "Raycasting Unity"] }
             ],
             connections: [
-                // ═══ NOYAU COMMUN - Fondations (Libft = racine) ═══
+                // ═══ NOYAU COMMUN - Fondations (Libft = racine absolue) ═══
                 { from: "libft", to: "ft_printf" },
                 { from: "libft", to: "get_next_line" },
                 { from: "libft", to: "born2beroot" },
                 { from: "libft", to: "push_swap" },
                 { from: "libft", to: "dr_quine" },
 
-                // ═══ NOYAU COMMUN - Rang 1 : projets requérant ft_printf et/ou get_next_line ═══
+                // ═══ NOYAU COMMUN - Rang 1 : ft_printf + get_next_line débloquent les projets applicatifs ═══
                 { from: "ft_printf", to: "so_long" },
                 { from: "get_next_line", to: "so_long" },
                 { from: "ft_printf", to: "fdf" },
@@ -642,15 +642,20 @@
                 { from: "ft_printf", to: "minitalk" },
 
                 // ═══ NOYAU COMMUN - Rang 2 : maturité système & algorithmique ═══
+                // Philosophers requiert la connaissance des processus (pipex/fork) ET des algos (push_swap)
                 { from: "push_swap", to: "philosophers" },
+                { from: "pipex", to: "philosophers" },
                 { from: "pipex", to: "minishell" },
+                { from: "minishell", to: "42sh" },
                 { from: "born2beroot", to: "netpractice" },
                 { from: "born2beroot", to: "ft_services" },
 
                 // ═══ NOYAU COMMUN - Rang 3 : projets avancés ═══
+                // CPP Modules requiert minishell (C) ET philosophers (concurrence) — double prérequis
                 { from: "fdf", to: "cub3d" },
                 { from: "fdf", to: "miniRT" },
                 { from: "minishell", to: "cpp_modules" },
+                { from: "philosophers", to: "cpp_modules" },
 
                 // ═══ NOYAU COMMUN - Rang 4 : intégration & C++ ═══
                 { from: "cpp_modules", to: "ft_containers" },
@@ -663,7 +668,7 @@
                 { from: "webserv", to: "ft_transcendence" },
                 { from: "ft_irc", to: "ft_transcendence" },
 
-                // ═══ BRANCHE SÉCURITÉ - CTF & Exploitation ═══
+                // ═══ BRANCHE SÉCURITÉ - CTF & Exploitation binaire ═══
                 { from: "minishell", to: "snow-crash" },
                 { from: "snow-crash", to: "rainfall" },
                 { from: "rainfall", to: "override" },
@@ -685,22 +690,26 @@
                 { from: "matt_daemon", to: "pest_control" },
 
                 // ═══ BRANCHE SÉCURITÉ - Web Security & Pentest ═══
-                { from: "ft_onion", to: "darkly" },
+                // Darkly = OWASP Top 10 → nécessite expérience web (camagru), pas Tor
+                { from: "camagru", to: "darkly" },
                 { from: "darkly", to: "boot2root" },
                 { from: "boot2root", to: "durex" },
                 { from: "durex", to: "deathwar" },
 
-                // ═══ BRANCHE UNIX - ASM & System Programming ═══
+                // ═══ BRANCHE UNIX - ASM & System Programming (ramifications, pas chaîne linéaire) ═══
                 { from: "minishell", to: "libasm" },
-                { from: "minishell", to: "42sh" },
                 { from: "libasm", to: "ft_ls" },
                 { from: "ft_ls", to: "malloc" },
-                { from: "malloc", to: "ft_select" },
-                { from: "ft_select", to: "ft_ping" },
+                // ft_select = termcap/TTY → branche depuis minishell (shell interactif)
+                { from: "minishell", to: "ft_select" },
+                // ft_ping = sockets RAW → branche depuis netpractice (réseau)
+                { from: "netpractice", to: "ft_ping" },
                 { from: "ft_ping", to: "ft_traceroute" },
-                { from: "ft_traceroute", to: "ft_nm_otool" },
+                // ft_nm_otool = analyse binaire ELF → branche depuis malloc (mémoire/binaire)
+                { from: "malloc", to: "ft_nm_otool" },
                 { from: "ft_nm_otool", to: "strace" },
-                { from: "pipex", to: "lem_ipc" },
+                // lem_ipc = IPC shared memory → branche depuis philosophers (concurrence)
+                { from: "philosophers", to: "lem_ipc" },
                 { from: "lem_ipc", to: "strace" },
 
                 // ═══ BRANCHE UNIX - Kernel Linux (KFS) ═══
@@ -722,19 +731,23 @@
                 { from: "kfs9", to: "kfs10" },
                 { from: "kfs10", to: "kfs-x" },
 
-                // ═══ BRANCHE GRAPHISME - OpenGL & Moteurs 3D ═══
+                // ═══ BRANCHE GRAPHISME - OpenGL & Moteurs 3D (ramifications logiques) ═══
+                // Guimp = éditeur 2D type Paint → vient de fdf (rendu matriciel 2D)
+                { from: "fdf", to: "guimp" },
+                // Scop = lecteur .obj OpenGL → vient de cub3D (3D basique)
                 { from: "cub3d", to: "scop" },
                 { from: "scop", to: "mod1" },
-                { from: "scop", to: "guimp" },
                 { from: "scop", to: "gbmu" },
-                { from: "scop", to: "humanity" },
                 { from: "mod1", to: "wolf3d" },
                 { from: "mod1", to: "ft_vox" },
                 { from: "ft_vox", to: "42run" },
                 { from: "42run", to: "ft_ality" },
+                // Humanity = simulation de foule/agents → vient de philosophers (concurrence/agents)
+                { from: "philosophers", to: "humanity" },
                 { from: "humanity", to: "humangl" },
                 { from: "humangl", to: "bomberman" },
-                { from: "humanity", to: "rt" },
+                // RT = raytracer avancé → vient de miniRT (raytracer de base)
+                { from: "miniRT", to: "rt" },
                 { from: "rt", to: "rtv1" },
                 { from: "rt", to: "particle-system" },
                 { from: "particle-system", to: "shaderpixel" },
